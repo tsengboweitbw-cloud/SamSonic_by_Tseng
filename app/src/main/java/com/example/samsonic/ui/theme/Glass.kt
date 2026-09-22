@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
@@ -12,6 +13,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.ui.components.MediaArtFill
@@ -34,6 +36,7 @@ val LocalHazeState = staticCompositionLocalOf<HazeState?> { null }
  * when no haze source is available (e.g. API < 31, where the underlying
  * RenderEffect blur silently no-ops).
  */
+@Composable
 fun Modifier.glassSurface(
     shape: Shape,
     hazeState: HazeState?,
@@ -50,7 +53,15 @@ fun Modifier.glassSurface(
     } else {
         clipped.background(tint.copy(alpha = alpha))
     }
-    return filled.border(1.dp, GlassRimLight, shape)
+    // A light rim reads as a highlight on dark glass; a dark rim reads as one
+    // on light glass - pick by the current theme's actual background, not a
+    // fixed assumption that the app is always dark.
+    val rim = if (MaterialTheme.colorScheme.background.luminance() < 0.5f) {
+        Color.White.copy(alpha = 0.16f)
+    } else {
+        Color.Black.copy(alpha = 0.10f)
+    }
+    return filled.border(1.dp, rim, shape)
 }
 
 /**
@@ -64,6 +75,7 @@ fun BlurredArtBackdrop(
     colorSeed: Int,
     modifier: Modifier = Modifier,
 ) {
+    val background = MaterialTheme.colorScheme.background
     Box(modifier = modifier.fillMaxSize()) {
         MediaArtFill(
             coverArt = coverArt,
@@ -78,8 +90,8 @@ fun BlurredArtBackdrop(
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(
-                            ObsidianBackground.copy(alpha = 0.55f),
-                            ObsidianBackground.copy(alpha = 0.88f),
+                            background.copy(alpha = 0.55f),
+                            background.copy(alpha = 0.88f),
                         ),
                     ),
                 ),

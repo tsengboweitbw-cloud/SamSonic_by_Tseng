@@ -8,11 +8,15 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.samsonic.data.ThemeMode
 import com.example.samsonic.playback.LocalPlayerState
 import com.example.samsonic.ui.navigation.SamSonicNavHost
 import com.example.samsonic.ui.theme.SamSonicTheme
@@ -23,7 +27,14 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         val container = (application as SamSonicApplication).container
         setContent {
-            SamSonicTheme {
+            val themeMode by container.themeManager.themeMode.collectAsStateWithLifecycle()
+            val accentColor by container.themeManager.accentColor.collectAsStateWithLifecycle()
+            val darkTheme = when (themeMode) {
+                ThemeMode.SYSTEM -> isSystemInDarkTheme()
+                ThemeMode.LIGHT -> false
+                ThemeMode.DARK -> true
+            }
+            SamSonicTheme(darkTheme = darkTheme, accentColor = accentColor) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     val requestNotifications = rememberLauncherForActivityResult(
                         ActivityResultContracts.RequestPermission()

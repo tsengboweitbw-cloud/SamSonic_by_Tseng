@@ -21,14 +21,19 @@ import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -36,10 +41,13 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.LocalAppContainer
+import com.example.samsonic.data.ThemeManager
+import com.example.samsonic.data.ThemeMode
 import com.example.samsonic.playback.LocalPlayerState
 import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.OneUiRadius
 import com.example.samsonic.ui.theme.glassSurface
+import com.example.samsonic.ui.theme.toHexRgb
 
 @Composable
 fun SettingsScreen(
@@ -51,6 +59,9 @@ fun SettingsScreen(
     val player = LocalPlayerState.current
     val container = LocalAppContainer.current
     val credentials by container.sessionManager.credentials.collectAsStateWithLifecycle()
+    val themeMode by container.themeManager.themeMode.collectAsStateWithLifecycle()
+    val accentColor by container.themeManager.accentColor.collectAsStateWithLifecycle()
+    var showColorPicker by remember { mutableStateOf(false) }
 
     LazyColumn(
         modifier = modifier.fillMaxSize(),
@@ -112,6 +123,31 @@ fun SettingsScreen(
             }
         }
 
+        item { GroupLabel("Appearance") }
+        item {
+            SettingsCard {
+                NavRow(
+                    icon = Icons.Filled.DarkMode,
+                    title = "Theme",
+                    value = when (themeMode) {
+                        ThemeMode.SYSTEM -> "System"
+                        ThemeMode.LIGHT -> "Light"
+                        ThemeMode.DARK -> "Dark"
+                    },
+                    onClick = {
+                        val modes = ThemeMode.entries
+                        container.themeManager.setThemeMode(modes[(themeMode.ordinal + 1) % modes.size])
+                    },
+                )
+                NavRow(
+                    icon = Icons.Filled.Palette,
+                    title = "Accent color",
+                    value = "#${accentColor.toHexRgb()}",
+                    onClick = { showColorPicker = true },
+                )
+            }
+        }
+
         item { GroupLabel("Account") }
         item {
             SettingsCard {
@@ -136,6 +172,18 @@ fun SettingsScreen(
             }
             Spacer(Modifier.height(8.dp))
         }
+    }
+
+    if (showColorPicker) {
+        AccentColorPickerDialog(
+            initialColor = accentColor,
+            defaultColor = ThemeManager.DefaultAccent,
+            onDismiss = { showColorPicker = false },
+            onConfirm = {
+                container.themeManager.setAccentColor(it)
+                showColorPicker = false
+            },
+        )
     }
 }
 

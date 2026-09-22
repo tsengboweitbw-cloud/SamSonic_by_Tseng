@@ -9,26 +9,35 @@ val ObsidianSurfaceElevated = Color(0xFF1F1F27)
 val ObsidianSurfaceHigh = Color(0xFF28282F)
 val ObsidianOutline = Color(0xFF34333D)
 
-val ObsidianAccent = Color(0xFF8875FF)
-val ObsidianAccentDim = Color(0xFF5E52A8)
-val ObsidianAccentContainer = Color(0xFF322A5E)
-
 val ObsidianTextPrimary = Color(0xFFF2F1F7)
 val ObsidianTextSecondary = Color(0xFFA5A3B3)
 val ObsidianTextTertiary = Color(0xFF6E6C7C)
 
 val ObsidianError = Color(0xFFFF6B6B)
 
+// Light counterpart palette - soft, slightly cool-toned surfaces mirroring the
+// dark Obsidian set's tonal steps, so light mode reads as the same design,
+// not a bolted-on afterthought.
+val LightBackground = Color(0xFFF6F5F9)
+val LightSurface = Color(0xFFFFFFFF)
+val LightSurfaceElevated = Color(0xFFEDEBF3)
+val LightSurfaceHigh = Color(0xFFE1DEEA)
+val LightOutline = Color(0xFFD6D3DE)
+
+val LightTextPrimary = Color(0xFF1B1A20)
+val LightTextSecondary = Color(0xFF5F5D68)
+val LightTextTertiary = Color(0xFF908E99)
+
+val LightError = Color(0xFFBA1A1A)
+
 // One UI 9.0 glassmorphism: named translucency levels (0.7-0.85 alpha per
 // Rule.md) plus the thin light rim-stroke drawn along a glass surface's edge.
 object GlassAlpha {
-    const val Nav = 0.6f
-    const val MiniPlayer = 0.6f
+    const val Nav = 0.65f
+    const val MiniPlayer = 0.65f
     const val Card = 0.74f
     const val Sheet = 0.85f
 }
-
-val GlassRimLight = Color(0xFFFFFFFF).copy(alpha = 0.16f)
 
 // Deterministic gradient pairs used for generated "album art" placeholders.
 val ArtGradients = listOf(
