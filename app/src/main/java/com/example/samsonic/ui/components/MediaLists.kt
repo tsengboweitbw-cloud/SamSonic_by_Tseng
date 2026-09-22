@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
@@ -32,6 +33,10 @@ import com.example.samsonic.model.Artist
 import com.example.samsonic.model.Playlist
 import com.example.samsonic.model.Song
 import com.example.samsonic.model.artSeed
+import com.example.samsonic.ui.theme.GlassAlpha
+import com.example.samsonic.ui.theme.OneUiRadius
+import com.example.samsonic.ui.theme.glassSurface
+import com.example.samsonic.ui.theme.LocalHazeState
 import com.example.samsonic.util.formatDuration
 
 @Composable
@@ -71,7 +76,7 @@ fun AlbumCard(
             .widthIn(max = 140.dp)
             .clickable(onClick = onClick),
     ) {
-        MediaArt(coverArt = album.coverArt, colorSeed = album.id.artSeed(), size = 140.dp, cornerRadius = 14.dp)
+        MediaArt(coverArt = album.coverArt, colorSeed = album.id.artSeed(), size = 140.dp)
         Spacer(Modifier.height(8.dp))
         Text(
             text = album.title,
@@ -135,7 +140,7 @@ fun PlaylistCard(
             .widthIn(max = 140.dp)
             .clickable(onClick = onClick),
     ) {
-        MediaArt(coverArt = playlist.coverArt, colorSeed = playlist.id.artSeed(), size = 140.dp, cornerRadius = 14.dp)
+        MediaArt(coverArt = playlist.coverArt, colorSeed = playlist.id.artSeed(), size = 140.dp)
         Spacer(Modifier.height(8.dp))
         Text(
             text = playlist.name,
@@ -163,18 +168,39 @@ fun SongRow(
     onMoreClick: (() -> Unit)? = null,
     leading: @Composable (() -> Unit)? = null,
 ) {
+    val hazeState = LocalHazeState.current
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .then(
+                if (isCurrent) {
+                    Modifier
+                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                        .glassSurface(
+                            shape = RoundedCornerShape(OneUiRadius.Chip),
+                            hazeState = hazeState,
+                            tint = MaterialTheme.colorScheme.primary,
+                            alpha = GlassAlpha.Card,
+                        )
+                } else {
+                    Modifier
+                }
+            )
             .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 8.dp),
+            .padding(horizontal = if (isCurrent) 12.dp else 20.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (leading != null) {
             leading()
             Spacer(Modifier.width(12.dp))
         } else {
-            MediaArt(coverArt = song.coverArt, colorSeed = song.id.artSeed(), size = 44.dp, cornerRadius = 8.dp)
+            MediaArt(
+                coverArt = song.coverArt,
+                colorSeed = song.id.artSeed(),
+                size = 44.dp,
+                cornerRadius = OneUiRadius.Chip,
+                shadowElevation = 0.dp,
+            )
             Spacer(Modifier.width(12.dp))
         }
         Column(Modifier.weight(1f)) {

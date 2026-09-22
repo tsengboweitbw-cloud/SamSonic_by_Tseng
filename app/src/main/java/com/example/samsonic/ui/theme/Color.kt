@@ -19,6 +19,17 @@ val ObsidianTextTertiary = Color(0xFF6E6C7C)
 
 val ObsidianError = Color(0xFFFF6B6B)
 
+// One UI 9.0 glassmorphism: named translucency levels (0.7-0.85 alpha per
+// Rule.md) plus the thin light rim-stroke drawn along a glass surface's edge.
+object GlassAlpha {
+    const val Nav = 0.78f
+    const val MiniPlayer = 0.82f
+    const val Card = 0.74f
+    const val Sheet = 0.85f
+}
+
+val GlassRimLight = Color(0xFFFFFFFF).copy(alpha = 0.16f)
+
 // Deterministic gradient pairs used for generated "album art" placeholders.
 val ArtGradients = listOf(
     Color(0xFF8875FF) to Color(0xFF3D2C7A),

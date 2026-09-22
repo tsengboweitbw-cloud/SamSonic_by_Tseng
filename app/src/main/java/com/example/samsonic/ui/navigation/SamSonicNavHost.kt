@@ -7,19 +7,17 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -44,6 +42,9 @@ import com.example.samsonic.ui.player.NowPlayingScreen
 import com.example.samsonic.ui.player.QueueScreen
 import com.example.samsonic.ui.search.SearchScreen
 import com.example.samsonic.ui.settings.SettingsScreen
+import com.example.samsonic.ui.theme.LocalHazeState
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.rememberHazeState
 
 private object Routes {
     const val LOGIN = "login"
@@ -63,7 +64,7 @@ private object Routes {
     fun playlist(id: String) = "playlist/$id"
 }
 
-private data class BottomDestination(val route: String, val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector)
+data class BottomDestination(val route: String, val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector)
 
 private val bottomDestinations = listOf(
     BottomDestination(Routes.HOME, "Home", Icons.Filled.Home),
@@ -89,45 +90,23 @@ fun SamSonicNavHost() {
     val showChrome = currentRoute == null || currentRoute !in noChromeRoutes
     val showBottomBar = currentRoute == null || bottomDestinations.any { it.route == currentRoute }
 
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        bottomBar = {
-            if (showChrome && showBottomBar) {
-                NavigationBar(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh) {
-                    bottomDestinations.forEach { destination ->
-                        val selected = backStackEntry?.destination?.hierarchy?.any { it.route == destination.route } == true
-                        NavigationBarItem(
-                            selected = selected,
-                            onClick = {
-                                navController.navigate(destination.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            },
-                            icon = { Icon(destination.icon, contentDescription = destination.label) },
-                            label = { Text(destination.label) },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = MaterialTheme.colorScheme.primary,
-                                selectedTextColor = MaterialTheme.colorScheme.primary,
-                                indicatorColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                            ),
-                        )
-                    }
-                }
-            }
-        },
-    ) { innerPadding ->
+    val hazeState = rememberHazeState()
+    val navBarHeight = 64.dp
+    val navBarBottomInset = 16.dp
+
+    Scaffold(containerColor = MaterialTheme.colorScheme.background) { innerPadding ->
+        CompositionLocalProvider(LocalHazeState provides hazeState) {
         Box(modifier = Modifier.fillMaxSize()) {
-            val bottomChromeInset = if (showChrome) innerPadding.calculateBottomPadding() else 0.dp
-            val miniPlayerReserve = if (showChrome) 74.dp else 0.dp
+            val systemBarInset = if (showChrome) innerPadding.calculateBottomPadding() else 0.dp
+            val navBarReserve = if (showChrome && showBottomBar) navBarHeight + navBarBottomInset else 0.dp
+            val miniPlayerReserve = if (showChrome) 80.dp else 0.dp
 
             NavHost(
                 navController = navController,
                 startDestination = startDestination,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .hazeSource(hazeState),
                 enterTransition = { fadeIn(tween(180)) },
                 exitTransition = { fadeOut(tween(180)) },
             ) {
@@ -144,7 +123,7 @@ fun SamSonicNavHost() {
                     HomeScreen(
                         onAlbumClick = { navController.navigate(Routes.album(it.id)) },
                         onSettingsClick = { navController.navigate(Routes.SETTINGS) },
-                        contentPaddingBottom = bottomChromeInset + miniPlayerReserve,
+                        contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve,
                     )
                 }
                 composable(Routes.LIBRARY) {
@@ -152,14 +131,14 @@ fun SamSonicNavHost() {
                         onArtistClick = { navController.navigate(Routes.artist(it.id)) },
                         onAlbumClick = { navController.navigate(Routes.album(it.id)) },
                         onPlaylistClick = { navController.navigate(Routes.playlist(it.id)) },
-                        contentPaddingBottom = bottomChromeInset + miniPlayerReserve,
+                        contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve,
                     )
                 }
                 composable(Routes.SEARCH) {
                     SearchScreen(
                         onArtistClick = { navController.navigate(Routes.artist(it.id)) },
                         onAlbumClick = { navController.navigate(Routes.album(it.id)) },
-                        contentPaddingBottom = bottomChromeInset + miniPlayerReserve,
+                        contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve,
                     )
                 }
                 composable(Routes.SETTINGS) {
@@ -220,9 +199,34 @@ fun SamSonicNavHost() {
                     onExpand = { navController.navigate(Routes.NOW_PLAYING) },
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(bottom = bottomChromeInset + 8.dp),
+                        .padding(bottom = systemBarInset + navBarReserve + 8.dp),
                 )
             }
+
+            if (showChrome && showBottomBar) {
+                val selectedRoutes = remember(backStackEntry) {
+                    backStackEntry?.destination?.hierarchy?.mapNotNull { it.route }?.toSet() ?: emptySet()
+                }
+                FloatingNavBar(
+                    destinations = bottomDestinations,
+                    selectedRoutes = selectedRoutes,
+                    onSelect = { route ->
+                        navController.navigate(route) {
+                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                    hazeState = hazeState,
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(horizontal = 16.dp)
+                        .padding(bottom = systemBarInset + navBarBottomInset)
+                        .fillMaxWidth()
+                        .height(navBarHeight),
+                )
+            }
+        }
         }
     }
 }

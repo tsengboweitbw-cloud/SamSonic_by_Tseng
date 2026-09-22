@@ -7,7 +7,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,6 +34,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.model.artSeed
 import com.example.samsonic.ui.components.MediaArt
+import com.example.samsonic.ui.theme.GlassAlpha
+import com.example.samsonic.ui.theme.LocalHazeState
+import com.example.samsonic.ui.theme.OneUiRadius
+import com.example.samsonic.ui.theme.glassSurface
 
 @Composable
 fun MiniPlayer(
@@ -51,12 +54,17 @@ fun MiniPlayer(
         modifier = modifier,
     ) {
         if (song == null) return@AnimatedVisibility
+        val hazeState = LocalHazeState.current
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 10.dp)
-                .clip(RoundedCornerShape(16.dp))
-                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                .padding(horizontal = 12.dp)
+                .glassSurface(
+                    shape = RoundedCornerShape(OneUiRadius.Card),
+                    hazeState = hazeState,
+                    tint = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    alpha = GlassAlpha.MiniPlayer,
+                )
                 .clickable(onClick = onExpand),
         ) {
             val progress = if (song.durationSeconds > 0) {
@@ -73,10 +81,16 @@ fun MiniPlayer(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 10.dp, vertical = 6.dp),
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                MediaArt(coverArt = song.coverArt, colorSeed = song.id.artSeed(), size = 42.dp, cornerRadius = 8.dp)
+                MediaArt(
+                    coverArt = song.coverArt,
+                    colorSeed = song.id.artSeed(),
+                    size = 48.dp,
+                    cornerRadius = OneUiRadius.Chip,
+                    shadowElevation = 0.dp,
+                )
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
                     Text(

@@ -13,6 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -23,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.ui.theme.ArtGradients
+import com.example.samsonic.ui.theme.OneUiRadius
 import kotlin.math.abs
 
 /**
@@ -37,15 +39,28 @@ fun MediaArt(
     colorSeed: Int,
     modifier: Modifier = Modifier,
     size: Dp = 56.dp,
-    cornerRadius: Dp = 10.dp,
+    cornerRadius: Dp = OneUiRadius.Art,
     icon: Boolean = true,
+    shadowElevation: Dp = 6.dp,
 ) {
     val repository = LocalAppContainer.current.repository
     val density = LocalDensity.current
     val pixelSize = remember(size, density) { with(density) { size.roundToPx() }.coerceAtLeast(64) }
     val url = remember(coverArt, pixelSize) { repository.coverArtUrl(coverArt, pixelSize) }
 
-    Box(modifier = modifier.size(size).clip(RoundedCornerShape(cornerRadius))) {
+    val shape = RoundedCornerShape(cornerRadius)
+    Box(
+        modifier = modifier
+            .size(size)
+            .shadow(
+                elevation = shadowElevation,
+                shape = shape,
+                clip = false,
+                ambientColor = Color.Black.copy(alpha = 0.45f),
+                spotColor = Color.Black.copy(alpha = 0.45f),
+            )
+            .clip(shape),
+    ) {
         GradientPlaceholder(colorSeed = colorSeed, icon = icon, iconSize = size * 0.36f)
         if (url != null) {
             AsyncImage(
