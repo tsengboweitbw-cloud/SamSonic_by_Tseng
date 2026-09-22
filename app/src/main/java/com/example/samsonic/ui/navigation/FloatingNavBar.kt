@@ -70,13 +70,13 @@ fun FloatingNavBar(
                     contentDescription = destination.label,
                     tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                Text(
-                    text = destination.label,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                //Text(
+                    //text = destination.label,
+                    //style = MaterialTheme.typography.labelSmall,
+                    //color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    //maxLines = 1,
+                    //overflow = TextOverflow.Ellipsis,
+                //)
             }
         }
     }

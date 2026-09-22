@@ -105,12 +105,11 @@ fun SamSonicNavHost() {
             val navBarReserve = if (showChrome && showBottomBar) navBarHeight + navBarBottomInset else 0.dp
             val miniPlayerReserve = if (showChrome) OneUiChrome.BarHeight + 8.dp else 0.dp
 
+            Box(modifier = Modifier.fillMaxSize().hazeSource(hazeState)) {
             NavHost(
                 navController = navController,
                 startDestination = startDestination,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .hazeSource(hazeState),
+                modifier = Modifier.fillMaxSize(),
                 enterTransition = { fadeIn(tween(180)) },
                 exitTransition = { fadeOut(tween(180)) },
             ) {
@@ -206,6 +205,7 @@ fun SamSonicNavHost() {
                 ) {
                     QueueScreen(onCollapse = { navController.popBackStack() })
                 }
+            }
             }
 
             if (showChrome) {
