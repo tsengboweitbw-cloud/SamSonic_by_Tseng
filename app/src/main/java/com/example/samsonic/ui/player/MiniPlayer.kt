@@ -8,6 +8,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -36,6 +37,7 @@ import com.example.samsonic.model.artSeed
 import com.example.samsonic.ui.components.MediaArt
 import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.LocalHazeState
+import com.example.samsonic.ui.theme.OneUiChrome
 import com.example.samsonic.ui.theme.OneUiRadius
 import com.example.samsonic.ui.theme.glassSurface
 
@@ -55,10 +57,21 @@ fun MiniPlayer(
     ) {
         if (song == null) return@AnimatedVisibility
         val hazeState = LocalHazeState.current
+
+        // Art sits flush left of the row; the progress track below starts
+        // only after it, so the two never overlap horizontally.
+        val rowHorizontalPadding = 16.dp
+        val artSize = 44.dp
+        val artTextSpacing = 10.dp
+        val progressStart = rowHorizontalPadding + artSize + artTextSpacing
+
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp)
+                // Same total thickness as the floating nav bar, so the two
+                // bars are literally the same pill height, not just similar.
+                .height(OneUiChrome.BarHeight)
                 .glassSurface(
                     // Same fully-rounded pill as FloatingNavBar, so the two
                     // floating bars read as one consistent shape language.
@@ -68,40 +81,24 @@ fun MiniPlayer(
                     alpha = GlassAlpha.MiniPlayer,
                 )
                 .clickable(onClick = onExpand),
+            // Centers the row + progress track as one block within the fixed
+            // bar height, keeping both clear of the pill's rounded top/bottom.
+            verticalArrangement = Arrangement.Center,
         ) {
-            val progress = if (song.durationSeconds > 0) {
-                (player.positionSeconds / song.durationSeconds).coerceIn(0f, 1f)
-            } else 0f
-            LinearProgressIndicator(
-                progress = { progress },
-                // Inset from the edges so the pill's rounded ends don't clip
-                // the track (a full-bleed bar would vanish under the curve).
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 32.dp)
-                    .padding(top = 10.dp)
-                    .height(2.dp)
-                    .clip(RoundedCornerShape(50)),
-                color = MaterialTheme.colorScheme.primary,
-                trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-            )
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    // Wider horizontal inset than a plain card needs, so the
-                    // art and buttons clear the pill's large rounded ends
-                    // instead of sitting flush against the curve.
-                    .padding(horizontal = 20.dp, vertical = 10.dp),
+                    .padding(horizontal = rowHorizontalPadding),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 MediaArt(
                     coverArt = song.coverArt,
                     colorSeed = song.id.artSeed(),
-                    size = 48.dp,
+                    size = artSize,
                     cornerRadius = OneUiRadius.Chip,
                     shadowElevation = 0.dp,
                 )
-                Spacer(Modifier.width(10.dp))
+                Spacer(Modifier.width(artTextSpacing))
                 Column(Modifier.weight(1f)) {
                     Text(
                         text = song.title,
@@ -127,6 +124,24 @@ fun MiniPlayer(
                     Icon(Icons.Filled.SkipNext, contentDescription = "Next")
                 }
             }
+
+            Spacer(Modifier.height(4.dp))
+
+            val progress = if (song.durationSeconds > 0) {
+                (player.positionSeconds / song.durationSeconds).coerceIn(0f, 1f)
+            } else 0f
+            LinearProgressIndicator(
+                progress = { progress },
+                // Starts past the art (no horizontal overlap with it) and
+                // stays inset from the pill's trailing curve too.
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = progressStart, end = rowHorizontalPadding)
+                    .height(2.dp)
+                    .clip(RoundedCornerShape(50)),
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+            )
         }
     }
 }

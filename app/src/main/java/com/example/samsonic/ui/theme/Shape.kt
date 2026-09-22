@@ -14,6 +14,12 @@ object OneUiRadius {
     val Pill = 100.dp
 }
 
+// Shared sizing for the floating chrome (bottom nav bar, mini player) so both
+// bars are literally the same thickness, not just visually similar pills.
+object OneUiChrome {
+    val BarHeight = 64.dp
+}
+
 val Shapes = Shapes(
     extraSmall = RoundedCornerShape(OneUiRadius.Chip),
     small = RoundedCornerShape(16.dp),

@@ -43,6 +43,7 @@ import com.example.samsonic.ui.player.QueueScreen
 import com.example.samsonic.ui.search.SearchScreen
 import com.example.samsonic.ui.settings.SettingsScreen
 import com.example.samsonic.ui.theme.LocalHazeState
+import com.example.samsonic.ui.theme.OneUiChrome
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 
@@ -94,7 +95,7 @@ fun SamSonicNavHost() {
     val showBottomBar = showChrome && currentRoute != Routes.SETTINGS
 
     val hazeState = rememberHazeState()
-    val navBarHeight = 64.dp
+    val navBarHeight = OneUiChrome.BarHeight
     val navBarBottomInset = 16.dp
 
     Scaffold(containerColor = MaterialTheme.colorScheme.background) { innerPadding ->
@@ -102,7 +103,7 @@ fun SamSonicNavHost() {
         Box(modifier = Modifier.fillMaxSize()) {
             val systemBarInset = if (showChrome) innerPadding.calculateBottomPadding() else 0.dp
             val navBarReserve = if (showChrome && showBottomBar) navBarHeight + navBarBottomInset else 0.dp
-            val miniPlayerReserve = if (showChrome) 80.dp else 0.dp
+            val miniPlayerReserve = if (showChrome) OneUiChrome.BarHeight + 8.dp else 0.dp
 
             NavHost(
                 navController = navController,
