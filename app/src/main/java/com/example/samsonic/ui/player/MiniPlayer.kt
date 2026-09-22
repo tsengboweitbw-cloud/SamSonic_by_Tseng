@@ -8,7 +8,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,6 +15,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -59,13 +59,16 @@ fun MiniPlayer(
         val hazeState = LocalHazeState.current
 
         // Art sits flush left of the row; the progress track below starts
-        // only after it, so the two never overlap horizontally.
+        // only after it, so the two never overlap horizontally. It ends at
+        // the horizontal middle of the "next" button, not the full width.
         val rowHorizontalPadding = 16.dp
         val artSize = 44.dp
         val artTextSpacing = 10.dp
+        val iconButtonSize = 48.dp
         val progressStart = rowHorizontalPadding + artSize + artTextSpacing
+        val progressEnd = rowHorizontalPadding + iconButtonSize / 2
 
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp)
@@ -81,12 +84,12 @@ fun MiniPlayer(
                     alpha = GlassAlpha.MiniPlayer,
                 )
                 .clickable(onClick = onExpand),
-            // Centers the row + progress track as one block within the fixed
-            // bar height, keeping both clear of the pill's rounded top/bottom.
-            verticalArrangement = Arrangement.Center,
         ) {
+            // Centered on the pill's true vertical midpoint - independent of
+            // the progress track below, so the art never skews off-center.
             Row(
                 modifier = Modifier
+                    .align(Alignment.Center)
                     .fillMaxWidth()
                     .padding(horizontal = rowHorizontalPadding),
                 verticalAlignment = Alignment.CenterVertically,
@@ -114,18 +117,22 @@ fun MiniPlayer(
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-                IconButton(onClick = { player.togglePlayPause() }) {
+                IconButton(
+                    onClick = { player.togglePlayPause() },
+                    modifier = Modifier.size(iconButtonSize),
+                ) {
                     Icon(
                         imageVector = if (player.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                         contentDescription = if (player.isPlaying) "Pause" else "Play",
                     )
                 }
-                IconButton(onClick = { player.skipNext() }) {
+                IconButton(
+                    onClick = { player.skipNext() },
+                    modifier = Modifier.size(iconButtonSize),
+                ) {
                     Icon(Icons.Filled.SkipNext, contentDescription = "Next")
                 }
             }
-
-            Spacer(Modifier.height(4.dp))
 
             val progress = if (song.durationSeconds > 0) {
                 (player.positionSeconds / song.durationSeconds).coerceIn(0f, 1f)
@@ -133,10 +140,12 @@ fun MiniPlayer(
             LinearProgressIndicator(
                 progress = { progress },
                 // Starts past the art (no horizontal overlap with it) and
-                // stays inset from the pill's trailing curve too.
+                // ends at the "next" button's midpoint, not the full width.
                 modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(bottom = 10.dp)
                     .fillMaxWidth()
-                    .padding(start = progressStart, end = rowHorizontalPadding)
+                    .padding(start = progressStart, end = progressEnd)
                     .height(2.dp)
                     .clip(RoundedCornerShape(50)),
                 color = MaterialTheme.colorScheme.primary,

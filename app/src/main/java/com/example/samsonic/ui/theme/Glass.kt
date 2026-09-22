@@ -39,7 +39,7 @@ fun Modifier.glassSurface(
     hazeState: HazeState?,
     tint: Color,
     alpha: Float = GlassAlpha.Card,
-    blurRadius: Dp = 28.dp,
+    blurRadius: Dp = 44.dp,
 ): Modifier {
     val clipped = clip(shape)
     val filled = if (hazeState != null) {
