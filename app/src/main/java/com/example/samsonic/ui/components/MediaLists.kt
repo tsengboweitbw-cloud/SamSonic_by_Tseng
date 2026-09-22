@@ -22,12 +22,15 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.model.Album
 import com.example.samsonic.model.Artist
 import com.example.samsonic.model.Playlist
@@ -70,12 +73,13 @@ fun AlbumCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val cornerRadius by LocalAppContainer.current.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
     Column(
         modifier = modifier
             .widthIn(max = 140.dp)
             .clickable(onClick = onClick),
     ) {
-        MediaArt(coverArt = album.coverArt, colorSeed = album.id.artSeed(), size = 140.dp)
+        MediaArt(coverArt = album.coverArt, colorSeed = album.id.artSeed(), size = 140.dp, cornerRadius = cornerRadius)
         Spacer(Modifier.height(8.dp))
         Text(
             text = album.title,
@@ -134,12 +138,13 @@ fun PlaylistCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val cornerRadius by LocalAppContainer.current.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
     Column(
         modifier = modifier
             .widthIn(max = 140.dp)
             .clickable(onClick = onClick),
     ) {
-        MediaArt(coverArt = playlist.coverArt, colorSeed = playlist.id.artSeed(), size = 140.dp)
+        MediaArt(coverArt = playlist.coverArt, colorSeed = playlist.id.artSeed(), size = 140.dp, cornerRadius = cornerRadius)
         Spacer(Modifier.height(8.dp))
         Text(
             text = playlist.name,

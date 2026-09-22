@@ -25,9 +25,11 @@ import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.RoundedCorner
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -48,6 +50,7 @@ import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.OneUiRadius
 import com.example.samsonic.ui.theme.glassSurface
 import com.example.samsonic.ui.theme.toHexRgb
+import kotlin.math.roundToInt
 
 @Composable
 fun SettingsScreen(
@@ -61,6 +64,7 @@ fun SettingsScreen(
     val credentials by container.sessionManager.credentials.collectAsStateWithLifecycle()
     val themeMode by container.themeManager.themeMode.collectAsStateWithLifecycle()
     val accentColor by container.themeManager.accentColor.collectAsStateWithLifecycle()
+    val albumArtCornerRadius by container.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
     var showColorPicker by remember { mutableStateOf(false) }
 
     LazyColumn(
@@ -145,6 +149,14 @@ fun SettingsScreen(
                     value = "#${accentColor.toHexRgb()}",
                     onClick = { showColorPicker = true },
                 )
+                SliderRow(
+                    icon = Icons.Filled.RoundedCorner,
+                    title = "Album art roundness",
+                    valueLabel = "${albumArtCornerRadius.value.roundToInt()}dp",
+                    value = albumArtCornerRadius.value,
+                    valueRange = 0f..48f,
+                    onValueChange = { container.themeManager.setAlbumArtCornerRadius(it.dp) },
+                )
             }
         }
 
@@ -213,6 +225,41 @@ private fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
             ),
     ) {
         content()
+    }
+}
+
+@Composable
+private fun SliderRow(
+    icon: ImageVector,
+    title: String,
+    valueLabel: String,
+    value: Float,
+    valueRange: ClosedFloatingPointRange<Float>,
+    onValueChange: (Float) -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(22.dp))
+                Spacer(Modifier.width(14.dp))
+                Text(text = title, style = MaterialTheme.typography.bodyLarge)
+            }
+            Text(text = valueLabel, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+        Slider(
+            value = value,
+            onValueChange = onValueChange,
+            valueRange = valueRange,
+            modifier = Modifier.fillMaxWidth(),
+        )
     }
 }
 
