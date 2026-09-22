@@ -88,7 +88,10 @@ fun SamSonicNavHost() {
     }
 
     val showChrome = currentRoute == null || currentRoute !in noChromeRoutes
-    val showBottomBar = currentRoute == null || bottomDestinations.any { it.route == currentRoute }
+    // The floating nav bar stays up everywhere chrome shows except Settings -
+    // only the settings screen and the big player surfaces (now playing,
+    // lyrics, queue - already excluded via noChromeRoutes) hide it.
+    val showBottomBar = showChrome && currentRoute != Routes.SETTINGS
 
     val hazeState = rememberHazeState()
     val navBarHeight = 64.dp
@@ -149,6 +152,7 @@ fun SamSonicNavHost() {
                                 popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
                             }
                         },
+                        contentPaddingBottom = systemBarInset + miniPlayerReserve,
                     )
                 }
                 composable(Routes.ARTIST) { entry ->
@@ -157,15 +161,24 @@ fun SamSonicNavHost() {
                         artistId = artistId,
                         onBack = { navController.popBackStack() },
                         onAlbumClick = { navController.navigate(Routes.album(it.id)) },
+                        contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve,
                     )
                 }
                 composable(Routes.ALBUM) { entry ->
                     val albumId = entry.arguments?.getString("albumId") ?: return@composable
-                    AlbumDetailScreen(albumId = albumId, onBack = { navController.popBackStack() })
+                    AlbumDetailScreen(
+                        albumId = albumId,
+                        onBack = { navController.popBackStack() },
+                        contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve,
+                    )
                 }
                 composable(Routes.PLAYLIST) { entry ->
                     val playlistId = entry.arguments?.getString("playlistId") ?: return@composable
-                    PlaylistDetailScreen(playlistId = playlistId, onBack = { navController.popBackStack() })
+                    PlaylistDetailScreen(
+                        playlistId = playlistId,
+                        onBack = { navController.popBackStack() },
+                        contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve,
+                    )
                 }
                 composable(
                     Routes.NOW_PLAYING,

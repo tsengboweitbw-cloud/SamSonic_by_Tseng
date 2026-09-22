@@ -2,6 +2,7 @@ package com.example.samsonic.ui.library
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -30,6 +31,7 @@ import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.model.Playlist
@@ -47,6 +49,7 @@ fun PlaylistDetailScreen(
     playlistId: String,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
+    contentPaddingBottom: Dp = 0.dp,
 ) {
     val player = LocalPlayerState.current
     val repository = LocalAppContainer.current.repository
@@ -70,7 +73,10 @@ fun PlaylistDetailScreen(
             }
         }
         StateContent(state = state, modifier = Modifier.fillMaxSize()) { (playlist, songs) ->
-            LazyColumn(modifier = Modifier.fillMaxSize()) {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(bottom = contentPaddingBottom),
+            ) {
                 item {
                     Column(
                         modifier = Modifier
