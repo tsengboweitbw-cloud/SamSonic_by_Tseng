@@ -1,0 +1,213 @@
+package com.example.samsonic.playback
+
+import android.content.ComponentName
+import android.content.Context
+import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshots.SnapshotStateList
+import androidx.compose.runtime.toMutableStateList
+import androidx.core.net.toUri
+import androidx.media3.common.MediaItem
+import androidx.media3.common.MediaMetadata
+import androidx.media3.common.Player
+import androidx.media3.session.MediaController
+import androidx.media3.session.SessionToken
+import com.example.samsonic.data.SubsonicRepository
+import com.example.samsonic.model.Song
+import com.google.common.util.concurrent.MoreExecutors
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+
+enum class RepeatMode { OFF, ALL, ONE }
+
+/**
+ * UI-facing playback state, backed by a real Media3 [MediaController] bound to
+ * [PlaybackService]. Owned by [com.example.samsonic.AppContainer] (application-scoped) so
+ * playback and its notification/lock-screen controls survive Activity recreation and
+ * backgrounding the app.
+ */
+class PlayerState(
+    private val context: Context,
+    private val repository: SubsonicRepository,
+    private val scope: CoroutineScope,
+) {
+    private var controller: MediaController? = null
+    private var songById: Map<String, Song> = emptyMap()
+    private var sleepTimerJob: Job? = null
+
+    var isReady by mutableStateOf(false)
+        private set
+    var currentSong by mutableStateOf<Song?>(null)
+        private set
+    var isPlaying by mutableStateOf(false)
+        private set
+    var positionSeconds by mutableFloatStateOf(0f)
+        private set
+    var shuffle by mutableStateOf(false)
+        private set
+    var repeatMode by mutableStateOf(RepeatMode.OFF)
+        private set
+    var sleepTimerMinutes by mutableStateOf<Int?>(null)
+        private set
+    var queue: SnapshotStateList<Song> = mutableListOf<Song>().toMutableStateList()
+        private set
+    var currentIndex by mutableStateOf(-1)
+        private set
+    private var likedOverrides by mutableStateOf(mapOf<String, Boolean>())
+
+    private val playerListener = object : Player.Listener {
+        override fun onIsPlayingChanged(isPlaying: Boolean) {
+            this@PlayerState.isPlaying = isPlaying
+        }
+
+        override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+            currentIndex = controller?.currentMediaItemIndex ?: -1
+            currentSong = mediaItem?.mediaId?.let { songById[it] }
+            positionSeconds = 0f
+        }
+
+        override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
+            shuffle = shuffleModeEnabled
+        }
+
+        override fun onRepeatModeChanged(mode: Int) {
+            repeatMode = mode.toRepeatMode()
+        }
+    }
+
+    init {
+        scope.launch {
+            while (true) {
+                controller?.let { c -> if (c.isPlaying) positionSeconds = c.currentPosition / 1000f }
+                delay(500)
+            }
+        }
+    }
+
+    fun connect() {
+        val sessionToken = SessionToken(context, ComponentName(context, PlaybackService::class.java))
+        val future = MediaController.Builder(context, sessionToken).buildAsync()
+        future.addListener({
+            val c = future.get()
+            controller = c
+            c.addListener(playerListener)
+            isPlaying = c.isPlaying
+            shuffle = c.shuffleModeEnabled
+            repeatMode = c.repeatMode.toRepeatMode()
+            isReady = true
+        }, MoreExecutors.directExecutor())
+    }
+
+    fun play(song: Song, playbackContext: List<Song>) {
+        val c = controller ?: return
+        songById = songById + playbackContext.associateBy { it.id }
+        queue.clear()
+        queue.addAll(playbackContext)
+        val startIndex = playbackContext.indexOf(song).coerceAtLeast(0)
+        c.setMediaItems(playbackContext.map { it.toMediaItem() }, startIndex, 0L)
+        c.prepare()
+        c.play()
+    }
+
+    fun playQueueIndex(index: Int) {
+        val c = controller ?: return
+        if (index !in queue.indices) return
+        c.seekTo(index, 0L)
+        c.play()
+    }
+
+    fun togglePlayPause() {
+        val c = controller ?: return
+        if (c.isPlaying) c.pause() else c.play()
+    }
+
+    fun skipNext() {
+        controller?.seekToNext()
+    }
+
+    fun skipPrevious() {
+        val c = controller ?: return
+        if (c.currentPosition > 3000) c.seekTo(0) else c.seekToPrevious()
+    }
+
+    fun seekToFraction(fraction: Float) {
+        val c = controller ?: return
+        val song = currentSong ?: return
+        c.seekTo((fraction.coerceIn(0f, 1f) * song.durationSeconds * 1000).toLong())
+    }
+
+    fun toggleShuffle() {
+        val c = controller ?: return
+        c.shuffleModeEnabled = !c.shuffleModeEnabled
+    }
+
+    fun cycleRepeat() {
+        val c = controller ?: return
+        c.repeatMode = when (repeatMode) {
+            RepeatMode.OFF -> Player.REPEAT_MODE_ALL
+            RepeatMode.ALL -> Player.REPEAT_MODE_ONE
+            RepeatMode.ONE -> Player.REPEAT_MODE_OFF
+        }
+    }
+
+    fun setSleepTimer(minutes: Int?) {
+        sleepTimerJob?.cancel()
+        sleepTimerMinutes = minutes
+        if (minutes != null) {
+            sleepTimerJob = scope.launch {
+                delay(minutes * 60_000L)
+                controller?.pause()
+                sleepTimerMinutes = null
+            }
+        }
+    }
+
+    /** Stops playback and clears the queue - used when signing out so the mini player doesn't
+     *  keep showing a track from the account that was just signed out of. */
+    fun stopAndClearQueue() {
+        controller?.stop()
+        controller?.clearMediaItems()
+        queue.clear()
+        currentIndex = -1
+        currentSong = null
+    }
+
+    fun isLiked(song: Song): Boolean = likedOverrides[song.id] ?: song.liked
+
+    fun toggleLike(song: Song) {
+        val newValue = !isLiked(song)
+        likedOverrides = likedOverrides + (song.id to newValue)
+        scope.launch {
+            runCatching { if (newValue) repository.star(song.id) else repository.unstar(song.id) }
+        }
+    }
+
+    private fun Song.toMediaItem(): MediaItem {
+        val metadata = MediaMetadata.Builder()
+            .setTitle(title)
+            .setArtist(artistName)
+            .setAlbumTitle(albumTitle)
+            .apply { repository.coverArtUrl(coverArt)?.let { setArtworkUri(it.toUri()) } }
+            .build()
+        return MediaItem.Builder()
+            .setMediaId(id)
+            .setUri(repository.streamUrl(id))
+            .setMediaMetadata(metadata)
+            .build()
+    }
+
+    private fun Int.toRepeatMode(): RepeatMode = when (this) {
+        Player.REPEAT_MODE_ALL -> RepeatMode.ALL
+        Player.REPEAT_MODE_ONE -> RepeatMode.ONE
+        else -> RepeatMode.OFF
+    }
+}
+
+val LocalPlayerState = compositionLocalOf<PlayerState> {
+    error("PlayerState not provided - wrap the app in CompositionLocalProvider(LocalPlayerState provides ...)")
+}

@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  SamSonic connects to a self-hosted Navidrome/Subsonic server that the user points it at,
+  often over plain HTTP on a home LAN or with a self-signed certificate. This config trusts
+  user-added CAs (for self-signed certs) and allows cleartext HTTP for all hosts, since the
+  server address is user-supplied and not known at build time.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>
