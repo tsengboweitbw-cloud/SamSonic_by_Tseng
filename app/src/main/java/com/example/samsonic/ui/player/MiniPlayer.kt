@@ -88,7 +88,10 @@ fun MiniPlayer(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                    // Wider horizontal inset than a plain card needs, so the
+                    // art and buttons clear the pill's large rounded ends
+                    // instead of sitting flush against the curve.
+                    .padding(horizontal = 20.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 MediaArt(
