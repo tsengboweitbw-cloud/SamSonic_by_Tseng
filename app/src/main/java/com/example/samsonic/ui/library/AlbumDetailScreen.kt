@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.PlayArrow
@@ -29,7 +30,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.LocalAppContainer
@@ -41,6 +41,7 @@ import com.example.samsonic.ui.common.StateContent
 import com.example.samsonic.ui.common.UiState
 import com.example.samsonic.ui.components.MediaArt
 import com.example.samsonic.ui.components.SongRow
+import com.example.samsonic.ui.theme.OneUiRadius
 import com.example.samsonic.util.formatAlbumDuration
 
 @Composable
@@ -84,8 +85,7 @@ fun AlbumDetailScreen(
                             coverArt = album.coverArt,
                             colorSeed = album.id.artSeed(),
                             size = 200.dp,
-                            cornerRadius = 18.dp,
-                            modifier = Modifier.clip(MaterialTheme.shapes.large),
+                            cornerRadius = OneUiRadius.Hero,
                         )
                         Spacer(Modifier.height(16.dp))
                         Text(text = album.title, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
@@ -106,16 +106,22 @@ fun AlbumDetailScreen(
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             Button(
                                 onClick = { if (songs.isNotEmpty()) player.play(songs.first(), songs) },
+                                shape = RoundedCornerShape(OneUiRadius.Pill),
                                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                                modifier = Modifier.height(52.dp),
                             ) {
                                 Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
                                 Spacer(Modifier.width(6.dp))
                                 Text("Play")
                             }
-                            OutlinedButton(onClick = {
-                                val shuffled = songs.shuffled()
-                                if (shuffled.isNotEmpty()) player.play(shuffled.first(), shuffled)
-                            }) {
+                            OutlinedButton(
+                                onClick = {
+                                    val shuffled = songs.shuffled()
+                                    if (shuffled.isNotEmpty()) player.play(shuffled.first(), shuffled)
+                                },
+                                shape = RoundedCornerShape(OneUiRadius.Pill),
+                                modifier = Modifier.height(52.dp),
+                            ) {
                                 Icon(Icons.Filled.Shuffle, contentDescription = null, modifier = Modifier.size(18.dp))
                                 Spacer(Modifier.width(6.dp))
                                 Text("Shuffle")

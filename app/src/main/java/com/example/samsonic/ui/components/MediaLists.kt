@@ -36,7 +36,6 @@ import com.example.samsonic.model.artSeed
 import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.OneUiRadius
 import com.example.samsonic.ui.theme.glassSurface
-import com.example.samsonic.ui.theme.LocalHazeState
 import com.example.samsonic.util.formatDuration
 
 @Composable
@@ -168,7 +167,9 @@ fun SongRow(
     onMoreClick: (() -> Unit)? = null,
     leading: @Composable (() -> Unit)? = null,
 ) {
-    val hazeState = LocalHazeState.current
+    // No hazeState here: this row is nested inside the NavHost's own hazeSource
+    // subtree, and haze warns that a hazeEffect nested inside its own hazeSource
+    // can cause recursive drawing - so this falls back to a flat translucent fill.
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -178,7 +179,7 @@ fun SongRow(
                         .padding(horizontal = 8.dp, vertical = 2.dp)
                         .glassSurface(
                             shape = RoundedCornerShape(OneUiRadius.Chip),
-                            hazeState = hazeState,
+                            hazeState = null,
                             tint = MaterialTheme.colorScheme.primary,
                             alpha = GlassAlpha.Card,
                         )

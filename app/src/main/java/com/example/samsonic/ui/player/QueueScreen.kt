@@ -2,7 +2,6 @@ package com.example.samsonic.ui.player
 
 import com.example.samsonic.playback.LocalPlayerState
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,6 +14,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Equalizer
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -30,6 +30,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.model.artSeed
 import com.example.samsonic.ui.components.MediaArt
+import com.example.samsonic.ui.theme.GlassAlpha
+import com.example.samsonic.ui.theme.OneUiRadius
+import com.example.samsonic.ui.theme.glassSurface
 import com.example.samsonic.util.formatDuration
 
 @Composable
@@ -62,12 +65,24 @@ fun QueueScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .padding(horizontal = if (isCurrent) 12.dp else 0.dp, vertical = if (isCurrent) 2.dp else 0.dp)
+                        .then(
+                            if (isCurrent) {
+                                // No hazeState: nested inside the NavHost's own hazeSource
+                                // subtree (see MediaLists.SongRow comment) - flat fill only.
+                                Modifier.glassSurface(
+                                    shape = RoundedCornerShape(OneUiRadius.Chip),
+                                    hazeState = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    alpha = GlassAlpha.Card,
+                                )
+                            } else {
+                                Modifier
+                            }
+                        )
                         .clickable {
                             player.playQueueIndex(player.queue.indexOf(song))
                         }
-                        .background(
-                            if (isCurrent) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.background
-                        )
                         .padding(horizontal = 20.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -81,7 +96,13 @@ fun QueueScreen(
                                 .width(20.dp),
                         )
                     } else {
-                        MediaArt(coverArt = song.coverArt, colorSeed = song.id.artSeed(), size = 40.dp, cornerRadius = 8.dp)
+                        MediaArt(
+                            coverArt = song.coverArt,
+                            colorSeed = song.id.artSeed(),
+                            size = 40.dp,
+                            cornerRadius = OneUiRadius.Chip,
+                            shadowElevation = 0.dp,
+                        )
                         Spacer(Modifier.width(10.dp))
                     }
                     Column(Modifier.weight(1f)) {

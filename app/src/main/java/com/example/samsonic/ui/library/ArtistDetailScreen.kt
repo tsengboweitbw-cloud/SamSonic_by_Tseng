@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.PlayArrow
@@ -45,6 +46,7 @@ import com.example.samsonic.ui.components.HorizontalCarousel
 import com.example.samsonic.ui.components.MediaArt
 import com.example.samsonic.ui.components.SectionHeader
 import com.example.samsonic.ui.components.SongRow
+import com.example.samsonic.ui.theme.OneUiRadius
 
 private data class ArtistDetail(
     val artist: Artist,
@@ -116,16 +118,22 @@ fun ArtistDetailScreen(
                         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             Button(
                                 onClick = { if (topSongs.isNotEmpty()) player.play(topSongs.first(), topSongs) },
+                                shape = RoundedCornerShape(OneUiRadius.Pill),
                                 colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                                modifier = Modifier.height(52.dp),
                             ) {
                                 Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
                                 Spacer(Modifier.width(6.dp))
                                 Text("Play")
                             }
-                            OutlinedButton(onClick = {
-                                val shuffled = topSongs.shuffled()
-                                if (shuffled.isNotEmpty()) player.play(shuffled.first(), shuffled)
-                            }) {
+                            OutlinedButton(
+                                onClick = {
+                                    val shuffled = topSongs.shuffled()
+                                    if (shuffled.isNotEmpty()) player.play(shuffled.first(), shuffled)
+                                },
+                                shape = RoundedCornerShape(OneUiRadius.Pill),
+                                modifier = Modifier.height(52.dp),
+                            ) {
                                 Icon(Icons.Filled.Shuffle, contentDescription = null, modifier = Modifier.size(18.dp))
                                 Spacer(Modifier.width(6.dp))
                                 Text("Shuffle")

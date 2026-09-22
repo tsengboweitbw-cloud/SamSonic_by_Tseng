@@ -1,6 +1,5 @@
 package com.example.samsonic.ui.settings
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -32,12 +31,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.playback.LocalPlayerState
+import com.example.samsonic.ui.theme.GlassAlpha
+import com.example.samsonic.ui.theme.OneUiRadius
+import com.example.samsonic.ui.theme.glassSurface
 
 @Composable
 fun SettingsScreen(
@@ -148,12 +149,18 @@ private fun GroupLabel(text: String) {
 
 @Composable
 private fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
+    // No hazeState: nested inside the NavHost's own hazeSource subtree (see
+    // MediaLists.SongRow comment) - falls back to a flat translucent fill.
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerHigh),
+            .glassSurface(
+                shape = RoundedCornerShape(OneUiRadius.Card),
+                hazeState = null,
+                tint = MaterialTheme.colorScheme.surfaceContainerHigh,
+                alpha = GlassAlpha.Sheet,
+            ),
     ) {
         content()
     }

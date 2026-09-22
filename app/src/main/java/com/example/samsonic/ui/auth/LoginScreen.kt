@@ -40,6 +40,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.LocalAppContainer
+import com.example.samsonic.ui.theme.OneUiRadius
 import kotlinx.coroutines.launch
 
 @Composable
@@ -173,10 +174,10 @@ fun LoginScreen(
             onClick = { connect() },
             enabled = !isConnecting,
             colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-            shape = RoundedCornerShape(14.dp),
+            shape = RoundedCornerShape(OneUiRadius.Pill),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(50.dp),
+                .height(56.dp),
         ) {
             if (isConnecting) {
                 CircularProgressIndicator(

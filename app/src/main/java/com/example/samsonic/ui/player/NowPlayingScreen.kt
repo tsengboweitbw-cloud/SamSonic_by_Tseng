@@ -4,6 +4,7 @@ import com.example.samsonic.playback.LocalPlayerState
 import com.example.samsonic.playback.RepeatMode
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -46,12 +47,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.model.artSeed
 import com.example.samsonic.ui.components.MediaArtFill
-import com.example.samsonic.ui.components.artPrimaryColor
+import com.example.samsonic.ui.theme.BlurredArtBackdrop
+import com.example.samsonic.ui.theme.GlassAlpha
+import com.example.samsonic.ui.theme.OneUiRadius
+import com.example.samsonic.ui.theme.glassSurface
 import com.example.samsonic.util.formatDuration
 
 @Composable
@@ -67,23 +70,16 @@ fun NowPlayingScreen(
         return
     }
 
-    val bgTop = artPrimaryColor(song.id.artSeed())
-    val bgBottom = MaterialTheme.colorScheme.background
+    Box(modifier = modifier.fillMaxSize()) {
+        BlurredArtBackdrop(coverArt = song.coverArt, colorSeed = song.id.artSeed())
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(bgTop.copy(alpha = 0.38f), bgBottom),
-                    startY = 0f,
-                    endY = 1400f,
-                )
-            )
-            .statusBarsPadding()
-            .navigationBarsPadding()
-            .padding(horizontal = 24.dp),
-    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding()
+                .padding(horizontal = 24.dp),
+        ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -116,7 +112,7 @@ fun NowPlayingScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(1f)
-                .clip(RoundedCornerShape(24.dp)),
+                .clip(RoundedCornerShape(OneUiRadius.Hero)),
         ) {
             MediaArtFill(coverArt = song.coverArt, colorSeed = song.id.artSeed())
         }
@@ -241,11 +237,25 @@ fun NowPlayingScreen(
                 .padding(bottom = 20.dp),
             horizontalArrangement = Arrangement.Center,
         ) {
-            androidx.compose.material3.TextButton(onClick = onShowLyrics) {
+            Row(
+                modifier = Modifier
+                    // No hazeState: nested inside the NavHost's own hazeSource subtree
+                    // (see MediaLists.SongRow comment) - falls back to a flat translucent fill.
+                    .glassSurface(
+                        shape = RoundedCornerShape(OneUiRadius.Pill),
+                        hazeState = null,
+                        tint = MaterialTheme.colorScheme.surfaceContainerHigh,
+                        alpha = GlassAlpha.Card,
+                    )
+                    .clickable(onClick = onShowLyrics)
+                    .padding(horizontal = 20.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Icon(Icons.Filled.Lyrics, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(6.dp))
+                Spacer(Modifier.width(8.dp))
                 Text("Lyrics")
             }
+        }
         }
     }
 }

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
@@ -35,6 +36,7 @@ import com.example.samsonic.ui.components.ArtistCard
 import com.example.samsonic.ui.components.HorizontalCarousel
 import com.example.samsonic.ui.components.SectionHeader
 import com.example.samsonic.ui.components.SongRow
+import com.example.samsonic.ui.theme.OneUiRadius
 import kotlinx.coroutines.delay
 
 @Composable
@@ -78,7 +80,7 @@ fun SearchScreen(
                 placeholder = { Text("Artists, albums, songs") },
                 leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
                 singleLine = true,
-                shape = MaterialTheme.shapes.large,
+                shape = RoundedCornerShape(OneUiRadius.Pill),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
                     unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
