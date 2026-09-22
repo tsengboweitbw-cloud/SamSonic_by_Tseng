@@ -60,7 +60,9 @@ fun MiniPlayer(
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp)
                 .glassSurface(
-                    shape = RoundedCornerShape(OneUiRadius.Card),
+                    // Same fully-rounded pill as FloatingNavBar, so the two
+                    // floating bars read as one consistent shape language.
+                    shape = RoundedCornerShape(OneUiRadius.Pill),
                     hazeState = hazeState,
                     tint = MaterialTheme.colorScheme.surfaceContainerHigh,
                     alpha = GlassAlpha.MiniPlayer,
@@ -72,9 +74,14 @@ fun MiniPlayer(
             } else 0f
             LinearProgressIndicator(
                 progress = { progress },
+                // Inset from the edges so the pill's rounded ends don't clip
+                // the track (a full-bleed bar would vanish under the curve).
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(2.dp),
+                    .padding(horizontal = 32.dp)
+                    .padding(top = 10.dp)
+                    .height(2.dp)
+                    .clip(RoundedCornerShape(50)),
                 color = MaterialTheme.colorScheme.primary,
                 trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
             )
