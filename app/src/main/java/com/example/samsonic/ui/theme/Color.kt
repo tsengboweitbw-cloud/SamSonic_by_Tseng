@@ -22,8 +22,8 @@ val ObsidianError = Color(0xFFFF6B6B)
 // One UI 9.0 glassmorphism: named translucency levels (0.7-0.85 alpha per
 // Rule.md) plus the thin light rim-stroke drawn along a glass surface's edge.
 object GlassAlpha {
-    const val Nav = 0.7f
-    const val MiniPlayer = 0.7f
+    const val Nav = 0.6f
+    const val MiniPlayer = 0.6f
     const val Card = 0.74f
     const val Sheet = 0.85f
 }

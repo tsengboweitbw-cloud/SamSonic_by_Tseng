@@ -22,6 +22,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -105,7 +106,12 @@ fun SamSonicNavHost() {
             val navBarReserve = if (showChrome && showBottomBar) navBarHeight + navBarBottomInset else 0.dp
             val miniPlayerReserve = if (showChrome) OneUiChrome.BarHeight + 8.dp else 0.dp
 
-            Box(modifier = Modifier.fillMaxSize().hazeSource(hazeState)) {
+            // graphicsLayer() forces this whole subtree (including any
+            // LazyColumn/LazyVerticalGrid screens inside NavHost) to
+            // composite into one flattened layer before hazeSource snapshots
+            // it - LazyColumn content otherwise has known gaps in Haze's
+            // capture (text and item edges stay sharp/unblurred).
+            Box(modifier = Modifier.fillMaxSize().graphicsLayer().hazeSource(hazeState)) {
             NavHost(
                 navController = navController,
                 startDestination = startDestination,
