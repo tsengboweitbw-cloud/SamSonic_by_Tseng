@@ -51,6 +51,7 @@ fun OneUiSlider(
     val activeColor = MaterialTheme.colorScheme.primary
     val inactiveColor = MaterialTheme.colorScheme.surfaceContainerHighest
     val thumbDiameter by animateDpAsState(if (active) 18.dp else 1.dp, label = "OneUiSliderThumb")
+    val trackStrokeWidth by animateDpAsState(if (active) 6.dp else 3.dp, label = "OneUiSliderTrackWidth")
 
     Slider(
         value = value,
@@ -87,7 +88,7 @@ fun OneUiSlider(
             val fraction = sliderState.coercedValueAsFraction
             val activeColorArgb = remember(activeColor) { activeColor.toArgb() }
             Canvas(modifier = Modifier.fillMaxWidth().height(20.dp)) {
-                val strokeWidthPx = 3.dp.toPx()
+                val strokeWidthPx = trackStrokeWidth.toPx()
                 val y = size.height / 2f
                 val activeEndX = size.width * fraction
 
