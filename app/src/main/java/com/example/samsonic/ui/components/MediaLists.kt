@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.MoreVert
@@ -46,6 +47,7 @@ fun SectionHeader(
     modifier: Modifier = Modifier,
     actionLabel: String? = null,
     onActionClick: (() -> Unit)? = null,
+    onTitleClick: (() -> Unit)? = null,
 ) {
     Row(
         modifier = modifier
@@ -54,7 +56,24 @@ fun SectionHeader(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(text = title, style = MaterialTheme.typography.titleLarge)
+        if (onTitleClick != null) {
+            // Title plus a chevron, as one pill-shaped tap target leading to the full list.
+            Row(
+                modifier = Modifier
+                    .clip(RoundedCornerShape(OneUiRadius.Pill))
+                    .clickable(onClick = onTitleClick),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(text = title, style = MaterialTheme.typography.titleLarge)
+                Icon(
+                    Icons.Filled.ChevronRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        } else {
+            Text(text = title, style = MaterialTheme.typography.titleLarge)
+        }
         if (actionLabel != null) {
             Text(
                 text = actionLabel,

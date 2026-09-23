@@ -10,88 +10,59 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.example.samsonic.ui.common.rememberScreenLoad
-import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.model.Album
 import com.example.samsonic.ui.common.StateContent
-import com.example.samsonic.ui.common.ScrollAwayHeader
-import com.example.samsonic.ui.common.UiState
+import com.example.samsonic.ui.common.TitledPage
 import com.example.samsonic.ui.components.AlbumCard
 import com.example.samsonic.ui.components.HorizontalCarousel
+import com.example.samsonic.ui.components.OneUiPullToRefresh
 import com.example.samsonic.ui.components.SectionHeader
 
-private data class HomeSections(
-    val recentlyAdded: List<Album>,
-    val randomPicks: List<Album>,
-    val recentlyPlayed: List<Album>,
-    val mostPlayed: List<Album>,
-)
+/** Shelves that only make sense once the user has play history; hidden while empty. */
+private val historyShelves = setOf(AlbumShelf.RecentlyPlayed, AlbumShelf.MostPlayed)
 
 @Composable
 fun HomeScreen(
     onAlbumClick: (Album) -> Unit,
+    onShelfClick: (AlbumShelf) -> Unit,
     modifier: Modifier = Modifier,
     contentPaddingBottom: Dp = 0.dp,
 ) {
-    val repository = LocalAppContainer.current.repository
+    val viewModel = rememberHomeViewModel()
 
-    val state = rememberScreenLoad(Unit, errorMessage = "Couldn't load your library") {
-        HomeSections(
-            recentlyAdded = repository.getAlbumList("newest", 20),
-            randomPicks = repository.getAlbumList("random", 12),
-            recentlyPlayed = repository.getAlbumList("recent", 12),
-            mostPlayed = repository.getAlbumList("frequent", 12),
-        )
-    }
-
-    ScrollAwayHeader(
+    TitledPage(
         modifier = modifier,
-        header = {
+        title = {
             Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
                 Text(text = "Welcome back", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(text = "Your library", style = MaterialTheme.typography.displaySmall)
             }
         },
-    ) {
-        StateContent(state = state, modifier = Modifier.fillMaxSize()) { sections ->
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(top = 4.dp, bottom = contentPaddingBottom),
+    ) { topPadding ->
+        StateContent(state = viewModel.state, modifier = Modifier.fillMaxSize(), onRetry = viewModel::retry) { sections ->
+            val shown = sections.filter { (shelf, albums) -> albums.isNotEmpty() || shelf !in historyShelves }
+            // Pulling down past the top reloads every shelf, re-rolling "Picked For You".
+            OneUiPullToRefresh(
+                isRefreshing = viewModel.isRefreshing,
+                onRefresh = viewModel::refresh,
+                topInset = topPadding,
             ) {
-                item {
-                    SectionHeader(title = "Recently Added")
-                    HorizontalCarousel(items = sections.recentlyAdded, key = { it.id }) { album ->
-                        AlbumCard(album = album, onClick = { onAlbumClick(album) })
-                    }
-                    Spacer(Modifier.height(20.dp))
-                }
-                item {
-                    SectionHeader(title = "Picked For You")
-                    HorizontalCarousel(items = sections.randomPicks, key = { it.id }) { album ->
-                        AlbumCard(album = album, onClick = { onAlbumClick(album) })
-                    }
-                    Spacer(Modifier.height(20.dp))
-                }
-                if (sections.recentlyPlayed.isNotEmpty()) {
-                    item {
-                        SectionHeader(title = "Recently Played")
-                        HorizontalCarousel(items = sections.recentlyPlayed, key = { it.id }) { album ->
-                            AlbumCard(album = album, onClick = { onAlbumClick(album) })
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(top = topPadding, bottom = contentPaddingBottom),
+                ) {
+                    shown.entries.forEachIndexed { index, (shelf, albums) ->
+                        item(key = shelf.type) {
+                            // The title opens the shelf's full list as its own page.
+                            SectionHeader(title = shelf.title, onTitleClick = { onShelfClick(shelf) })
+                            HorizontalCarousel(items = albums, key = { it.id }) { album ->
+                                AlbumCard(album = album, onClick = { onAlbumClick(album) })
+                            }
+                            Spacer(Modifier.height(if (index == shown.size - 1) 24.dp else 20.dp))
                         }
-                        Spacer(Modifier.height(20.dp))
-                    }
-                }
-                if (sections.mostPlayed.isNotEmpty()) {
-                    item {
-                        SectionHeader(title = "Most Played")
-                        HorizontalCarousel(items = sections.mostPlayed, key = { it.id }) { album ->
-                            AlbumCard(album = album, onClick = { onAlbumClick(album) })
-                        }
-                        Spacer(Modifier.height(24.dp))
                     }
                 }
             }

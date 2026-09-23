@@ -32,10 +32,9 @@ import com.example.samsonic.model.Album
 import com.example.samsonic.model.Artist
 import com.example.samsonic.model.Genre
 import com.example.samsonic.model.Playlist
-import com.example.samsonic.ui.common.PinnedBarHeader
 import com.example.samsonic.ui.common.StateContent
+import com.example.samsonic.ui.common.TitledPage
 import com.example.samsonic.ui.common.UiState
-import com.example.samsonic.ui.common.rememberPinnedBarHeaderState
 import com.example.samsonic.ui.common.rememberScreenLoad
 import com.example.samsonic.ui.components.AlbumCard
 import com.example.samsonic.ui.components.ArtistCard
@@ -59,7 +58,6 @@ fun LibraryScreen(
     // Saveable, so the tab and each tab's scroll position survive a trip to a
     // detail page and back, not just switching between tabs.
     var selectedTab by rememberSaveable { mutableIntStateOf(1) }
-    val header = rememberPinnedBarHeaderState()
     val artistsGrid = rememberLazyGridState()
     val albumsGrid = rememberLazyGridState()
     val playlistsGrid = rememberLazyGridState()
@@ -85,17 +83,9 @@ fun LibraryScreen(
         rememberScreenLoad(Unit, errorMessage = "Couldn't load genres") { repository.getGenres() }
     } else UiState.Loading
 
-    fun isScrolled(tab: Int): Boolean = when (tab) {
-        0 -> artistsGrid.isScrolled()
-        1 -> albumsGrid.isScrolled()
-        2 -> playlistsGrid.isScrolled()
-        else -> genresList.isScrolled()
-    }
-
     fun onTabSelected(tab: Int) {
         if (tab == selectedTab) {
-            // Tapping the current tab again: back to the top, title and all.
-            scope.launch { header.animateTo(expanded = true) }
+            // Tapping the current tab again: back to the top.
             scope.launch {
                 when (tab) {
                     0 -> artistsGrid.animateScrollToItem(0)
@@ -108,15 +98,11 @@ fun LibraryScreen(
         }
         selectedTab = tab
         if (tab !in visited) visited += tab
-        // The title is shared by all tabs: tuck it away over a tab left
-        // mid-list, bring it back over one that's at its top.
-        scope.launch { header.animateTo(expanded = !isScrolled(tab)) }
     }
 
-    // The title scrolls away; the tab bar rides up and pins where the title started.
-    PinnedBarHeader(
+    // Fixed title, with the tab bar floating as glass right under it.
+    TitledPage(
         modifier = modifier,
-        state = header,
         title = {
             Text(
                 text = "Library",
@@ -145,9 +131,6 @@ fun LibraryScreen(
         }
     }
 }
-
-private fun LazyGridState.isScrolled() = firstVisibleItemIndex > 0 || firstVisibleItemScrollOffset > 0
-private fun LazyListState.isScrolled() = firstVisibleItemIndex > 0 || firstVisibleItemScrollOffset > 0
 
 @Composable
 private fun ArtistGrid(state: UiState<List<Artist>>, gridState: LazyGridState, onArtistClick: (Artist) -> Unit, padding: LibraryPadding) {

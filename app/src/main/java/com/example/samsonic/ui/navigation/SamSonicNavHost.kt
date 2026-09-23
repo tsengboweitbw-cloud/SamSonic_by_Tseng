@@ -33,7 +33,10 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.ui.auth.LoginScreen
+import com.example.samsonic.ui.home.AlbumShelf
+import com.example.samsonic.ui.home.AlbumShelfScreen
 import com.example.samsonic.ui.home.HomeScreen
+import com.example.samsonic.ui.home.rememberHomeViewModel
 import com.example.samsonic.ui.library.AlbumDetailScreen
 import com.example.samsonic.ui.library.ArtistDetailScreen
 import com.example.samsonic.ui.library.LibraryScreen
@@ -57,10 +60,12 @@ private object Routes {
     const val ARTIST = "artist/{artistId}"
     const val ALBUM = "album/{albumId}"
     const val PLAYLIST = "playlist/{playlistId}"
+    const val SHELF = "shelf/{shelfType}"
 
     fun artist(id: String) = "artist/$id"
     fun album(id: String) = "album/$id"
     fun playlist(id: String) = "playlist/$id"
+    fun shelf(type: String) = "shelf/$type"
 }
 
 data class BottomDestination(val route: String, val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector)
@@ -143,6 +148,7 @@ fun SamSonicNavHost() {
                 screen(Routes.HOME) {
                     HomeScreen(
                         onAlbumClick = { navController.navigate(Routes.album(it.id)) },
+                        onShelfClick = { navController.navigate(Routes.shelf(it.type)) },
                         contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve,
                     )
                 }
@@ -168,6 +174,21 @@ fun SamSonicNavHost() {
                                 popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
                             }
                         },
+                        contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve,
+                    )
+                }
+                screen(Routes.SHELF) { entry ->
+                    val shelf = entry.arguments?.getString("shelfType")?.let(AlbumShelf::fromType) ?: return@screen
+                    // A shelf page is only opened from Home, so Home's entry is below it in the stack.
+                    val homeAlbums = if (shelf.sharesHomeList) {
+                        val homeEntry = remember(entry) { navController.getBackStackEntry(Routes.HOME) }
+                        rememberHomeViewModel(homeEntry).shelfState(shelf)
+                    } else null
+                    AlbumShelfScreen(
+                        shelf = shelf,
+                        homeAlbums = homeAlbums,
+                        onBack = { navController.popBackStack() },
+                        onAlbumClick = { navController.navigate(Routes.album(it.id)) },
                         contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve,
                     )
                 }

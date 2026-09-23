@@ -11,11 +11,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
@@ -50,7 +48,7 @@ import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.OneUiRadius
 import com.example.samsonic.ui.theme.glassSurface
 import com.example.samsonic.ui.theme.toHexRgb
-import com.example.samsonic.ui.theme.scrollTopFade
+import com.example.samsonic.ui.common.TitledPage
 import kotlin.math.roundToInt
 
 @Composable
@@ -67,14 +65,10 @@ fun SettingsScreen(
     val albumArtCornerRadius by container.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
     var showColorPicker by remember { mutableStateOf(false) }
 
-    val listState = rememberLazyListState()
-    LazyColumn(
-        modifier = modifier.fillMaxSize().statusBarsPadding().scrollTopFade(listState),
-        state = listState,
-        contentPadding = PaddingValues(bottom = 24.dp + contentPaddingBottom),
-    ) {
-        item {
-            // A nav bar tab like Search and Library, so the same large title and no back button.
+    // A nav bar tab like Search and Library, so the same fixed large title and no back button.
+    TitledPage(
+        modifier = modifier,
+        title = {
             Text(
                 text = "Settings",
                 style = MaterialTheme.typography.displaySmall,
@@ -82,107 +76,112 @@ fun SettingsScreen(
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp, vertical = 8.dp),
             )
-        }
-
-        item { GroupLabel("Server") }
-        item {
-            SettingsCard {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(Icons.Filled.Dns, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(22.dp))
-                    Spacer(Modifier.width(14.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text(text = credentials?.serverUrl ?: "Not connected", style = MaterialTheme.typography.bodyLarge)
-                        Text(
-                            text = credentials?.username?.let { "Signed in as $it" } ?: "",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    if (credentials != null) {
-                        Icon(Icons.Filled.CheckCircle, contentDescription = "Connected", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+        },
+    ) { topPadding ->
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(top = topPadding, bottom = 24.dp + contentPaddingBottom),
+        ) {
+            item { GroupLabel("Server") }
+            item {
+                SettingsCard {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(Icons.Filled.Dns, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(22.dp))
+                        Spacer(Modifier.width(14.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(text = credentials?.serverUrl ?: "Not connected", style = MaterialTheme.typography.bodyLarge)
+                            Text(
+                                text = credentials?.username?.let { "Signed in as $it" } ?: "",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        if (credentials != null) {
+                            Icon(Icons.Filled.CheckCircle, contentDescription = "Connected", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
+                        }
                     }
                 }
             }
-        }
 
-        item { GroupLabel("Playback") }
-        item {
-            SettingsCard {
-                NavRow(
-                    icon = Icons.Filled.Bedtime,
-                    title = "Sleep timer",
-                    value = player.sleepTimerMinutes?.let { "$it min" } ?: "Off",
-                    onClick = {
-                        val options = listOf(null, 15, 30, 45, 60)
-                        val currentIdx = options.indexOf(player.sleepTimerMinutes)
-                        player.setSleepTimer(options[(currentIdx + 1) % options.size])
-                    },
-                )
+            item { GroupLabel("Playback") }
+            item {
+                SettingsCard {
+                    NavRow(
+                        icon = Icons.Filled.Bedtime,
+                        title = "Sleep timer",
+                        value = player.sleepTimerMinutes?.let { "$it min" } ?: "Off",
+                        onClick = {
+                            val options = listOf(null, 15, 30, 45, 60)
+                            val currentIdx = options.indexOf(player.sleepTimerMinutes)
+                            player.setSleepTimer(options[(currentIdx + 1) % options.size])
+                        },
+                    )
+                }
             }
-        }
 
-        item { GroupLabel("Appearance") }
-        item {
-            SettingsCard {
-                NavRow(
-                    icon = Icons.Filled.DarkMode,
-                    title = "Theme",
-                    value = when (themeMode) {
-                        ThemeMode.SYSTEM -> "System"
-                        ThemeMode.LIGHT -> "Light"
-                        ThemeMode.DARK -> "Dark"
-                    },
-                    onClick = {
-                        val modes = ThemeMode.entries
-                        container.themeManager.setThemeMode(modes[(themeMode.ordinal + 1) % modes.size])
-                    },
-                )
-                NavRow(
-                    icon = Icons.Filled.Palette,
-                    title = "Accent color",
-                    value = "#${accentColor.toHexRgb()}",
-                    onClick = { showColorPicker = true },
-                )
-                SliderRow(
-                    icon = Icons.Filled.RoundedCorner,
-                    title = "Album art roundness",
-                    valueLabel = "${albumArtCornerRadius.value.roundToInt()}dp",
-                    value = albumArtCornerRadius.value,
-                    valueRange = 0f..48f,
-                    onValueChange = { container.themeManager.setAlbumArtCornerRadius(it.dp) },
-                )
-                GlassSliderRows(container.themeManager)
+            item { GroupLabel("Appearance") }
+            item {
+                SettingsCard {
+                    NavRow(
+                        icon = Icons.Filled.DarkMode,
+                        title = "Theme",
+                        value = when (themeMode) {
+                            ThemeMode.SYSTEM -> "System"
+                            ThemeMode.LIGHT -> "Light"
+                            ThemeMode.DARK -> "Dark"
+                        },
+                        onClick = {
+                            val modes = ThemeMode.entries
+                            container.themeManager.setThemeMode(modes[(themeMode.ordinal + 1) % modes.size])
+                        },
+                    )
+                    NavRow(
+                        icon = Icons.Filled.Palette,
+                        title = "Accent color",
+                        value = "#${accentColor.toHexRgb()}",
+                        onClick = { showColorPicker = true },
+                    )
+                    SliderRow(
+                        icon = Icons.Filled.RoundedCorner,
+                        title = "Album art roundness",
+                        valueLabel = "${albumArtCornerRadius.value.roundToInt()}dp",
+                        value = albumArtCornerRadius.value,
+                        valueRange = 0f..48f,
+                        onValueChange = { container.themeManager.setAlbumArtCornerRadius(it.dp) },
+                    )
+                    GlassSliderRows(container.themeManager)
+                }
             }
-        }
 
-        item { GroupLabel("Account") }
-        item {
-            SettingsCard {
-                NavRow(
-                    icon = Icons.AutoMirrored.Filled.Logout,
-                    title = "Sign out",
-                    value = "",
-                    tint = MaterialTheme.colorScheme.error,
-                    onClick = {
-                        player.stopAndClearQueue()
-                        container.repository.signOut()
-                        onSignedOut()
-                    },
-                )
+            item { GroupLabel("Account") }
+            item {
+                SettingsCard {
+                    NavRow(
+                        icon = Icons.AutoMirrored.Filled.Logout,
+                        title = "Sign out",
+                        value = "",
+                        tint = MaterialTheme.colorScheme.error,
+                        onClick = {
+                            player.stopAndClearQueue()
+                            container.repository.signOut()
+                            onSignedOut()
+                        },
+                    )
+                }
             }
-        }
 
-        item { GroupLabel("About") }
-        item {
-            SettingsCard {
-                NavRow(icon = Icons.Filled.Info, title = "SamSonic", value = "v0.2.0 • Navidrome/Subsonic", onClick = {})
+            item { GroupLabel("About") }
+            item {
+                SettingsCard {
+                    NavRow(icon = Icons.Filled.Info, title = "SamSonic", value = "v0.2.0 • Navidrome/Subsonic", onClick = {})
+                }
+                Spacer(Modifier.height(8.dp))
             }
-            Spacer(Modifier.height(8.dp))
         }
     }
 

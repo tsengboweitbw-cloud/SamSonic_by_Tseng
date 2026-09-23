@@ -44,12 +44,14 @@ import com.example.samsonic.playback.LocalPlayerState
 import com.example.samsonic.ui.common.StateContent
 import com.example.samsonic.ui.common.UiState
 import com.example.samsonic.ui.components.BackButtonClearance
+import com.example.samsonic.ui.components.backButtonHazeSource
 import com.example.samsonic.ui.components.GlassBackButton
 import com.example.samsonic.ui.components.MediaArt
 import com.example.samsonic.ui.components.SongRow
 import com.example.samsonic.ui.theme.OneUiRadius
 import com.example.samsonic.util.formatAlbumDuration
 import com.example.samsonic.ui.theme.scrollTopFade
+import dev.chrisbanes.haze.rememberHazeState
 
 @Composable
 fun AlbumDetailScreen(
@@ -66,11 +68,12 @@ fun AlbumDetailScreen(
         repository.getAlbum(albumId)
     }
 
+    val backHaze = rememberHazeState()
     Box(modifier = modifier.fillMaxSize().statusBarsPadding()) {
         StateContent(state = state, modifier = Modifier.fillMaxSize()) { (album, songs) ->
             val listState = rememberLazyListState()
             LazyColumn(
-                modifier = Modifier.fillMaxSize().scrollTopFade(listState),
+                modifier = Modifier.fillMaxSize().scrollTopFade(listState).backButtonHazeSource(backHaze),
                 state = listState,
                 contentPadding = PaddingValues(top = BackButtonClearance, bottom = contentPaddingBottom),
             ) {
@@ -152,6 +155,6 @@ fun AlbumDetailScreen(
             }
         }
         // Floats over the list: rows scroll up under it and fade out at the status bar.
-        GlassBackButton(onClick = onBack, modifier = Modifier.padding(start = 16.dp, top = 8.dp))
+        GlassBackButton(onClick = onBack, hazeState = backHaze, modifier = Modifier.padding(start = 16.dp, top = 8.dp))
     }
 }
