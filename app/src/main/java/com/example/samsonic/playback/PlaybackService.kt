@@ -2,16 +2,22 @@ package com.example.samsonic.playback
 
 import android.app.PendingIntent
 import android.content.Intent
+import android.os.Bundle
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
+import androidx.media3.common.Player
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
+import androidx.media3.session.SessionCommand
+import androidx.media3.session.SessionResult
 import com.example.samsonic.MainActivity
 import com.example.samsonic.SamSonicApplication
+import com.google.common.util.concurrent.Futures
+import com.google.common.util.concurrent.ListenableFuture
 
 /**
  * Hosts the real ExoPlayer + MediaSession so playback, the notification, and lock-screen
@@ -42,6 +48,11 @@ class PlaybackService : MediaSessionService() {
             )
             .setHandleAudioBecomingNoisy(true)
             .build()
+        player.addListener(object : Player.Listener {
+            override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
+                if (shuffleModeEnabled) player.reshuffleFromCurrent()
+            }
+        })
 
         // One UI builds its status bar music chip and Now Bar card only for a media
         // notification that opens something when tapped, so the session needs an activity.
@@ -53,7 +64,37 @@ class PlaybackService : MediaSessionService() {
         )
         mediaSession = MediaSession.Builder(this, player)
             .setSessionActivity(openApp)
+            .setCallback(SessionCallback(player))
             .build()
+    }
+
+    /** Offers the shuffle commands (see ShuffleCommands.kt) to this app's own controller and applies them to [player]. */
+    private inner class SessionCallback(private val player: ExoPlayer) : MediaSession.Callback {
+        override fun onConnect(session: MediaSession, controller: MediaSession.ControllerInfo): MediaSession.ConnectionResult {
+            if (controller.packageName != packageName) return super.onConnect(session, controller)
+            return MediaSession.ConnectionResult.AcceptedResultBuilder(session)
+                .setAvailableSessionCommands(
+                    MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS.buildUpon()
+                        .add(ShuffleInsertCommand)
+                        .add(ShuffleMoveNextCommand)
+                        .build(),
+                )
+                .build()
+        }
+
+        override fun onCustomCommand(
+            session: MediaSession,
+            controller: MediaSession.ControllerInfo,
+            customCommand: SessionCommand,
+            args: Bundle,
+        ): ListenableFuture<SessionResult> {
+            when (customCommand.customAction) {
+                ShuffleInsertCommand.customAction -> player.shuffleInsert(args)
+                ShuffleMoveNextCommand.customAction -> player.shuffleMoveNext(args)
+                else -> return super.onCustomCommand(session, controller, customCommand, args)
+            }
+            return Futures.immediateFuture(SessionResult(SessionResult.RESULT_SUCCESS))
+        }
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = mediaSession

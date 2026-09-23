@@ -200,74 +200,76 @@ fun SongRow(
     // No hazeState here: this row is nested inside the NavHost's own hazeSource
     // subtree, and haze warns that a hazeEffect nested inside its own hazeSource
     // can cause recursive drawing - so this falls back to a flat translucent fill.
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .then(
-                if (isCurrent) {
-                    Modifier
-                        .padding(horizontal = 8.dp, vertical = 2.dp)
-                        .glassSurface(
-                            shape = RoundedCornerShape(OneUiRadius.Chip),
-                            hazeState = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            alpha = GlassAlpha.Highlight,
-                        )
-                } else {
-                    Modifier
-                }
-            )
-            .clickable(onClick = onClick)
-            .padding(horizontal = if (isCurrent) 12.dp else 20.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (leading != null) {
-            leading()
-            Spacer(Modifier.width(12.dp))
-        } else {
-            MediaArt(
-                coverArt = song.coverArt,
-                colorSeed = song.id.artSeed(),
-                size = 44.dp,
-                cornerRadius = cornerRadius,
-                shadowElevation = 0.dp,
-            )
-            Spacer(Modifier.width(12.dp))
-        }
-        Column(Modifier.weight(1f)) {
-            Text(
-                text = song.title,
-                style = MaterialTheme.typography.bodyLarge,
-                color = if (isCurrent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                fontWeight = if (isCurrent) FontWeight.SemiBold else FontWeight.Normal,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text = song.artistName,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-        if (onToggleLike != null) {
-            IconButton(onClick = onToggleLike) {
-                Icon(
-                    imageVector = if (liked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                    contentDescription = if (liked) "Unlike" else "Like",
-                    tint = if (liked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+    SongSwipeActions(song = song, modifier = modifier) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(
+                    if (isCurrent) {
+                        Modifier
+                            .padding(horizontal = 8.dp, vertical = 2.dp)
+                            .glassSurface(
+                                shape = RoundedCornerShape(OneUiRadius.Chip),
+                                hazeState = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                alpha = GlassAlpha.Highlight,
+                            )
+                    } else {
+                        Modifier
+                    }
+                )
+                .clickable(onClick = onClick)
+                .padding(horizontal = if (isCurrent) 12.dp else 20.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (leading != null) {
+                leading()
+                Spacer(Modifier.width(12.dp))
+            } else {
+                MediaArt(
+                    coverArt = song.coverArt,
+                    colorSeed = song.id.artSeed(),
+                    size = 44.dp,
+                    cornerRadius = cornerRadius,
+                    shadowElevation = 0.dp,
+                )
+                Spacer(Modifier.width(12.dp))
+            }
+            Column(Modifier.weight(1f)) {
+                Text(
+                    text = song.title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = if (isCurrent) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                    fontWeight = if (isCurrent) FontWeight.SemiBold else FontWeight.Normal,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = song.artistName,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
-        }
-        Text(
-            text = formatDuration(song.durationSeconds),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        if (onMoreClick != null) {
-            IconButton(onClick = onMoreClick) {
-                Icon(Icons.Filled.MoreVert, contentDescription = "More", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+            if (onToggleLike != null) {
+                IconButton(onClick = onToggleLike) {
+                    Icon(
+                        imageVector = if (liked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                        contentDescription = if (liked) "Unlike" else "Like",
+                        tint = if (liked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            Text(
+                text = formatDuration(song.durationSeconds),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (onMoreClick != null) {
+                IconButton(onClick = onMoreClick) {
+                    Icon(Icons.Filled.MoreVert, contentDescription = "More", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
         }
     }

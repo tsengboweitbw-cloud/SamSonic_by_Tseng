@@ -9,10 +9,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
-import androidx.core.net.toUri
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
-import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
 import androidx.media3.common.Timeline
 import androidx.media3.session.MediaController
@@ -26,6 +24,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 enum class RepeatMode { OFF, ALL, ONE }
+
+/** Songs per [ShuffleInsertCommand], small enough to stay well under the binder size limit. */
+private const val ShuffleInsertBatch = 200
 
 /**
  * UI-facing playback state, backed by a real Media3 [MediaController] bound to
@@ -86,6 +87,9 @@ class PlayerState(
         }
 
         override fun onTimelineChanged(timeline: Timeline, reason: Int) {
+            // Removing or moving an item before the current one shifts its index
+            // without a media item transition.
+            currentIndex = controller?.currentMediaItemIndex ?: -1
             refreshPlayOrder()
         }
 
@@ -124,7 +128,7 @@ class PlayerState(
         queue.clear()
         queue.addAll(playbackContext)
         val startIndex = playbackContext.indexOf(song).coerceAtLeast(0)
-        c.setMediaItems(playbackContext.map { it.toMediaItem() }, startIndex, 0L)
+        c.setMediaItems(playbackContext.map { it.toMediaItem(repository) }, startIndex, 0L)
         c.prepare()
         c.play()
     }
@@ -134,9 +138,52 @@ class PlayerState(
         val c = controller ?: return
         if (songs.isEmpty()) return
         if (c.mediaItemCount == 0) return play(songs.first(), songs)
+        insert(queue.size, songs, ShufflePlacement.End)
+    }
+
+    /** Inserts [song] right after the current track; with nothing queued yet, starts playing it. */
+    fun playNext(song: Song) {
+        val c = controller ?: return
+        if (c.mediaItemCount == 0) return play(song, listOf(song))
+        insert((c.currentMediaItemIndex + 1).coerceAtMost(queue.size), listOf(song), ShufflePlacement.Next)
+    }
+
+    /**
+     * Inserts [songs] at [index] in the queue. With shuffle on, they go through
+     * [ShuffleInsertCommand] so they also land at [placement] in the shuffle order, in
+     * batches so a big list stays under the binder transaction size limit.
+     */
+    private fun insert(index: Int, songs: List<Song>, placement: ShufflePlacement) {
+        val c = controller ?: return
         songById = songById + songs.associateBy { it.id }
-        queue.addAll(songs)
-        c.addMediaItems(songs.map { it.toMediaItem() })
+        queue.addAll(index, songs)
+        if (!c.shuffleModeEnabled) return c.addMediaItems(index, songs.map { it.toMediaItem(repository) })
+        songs.chunked(ShuffleInsertBatch).forEachIndexed { batch, chunk ->
+            val args = shuffleInsertArgs(index + batch * ShuffleInsertBatch, chunk.map { it.toMediaItem(repository) }, placement)
+            c.sendCustomCommand(ShuffleInsertCommand, args)
+        }
+    }
+
+    /** Moves the queue item at [index] so it plays right after the current track. */
+    fun moveToNext(index: Int) {
+        val c = controller ?: return
+        val current = c.currentMediaItemIndex
+        if (index !in queue.indices || index == current) return
+        val to = moveNextTarget(index, current)
+        queue.add(to, queue.removeAt(index))
+        if (c.shuffleModeEnabled) {
+            c.sendCustomCommand(ShuffleMoveNextCommand, shuffleMoveNextArgs(index))
+        } else {
+            c.moveMediaItem(index, to)
+        }
+    }
+
+    /** Removes the queue item at [index]; removing the current track skips to the next one. */
+    fun removeFromQueue(index: Int) {
+        val c = controller ?: return
+        if (index !in queue.indices) return
+        queue.removeAt(index)
+        c.removeMediaItem(index)
     }
 
     fun playQueueIndex(index: Int) {
@@ -216,20 +263,6 @@ class PlayerState(
         scope.launch {
             runCatching { if (newValue) repository.star(song.id) else repository.unstar(song.id) }
         }
-    }
-
-    private fun Song.toMediaItem(): MediaItem {
-        val metadata = MediaMetadata.Builder()
-            .setTitle(title)
-            .setArtist(artistName)
-            .setAlbumTitle(albumTitle)
-            .apply { repository.coverArtUrl(coverArt)?.let { setArtworkUri(it.toUri()) } }
-            .build()
-        return MediaItem.Builder()
-            .setMediaId(id)
-            .setUri(repository.streamUrl(id))
-            .setMediaMetadata(metadata)
-            .build()
     }
 
     private fun refreshPlayOrder() {
