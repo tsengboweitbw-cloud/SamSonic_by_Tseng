@@ -27,7 +27,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -105,7 +104,9 @@ fun SamSonicNavHost() {
     // lyrics, queue - excluded via noChromeRoutes) hide it.
     val showBottomBar = showChrome
 
-    val navTransitions = remember { NavTransitions(bottomDestinations.map { it.route }) }
+    val tabRoutes = remember { bottomDestinations.map { it.route } }
+    val currentTab = navController.currentTab(tabRoutes)
+    val navTransitions = remember { NavTransitions(tabRoutes) }
     val hazeState = rememberHazeState()
     val playerMorph = remember { PlayerMorphState() }
     val navBarHeight = OneUiChrome.BarHeight
@@ -273,19 +274,10 @@ fun SamSonicNavHost() {
                     .fillMaxWidth()
                     .height(navBarHeight),
             ) {
-                val selectedRoutes = remember(backStackEntry) {
-                    backStackEntry?.destination?.hierarchy?.mapNotNull { it.route }?.toSet() ?: emptySet()
-                }
                 FloatingNavBar(
                     destinations = bottomDestinations,
-                    selectedRoutes = selectedRoutes,
-                    onSelect = { route ->
-                        navController.navigate(route) {
-                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    },
+                    selectedRoutes = setOfNotNull(currentTab),
+                    onSelect = { navController.selectTab(it, currentTab) },
                     hazeState = hazeState,
                     modifier = Modifier.fillMaxSize(),
                 )

@@ -188,7 +188,7 @@ fun SongRow(
                             shape = RoundedCornerShape(OneUiRadius.Chip),
                             hazeState = null,
                             tint = MaterialTheme.colorScheme.primary,
-                            alpha = GlassAlpha.Card,
+                            alpha = GlassAlpha.Highlight,
                         )
                 } else {
                     Modifier

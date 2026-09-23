@@ -40,6 +40,9 @@ object GlassAlpha {
     // Now Playing pills sit over already-blurred art, so a thin light veil
     // (not a dense surface tint) is what reads as frosted glass there.
     const val NowPlaying = 0.18f
+    // A faint accent wash behind the playing row: the row's title is drawn in the
+    // accent too, so a dense fill would swallow it (a light accent went white-on-white).
+    const val Highlight = 0.16f
 }
 
 // Deterministic gradient pairs used for generated "album art" placeholders.
