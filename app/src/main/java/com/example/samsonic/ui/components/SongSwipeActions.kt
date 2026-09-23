@@ -1,6 +1,6 @@
 package com.example.samsonic.ui.components
 
-import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.spring
@@ -8,29 +8,23 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.SkipNext
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
@@ -43,7 +37,6 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.model.Song
@@ -114,6 +107,11 @@ fun SwipeActions(
     var dragX by remember { mutableFloatStateOf(0f) }
     // Set while a destructive action slides the row off screen, which bypasses the damping.
     var dismissX by remember { mutableFloatStateOf(Float.NaN) }
+    // Set once the spring-back first reaches the row's place, so the lift starts fading there
+    // instead of waiting out the last few pixels of the bounce.
+    var returned by remember { mutableStateOf(false) }
+    // The side last swiped toward, kept so the panel can finish fading after the row is home.
+    var towardEnd by remember { mutableStateOf(false) }
     val armed = abs(dragX) >= thresholdPx
     val visual = when {
         !dismissX.isNaN() -> dismissX
@@ -126,6 +124,8 @@ fun SwipeActions(
 
     val dragState = rememberDraggableState { delta ->
         dragX = (dragX + delta).coerceIn(-thresholdPx * 3, thresholdPx * 3)
+        // Not once the spring-back is home: its overshoot would flip the panel mid-fade.
+        if (dragX != 0f && !returned) towardEnd = dragX < 0
     }
     Box(
         modifier = modifier
@@ -139,6 +139,7 @@ fun SwipeActions(
             .draggable(
                 state = dragState,
                 orientation = Orientation.Horizontal,
+                onDragStarted = { returned = false },
                 onDragStopped = {
                     val action = if (abs(dragX) < thresholdPx) null else if (dragX < 0) left else right
                     if (action?.destructive == true) {
@@ -157,128 +158,73 @@ fun SwipeActions(
                         action.onSwipe()
                     }
                     // Settle through the draggable state so a new drag interrupts the spring-back.
+                    val from = dragX
                     dragState.drag {
-                        animate(dragX, 0f, animationSpec = spring(dampingRatio = 0.55f, stiffness = 400f)) { value, _ ->
+                        // Stops within a pixel of rest rather than the default hundredth of one,
+                        // which left the bounce crawling on long after it looked settled.
+                        val spec = spring(dampingRatio = 0.72f, stiffness = 300f, visibilityThreshold = 1f)
+                        animate(from, 0f, animationSpec = spec) { value, _ ->
+                            if (value == 0f || sign(value) != sign(from)) returned = true
                             dragBy(value - dragX)
                         }
                     }
+                    returned = true
                 },
             ),
     ) {
-        if (visual != 0f) {
-            val action = if (visual < 0) left else right
+        // While it's being swiped, the row lifts off the list as a floating glass card; once it
+        // springs back to its place, the card and the panel under it fade out together.
+        val lifted = visual != 0f && !returned
+        val lift by animateFloatAsState(
+            targetValue = if (lifted) 1f else 0f,
+            animationSpec = tween(if (lifted) 180 else 360, easing = FastOutSlowInEasing),
+            label = "swipeLift",
+        )
+        if (lift > 0f) {
             SwipeReveal(
-                action = action,
+                action = if (towardEnd) left else right,
                 progress = (abs(dragX) / thresholdPx).coerceAtMost(1f),
                 armed = armed,
-                alignEnd = visual < 0,
+                alignEnd = towardEnd,
                 // The card's backdrop. Its own source, not the NavHost's: rows sit inside that
                 // one, and a hazeEffect nested in its own source can draw recursively.
-                modifier = Modifier.matchParentSize().graphicsLayer().hazeSource(panelHaze),
+                modifier = Modifier.matchParentSize().graphicsLayer { alpha = lift }.hazeSource(panelHaze),
             )
         }
-        // While it's being swiped, the row lifts off the list as a floating glass card.
-        val lift by animateFloatAsState(if (visual != 0f) 1f else 0f, label = "swipeLift")
         Box(
             Modifier
                 .offset { IntOffset(visual.roundToInt(), 0) }
-                .padding(OneUiRow.Inset)
-                .then(if (lift > 0f) Modifier.liftedCard(lift, panelHaze) else Modifier),
-        ) { content() }
+                .padding(OneUiRow.Inset),
+        ) {
+            if (lift > 0f) LiftedCard(lift, panelHaze, Modifier.matchParentSize())
+            content()
+        }
     }
 }
 
 private val CardShape = OneUiRow.Shape
 
-/** Frosted glass that blurs the action panel beneath it, so the action's color glows through. */
-@Composable
-private fun Modifier.liftedCard(lift: Float, panelHaze: HazeState): Modifier = this
-    .shadow(
-        elevation = 10.dp * lift,
-        shape = CardShape,
-        ambientColor = Color.Black.copy(alpha = 0.3f),
-        spotColor = Color.Black.copy(alpha = 0.3f),
-    )
-    .glassSurface(
-        shape = CardShape,
-        hazeState = panelHaze,
-        tint = MaterialTheme.colorScheme.surfaceContainerHigh,
-        alpha = GlassAlpha.Nav * lift,
-        rim = lift > 0.5f,
-    )
-
 /**
- * The rounded glass panel behind the sliding card, spanning the whole row so the card's
- * blur has the action's color to frost. Until the swipe passes the threshold it's a
- * translucent wash of that color; past it the panel turns dense and the icon pops. Icon
- * and label sit at the outer edge, in the gap the card opens.
+ * Frosted glass behind the lifted row that blurs the action panel beneath it, so the
+ * action's color glows through. Faded as one layer: the blur paints an opaque base, so
+ * thinning only its tint would leave the card solid until it vanished at once.
  */
 @Composable
-private fun SwipeReveal(
-    action: SwipeAction,
-    progress: Float,
-    armed: Boolean,
-    alignEnd: Boolean,
-    modifier: Modifier,
-) {
-    val colors = MaterialTheme.colorScheme
-    val actionColor = if (action.destructive) colors.error else colors.primary
-    val onActionColor = if (action.destructive) colors.onError else colors.onPrimary
-    val density by animateFloatAsState(if (armed) GlassAlpha.Panel else 0.3f, label = "swipeRevealDensity")
-    val contentColor by animateColorAsState(
-        targetValue = if (armed) onActionColor else actionColor,
-        label = "swipeRevealContent",
-    )
-    val pop by animateFloatAsState(
-        targetValue = if (armed) 1.15f else 1f,
-        animationSpec = spring(dampingRatio = 0.35f, stiffness = 600f),
-        label = "swipeRevealPop",
-    )
-    Row(
-        modifier = modifier
-            .padding(OneUiRow.Inset)
-            .glassSurface(shape = CardShape, hazeState = null, tint = actionColor, alpha = density)
-            .padding(horizontal = 20.dp)
-            .graphicsLayer { alpha = progress },
-        horizontalArrangement = if (alignEnd) Arrangement.End else Arrangement.Start,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        // Icon on the outer edge, label toward the card.
-        if (alignEnd) {
-            SwipeLabel(action.label, contentColor)
-            Spacer(Modifier.width(8.dp))
-            SwipeIcon(action.icon, contentColor, pop)
-        } else {
-            SwipeIcon(action.icon, contentColor, pop)
-            Spacer(Modifier.width(8.dp))
-            SwipeLabel(action.label, contentColor)
-        }
-    }
-}
-
-@Composable
-private fun SwipeIcon(icon: ImageVector, tint: Color, pop: Float) {
-    Icon(
-        imageVector = icon,
-        contentDescription = null,
-        tint = tint,
-        modifier = Modifier
-            .size(24.dp)
-            .graphicsLayer {
-                scaleX = pop
-                scaleY = pop
-            },
-    )
-}
-
-@Composable
-private fun SwipeLabel(label: String, color: Color) {
-    Text(
-        text = label,
-        color = color,
-        style = MaterialTheme.typography.labelLarge,
-        fontWeight = FontWeight.SemiBold,
-        maxLines = 1,
-        softWrap = false,
+private fun LiftedCard(lift: Float, panelHaze: HazeState, modifier: Modifier) {
+    Box(
+        modifier
+            .shadow(
+                elevation = 10.dp * lift,
+                shape = CardShape,
+                ambientColor = Color.Black.copy(alpha = 0.3f),
+                spotColor = Color.Black.copy(alpha = 0.3f),
+            )
+            .graphicsLayer { alpha = lift }
+            .glassSurface(
+                shape = CardShape,
+                hazeState = panelHaze,
+                tint = MaterialTheme.colorScheme.surfaceContainerHigh,
+                alpha = GlassAlpha.Nav,
+            ),
     )
 }
