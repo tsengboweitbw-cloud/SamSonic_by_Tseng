@@ -18,7 +18,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -35,6 +34,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.OneUiRadius
+import com.example.samsonic.ui.theme.OneUiSlider
 import com.example.samsonic.ui.theme.glassSurface
 import com.example.samsonic.ui.theme.parseHexColor
 import com.example.samsonic.ui.theme.toHexRgb
@@ -124,7 +124,7 @@ fun AccentColorPickerDialog(
 private fun ColorChannelSlider(label: String, value: Float, onValueChange: (Float) -> Unit) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         Text(text = label, style = MaterialTheme.typography.labelLarge, modifier = Modifier.width(20.dp))
-        Slider(
+        OneUiSlider(
             value = value,
             onValueChange = onValueChange,
             valueRange = 0f..1f,

@@ -10,6 +10,19 @@ import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
 
 /**
+ * Nudges [color] towards black (light theme) or white (dark theme) if its
+ * luminance is too close to that theme's own background to read as a
+ * foreground color - e.g. a white accent picked in light mode, or a
+ * near-black one picked in dark mode. Leaves already-safe colors untouched,
+ * so most accent choices keep their exact hue/brightness.
+ */
+private fun ensureReadableOverBackground(color: Color, darkTheme: Boolean): Color = when {
+    darkTheme && color.luminance() < 0.35f -> lerp(color, Color.White, 0.5f)
+    !darkTheme && color.luminance() > 0.55f -> lerp(color, Color.Black, 0.5f)
+    else -> color
+}
+
+/**
  * One UI 9.0 dark/light schemes sharing the same Obsidian-inspired tonal
  * structure, with [accent] driving primary/secondary rather than a fixed
  * violet - see [ThemeManager][com.example.samsonic.data.ThemeManager] for
@@ -25,15 +38,23 @@ private fun obsidianColorScheme(darkTheme: Boolean, accent: Color): ColorScheme 
     val textSecondary = if (darkTheme) ObsidianTextSecondary else LightTextSecondary
     val error = if (darkTheme) ObsidianError else LightError
 
+    // primary isn't only used as a container fill (where onPrimary handles
+    // contrast) - it's also used directly as a content color over the plain
+    // background/surface (nav bar selected icon, slider active track, link
+    // text). A user-picked accent close to the current theme's own
+    // background luminance (e.g. white in light mode) would be invisible
+    // there, so nudge it towards the far side before deriving anything else.
+    val safeAccent = ensureReadableOverBackground(accent, darkTheme)
+
     // Simple luminance check picks readable text for whatever accent the
     // user lands on, rather than assuming it's always dark-background-safe.
-    val onAccent = if (accent.luminance() > 0.5f) Color(0xFF14131A) else Color(0xFFF2F1F7)
-    val accentContainer = lerp(background, accent, 0.32f)
-    val accentDim = lerp(accent, outline, 0.5f)
+    val onAccent = if (safeAccent.luminance() > 0.5f) Color(0xFF14131A) else Color(0xFFF2F1F7)
+    val accentContainer = lerp(background, safeAccent, 0.32f)
+    val accentDim = lerp(safeAccent, outline, 0.5f)
 
     return if (darkTheme) {
         darkColorScheme(
-            primary = accent,
+            primary = safeAccent,
             onPrimary = onAccent,
             primaryContainer = accentContainer,
             onPrimaryContainer = textPrimary,
@@ -55,7 +76,7 @@ private fun obsidianColorScheme(darkTheme: Boolean, accent: Color): ColorScheme 
         )
     } else {
         lightColorScheme(
-            primary = accent,
+            primary = safeAccent,
             onPrimary = onAccent,
             primaryContainer = accentContainer,
             onPrimaryContainer = textPrimary,

@@ -36,8 +36,6 @@ import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
-import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -56,6 +54,7 @@ import com.example.samsonic.ui.components.MediaArtFill
 import com.example.samsonic.ui.theme.BlurredArtBackdrop
 import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.OneUiRadius
+import com.example.samsonic.ui.theme.OneUiSlider
 import com.example.samsonic.ui.theme.glassSurface
 import com.example.samsonic.util.formatDuration
 
@@ -84,7 +83,17 @@ fun NowPlayingScreen(
                 .padding(horizontal = 24.dp),
         ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                // No hazeState: nested inside the NavHost's own hazeSource subtree
+                // (see MediaLists.SongRow comment) - falls back to a flat translucent fill.
+                .glassSurface(
+                    shape = RoundedCornerShape(OneUiRadius.Pill),
+                    hazeState = null,
+                    tint = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    alpha = GlassAlpha.Card,
+                )
+                .padding(horizontal = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
@@ -160,18 +169,13 @@ fun NowPlayingScreen(
         val fraction = if (dragPosition >= 0f) dragPosition else {
             if (song.durationSeconds > 0) (player.positionSeconds / song.durationSeconds).coerceIn(0f, 1f) else 0f
         }
-        Slider(
+        OneUiSlider(
             value = fraction,
             onValueChange = { dragPosition = it },
             onValueChangeFinished = {
                 player.seekToFraction(dragPosition)
                 dragPosition = -1f
             },
-            colors = SliderDefaults.colors(
-                thumbColor = MaterialTheme.colorScheme.primary,
-                activeTrackColor = MaterialTheme.colorScheme.primary,
-                inactiveTrackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-            ),
         )
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -192,7 +196,17 @@ fun NowPlayingScreen(
         Spacer(Modifier.height(8.dp))
 
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                // No hazeState: nested inside the NavHost's own hazeSource subtree
+                // (see MediaLists.SongRow comment) - falls back to a flat translucent fill.
+                .glassSurface(
+                    shape = RoundedCornerShape(OneUiRadius.Pill),
+                    hazeState = null,
+                    tint = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    alpha = GlassAlpha.Card,
+                )
+                .padding(horizontal = 8.dp, vertical = 6.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -216,7 +230,7 @@ fun NowPlayingScreen(
                 Icon(
                     imageVector = if (player.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                     contentDescription = if (player.isPlaying) "Pause" else "Play",
-                    tint = MaterialTheme.colorScheme.background,
+                    tint = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.size(36.dp),
                 )
             }

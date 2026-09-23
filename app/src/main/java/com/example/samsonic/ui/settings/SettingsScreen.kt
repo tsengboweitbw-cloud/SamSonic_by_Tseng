@@ -29,7 +29,6 @@ import androidx.compose.material.icons.filled.RoundedCorner
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Slider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -48,6 +47,7 @@ import com.example.samsonic.data.ThemeMode
 import com.example.samsonic.playback.LocalPlayerState
 import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.OneUiRadius
+import com.example.samsonic.ui.theme.OneUiSlider
 import com.example.samsonic.ui.theme.glassSurface
 import com.example.samsonic.ui.theme.toHexRgb
 import kotlin.math.roundToInt
@@ -254,7 +254,7 @@ private fun SliderRow(
             }
             Text(text = valueLabel, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        Slider(
+        OneUiSlider(
             value = value,
             onValueChange = onValueChange,
             valueRange = valueRange,
