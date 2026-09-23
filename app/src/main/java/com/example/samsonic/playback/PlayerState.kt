@@ -129,6 +129,16 @@ class PlayerState(
         c.play()
     }
 
+    /** Appends [songs] to the end of the queue; with nothing queued yet, starts playing them. */
+    fun addToQueue(songs: List<Song>) {
+        val c = controller ?: return
+        if (songs.isEmpty()) return
+        if (c.mediaItemCount == 0) return play(songs.first(), songs)
+        songById = songById + songs.associateBy { it.id }
+        queue.addAll(songs)
+        c.addMediaItems(songs.map { it.toMediaItem() })
+    }
+
     fun playQueueIndex(index: Int) {
         val c = controller ?: return
         if (index !in queue.indices) return

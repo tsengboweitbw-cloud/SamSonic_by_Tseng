@@ -16,12 +16,19 @@ import com.example.samsonic.model.LyricLine
 import com.example.samsonic.model.Playlist
 import com.example.samsonic.model.SearchResults
 import com.example.samsonic.model.Song
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import java.net.URLEncoder
+
+private const val ALBUM_FETCH_CONCURRENCY = 6
 
 /**
  * Talks to a Subsonic/OpenSubsonic server (Navidrome, etc.) and maps the wire DTOs onto the
@@ -110,6 +117,17 @@ class SubsonicRepository(
             ?: error("Album not found")
         val songs = detail.song.map { it.toDomain() }
         return detail.toDomain() to songs
+    }
+
+    /**
+     * Every song of [albums], album after album in list order. Albums are fetched a few at
+     * a time; one that fails to load is skipped rather than failing the whole list.
+     */
+    suspend fun getAlbumsSongs(albums: List<Album>): List<Song> = coroutineScope {
+        val permits = Semaphore(ALBUM_FETCH_CONCURRENCY)
+        albums.map { album ->
+            async { permits.withPermit { runCatching { getAlbum(album.id).second }.getOrDefault(emptyList()) } }
+        }.awaitAll().flatten()
     }
 
     suspend fun getAlbumList(type: String = "newest", size: Int = 20): List<Album> {

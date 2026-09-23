@@ -1,6 +1,7 @@
 package com.example.samsonic.ui.home
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -26,6 +27,7 @@ import com.example.samsonic.ui.components.AlbumRow
 import com.example.samsonic.ui.components.BackButtonClearance
 import com.example.samsonic.ui.components.backButtonHazeSource
 import com.example.samsonic.ui.components.GlassBackButton
+import com.example.samsonic.ui.components.PlayShuffleButtons
 import com.example.samsonic.ui.theme.scrollTopFade
 import dev.chrisbanes.haze.rememberHazeState
 
@@ -59,13 +61,21 @@ fun AlbumShelfScreen(
                 contentPadding = PaddingValues(top = BackButtonClearance, bottom = contentPaddingBottom),
             ) {
                 item {
-                    Text(
-                        text = shelf.title,
-                        style = MaterialTheme.typography.displaySmall,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 20.dp, vertical = 16.dp),
-                    )
+                    Column {
+                        Text(
+                            text = shelf.title,
+                            style = MaterialTheme.typography.displaySmall,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 20.dp),
+                        )
+                        PlayShuffleButtons(
+                            key = albums,
+                            loadSongs = { repository.getAlbumsSongs(albums) },
+                            modifier = Modifier.padding(horizontal = 24.dp),
+                        )
+                        Spacer(Modifier.height(12.dp))
+                    }
                 }
                 // Keyed by position too: a server can list the same album twice.
                 itemsIndexed(albums, key = { index, album -> "${album.id}#$index" }) { _, album ->
