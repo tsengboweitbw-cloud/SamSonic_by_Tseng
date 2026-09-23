@@ -33,6 +33,8 @@ import com.example.samsonic.model.artSeed
 import com.example.samsonic.playback.LocalPlayerState
 import com.example.samsonic.ui.components.artPrimaryColor
 import com.example.samsonic.ui.components.artSecondaryColor
+import com.example.samsonic.ui.components.aspectRatioOrNull
+import com.example.samsonic.ui.components.fitAspect
 
 // Matches the Now Playing cover's shadow, so the hand-off at the end doesn't pop.
 private val FullArtShadow = 16.dp
@@ -70,7 +72,7 @@ fun PlayerMorphOverlay(morph: PlayerMorphState, modifier: Modifier = Modifier) {
         val fraction = morph.fraction
         morph.boundsOf(PlayerElement.Art)?.let { bounds ->
             drawArt(
-                bounds = bounds,
+                square = bounds,
                 radius = cornerRadius.toPx(),
                 shadow = lerp(0f, FullArtShadow.toPx(), fraction),
                 gradient = gradient,
@@ -95,13 +97,17 @@ fun PlayerMorphOverlay(morph: PlayerMorphState, modifier: Modifier = Modifier) {
 }
 
 private fun DrawScope.drawArt(
-    bounds: Rect,
+    square: Rect,
     radius: Float,
     shadow: Float,
     gradient: List<Color>,
     painter: Painter,
     shadowPaint: android.graphics.Paint,
 ) {
+    // Same as the real covers: art keeps its proportions inside the square, and only
+    // the art gets the corners and shadow. The gradient only stands in until it loads.
+    val ratio = painter.intrinsicSize.aspectRatioOrNull()
+    val bounds = if (ratio != null) fitAspect(square, ratio) else square
     if (shadow > 0.5f) {
         shadowPaint.color = android.graphics.Color.BLACK
         shadowPaint.setShadowLayer(shadow, 0f, shadow / 3f, Color.Black.copy(alpha = 0.45f).toArgb())
@@ -113,11 +119,13 @@ private fun DrawScope.drawArt(
     }
     val clip = Path().apply { addRoundRect(RoundRect(bounds, CornerRadius(radius))) }
     clipPath(clip) {
-        drawRect(
-            Brush.linearGradient(gradient, start = bounds.topLeft, end = bounds.bottomRight),
-            topLeft = bounds.topLeft,
-            size = bounds.size,
-        )
+        if (ratio == null) {
+            drawRect(
+                Brush.linearGradient(gradient, start = bounds.topLeft, end = bounds.bottomRight),
+                topLeft = bounds.topLeft,
+                size = bounds.size,
+            )
+        }
         translate(bounds.left, bounds.top) {
             with(painter) { draw(bounds.size) }
         }

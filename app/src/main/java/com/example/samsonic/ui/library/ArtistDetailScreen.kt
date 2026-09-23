@@ -107,6 +107,7 @@ fun ArtistDetailScreen(
                             size = 140.dp,
                             cornerRadius = 70.dp,
                             icon = false,
+                            fit = false,
                             modifier = Modifier.clip(CircleShape),
                         )
                         Spacer(Modifier.height(16.dp))

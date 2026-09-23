@@ -115,6 +115,7 @@ fun ArtistCard(
             size = 104.dp,
             cornerRadius = 52.dp,
             icon = false,
+            fit = false,
             modifier = Modifier.clip(CircleShape),
         )
         Spacer(Modifier.height(8.dp))

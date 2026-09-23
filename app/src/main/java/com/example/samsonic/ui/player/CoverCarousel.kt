@@ -18,8 +18,6 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.Dp
@@ -99,11 +97,19 @@ fun CoverCarousel(
                     scaleX = scale
                     scaleY = scale
                     alpha = lerp(1f, 0.55f, distance)
-                }
-                .shadow(elevation = 16.dp, shape = shape, clip = false)
-                .clip(shape),
+                },
         ) {
-            if (song != null) MediaArtFill(coverArt = song.coverArt, colorSeed = song.id.artSeed())
+            // Corners and shadow go on the art itself, which keeps its own proportions
+            // inside the square page.
+            if (song != null) {
+                MediaArtFill(
+                    coverArt = song.coverArt,
+                    colorSeed = song.id.artSeed(),
+                    fit = true,
+                    shape = shape,
+                    shadowElevation = 16.dp,
+                )
+            }
         }
     }
 }
