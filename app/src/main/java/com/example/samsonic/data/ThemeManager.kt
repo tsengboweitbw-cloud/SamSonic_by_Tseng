@@ -88,9 +88,9 @@ class ThemeManager(context: Context) {
         private const val KEY_GLASS_BLUR = "glass_blur"
         private const val KEY_BACKDROP_BLUR = "backdrop_blur"
         val DefaultAccent = Color(0xFF8875FF)
-        val DefaultAlbumArtCornerRadius = 24.dp
+        val DefaultAlbumArtCornerRadius = 2.dp
         const val DefaultGlassOpacity = 1f
-        val DefaultGlassBlur = 24.dp
-        val DefaultBackdropBlur = 20.dp
+        val DefaultGlassBlur = 16.dp
+        val DefaultBackdropBlur = 40.dp
     }
 }
