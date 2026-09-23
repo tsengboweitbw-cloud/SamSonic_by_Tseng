@@ -18,12 +18,12 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 
 /**
@@ -85,40 +85,50 @@ fun OneUiSlider(
         },
         track = { sliderState ->
             val fraction = sliderState.coercedValueAsFraction
-            Box(
-                modifier = Modifier.fillMaxWidth().height(20.dp),
-                contentAlignment = Alignment.CenterStart,
-            ) {
+            val activeColorArgb = remember(activeColor) { activeColor.toArgb() }
+            Canvas(modifier = Modifier.fillMaxWidth().height(20.dp)) {
+                val strokeWidthPx = 3.dp.toPx()
+                val y = size.height / 2f
+                val activeEndX = size.width * fraction
+
+                drawLine(
+                    color = inactiveColor,
+                    start = Offset(0f, y),
+                    end = Offset(size.width, y),
+                    strokeWidth = strokeWidthPx,
+                    cap = StrokeCap.Round,
+                )
+
                 if (active) {
-                    // Soft glow behind the active portion while scrubbing - a
-                    // real native blur (matching how the rest of the app uses
-                    // blur), not a faked gradient halo.
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth(fraction.coerceIn(0.03f, 1f))
-                            .height(6.dp)
-                            .blur(12.dp)
-                            .background(activeColor, CircleShape),
+                    // Blurs the exact same stroke (via a native BlurMaskFilter),
+                    // so the glow follows the real line shape instead of being a
+                    // separate rectangle stacked on top of it (which just looked
+                    // like a fat bar overlapping a thin one).
+                    drawContext.canvas.nativeCanvas.drawLine(
+                        0f,
+                        y,
+                        activeEndX,
+                        y,
+                        android.graphics.Paint().apply {
+                            color = activeColorArgb
+                            strokeWidth = strokeWidthPx
+                            strokeCap = android.graphics.Paint.Cap.ROUND
+                            isAntiAlias = true
+                            maskFilter = android.graphics.BlurMaskFilter(
+                                18.dp.toPx(),
+                                android.graphics.BlurMaskFilter.Blur.NORMAL,
+                            )
+                        },
                     )
                 }
-                Canvas(modifier = Modifier.fillMaxWidth().height(20.dp)) {
-                    val strokeWidthPx = 3.dp.toPx()
-                    val y = size.height / 2f
-                    drawLine(
-                        color = inactiveColor,
-                        start = Offset(0f, y),
-                        end = Offset(size.width, y),
-                        strokeWidth = strokeWidthPx,
-                        cap = StrokeCap.Round,
-                    )
-                    drawLine(
-                        color = activeColor,
-                        start = Offset(0f, y),
-                        end = Offset(size.width * fraction, y),
-                        strokeWidth = strokeWidthPx,
-                        cap = StrokeCap.Round,
-                    )
-                }
+
+                drawLine(
+                    color = activeColor,
+                    start = Offset(0f, y),
+                    end = Offset(activeEndX, y),
+                    strokeWidth = strokeWidthPx,
+                    cap = StrokeCap.Round,
+                )
             }
         },
     )
