@@ -86,6 +86,14 @@ fun CoverCarousel(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(1f)
+                // Only the playing cover morphs to/from the mini player's art.
+                .then(
+                    if (page == targetPage) {
+                        Modifier.playerMorphAnchor(PlayerElement.Art, PlayerSurface.Full)
+                    } else {
+                        Modifier
+                    },
+                )
                 .graphicsLayer {
                     val scale = lerp(1f, 0.86f, distance)
                     scaleX = scale

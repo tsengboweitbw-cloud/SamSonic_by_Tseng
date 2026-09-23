@@ -1,5 +1,6 @@
 package com.example.samsonic.ui.navigation
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -39,8 +40,14 @@ import com.example.samsonic.ui.library.ArtistDetailScreen
 import com.example.samsonic.ui.library.LibraryScreen
 import com.example.samsonic.ui.library.PlaylistDetailScreen
 import com.example.samsonic.ui.player.LyricsScreen
+import com.example.samsonic.ui.player.DrivePlayerMorph
+import com.example.samsonic.ui.player.LocalPlayerMorph
 import com.example.samsonic.ui.player.MiniPlayer
 import com.example.samsonic.ui.player.NowPlayingScreen
+import com.example.samsonic.ui.player.PlayerMorphEasing
+import com.example.samsonic.ui.player.PlayerMorphMs
+import com.example.samsonic.ui.player.PlayerMorphOverlay
+import com.example.samsonic.ui.player.PlayerMorphState
 import com.example.samsonic.ui.player.QueueScreen
 import com.example.samsonic.ui.search.SearchScreen
 import com.example.samsonic.ui.settings.SettingsScreen
@@ -100,13 +107,16 @@ fun SamSonicNavHost() {
 
     val navTransitions = remember { NavTransitions(bottomDestinations.map { it.route }) }
     val hazeState = rememberHazeState()
+    val playerMorph = remember { PlayerMorphState() }
     val navBarHeight = OneUiChrome.BarHeight
     val navBarBottomInset = 16.dp
 
     Scaffold(containerColor = MaterialTheme.colorScheme.background) { innerPadding ->
-        CompositionLocalProvider(LocalHazeState provides hazeState) {
+        CompositionLocalProvider(LocalHazeState provides hazeState, LocalPlayerMorph provides playerMorph) {
         Box(modifier = Modifier.fillMaxSize()) {
-            val systemBarInset = if (showChrome) innerPadding.calculateBottomPadding() else 0.dp
+            // The chrome keeps its resting spot while it animates out, so these ignore showChrome.
+            val chromeBottomInset = innerPadding.calculateBottomPadding()
+            val systemBarInset = if (showChrome) chromeBottomInset else 0.dp
             val navBarReserve = if (showChrome && showBottomBar) navBarHeight + navBarBottomInset else 0.dp
             val miniPlayerReserve = if (showChrome) OneUiChrome.BarHeight + 8.dp else 0.dp
             // Content melts into the background across the whole floating-chrome
@@ -201,8 +211,16 @@ fun SamSonicNavHost() {
                 }
                 screen(
                     Routes.NOW_PLAYING,
-                    enterTransition = { slideInVertically(tween(260)) { it } + fadeIn(tween(260)) },
-                    exitTransition = { slideOutVertically(tween(220)) { it } + fadeOut(tween(220)) },
+                    // Only a short rise: the cover and seek bar fly in from the mini
+                    // player as shared elements, the rest fades in around them.
+                    enterTransition = {
+                        slideInVertically(tween(PlayerMorphMs, easing = PlayerMorphEasing)) { it / 10 } +
+                            fadeIn(tween(PlayerMorphMs - 120, easing = PlayerMorphEasing))
+                    },
+                    exitTransition = {
+                        slideOutVertically(tween(PlayerMorphMs, easing = PlayerMorphEasing)) { it / 10 } +
+                            fadeOut(tween(PlayerMorphMs - 160, easing = PlayerMorphEasing))
+                    },
                 ) {
                     NowPlayingScreen(
                         onCollapse = { navController.popBackStack() },
@@ -227,16 +245,34 @@ fun SamSonicNavHost() {
             }
             }
 
-            if (showChrome) {
-                MiniPlayer(
-                    onExpand = { navController.navigate(Routes.NOW_PLAYING) },
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(bottom = systemBarInset + navBarReserve + 8.dp),
-                )
+            // The pill fades while its art and progress line morph into Now
+            // Playing; its enter/exit is the clock for that morph.
+            AnimatedVisibility(
+                visible = showChrome,
+                enter = fadeIn(tween(PlayerMorphMs - 120, delayMillis = 120)),
+                exit = fadeOut(tween(160)),
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(bottom = chromeBottomInset + navBarHeight + navBarBottomInset + 8.dp),
+            ) {
+                DrivePlayerMorph(playerMorph)
+                MiniPlayer(onExpand = { navController.navigate(Routes.NOW_PLAYING) })
             }
 
-            if (showChrome && showBottomBar) {
+            // Sinks below the screen edge while fading when a player surface opens.
+            AnimatedVisibility(
+                visible = showChrome && showBottomBar,
+                enter = slideInVertically(tween(PlayerMorphMs, easing = PlayerMorphEasing)) { it } +
+                    fadeIn(tween(PlayerMorphMs - 120, easing = PlayerMorphEasing)),
+                exit = slideOutVertically(tween(PlayerMorphMs, easing = PlayerMorphEasing)) { it } +
+                    fadeOut(tween(PlayerMorphMs - 160, easing = PlayerMorphEasing)),
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .padding(horizontal = 16.dp)
+                    .padding(bottom = chromeBottomInset + navBarBottomInset)
+                    .fillMaxWidth()
+                    .height(navBarHeight),
+            ) {
                 val selectedRoutes = remember(backStackEntry) {
                     backStackEntry?.destination?.hierarchy?.mapNotNull { it.route }?.toSet() ?: emptySet()
                 }
@@ -251,14 +287,12 @@ fun SamSonicNavHost() {
                         }
                     },
                     hazeState = hazeState,
-                    modifier = Modifier
-                        .align(Alignment.BottomCenter)
-                        .padding(horizontal = 16.dp)
-                        .padding(bottom = systemBarInset + navBarBottomInset)
-                        .fillMaxWidth()
-                        .height(navBarHeight),
+                    modifier = Modifier.fillMaxSize(),
                 )
             }
+
+            // Above all chrome: the cover and progress line in flight between the two players.
+            PlayerMorphOverlay(playerMorph, Modifier.fillMaxSize())
         }
         }
     }

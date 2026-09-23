@@ -7,6 +7,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -24,14 +25,14 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -101,6 +102,7 @@ fun MiniPlayer(
                 MediaArt(
                     coverArt = song.coverArt,
                     colorSeed = song.id.artSeed(),
+                    modifier = Modifier.playerMorphAnchor(PlayerElement.Art, PlayerSurface.Mini),
                     size = artSize,
                     cornerRadius = cornerRadius,
                     shadowElevation = 0.dp,
@@ -141,8 +143,8 @@ fun MiniPlayer(
             val progress = if (song.durationSeconds > 0) {
                 (player.positionSeconds / song.durationSeconds).coerceIn(0f, 1f)
             } else 0f
-            LinearProgressIndicator(
-                progress = { progress },
+            PlayerProgressLine(
+                progress = progress,
                 // Starts past the art (no horizontal overlap with it) and
                 // ends at the "next" button's midpoint, not the full width.
                 modifier = Modifier
@@ -150,11 +152,28 @@ fun MiniPlayer(
                     .padding(bottom = 10.dp)
                     .fillMaxWidth()
                     .padding(start = progressStart, end = progressEnd)
-                    .height(2.dp)
-                    .clip(RoundedCornerShape(50)),
-                color = MaterialTheme.colorScheme.primary,
-                trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    .playerMorphAnchor(PlayerElement.Progress, PlayerSurface.Mini)
+                    .height(2.dp),
             )
+        }
+    }
+}
+
+/**
+ * Thin rounded progress line, drawn the same way as the Now Playing seek bar's
+ * track so the two read as one line while it morphs between them.
+ */
+@Composable
+private fun PlayerProgressLine(progress: Float, modifier: Modifier = Modifier) {
+    val activeColor = MaterialTheme.colorScheme.primary
+    val trackColor = MaterialTheme.colorScheme.surfaceContainerHighest
+    Canvas(modifier = modifier) {
+        // Fixed stroke: mid-morph the bounds are taller than the line itself.
+        val stroke = 2.dp.toPx()
+        val y = size.height / 2f
+        drawLine(trackColor, Offset(0f, y), Offset(size.width, y), stroke, StrokeCap.Round)
+        if (progress > 0f) {
+            drawLine(activeColor, Offset(0f, y), Offset(size.width * progress, y), stroke, StrokeCap.Round)
         }
     }
 }

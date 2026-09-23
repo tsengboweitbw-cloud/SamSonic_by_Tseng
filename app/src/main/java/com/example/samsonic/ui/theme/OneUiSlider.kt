@@ -42,6 +42,8 @@ fun OneUiSlider(
     modifier: Modifier = Modifier,
     valueRange: ClosedFloatingPointRange<Float> = 0f..1f,
     onValueChangeFinished: (() -> Unit)? = null,
+    // Applied to the drawn line only (not the touch area), e.g. to morph it as a shared element.
+    trackModifier: Modifier = Modifier,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val dragged by interactionSource.collectIsDraggedAsState()
@@ -87,7 +89,7 @@ fun OneUiSlider(
         track = { sliderState ->
             val fraction = sliderState.coercedValueAsFraction
             val activeColorArgb = remember(activeColor) { activeColor.toArgb() }
-            Canvas(modifier = Modifier.fillMaxWidth().height(20.dp)) {
+            Canvas(modifier = trackModifier.fillMaxWidth().height(20.dp)) {
                 val strokeWidthPx = trackStrokeWidth.toPx()
                 val y = size.height / 2f
                 val activeEndX = size.width * fraction

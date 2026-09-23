@@ -3,6 +3,7 @@ package com.example.samsonic.ui.player
 import com.example.samsonic.playback.LocalPlayerState
 import com.example.samsonic.playback.RepeatMode
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
@@ -71,6 +72,10 @@ fun NowPlayingScreen(
     }
     val cornerRadius by LocalAppContainer.current.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
     val horizontalPadding = 24.dp
+    // Takes the back gesture off the NavHost's predictive-back seek: that would fade
+    // this screen out before the mini player exists to morph the cover and seek
+    // bar back into, so back closes the same way the collapse button does.
+    BackHandler(onBack = onCollapse)
 
     Box(modifier = modifier.fillMaxSize()) {
         Crossfade(targetState = song, animationSpec = tween(500), label = "backdrop") { s ->
@@ -175,6 +180,7 @@ fun NowPlayingScreen(
                 player.seekToFraction(dragPosition)
                 dragPosition = -1f
             },
+            trackModifier = Modifier.playerMorphAnchor(PlayerElement.Progress, PlayerSurface.Full),
         )
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -192,7 +198,7 @@ fun NowPlayingScreen(
             )
         }
 
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(16.dp))
 
         Row(
             modifier = Modifier
