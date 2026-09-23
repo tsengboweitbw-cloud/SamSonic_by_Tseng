@@ -160,7 +160,7 @@ fun ArtistDetailScreen(
                     if (albums.isNotEmpty()) {
                         Spacer(Modifier.height(16.dp))
                         SectionHeader(title = "Albums")
-                        HorizontalCarousel(items = albums) { album ->
+                        HorizontalCarousel(items = albums, key = { it.id }) { album ->
                             AlbumCard(album = album, onClick = { onAlbumClick(album) })
                         }
                     }

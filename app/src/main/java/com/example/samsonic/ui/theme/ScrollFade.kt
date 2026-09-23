@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
@@ -48,5 +49,57 @@ fun Modifier.scrollTopFade(state: ScrollableState, height: Dp = 32.dp): Modifier
                 size = Size(size.width, fadePx),
                 blendMode = BlendMode.DstIn,
             )
+        }
+}
+
+/**
+ * The sideways partner of [scrollTopFade], for horizontal rows: cards melt away
+ * at the left edge once the row is scrolled, and at the right edge while more
+ * cards lie beyond it. Each edge only shows while there is something past it,
+ * so at rest the first card is never dimmed.
+ */
+@Composable
+fun Modifier.horizontalScrollFade(state: ScrollableState, width: Dp = 8.dp): Modifier {
+    val start by animateDpAsState(
+        targetValue = if (state.canScrollBackward) width else 0.dp,
+        animationSpec = tween(200),
+        label = "scrollStartFade",
+    )
+    val end by animateDpAsState(
+        targetValue = if (state.canScrollForward) width else 0.dp,
+        animationSpec = tween(200),
+        label = "scrollEndFade",
+    )
+    return this
+        .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+        .drawWithContent {
+            drawContent()
+            val startPx = start.toPx()
+            if (startPx > 0f) {
+                drawRect(
+                    brush = Brush.horizontalGradient(
+                        0f to Color.Transparent,
+                        1f to Color.Black,
+                        startX = 0f,
+                        endX = startPx,
+                    ),
+                    size = Size(startPx, size.height),
+                    blendMode = BlendMode.DstIn,
+                )
+            }
+            val endPx = end.toPx()
+            if (endPx > 0f) {
+                drawRect(
+                    brush = Brush.horizontalGradient(
+                        0f to Color.Black,
+                        1f to Color.Transparent,
+                        startX = size.width - endPx,
+                        endX = size.width,
+                    ),
+                    topLeft = Offset(size.width - endPx, 0f),
+                    size = Size(endPx, size.height),
+                    blendMode = BlendMode.DstIn,
+                )
+            }
         }
 }

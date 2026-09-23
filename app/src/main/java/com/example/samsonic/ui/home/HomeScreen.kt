@@ -64,14 +64,14 @@ fun HomeScreen(
             ) {
                 item {
                     SectionHeader(title = "Recently Added")
-                    HorizontalCarousel(items = sections.recentlyAdded) { album ->
+                    HorizontalCarousel(items = sections.recentlyAdded, key = { it.id }) { album ->
                         AlbumCard(album = album, onClick = { onAlbumClick(album) })
                     }
                     Spacer(Modifier.height(20.dp))
                 }
                 item {
                     SectionHeader(title = "Picked For You")
-                    HorizontalCarousel(items = sections.randomPicks) { album ->
+                    HorizontalCarousel(items = sections.randomPicks, key = { it.id }) { album ->
                         AlbumCard(album = album, onClick = { onAlbumClick(album) })
                     }
                     Spacer(Modifier.height(20.dp))
@@ -79,7 +79,7 @@ fun HomeScreen(
                 if (sections.recentlyPlayed.isNotEmpty()) {
                     item {
                         SectionHeader(title = "Recently Played")
-                        HorizontalCarousel(items = sections.recentlyPlayed) { album ->
+                        HorizontalCarousel(items = sections.recentlyPlayed, key = { it.id }) { album ->
                             AlbumCard(album = album, onClick = { onAlbumClick(album) })
                         }
                         Spacer(Modifier.height(20.dp))
@@ -88,7 +88,7 @@ fun HomeScreen(
                 if (sections.mostPlayed.isNotEmpty()) {
                     item {
                         SectionHeader(title = "Most Played")
-                        HorizontalCarousel(items = sections.mostPlayed) { album ->
+                        HorizontalCarousel(items = sections.mostPlayed, key = { it.id }) { album ->
                             AlbumCard(album = album, onClick = { onAlbumClick(album) })
                         }
                         Spacer(Modifier.height(24.dp))

@@ -1,9 +1,5 @@
 package com.example.samsonic.ui.search
 
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.VisibilityThreshold
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -51,6 +47,8 @@ import com.example.samsonic.playback.LocalPlayerState
 import com.example.samsonic.ui.components.AlbumCard
 import com.example.samsonic.ui.components.ArtistCard
 import com.example.samsonic.ui.components.HorizontalCarousel
+import com.example.samsonic.ui.components.ListItemFade
+import com.example.samsonic.ui.components.ListItemMove
 import com.example.samsonic.ui.components.SectionHeader
 import com.example.samsonic.ui.components.SongRow
 import com.example.samsonic.ui.theme.GlassAlpha
@@ -64,8 +62,6 @@ import kotlinx.coroutines.delay
 
 private val ListTopPadding = 12.dp
 
-private val ItemFade = tween<Float>(durationMillis = 220)
-private val ItemMove = spring(stiffness = Spring.StiffnessMediumLow, visibilityThreshold = IntOffset.VisibilityThreshold)
 
 /** True once the list has scrolled further than the title, i.e. the pill is pinned over results. */
 private fun LazyListState.isScrolledPast(titleHeight: Int): Boolean =
@@ -137,7 +133,7 @@ fun SearchScreen(
             // cross-fade in and surviving rows slide to their new spot.
             when {
                 query.isBlank() -> item(key = "hint") {
-                    Box(modifier = Modifier.animateItem(ItemFade, ItemMove, ItemFade).fillMaxWidth().padding(top = 64.dp), contentAlignment = Alignment.Center) {
+                    Box(modifier = Modifier.animateItem(ListItemFade, ListItemMove, ListItemFade).fillMaxWidth().padding(top = 64.dp), contentAlignment = Alignment.Center) {
                         Text(
                             text = "Search your library",
                             style = MaterialTheme.typography.bodyLarge,
@@ -146,12 +142,12 @@ fun SearchScreen(
                     }
                 }
                 current == null -> item(key = "loading") {
-                    Box(modifier = Modifier.animateItem(ItemFade, ItemMove, ItemFade).fillMaxWidth().padding(top = 64.dp), contentAlignment = Alignment.Center) {
+                    Box(modifier = Modifier.animateItem(ListItemFade, ListItemMove, ListItemFade).fillMaxWidth().padding(top = 64.dp), contentAlignment = Alignment.Center) {
                         CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                     }
                 }
                 !hasResults -> item(key = "empty") {
-                    Box(modifier = Modifier.animateItem(ItemFade, ItemMove, ItemFade).fillMaxWidth().padding(top = 64.dp), contentAlignment = Alignment.Center) {
+                    Box(modifier = Modifier.animateItem(ListItemFade, ListItemMove, ListItemFade).fillMaxWidth().padding(top = 64.dp), contentAlignment = Alignment.Center) {
                         Text(
                             text = "No results for “$query”",
                             style = MaterialTheme.typography.bodyLarge,
@@ -161,21 +157,21 @@ fun SearchScreen(
                 }
                 else -> {
                     if (current.artists.isNotEmpty()) {
-                        // Keyed by content, so a changed carousel fades as a whole.
-                        item(key = "artists:" + current.artists.joinToString { it.id }) {
-                            Column(modifier = Modifier.animateItem(ItemFade, ItemMove, ItemFade)) {
+                        // The section stays put; HorizontalCarousel fades its cards one by one.
+                        item(key = "artists") {
+                            Column(modifier = Modifier.animateItem(ListItemFade, ListItemMove, ListItemFade)) {
                                 SectionHeader(title = "Artists")
-                                HorizontalCarousel(items = current.artists) { artist ->
+                                HorizontalCarousel(items = current.artists, key = { it.id }) { artist ->
                                     ArtistCard(artist = artist, onClick = { onArtistClick(artist) })
                                 }
                             }
                         }
                     }
                     if (current.albums.isNotEmpty()) {
-                        item(key = "albums:" + current.albums.joinToString { it.id }) {
-                            Column(modifier = Modifier.animateItem(ItemFade, ItemMove, ItemFade)) {
+                        item(key = "albums") {
+                            Column(modifier = Modifier.animateItem(ListItemFade, ListItemMove, ListItemFade)) {
                                 SectionHeader(title = "Albums")
-                                HorizontalCarousel(items = current.albums) { album ->
+                                HorizontalCarousel(items = current.albums, key = { it.id }) { album ->
                                     AlbumCard(album = album, onClick = { onAlbumClick(album) })
                                 }
                             }
@@ -183,14 +179,14 @@ fun SearchScreen(
                     }
                     if (current.songs.isNotEmpty()) {
                         item(key = "songsHeader") {
-                            SectionHeader(title = "Songs", modifier = Modifier.animateItem(ItemFade, ItemMove, ItemFade))
+                            SectionHeader(title = "Songs", modifier = Modifier.animateItem(ListItemFade, ListItemMove, ListItemFade))
                         }
                         items(current.songs, key = { "song:" + it.id }) { song ->
                             SongRow(
                                 song = song,
                                 isCurrent = player.currentSong?.id == song.id,
                                 onClick = { player.play(song, current.songs) },
-                                modifier = Modifier.animateItem(ItemFade, ItemMove, ItemFade),
+                                modifier = Modifier.animateItem(ListItemFade, ListItemMove, ListItemFade),
                             )
                         }
                     }
