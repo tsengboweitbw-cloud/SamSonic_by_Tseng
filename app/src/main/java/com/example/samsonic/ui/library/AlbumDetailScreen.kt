@@ -29,6 +29,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -55,6 +56,7 @@ fun AlbumDetailScreen(
 ) {
     val player = LocalPlayerState.current
     val repository = LocalAppContainer.current.repository
+    val cornerRadius by LocalAppContainer.current.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
 
     val state by produceState<UiState<Pair<Album, List<Song>>>>(initialValue = UiState.Loading, key1 = albumId) {
         value = UiState.Loading
@@ -91,7 +93,7 @@ fun AlbumDetailScreen(
                             coverArt = album.coverArt,
                             colorSeed = album.id.artSeed(),
                             size = 200.dp,
-                            cornerRadius = OneUiRadius.Hero,
+                            cornerRadius = cornerRadius,
                         )
                         Spacer(Modifier.height(16.dp))
                         Text(text = album.title, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)

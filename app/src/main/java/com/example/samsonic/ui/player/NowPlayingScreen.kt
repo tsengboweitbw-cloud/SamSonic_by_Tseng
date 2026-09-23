@@ -49,6 +49,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.model.artSeed
 import com.example.samsonic.ui.components.MediaArtFill
 import com.example.samsonic.ui.theme.BlurredArtBackdrop
@@ -69,6 +71,7 @@ fun NowPlayingScreen(
         onCollapse()
         return
     }
+    val cornerRadius by LocalAppContainer.current.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
 
     Box(modifier = modifier.fillMaxSize()) {
         BlurredArtBackdrop(coverArt = song.coverArt, colorSeed = song.id.artSeed())
@@ -112,7 +115,7 @@ fun NowPlayingScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(1f)
-                .clip(RoundedCornerShape(OneUiRadius.Hero)),
+                .clip(RoundedCornerShape(cornerRadius)),
         ) {
             MediaArtFill(coverArt = song.coverArt, colorSeed = song.id.artSeed())
         }
