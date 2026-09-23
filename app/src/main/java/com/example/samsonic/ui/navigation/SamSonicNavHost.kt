@@ -14,6 +14,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LibraryMusic
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
@@ -72,6 +73,7 @@ private val bottomDestinations = listOf(
     BottomDestination(Routes.HOME, "Home", Icons.Filled.Home),
     BottomDestination(Routes.LIBRARY, "Library", Icons.Filled.LibraryMusic),
     BottomDestination(Routes.SEARCH, "Search", Icons.Filled.Search),
+    BottomDestination(Routes.SETTINGS, "Settings", Icons.Filled.Settings),
 )
 
 private val noChromeRoutes = setOf(Routes.LOGIN, Routes.NOW_PLAYING, Routes.LYRICS, Routes.QUEUE)
@@ -90,10 +92,10 @@ fun SamSonicNavHost() {
     }
 
     val showChrome = currentRoute == null || currentRoute !in noChromeRoutes
-    // The floating nav bar stays up everywhere chrome shows except Settings -
-    // only the settings screen and the big player surfaces (now playing,
-    // lyrics, queue - already excluded via noChromeRoutes) hide it.
-    val showBottomBar = showChrome && currentRoute != Routes.SETTINGS
+    // The floating nav bar stays up everywhere chrome shows - Settings is now
+    // just another tab in it. Only the big player surfaces (now playing,
+    // lyrics, queue - excluded via noChromeRoutes) hide it.
+    val showBottomBar = showChrome
 
     val hazeState = rememberHazeState()
     val navBarHeight = OneUiChrome.BarHeight
@@ -131,7 +133,6 @@ fun SamSonicNavHost() {
                 composable(Routes.HOME) {
                     HomeScreen(
                         onAlbumClick = { navController.navigate(Routes.album(it.id)) },
-                        onSettingsClick = { navController.navigate(Routes.SETTINGS) },
                         contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve,
                     )
                 }
@@ -158,7 +159,7 @@ fun SamSonicNavHost() {
                                 popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
                             }
                         },
-                        contentPaddingBottom = systemBarInset + miniPlayerReserve,
+                        contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve,
                     )
                 }
                 composable(Routes.ARTIST) { entry ->

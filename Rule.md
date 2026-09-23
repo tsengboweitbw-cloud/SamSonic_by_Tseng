@@ -9,7 +9,7 @@
 ## 2. 設計語言：Samsung One UI 9.0 (嚴格限制)
 **【警告】絕對避免使用 Google Material 3 (M3) 的預設扁平化設計。**
 所有的 UI 元件必須符合以下 One UI 9.0 的特徵：
-- **毛玻璃與空間感 (Glassmorphism)**：大量使用原生的 `Modifier.blur()` 搭配半透明背景（Alpha 控制在 0.7-0.85）。包含底部導航、懸浮播放列。
+- **毛玻璃與空間感 (Glassmorphism)**：大量使用原生的 `Modifier.blur()` 搭配半透明背景（Alpha 控制在 0.3-0.85）。包含底部導航、懸浮播放列。
 - **懸浮與圓角 (Floating & Rounded)**：卡片與按鈕需使用大圓角（至少 24.dp），並帶有輕微且柔和的陰影（Soft Drop Shadows），製造深度的 Z 軸空間感。
 - **底部操作區 (Bottom-heavy Reachability)**：確保所有核心互動按鈕都在畫面中下半部（方便單手操作），頂部保留大面積的彈性標題或留白。
 - **沉浸式全螢幕 (Edge-to-Edge)**：必須開啟 `WindowCompat.setDecorFitsSystemWindows(window, false)`，讓畫面延伸到系統狀態列與導航列後方，使毛玻璃透色更明顯。

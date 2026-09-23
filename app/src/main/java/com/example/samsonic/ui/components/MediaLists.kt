@@ -172,6 +172,8 @@ fun SongRow(
     onMoreClick: (() -> Unit)? = null,
     leading: @Composable (() -> Unit)? = null,
 ) {
+    val cornerRadius by LocalAppContainer.current.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
+
     // No hazeState here: this row is nested inside the NavHost's own hazeSource
     // subtree, and haze warns that a hazeEffect nested inside its own hazeSource
     // can cause recursive drawing - so this falls back to a flat translucent fill.
@@ -204,7 +206,7 @@ fun SongRow(
                 coverArt = song.coverArt,
                 colorSeed = song.id.artSeed(),
                 size = 44.dp,
-                cornerRadius = OneUiRadius.Chip,
+                cornerRadius = cornerRadius,
                 shadowElevation = 0.dp,
             )
             Spacer(Modifier.width(12.dp))

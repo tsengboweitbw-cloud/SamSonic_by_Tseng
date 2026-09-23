@@ -28,11 +28,14 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.model.artSeed
 import com.example.samsonic.ui.components.MediaArt
 import com.example.samsonic.ui.theme.GlassAlpha
@@ -57,6 +60,7 @@ fun MiniPlayer(
     ) {
         if (song == null) return@AnimatedVisibility
         val hazeState = LocalHazeState.current
+        val cornerRadius by LocalAppContainer.current.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
 
         // Art sits flush left of the row; the progress track below starts
         // only after it, so the two never overlap horizontally. It ends at
@@ -98,7 +102,7 @@ fun MiniPlayer(
                     coverArt = song.coverArt,
                     colorSeed = song.id.artSeed(),
                     size = artSize,
-                    cornerRadius = OneUiRadius.Chip,
+                    cornerRadius = cornerRadius,
                     shadowElevation = 0.dp,
                 )
                 Spacer(Modifier.width(artTextSpacing))
