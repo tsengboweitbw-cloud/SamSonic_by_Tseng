@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -18,12 +19,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.example.samsonic.ui.common.rememberScreenLoad
 import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.data.SubsonicRepository
 import com.example.samsonic.model.Album
@@ -49,7 +50,7 @@ fun LibraryScreen(
     var selectedTab by remember { mutableIntStateOf(1) }
     val repository = LocalAppContainer.current.repository
 
-    Column(modifier = modifier.fillMaxSize()) {
+    Column(modifier = modifier.fillMaxSize().statusBarsPadding()) {
         Text(
             text = "Library",
             style = MaterialTheme.typography.displaySmall,
@@ -81,12 +82,7 @@ fun LibraryScreen(
 
 @Composable
 private fun ArtistGrid(repository: SubsonicRepository, onArtistClick: (Artist) -> Unit, bottomPadding: Dp) {
-    val state by produceState<UiState<List<Artist>>>(initialValue = UiState.Loading) {
-        value = runCatching { repository.getArtists() }.fold(
-            onSuccess = { UiState.Success(it) },
-            onFailure = { UiState.Error(it.message ?: "Couldn't load artists") },
-        )
-    }
+    val state = rememberScreenLoad(Unit, errorMessage = "Couldn't load artists") { repository.getArtists() }
     StateContent(state = state, modifier = Modifier.fillMaxSize()) { artists ->
         LazyVerticalGrid(
             columns = GridCells.Fixed(3),
@@ -104,11 +100,8 @@ private fun ArtistGrid(repository: SubsonicRepository, onArtistClick: (Artist) -
 
 @Composable
 private fun AlbumGrid(repository: SubsonicRepository, onAlbumClick: (Album) -> Unit, bottomPadding: Dp) {
-    val state by produceState<UiState<List<Album>>>(initialValue = UiState.Loading) {
-        value = runCatching { repository.getAlbumList("alphabeticalByArtist", 500) }.fold(
-            onSuccess = { UiState.Success(it) },
-            onFailure = { UiState.Error(it.message ?: "Couldn't load albums") },
-        )
+    val state = rememberScreenLoad(Unit, errorMessage = "Couldn't load albums") {
+        repository.getAlbumList("alphabeticalByArtist", 500)
     }
     StateContent(state = state, modifier = Modifier.fillMaxSize()) { albums ->
         LazyVerticalGrid(
@@ -127,12 +120,7 @@ private fun AlbumGrid(repository: SubsonicRepository, onAlbumClick: (Album) -> U
 
 @Composable
 private fun PlaylistGrid(repository: SubsonicRepository, onPlaylistClick: (Playlist) -> Unit, bottomPadding: Dp) {
-    val state by produceState<UiState<List<Playlist>>>(initialValue = UiState.Loading) {
-        value = runCatching { repository.getPlaylists() }.fold(
-            onSuccess = { UiState.Success(it) },
-            onFailure = { UiState.Error(it.message ?: "Couldn't load playlists") },
-        )
-    }
+    val state = rememberScreenLoad(Unit, errorMessage = "Couldn't load playlists") { repository.getPlaylists() }
     StateContent(state = state, modifier = Modifier.fillMaxSize()) { playlists ->
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
@@ -150,12 +138,7 @@ private fun PlaylistGrid(repository: SubsonicRepository, onPlaylistClick: (Playl
 
 @Composable
 private fun GenreList(repository: SubsonicRepository, bottomPadding: Dp) {
-    val state by produceState<UiState<List<Genre>>>(initialValue = UiState.Loading) {
-        value = runCatching { repository.getGenres() }.fold(
-            onSuccess = { UiState.Success(it) },
-            onFailure = { UiState.Error(it.message ?: "Couldn't load genres") },
-        )
-    }
+    val state = rememberScreenLoad(Unit, errorMessage = "Couldn't load genres") { repository.getGenres() }
     StateContent(state = state, modifier = Modifier.fillMaxSize()) { genres ->
         LazyColumn(
             contentPadding = PaddingValues(bottom = bottomPadding),

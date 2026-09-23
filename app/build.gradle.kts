@@ -23,8 +23,16 @@ android {
     buildTypes {
         release {
             optimization {
-                enable = false
+                enable = true
             }
+        }
+        // Non-debuggable, debug-signed build for judging animation smoothness on a
+        // device: debug builds run Compose largely interpreted, so they stutter
+        // the first time each screen is opened. Installs over the debug build.
+        create("perfTest") {
+            initWith(getByName("release"))
+            signingConfig = signingConfigs.getByName("debug")
+            matchingFallbacks += "release"
         }
     }
     compileOptions {

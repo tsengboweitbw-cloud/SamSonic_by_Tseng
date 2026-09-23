@@ -1,5 +1,6 @@
 package com.example.samsonic.ui.navigation
 
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -28,7 +29,6 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.samsonic.LocalAppContainer
@@ -46,6 +46,7 @@ import com.example.samsonic.ui.search.SearchScreen
 import com.example.samsonic.ui.settings.SettingsScreen
 import com.example.samsonic.ui.theme.LocalHazeState
 import com.example.samsonic.ui.theme.OneUiChrome
+import com.example.samsonic.ui.theme.bottomFade
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 
@@ -97,6 +98,7 @@ fun SamSonicNavHost() {
     // lyrics, queue - excluded via noChromeRoutes) hide it.
     val showBottomBar = showChrome
 
+    val navTransitions = remember { NavTransitions(bottomDestinations.map { it.route }) }
     val hazeState = rememberHazeState()
     val navBarHeight = OneUiChrome.BarHeight
     val navBarBottomInset = 16.dp
@@ -107,21 +109,31 @@ fun SamSonicNavHost() {
             val systemBarInset = if (showChrome) innerPadding.calculateBottomPadding() else 0.dp
             val navBarReserve = if (showChrome && showBottomBar) navBarHeight + navBarBottomInset else 0.dp
             val miniPlayerReserve = if (showChrome) OneUiChrome.BarHeight + 8.dp else 0.dp
+            // Content melts into the background across the whole floating-chrome
+            // zone. Full-screen player surfaces skip it - their controls live
+            // at the bottom. Animated so route changes don't pop the mask.
+            val bottomFadeHeight by animateDpAsState(
+                targetValue = if (showChrome) systemBarInset + navBarReserve + miniPlayerReserve else 0.dp,
+                animationSpec = tween(260),
+                label = "bottomFade",
+            )
 
             // graphicsLayer() forces this whole subtree (including any
             // LazyColumn/LazyVerticalGrid screens inside NavHost) to
             // composite into one flattened layer before hazeSource snapshots
             // it - LazyColumn content otherwise has known gaps in Haze's
             // capture (text and item edges stay sharp/unblurred).
-            Box(modifier = Modifier.fillMaxSize().graphicsLayer().hazeSource(hazeState)) {
+            Box(modifier = Modifier.fillMaxSize().bottomFade(bottomFadeHeight).graphicsLayer().hazeSource(hazeState)) {
             NavHost(
                 navController = navController,
                 startDestination = startDestination,
                 modifier = Modifier.fillMaxSize(),
-                enterTransition = { fadeIn(tween(180)) },
-                exitTransition = { fadeOut(tween(180)) },
+                enterTransition = navTransitions.enter,
+                exitTransition = navTransitions.exit,
+                popEnterTransition = navTransitions.popEnter,
+                popExitTransition = navTransitions.popExit,
             ) {
-                composable(Routes.LOGIN) {
+                screen(Routes.LOGIN) {
                     LoginScreen(
                         onConnected = {
                             navController.navigate(Routes.HOME) {
@@ -130,13 +142,13 @@ fun SamSonicNavHost() {
                         },
                     )
                 }
-                composable(Routes.HOME) {
+                screen(Routes.HOME) {
                     HomeScreen(
                         onAlbumClick = { navController.navigate(Routes.album(it.id)) },
                         contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve,
                     )
                 }
-                composable(Routes.LIBRARY) {
+                screen(Routes.LIBRARY) {
                     LibraryScreen(
                         onArtistClick = { navController.navigate(Routes.artist(it.id)) },
                         onAlbumClick = { navController.navigate(Routes.album(it.id)) },
@@ -144,14 +156,14 @@ fun SamSonicNavHost() {
                         contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve,
                     )
                 }
-                composable(Routes.SEARCH) {
+                screen(Routes.SEARCH) {
                     SearchScreen(
                         onArtistClick = { navController.navigate(Routes.artist(it.id)) },
                         onAlbumClick = { navController.navigate(Routes.album(it.id)) },
                         contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve,
                     )
                 }
-                composable(Routes.SETTINGS) {
+                screen(Routes.SETTINGS) {
                     SettingsScreen(
                         onBack = { navController.popBackStack() },
                         onSignedOut = {
@@ -162,8 +174,8 @@ fun SamSonicNavHost() {
                         contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve,
                     )
                 }
-                composable(Routes.ARTIST) { entry ->
-                    val artistId = entry.arguments?.getString("artistId") ?: return@composable
+                screen(Routes.ARTIST) { entry ->
+                    val artistId = entry.arguments?.getString("artistId") ?: return@screen
                     ArtistDetailScreen(
                         artistId = artistId,
                         onBack = { navController.popBackStack() },
@@ -171,23 +183,23 @@ fun SamSonicNavHost() {
                         contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve,
                     )
                 }
-                composable(Routes.ALBUM) { entry ->
-                    val albumId = entry.arguments?.getString("albumId") ?: return@composable
+                screen(Routes.ALBUM) { entry ->
+                    val albumId = entry.arguments?.getString("albumId") ?: return@screen
                     AlbumDetailScreen(
                         albumId = albumId,
                         onBack = { navController.popBackStack() },
                         contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve,
                     )
                 }
-                composable(Routes.PLAYLIST) { entry ->
-                    val playlistId = entry.arguments?.getString("playlistId") ?: return@composable
+                screen(Routes.PLAYLIST) { entry ->
+                    val playlistId = entry.arguments?.getString("playlistId") ?: return@screen
                     PlaylistDetailScreen(
                         playlistId = playlistId,
                         onBack = { navController.popBackStack() },
                         contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve,
                     )
                 }
-                composable(
+                screen(
                     Routes.NOW_PLAYING,
                     enterTransition = { slideInVertically(tween(260)) { it } + fadeIn(tween(260)) },
                     exitTransition = { slideOutVertically(tween(220)) { it } + fadeOut(tween(220)) },
@@ -198,14 +210,14 @@ fun SamSonicNavHost() {
                         onShowLyrics = { navController.navigate(Routes.LYRICS) },
                     )
                 }
-                composable(
+                screen(
                     Routes.LYRICS,
                     enterTransition = { slideInVertically(tween(260)) { it } + fadeIn(tween(260)) },
                     exitTransition = { slideOutVertically(tween(220)) { it } + fadeOut(tween(220)) },
                 ) {
                     LyricsScreen(onCollapse = { navController.popBackStack() })
                 }
-                composable(
+                screen(
                     Routes.QUEUE,
                     enterTransition = { slideInVertically(tween(260)) { it } + fadeIn(tween(260)) },
                     exitTransition = { slideOutVertically(tween(220)) { it } + fadeOut(tween(220)) },
