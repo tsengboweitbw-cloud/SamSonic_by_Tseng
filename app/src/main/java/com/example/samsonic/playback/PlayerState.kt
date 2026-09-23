@@ -138,7 +138,13 @@ class PlayerState(
     fun seekToFraction(fraction: Float) {
         val c = controller ?: return
         val song = currentSong ?: return
-        c.seekTo((fraction.coerceIn(0f, 1f) * song.durationSeconds * 1000).toLong())
+        val clamped = fraction.coerceIn(0f, 1f)
+        c.seekTo((clamped * song.durationSeconds * 1000).toLong())
+        // Update optimistically rather than waiting for the position-polling
+        // loop's next tick (up to 500ms away) - otherwise the seek bar falls
+        // back to the stale pre-seek position for a moment, then jumps again
+        // once the poll catches up, visible as a snap-back-then-forward glitch.
+        positionSeconds = clamped * song.durationSeconds
     }
 
     fun toggleShuffle() {
