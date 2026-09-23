@@ -7,33 +7,41 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.example.samsonic.ui.common.rememberScreenLoad
 import com.example.samsonic.LocalAppContainer
-import com.example.samsonic.data.SubsonicRepository
 import com.example.samsonic.model.Album
 import com.example.samsonic.model.Artist
 import com.example.samsonic.model.Genre
 import com.example.samsonic.model.Playlist
-import com.example.samsonic.ui.common.StateContent
 import com.example.samsonic.ui.common.PinnedBarHeader
+import com.example.samsonic.ui.common.StateContent
 import com.example.samsonic.ui.common.UiState
+import com.example.samsonic.ui.common.rememberPinnedBarHeaderState
+import com.example.samsonic.ui.common.rememberScreenLoad
 import com.example.samsonic.ui.components.AlbumCard
 import com.example.samsonic.ui.components.ArtistCard
 import com.example.samsonic.ui.components.GlassTabBar
 import com.example.samsonic.ui.components.PlaylistCard
+import kotlinx.coroutines.launch
 
 private val tabs = listOf("Artists", "Albums", "Playlists", "Genres")
 
@@ -48,12 +56,67 @@ fun LibraryScreen(
     modifier: Modifier = Modifier,
     contentPaddingBottom: Dp = 0.dp,
 ) {
-    var selectedTab by remember { mutableIntStateOf(1) }
+    // Saveable, so the tab and each tab's scroll position survive a trip to a
+    // detail page and back, not just switching between tabs.
+    var selectedTab by rememberSaveable { mutableIntStateOf(1) }
+    val header = rememberPinnedBarHeaderState()
+    val artistsGrid = rememberLazyGridState()
+    val albumsGrid = rememberLazyGridState()
+    val playlistsGrid = rememberLazyGridState()
+    val genresList = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+
+    // Each tab loads on its first visit and then keeps its data while on this
+    // page, so switching back shows the list at once, right where it was left.
+    val visited = remember { mutableStateListOf(selectedTab) }
     val repository = LocalAppContainer.current.repository
+    val artists = if (0 in visited) {
+        rememberScreenLoad(Unit, errorMessage = "Couldn't load artists") { repository.getArtists() }
+    } else UiState.Loading
+    val albums = if (1 in visited) {
+        rememberScreenLoad(Unit, errorMessage = "Couldn't load albums") {
+            repository.getAlbumList("alphabeticalByArtist", 500)
+        }
+    } else UiState.Loading
+    val playlists = if (2 in visited) {
+        rememberScreenLoad(Unit, errorMessage = "Couldn't load playlists") { repository.getPlaylists() }
+    } else UiState.Loading
+    val genres = if (3 in visited) {
+        rememberScreenLoad(Unit, errorMessage = "Couldn't load genres") { repository.getGenres() }
+    } else UiState.Loading
+
+    fun isScrolled(tab: Int): Boolean = when (tab) {
+        0 -> artistsGrid.isScrolled()
+        1 -> albumsGrid.isScrolled()
+        2 -> playlistsGrid.isScrolled()
+        else -> genresList.isScrolled()
+    }
+
+    fun onTabSelected(tab: Int) {
+        if (tab == selectedTab) {
+            // Tapping the current tab again: back to the top, title and all.
+            scope.launch { header.animateTo(expanded = true) }
+            scope.launch {
+                when (tab) {
+                    0 -> artistsGrid.animateScrollToItem(0)
+                    1 -> albumsGrid.animateScrollToItem(0)
+                    2 -> playlistsGrid.animateScrollToItem(0)
+                    else -> genresList.animateScrollToItem(0)
+                }
+            }
+            return
+        }
+        selectedTab = tab
+        if (tab !in visited) visited += tab
+        // The title is shared by all tabs: tuck it away over a tab left
+        // mid-list, bring it back over one that's at its top.
+        scope.launch { header.animateTo(expanded = !isScrolled(tab)) }
+    }
 
     // The title scrolls away; the tab bar rides up and pins where the title started.
     PinnedBarHeader(
         modifier = modifier,
+        state = header,
         title = {
             Text(
                 text = "Library",
@@ -67,7 +130,7 @@ fun LibraryScreen(
             GlassTabBar(
                 labels = tabs,
                 selectedIndex = selectedTab,
-                onSelect = { selectedTab = it },
+                onSelect = ::onTabSelected,
                 hazeState = hazeState,
                 modifier = Modifier.padding(horizontal = 20.dp),
             )
@@ -75,20 +138,23 @@ fun LibraryScreen(
     ) { topPadding ->
         val padding = LibraryPadding(top = topPadding, bottom = contentPaddingBottom)
         when (selectedTab) {
-            0 -> ArtistGrid(repository, onArtistClick, padding)
-            1 -> AlbumGrid(repository, onAlbumClick, padding)
-            2 -> PlaylistGrid(repository, onPlaylistClick, padding)
-            else -> GenreList(repository, padding)
+            0 -> ArtistGrid(artists, artistsGrid, onArtistClick, padding)
+            1 -> AlbumGrid(albums, albumsGrid, onAlbumClick, padding)
+            2 -> PlaylistGrid(playlists, playlistsGrid, onPlaylistClick, padding)
+            else -> GenreList(genres, genresList, padding)
         }
     }
 }
 
+private fun LazyGridState.isScrolled() = firstVisibleItemIndex > 0 || firstVisibleItemScrollOffset > 0
+private fun LazyListState.isScrolled() = firstVisibleItemIndex > 0 || firstVisibleItemScrollOffset > 0
+
 @Composable
-private fun ArtistGrid(repository: SubsonicRepository, onArtistClick: (Artist) -> Unit, padding: LibraryPadding) {
-    val state = rememberScreenLoad(Unit, errorMessage = "Couldn't load artists") { repository.getArtists() }
+private fun ArtistGrid(state: UiState<List<Artist>>, gridState: LazyGridState, onArtistClick: (Artist) -> Unit, padding: LibraryPadding) {
     StateContent(state = state, modifier = Modifier.fillMaxSize()) { artists ->
         LazyVerticalGrid(
             columns = GridCells.Fixed(3),
+            state = gridState,
             contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = padding.top, bottom = 16.dp + padding.bottom),
             verticalArrangement = Arrangement.spacedBy(16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -102,13 +168,11 @@ private fun ArtistGrid(repository: SubsonicRepository, onArtistClick: (Artist) -
 }
 
 @Composable
-private fun AlbumGrid(repository: SubsonicRepository, onAlbumClick: (Album) -> Unit, padding: LibraryPadding) {
-    val state = rememberScreenLoad(Unit, errorMessage = "Couldn't load albums") {
-        repository.getAlbumList("alphabeticalByArtist", 500)
-    }
+private fun AlbumGrid(state: UiState<List<Album>>, gridState: LazyGridState, onAlbumClick: (Album) -> Unit, padding: LibraryPadding) {
     StateContent(state = state, modifier = Modifier.fillMaxSize()) { albums ->
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
+            state = gridState,
             contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = padding.top, bottom = 16.dp + padding.bottom),
             verticalArrangement = Arrangement.spacedBy(20.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -122,11 +186,11 @@ private fun AlbumGrid(repository: SubsonicRepository, onAlbumClick: (Album) -> U
 }
 
 @Composable
-private fun PlaylistGrid(repository: SubsonicRepository, onPlaylistClick: (Playlist) -> Unit, padding: LibraryPadding) {
-    val state = rememberScreenLoad(Unit, errorMessage = "Couldn't load playlists") { repository.getPlaylists() }
+private fun PlaylistGrid(state: UiState<List<Playlist>>, gridState: LazyGridState, onPlaylistClick: (Playlist) -> Unit, padding: LibraryPadding) {
     StateContent(state = state, modifier = Modifier.fillMaxSize()) { playlists ->
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
+            state = gridState,
             contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = padding.top, bottom = 16.dp + padding.bottom),
             verticalArrangement = Arrangement.spacedBy(20.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
@@ -140,10 +204,10 @@ private fun PlaylistGrid(repository: SubsonicRepository, onPlaylistClick: (Playl
 }
 
 @Composable
-private fun GenreList(repository: SubsonicRepository, padding: LibraryPadding) {
-    val state = rememberScreenLoad(Unit, errorMessage = "Couldn't load genres") { repository.getGenres() }
+private fun GenreList(state: UiState<List<Genre>>, listState: LazyListState, padding: LibraryPadding) {
     StateContent(state = state, modifier = Modifier.fillMaxSize()) { genres ->
         LazyColumn(
+            state = listState,
             contentPadding = PaddingValues(top = padding.top, bottom = padding.bottom),
             modifier = Modifier.fillMaxSize(),
         ) {

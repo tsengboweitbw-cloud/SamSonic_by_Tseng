@@ -1,5 +1,8 @@
 package com.example.samsonic.ui.common
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animate
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -8,6 +11,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
@@ -47,17 +53,15 @@ fun PinnedBarHeader(
     title: @Composable () -> Unit,
     bar: @Composable (HazeState) -> Unit,
     modifier: Modifier = Modifier,
+    state: PinnedBarHeaderState = rememberPinnedBarHeaderState(),
     pinnedTop: Dp = 12.dp,
     content: @Composable (contentTopPadding: Dp) -> Unit,
 ) {
     val contentHaze = rememberHazeState()
     val density = LocalDensity.current
-    // How far the title has scrolled away: 0 = fully shown, -range = bar pinned.
-    var offset by remember { mutableFloatStateOf(0f) }
-    val range = remember { floatArrayOf(0f) }
     var barHeight by remember { mutableIntStateOf(0) }
 
-    val connection = remember {
+    val connection = remember(state) {
         object : NestedScrollConnection {
             // Scrolling up: the title leaves first, then the content scrolls.
             override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
@@ -72,9 +76,9 @@ fun PinnedBarHeader(
             }
 
             private fun moveBy(dy: Float): Offset {
-                val next = (offset + dy).coerceIn(-range[0], 0f)
-                val consumed = next - offset
-                offset = next
+                val next = (state.offset + dy).coerceIn(-state.range, 0f)
+                val consumed = next - state.offset
+                state.offset = next
                 return Offset(0f, consumed)
             }
         }
@@ -109,15 +113,15 @@ fun PinnedBarHeader(
         val titlePlaceable = titleMeasurables.first().measure(loose)
         val barPlaceable = barMeasurables.first().measure(loose)
         val pinned = pinnedTop.roundToPx()
-        range[0] = (titlePlaceable.height - pinned).coerceAtLeast(0).toFloat()
+        state.range = (titlePlaceable.height - pinned).coerceAtLeast(0).toFloat()
         // Sized for the pinned state; before that it just runs off the bottom.
         val contentPlaceable = contentMeasurables.first().measure(
             constraints.copy(minHeight = 0, maxHeight = (constraints.maxHeight - pinned).coerceAtLeast(0)),
         )
         layout(constraints.maxWidth, constraints.maxHeight) {
-            val y = offset.coerceIn(-range[0], 0f)
+            val y = state.offset.coerceIn(-state.range, 0f)
             val barY = titlePlaceable.height + y.toInt()
-            val progress = if (range[0] > 0f) -y / range[0] else 0f
+            val progress = if (state.range > 0f) -y / state.range else 0f
             titlePlaceable.placeWithLayer(0, y.toInt()) { alpha = 1f - progress }
             contentPlaceable.place(0, barY)
             barPlaceable.place(0, barY)
@@ -137,3 +141,37 @@ private fun Modifier.topFade(heightPx: Float): Modifier = this
             blendMode = BlendMode.DstIn,
         )
     }
+
+/**
+ * How far a [PinnedBarHeader]'s title has scrolled away, hoisted so a page can
+ * collapse or restore it itself (e.g. on a tab switch) and so it survives a
+ * trip to a detail page and back along with the content's scroll position.
+ */
+@Stable
+class PinnedBarHeaderState(initialOffset: Float = 0f) {
+    /** 0 = title fully shown, -[range] = title gone and the bar pinned. */
+    internal var offset by mutableFloatStateOf(initialOffset)
+
+    /** How far the title can travel; known once the header has been measured. */
+    internal var range = 0f
+
+    /** Glides the title back into view ([expanded]) or away, pinning the bar. */
+    suspend fun animateTo(expanded: Boolean) {
+        val target = if (expanded) 0f else -range
+        if (offset == target) return
+        animate(offset, target, animationSpec = spring(stiffness = Spring.StiffnessMediumLow)) { value, _ ->
+            offset = value
+        }
+    }
+
+    companion object {
+        val Saver: Saver<PinnedBarHeaderState, Float> = Saver(
+            save = { it.offset },
+            restore = { PinnedBarHeaderState(it) },
+        )
+    }
+}
+
+@Composable
+fun rememberPinnedBarHeaderState(): PinnedBarHeaderState =
+    rememberSaveable(saver = PinnedBarHeaderState.Saver) { PinnedBarHeaderState() }
