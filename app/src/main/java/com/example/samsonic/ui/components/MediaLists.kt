@@ -11,14 +11,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,7 +36,6 @@ import com.example.samsonic.model.Playlist
 import com.example.samsonic.model.Song
 import com.example.samsonic.model.artSeed
 import com.example.samsonic.ui.theme.GlassAlpha
-import com.example.samsonic.ui.theme.OneUiRadius
 import com.example.samsonic.ui.theme.OneUiRow
 import com.example.samsonic.ui.theme.glassSurface
 import com.example.samsonic.util.formatDuration
@@ -51,37 +48,32 @@ fun SectionHeader(
     onActionClick: (() -> Unit)? = null,
     onTitleClick: (() -> Unit)? = null,
 ) {
+    // With [onTitleClick] the whole header is one tap target leading to the full list,
+    // title on the left and a chevron at the right edge.
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp, vertical = 8.dp),
+            .then(if (onTitleClick != null) Modifier.pressClickable(onTitleClick, pressedScale = 0.97f) else Modifier)
+            // The chevron's glyph sits ~8dp inside its 24dp icon, so a 12dp end padding
+            // lines the glyph up with the content's 20dp edge.
+            .padding(start = 20.dp, end = if (onTitleClick != null) 12.dp else 20.dp, top = 8.dp, bottom = 8.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        Text(text = title, style = MaterialTheme.typography.titleLarge)
         if (onTitleClick != null) {
-            // Title plus a chevron, as one pill-shaped tap target leading to the full list.
-            Row(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(OneUiRadius.Pill))
-                    .clickable(onClick = onTitleClick),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(text = title, style = MaterialTheme.typography.titleLarge)
-                Icon(
-                    Icons.Filled.ChevronRight,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        } else {
-            Text(text = title, style = MaterialTheme.typography.titleLarge)
+            Icon(
+                Icons.Filled.ChevronRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
         if (actionLabel != null) {
             Text(
                 text = actionLabel,
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.clickable(enabled = onActionClick != null) { onActionClick?.invoke() },
+                modifier = Modifier.pressClickable({ onActionClick?.invoke() }, pressedScale = 0.92f, enabled = onActionClick != null),
             )
         }
     }
@@ -255,7 +247,7 @@ fun SongRow(
                 )
             }
             if (onToggleLike != null) {
-                IconButton(onClick = onToggleLike) {
+                PressIconButton(onClick = onToggleLike) {
                     Icon(
                         imageVector = if (liked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                         contentDescription = if (liked) "Unlike" else "Like",
@@ -269,7 +261,7 @@ fun SongRow(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             if (onMoreClick != null) {
-                IconButton(onClick = onMoreClick) {
+                PressIconButton(onClick = onMoreClick) {
                     Icon(Icons.Filled.MoreVert, contentDescription = "More", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }

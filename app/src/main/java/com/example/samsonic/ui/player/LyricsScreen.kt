@@ -20,7 +20,6 @@ import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,6 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.model.LyricLine
+import com.example.samsonic.ui.components.PressIconButton
 import com.example.samsonic.ui.theme.scrollTopFade
 
 /** Synced-lyrics style screen; current line is highlighted based on live playback position. */
@@ -64,7 +64,7 @@ fun LyricsScreen(
                 .padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconButton(onClick = onCollapse) {
+            PressIconButton(onClick = onCollapse) {
                 Icon(Icons.Filled.KeyboardArrowDown, contentDescription = "Collapse")
             }
             Column {

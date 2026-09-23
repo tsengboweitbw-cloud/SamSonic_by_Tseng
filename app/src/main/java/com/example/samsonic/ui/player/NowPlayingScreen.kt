@@ -6,7 +6,6 @@ import com.example.samsonic.playback.RepeatMode
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -35,7 +34,6 @@ import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -50,6 +48,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.model.artSeed
+import com.example.samsonic.ui.components.PressIconButton
+import com.example.samsonic.ui.components.pressClickable
 import com.example.samsonic.ui.theme.BlurredArtBackdrop
 import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.OneUiRadius
@@ -153,7 +153,7 @@ fun NowPlayingScreen(
                 }
             }
             val liked = player.isLiked(song)
-            IconButton(onClick = { player.toggleLike(song) }) {
+            PressIconButton(onClick = { player.toggleLike(song) }) {
                 Icon(
                     imageVector = if (liked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
                     contentDescription = if (liked) "Unlike" else "Like",
@@ -208,19 +208,19 @@ fun NowPlayingScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconButton(onClick = { player.toggleShuffle() }) {
+            PressIconButton(onClick = { player.toggleShuffle() }) {
                 Icon(
                     Icons.Filled.Shuffle,
                     contentDescription = "Shuffle",
                     tint = if (player.shuffle) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                 )
             }
-            IconButton(onClick = { player.skipPrevious() }, modifier = Modifier.size(48.dp)) {
+            PressIconButton(onClick = { player.skipPrevious() }) {
                 Icon(Icons.Filled.SkipPrevious, contentDescription = "Previous", modifier = Modifier.size(36.dp))
             }
-            IconButton(
+            PressIconButton(
                 onClick = { player.togglePlayPause() },
-                modifier = Modifier.size(56.dp),
+                size = 56.dp,
             ) {
                 Icon(
                     imageVector = if (player.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
@@ -228,10 +228,10 @@ fun NowPlayingScreen(
                     modifier = Modifier.size(44.dp),
                 )
             }
-            IconButton(onClick = { player.skipNext() }, modifier = Modifier.size(48.dp)) {
+            PressIconButton(onClick = { player.skipNext() }) {
                 Icon(Icons.Filled.SkipNext, contentDescription = "Next", modifier = Modifier.size(36.dp))
             }
-            IconButton(onClick = { player.cycleRepeat() }) {
+            PressIconButton(onClick = { player.cycleRepeat() }) {
                 Icon(
                     imageVector = if (player.repeatMode == RepeatMode.ONE) Icons.Filled.RepeatOne else Icons.Filled.Repeat,
                     contentDescription = "Repeat",
@@ -251,7 +251,7 @@ fun NowPlayingScreen(
             Row(
                 modifier = Modifier
                     .nowPlayingGlass()
-                    .clickable(onClick = onShowLyrics)
+                    .pressClickable(onShowLyrics, pressedScale = 0.92f)
                     .padding(horizontal = 20.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -266,11 +266,10 @@ fun NowPlayingScreen(
 
 @Composable
 private fun GlassCircleButton(onClick: () -> Unit, content: @Composable () -> Unit) {
-    IconButton(
+    PressIconButton(
         onClick = onClick,
-        modifier = Modifier
-            .size(56.dp)
-            .nowPlayingGlass(),
+        size = 56.dp,
+        modifier = Modifier.nowPlayingGlass(),
         content = content,
     )
 }

@@ -21,7 +21,6 @@ import androidx.compose.material.icons.filled.Equalizer
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -36,6 +35,7 @@ import com.example.samsonic.model.artSeed
 import com.example.samsonic.ui.components.ListItemFade
 import com.example.samsonic.ui.components.ListItemMove
 import com.example.samsonic.ui.components.MediaArt
+import com.example.samsonic.ui.components.PressIconButton
 import com.example.samsonic.ui.components.SwipeAction
 import com.example.samsonic.ui.components.SwipeActions
 import com.example.samsonic.ui.theme.GlassAlpha
@@ -64,7 +64,7 @@ fun QueueScreen(
                 .padding(horizontal = 12.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            IconButton(onClick = onCollapse) {
+            PressIconButton(onClick = onCollapse) {
                 Icon(Icons.Filled.KeyboardArrowDown, contentDescription = "Collapse")
             }
             Text(text = "Up Next", style = MaterialTheme.typography.titleLarge)

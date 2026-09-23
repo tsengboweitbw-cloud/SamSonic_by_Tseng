@@ -3,7 +3,6 @@ package com.example.samsonic.ui.player
 import com.example.samsonic.playback.LocalPlayerState
 
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,14 +10,12 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,6 +30,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.model.artSeed
 import com.example.samsonic.ui.components.MediaArt
+import com.example.samsonic.ui.components.PressIconButton
+import com.example.samsonic.ui.components.pressClickable
 import com.example.samsonic.model.Song
 import com.example.samsonic.ui.theme.OneUiChrome
 
@@ -50,22 +49,30 @@ fun MiniPlayer(
     val player = LocalPlayerState.current
     val cornerRadius by LocalAppContainer.current.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
 
-    // Art sits flush left of the row; the progress track below starts
-    // only after it, so the two never overlap horizontally. It ends at
-    // the horizontal middle of the "next" button, not the full width.
-    val rowHorizontalPadding = 16.dp
+    // The progress track below starts only after the art, so the two never
+    // overlap horizontally. It ends at the horizontal middle of the "next"
+    // button, not the full width.
+    val rowHorizontalPadding = 12.dp
     val artSize = 44.dp
     val artTextSpacing = 10.dp
     val iconButtonSize = 48.dp
-    val progressStart = rowHorizontalPadding + artSize + artTextSpacing
+    // The art is inset as far from the pill's left edge as the "next" glyph is
+    // from its right edge: the row padding, the button's padding around its
+    // 24dp icon, and the blank strip inside the icon right of the glyph (the
+    // SkipNext glyph spans x = 6..18 of its 24 viewport).
+    val artStartPadding = rowHorizontalPadding + (iconButtonSize - 24.dp) / 2 + 6.dp
+    val progressStart = artStartPadding + artSize + artTextSpacing
     val progressEnd = rowHorizontalPadding + iconButtonSize / 2
 
     Box(
         modifier = modifier
-            .playerMorphRoot(PlayerSurface.Mini)
             .fillMaxWidth()
             .height(OneUiChrome.BarHeight)
-            .clickable(onClick = onExpand),
+            // A tap shrinks the contents a touch inside the still glass pill (the sheet
+            // draws the glass). Ahead of the morph root, so the morph measures the art and
+            // progress line unscaled.
+            .pressClickable(onExpand, pressedScale = 0.96f)
+            .playerMorphRoot(PlayerSurface.Mini),
     ) {
         // Centered on the pill's true vertical midpoint - independent of
         // the progress track below, so the art never skews off-center.
@@ -73,7 +80,7 @@ fun MiniPlayer(
             modifier = Modifier
                 .align(Alignment.Center)
                 .fillMaxWidth()
-                .padding(horizontal = rowHorizontalPadding),
+                .padding(start = artStartPadding, end = rowHorizontalPadding),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             MediaArt(
@@ -100,18 +107,18 @@ fun MiniPlayer(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            IconButton(
+            PressIconButton(
                 onClick = { player.togglePlayPause() },
-                modifier = Modifier.size(iconButtonSize),
+                size = iconButtonSize,
             ) {
                 Icon(
                     imageVector = if (player.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                     contentDescription = if (player.isPlaying) "Pause" else "Play",
                 )
             }
-            IconButton(
+            PressIconButton(
                 onClick = { player.skipNext() },
-                modifier = Modifier.size(iconButtonSize),
+                size = iconButtonSize,
             ) {
                 Icon(Icons.Filled.SkipNext, contentDescription = "Next")
             }

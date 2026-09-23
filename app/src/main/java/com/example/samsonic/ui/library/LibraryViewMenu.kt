@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -25,7 +24,6 @@ import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -52,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import com.example.samsonic.data.LibraryLayout
 import com.example.samsonic.data.LibraryViewMode
 import com.example.samsonic.ui.components.GlassTabBar
+import com.example.samsonic.ui.components.PressIconButton
 import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.GlassRimWidth
 import com.example.samsonic.ui.theme.LocalGlassSettings
@@ -72,10 +71,9 @@ private val MorphSpring = spring<Float>(dampingRatio = 0.9f, stiffness = Spring.
  */
 @Composable
 internal fun LibraryViewButton(mode: LibraryViewMode, open: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    IconButton(
+    PressIconButton(
         onClick = onClick,
         modifier = modifier
-            .size(48.dp)
             .glassSurface(
                 shape = CircleShape,
                 hazeState = null,
