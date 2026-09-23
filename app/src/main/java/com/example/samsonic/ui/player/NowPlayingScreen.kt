@@ -86,7 +86,9 @@ fun NowPlayingScreen(
         ) {
         // Two separate floating glass buttons (One UI Gallery style) instead of one bar.
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
@@ -157,6 +159,10 @@ fun NowPlayingScreen(
         }
 
         Spacer(Modifier.height(12.dp))
+        // Leftover height goes between the song info and the seek bar (Symfonium
+        // layout): the cover stays up under the top buttons while the controls
+        // stay down in the thumb-reachable part of the screen.
+        Spacer(Modifier.weight(1f))
 
         var dragPosition by remember(song.id) { mutableFloatStateOf(-1f) }
         val fraction = if (dragPosition >= 0f) dragPosition else {
@@ -233,7 +239,7 @@ fun NowPlayingScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 20.dp),
+                .padding(bottom = 128.dp),
             horizontalArrangement = Arrangement.Center,
         ) {
             Row(
