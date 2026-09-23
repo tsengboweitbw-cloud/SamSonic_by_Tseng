@@ -1,7 +1,6 @@
 package com.example.samsonic.ui.library
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,8 +11,6 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ScrollableTabRow
-import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -31,13 +28,17 @@ import com.example.samsonic.model.Artist
 import com.example.samsonic.model.Genre
 import com.example.samsonic.model.Playlist
 import com.example.samsonic.ui.common.StateContent
-import com.example.samsonic.ui.common.ScrollAwayHeader
+import com.example.samsonic.ui.common.PinnedBarHeader
 import com.example.samsonic.ui.common.UiState
 import com.example.samsonic.ui.components.AlbumCard
 import com.example.samsonic.ui.components.ArtistCard
+import com.example.samsonic.ui.components.GlassTabBar
 import com.example.samsonic.ui.components.PlaylistCard
 
 private val tabs = listOf("Artists", "Albums", "Playlists", "Genres")
+
+/** Space the tab content keeps clear: under the pinned tab bar, and above the floating chrome. */
+private data class LibraryPadding(val top: Dp, val bottom: Dp)
 
 @Composable
 fun LibraryScreen(
@@ -50,50 +51,45 @@ fun LibraryScreen(
     var selectedTab by remember { mutableIntStateOf(1) }
     val repository = LocalAppContainer.current.repository
 
-    // Title and tabs scroll away together with the grid.
-    ScrollAwayHeader(
+    // The title scrolls away; the tab bar rides up and pins where the title started.
+    PinnedBarHeader(
         modifier = modifier,
-        header = {
-            Column {
-                Text(
-                    text = "Library",
-                    style = MaterialTheme.typography.displaySmall,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 12.dp),
-                )
-                ScrollableTabRow(
-                    selectedTabIndex = selectedTab,
-                    containerColor = MaterialTheme.colorScheme.background,
-                    edgePadding = 20.dp,
-                ) {
-                    tabs.forEachIndexed { index, title ->
-                        Tab(
-                            selected = selectedTab == index,
-                            onClick = { selectedTab = index },
-                            text = { Text(title) },
-                        )
-                    }
-                }
-            }
+        title = {
+            Text(
+                text = "Library",
+                style = MaterialTheme.typography.displaySmall,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 12.dp),
+            )
         },
-    ) {
+        bar = { hazeState ->
+            GlassTabBar(
+                labels = tabs,
+                selectedIndex = selectedTab,
+                onSelect = { selectedTab = it },
+                hazeState = hazeState,
+                modifier = Modifier.padding(horizontal = 20.dp),
+            )
+        },
+    ) { topPadding ->
+        val padding = LibraryPadding(top = topPadding, bottom = contentPaddingBottom)
         when (selectedTab) {
-            0 -> ArtistGrid(repository, onArtistClick, contentPaddingBottom)
-            1 -> AlbumGrid(repository, onAlbumClick, contentPaddingBottom)
-            2 -> PlaylistGrid(repository, onPlaylistClick, contentPaddingBottom)
-            else -> GenreList(repository, contentPaddingBottom)
+            0 -> ArtistGrid(repository, onArtistClick, padding)
+            1 -> AlbumGrid(repository, onAlbumClick, padding)
+            2 -> PlaylistGrid(repository, onPlaylistClick, padding)
+            else -> GenreList(repository, padding)
         }
     }
 }
 
 @Composable
-private fun ArtistGrid(repository: SubsonicRepository, onArtistClick: (Artist) -> Unit, bottomPadding: Dp) {
+private fun ArtistGrid(repository: SubsonicRepository, onArtistClick: (Artist) -> Unit, padding: LibraryPadding) {
     val state = rememberScreenLoad(Unit, errorMessage = "Couldn't load artists") { repository.getArtists() }
     StateContent(state = state, modifier = Modifier.fillMaxSize()) { artists ->
         LazyVerticalGrid(
             columns = GridCells.Fixed(3),
-            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 16.dp + bottomPadding),
+            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = padding.top, bottom = 16.dp + padding.bottom),
             verticalArrangement = Arrangement.spacedBy(16.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.fillMaxSize(),
@@ -106,14 +102,14 @@ private fun ArtistGrid(repository: SubsonicRepository, onArtistClick: (Artist) -
 }
 
 @Composable
-private fun AlbumGrid(repository: SubsonicRepository, onAlbumClick: (Album) -> Unit, bottomPadding: Dp) {
+private fun AlbumGrid(repository: SubsonicRepository, onAlbumClick: (Album) -> Unit, padding: LibraryPadding) {
     val state = rememberScreenLoad(Unit, errorMessage = "Couldn't load albums") {
         repository.getAlbumList("alphabeticalByArtist", 500)
     }
     StateContent(state = state, modifier = Modifier.fillMaxSize()) { albums ->
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
-            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 16.dp + bottomPadding),
+            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = padding.top, bottom = 16.dp + padding.bottom),
             verticalArrangement = Arrangement.spacedBy(20.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.fillMaxSize(),
@@ -126,12 +122,12 @@ private fun AlbumGrid(repository: SubsonicRepository, onAlbumClick: (Album) -> U
 }
 
 @Composable
-private fun PlaylistGrid(repository: SubsonicRepository, onPlaylistClick: (Playlist) -> Unit, bottomPadding: Dp) {
+private fun PlaylistGrid(repository: SubsonicRepository, onPlaylistClick: (Playlist) -> Unit, padding: LibraryPadding) {
     val state = rememberScreenLoad(Unit, errorMessage = "Couldn't load playlists") { repository.getPlaylists() }
     StateContent(state = state, modifier = Modifier.fillMaxSize()) { playlists ->
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
-            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 16.dp + bottomPadding),
+            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = padding.top, bottom = 16.dp + padding.bottom),
             verticalArrangement = Arrangement.spacedBy(20.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             modifier = Modifier.fillMaxSize(),
@@ -144,11 +140,11 @@ private fun PlaylistGrid(repository: SubsonicRepository, onPlaylistClick: (Playl
 }
 
 @Composable
-private fun GenreList(repository: SubsonicRepository, bottomPadding: Dp) {
+private fun GenreList(repository: SubsonicRepository, padding: LibraryPadding) {
     val state = rememberScreenLoad(Unit, errorMessage = "Couldn't load genres") { repository.getGenres() }
     StateContent(state = state, modifier = Modifier.fillMaxSize()) { genres ->
         LazyColumn(
-            contentPadding = PaddingValues(bottom = bottomPadding),
+            contentPadding = PaddingValues(top = padding.top, bottom = padding.bottom),
             modifier = Modifier.fillMaxSize(),
         ) {
             items(genres.size) { index ->
