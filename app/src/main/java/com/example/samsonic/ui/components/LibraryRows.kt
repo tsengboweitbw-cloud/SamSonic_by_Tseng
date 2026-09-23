@@ -1,6 +1,5 @@
 package com.example.samsonic.ui.components
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -22,6 +21,7 @@ import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.model.Artist
 import com.example.samsonic.model.Playlist
 import com.example.samsonic.model.artSeed
+import com.example.samsonic.ui.theme.oneUiRowClickable
 
 private val RowArtSize = 64.dp
 
@@ -78,8 +78,8 @@ private fun LibraryRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 8.dp),
+            .oneUiRowClickable(onClick)
+            .padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         art()

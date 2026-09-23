@@ -1,6 +1,5 @@
 package com.example.samsonic.ui.components
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,6 +18,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.model.Album
 import com.example.samsonic.model.artSeed
+import com.example.samsonic.ui.theme.oneUiRowClickable
 
 /** An album as a list row: cover, title, and "artist · year · N songs" underneath. */
 @Composable
@@ -37,8 +37,8 @@ fun AlbumRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(horizontal = 20.dp, vertical = 8.dp),
+            .oneUiRowClickable(onClick)
+            .padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         MediaArt(

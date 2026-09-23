@@ -57,7 +57,8 @@ fun <T> HorizontalCarousel(
     LazyRow(
         modifier = modifier.horizontalScrollFade(rowState),
         state = rowState,
-        contentPadding = PaddingValues(horizontal = 20.dp),
+        // Vertical room for the cards' press plate, which reaches past them.
+        contentPadding = PaddingValues(horizontal = 20.dp, vertical = PlateOutset),
         horizontalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         items(items.size, key = { keys[it] }) { index ->

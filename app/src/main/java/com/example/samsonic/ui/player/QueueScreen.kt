@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Equalizer
@@ -28,6 +27,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -40,6 +40,7 @@ import com.example.samsonic.ui.components.SwipeAction
 import com.example.samsonic.ui.components.SwipeActions
 import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.OneUiRadius
+import com.example.samsonic.ui.theme.OneUiRow
 import com.example.samsonic.ui.theme.glassSurface
 import com.example.samsonic.util.formatDuration
 import com.example.samsonic.ui.theme.scrollTopFade
@@ -85,18 +86,19 @@ fun QueueScreen(
                     modifier = Modifier.animateItem(ListItemFade, ListItemMove, ListItemFade),
                 ) {
                     Row(
+                        // Same rounded, inset highlight and press shape as SongRow (see OneUiRow).
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(horizontal = if (isCurrent) 12.dp else 0.dp, vertical = if (isCurrent) 2.dp else 0.dp)
+                            .clip(OneUiRow.Shape)
                             .then(
                                 if (isCurrent) {
                                     // No hazeState: nested inside the NavHost's own hazeSource
                                     // subtree (see MediaLists.SongRow comment) - flat fill only.
                                     Modifier.glassSurface(
-                                        shape = RoundedCornerShape(OneUiRadius.Chip),
+                                        shape = OneUiRow.Shape,
                                         hazeState = null,
                                         tint = MaterialTheme.colorScheme.primary,
-                                        alpha = GlassAlpha.Card,
+                                        alpha = GlassAlpha.Highlight,
                                     )
                                 } else {
                                     Modifier
@@ -105,7 +107,7 @@ fun QueueScreen(
                             .clickable {
                                 player.playQueueIndex(index)
                             }
-                            .padding(horizontal = 20.dp, vertical = 10.dp),
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         if (isCurrent) {

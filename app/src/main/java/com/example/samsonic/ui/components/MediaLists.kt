@@ -39,6 +39,7 @@ import com.example.samsonic.model.Song
 import com.example.samsonic.model.artSeed
 import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.OneUiRadius
+import com.example.samsonic.ui.theme.OneUiRow
 import com.example.samsonic.ui.theme.glassSurface
 import com.example.samsonic.util.formatDuration
 
@@ -94,26 +95,26 @@ fun AlbumCard(
     artSize: Dp = 140.dp,
 ) {
     val cornerRadius by LocalAppContainer.current.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
-    Column(
-        modifier = modifier
-            .widthIn(max = artSize)
-            .clickable(onClick = onClick),
-    ) {
-        MediaArt(coverArt = album.coverArt, colorSeed = album.id.artSeed(), size = artSize, cornerRadius = cornerRadius)
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = album.title,
-            style = MaterialTheme.typography.labelLarge,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Text(
-            text = album.artistName,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+    PressableCard(onClick = onClick, modifier = modifier) {
+        Column(
+            modifier = Modifier.widthIn(max = artSize),
+        ) {
+            MediaArt(coverArt = album.coverArt, colorSeed = album.id.artSeed(), size = artSize, cornerRadius = cornerRadius)
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = album.title,
+                style = MaterialTheme.typography.labelLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = album.artistName,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
     }
 }
 
@@ -124,33 +125,33 @@ fun ArtistCard(
     modifier: Modifier = Modifier,
     artSize: Dp = 104.dp,
 ) {
-    Column(
-        modifier = modifier
-            .width(artSize)
-            .clickable(onClick = onClick),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        MediaArt(
-            coverArt = artist.coverArt,
-            colorSeed = artist.id.artSeed(),
-            size = artSize,
-            cornerRadius = artSize / 2,
-            icon = false,
-            fit = false,
-            modifier = Modifier.clip(CircleShape),
-        )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = artist.name,
-            style = MaterialTheme.typography.labelLarge,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Text(
-            text = "${artist.albumCount} albums",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+    PressableCard(onClick = onClick, modifier = modifier) {
+        Column(
+            modifier = Modifier.width(artSize),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            MediaArt(
+                coverArt = artist.coverArt,
+                colorSeed = artist.id.artSeed(),
+                size = artSize,
+                cornerRadius = artSize / 2,
+                icon = false,
+                fit = false,
+                modifier = Modifier.clip(CircleShape),
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = artist.name,
+                style = MaterialTheme.typography.labelLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = "${artist.albumCount} albums",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 
@@ -162,24 +163,24 @@ fun PlaylistCard(
     artSize: Dp = 140.dp,
 ) {
     val cornerRadius by LocalAppContainer.current.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
-    Column(
-        modifier = modifier
-            .widthIn(max = artSize)
-            .clickable(onClick = onClick),
-    ) {
-        MediaArt(coverArt = playlist.coverArt, colorSeed = playlist.id.artSeed(), size = artSize, cornerRadius = cornerRadius)
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = playlist.name,
-            style = MaterialTheme.typography.labelLarge,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        Text(
-            text = "${playlist.songCount} songs",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
+    PressableCard(onClick = onClick, modifier = modifier) {
+        Column(
+            modifier = Modifier.widthIn(max = artSize),
+        ) {
+            MediaArt(coverArt = playlist.coverArt, colorSeed = playlist.id.artSeed(), size = artSize, cornerRadius = cornerRadius)
+            Spacer(Modifier.height(8.dp))
+            Text(
+                text = playlist.name,
+                style = MaterialTheme.typography.labelLarge,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = "${playlist.songCount} songs",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
 
@@ -202,24 +203,25 @@ fun SongRow(
     // can cause recursive drawing - so this falls back to a flat translucent fill.
     SongSwipeActions(song = song, modifier = modifier) {
         Row(
+            // SongSwipeActions already insets the row by OneUiRow.Inset; clipping before
+            // clickable keeps the press feedback the same rounded shape as the highlight.
             modifier = Modifier
                 .fillMaxWidth()
+                .clip(OneUiRow.Shape)
                 .then(
                     if (isCurrent) {
-                        Modifier
-                            .padding(horizontal = 8.dp, vertical = 2.dp)
-                            .glassSurface(
-                                shape = RoundedCornerShape(OneUiRadius.Chip),
-                                hazeState = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                alpha = GlassAlpha.Highlight,
-                            )
+                        Modifier.glassSurface(
+                            shape = OneUiRow.Shape,
+                            hazeState = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            alpha = GlassAlpha.Highlight,
+                        )
                     } else {
                         Modifier
                     }
                 )
                 .clickable(onClick = onClick)
-                .padding(horizontal = if (isCurrent) 12.dp else 20.dp, vertical = 8.dp),
+                .padding(horizontal = 12.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             if (leading != null) {
