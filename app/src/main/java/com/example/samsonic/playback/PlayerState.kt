@@ -10,9 +10,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.runtime.toMutableStateList
 import androidx.core.net.toUri
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MediaMetadata
 import androidx.media3.common.Player
+import androidx.media3.common.Timeline
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
 import com.example.samsonic.data.SubsonicRepository
@@ -58,6 +60,13 @@ class PlayerState(
         private set
     var currentIndex by mutableStateOf(-1)
         private set
+    /**
+     * [queue] indices in the order they will actually play (the shuffle order
+     * when shuffle is on), so the Now Playing cover carousel pages through
+     * exactly what next/previous will play.
+     */
+    var playOrder by mutableStateOf<List<Int>>(emptyList())
+        private set
     private var likedOverrides by mutableStateOf(mapOf<String, Boolean>())
 
     private val playerListener = object : Player.Listener {
@@ -73,6 +82,11 @@ class PlayerState(
 
         override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
             shuffle = shuffleModeEnabled
+            refreshPlayOrder()
+        }
+
+        override fun onTimelineChanged(timeline: Timeline, reason: Int) {
+            refreshPlayOrder()
         }
 
         override fun onRepeatModeChanged(mode: Int) {
@@ -99,6 +113,7 @@ class PlayerState(
             isPlaying = c.isPlaying
             shuffle = c.shuffleModeEnabled
             repeatMode = c.repeatMode.toRepeatMode()
+            refreshPlayOrder()
             isReady = true
         }, MoreExecutors.directExecutor())
     }
@@ -205,6 +220,19 @@ class PlayerState(
             .setUri(repository.streamUrl(id))
             .setMediaMetadata(metadata)
             .build()
+    }
+
+    private fun refreshPlayOrder() {
+        val c = controller ?: return
+        val timeline = c.currentTimeline
+        val shuffled = c.shuffleModeEnabled
+        val order = ArrayList<Int>(timeline.windowCount)
+        var index = if (timeline.isEmpty) C.INDEX_UNSET else timeline.getFirstWindowIndex(shuffled)
+        while (index != C.INDEX_UNSET && order.size < timeline.windowCount) {
+            order += index
+            index = timeline.getNextWindowIndex(index, Player.REPEAT_MODE_OFF, shuffled)
+        }
+        playOrder = order
     }
 
     private fun Int.toRepeatMode(): RepeatMode = when (this) {

@@ -3,13 +3,14 @@ package com.example.samsonic.ui.player
 import com.example.samsonic.playback.LocalPlayerState
 import com.example.samsonic.playback.RepeatMode
 
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -43,13 +44,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.model.artSeed
-import com.example.samsonic.ui.components.MediaArtFill
 import com.example.samsonic.ui.theme.BlurredArtBackdrop
 import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.OneUiRadius
@@ -71,16 +70,19 @@ fun NowPlayingScreen(
         return
     }
     val cornerRadius by LocalAppContainer.current.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
+    val horizontalPadding = 24.dp
 
     Box(modifier = modifier.fillMaxSize()) {
-        BlurredArtBackdrop(coverArt = song.coverArt, colorSeed = song.id.artSeed())
+        Crossfade(targetState = song, animationSpec = tween(500), label = "backdrop") { s ->
+            BlurredArtBackdrop(coverArt = s.coverArt, colorSeed = s.id.artSeed())
+        }
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
                 .navigationBarsPadding()
-                .padding(horizontal = 24.dp),
+                .padding(horizontal = horizontalPadding),
         ) {
         // Two separate floating glass buttons (One UI Gallery style) instead of one bar.
         Row(
@@ -98,14 +100,7 @@ fun NowPlayingScreen(
 
         Spacer(Modifier.height(28.dp))
 
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(1f)
-                .clip(RoundedCornerShape(cornerRadius)),
-        ) {
-            MediaArtFill(coverArt = song.coverArt, colorSeed = song.id.artSeed())
-        }
+        CoverCarousel(player = player, cornerRadius = cornerRadius, bleed = horizontalPadding)
 
         Spacer(Modifier.height(32.dp))
 
