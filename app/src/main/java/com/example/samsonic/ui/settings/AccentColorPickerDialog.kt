@@ -29,9 +29,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.example.samsonic.ui.theme.LocalHazeState
 import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.OneUiRadius
 import com.example.samsonic.ui.theme.OneUiSlider
@@ -55,6 +57,11 @@ fun AccentColorPickerDialog(
         hexText = color.toHexRgb()
     }
 
+    // Grabbed outside the Dialog: its content lives in a separate window, but
+    // Haze can still sample the main window's hazeSource from there, so
+    // only the panel itself is frosted - the rest of the screen stays sharp.
+    val hazeState = LocalHazeState.current
+
     Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
         Column(
             modifier = Modifier
@@ -62,9 +69,13 @@ fun AccentColorPickerDialog(
                 .padding(horizontal = 28.dp)
                 .glassSurface(
                     shape = RoundedCornerShape(OneUiRadius.Card),
-                    hazeState = null,
+                    hazeState = hazeState,
                     tint = MaterialTheme.colorScheme.surfaceContainerHigh,
                     alpha = GlassAlpha.Sheet,
+                    // Fixed, stronger than the chrome's user-set blur: a modal
+                    // panel must stay readable at any slider setting.
+                    blurRadius = 16.dp,
+                    scaleOpacity = false,
                 )
                 .padding(24.dp),
         ) {
@@ -122,19 +133,30 @@ fun AccentColorPickerDialog(
 
 @Composable
 private fun ColorChannelSlider(label: String, value: Float, onValueChange: (Float) -> Unit) {
+    // Label is end-aligned and the value start-aligned in fixed-width boxes,
+    // so both gaps around the slider are exactly [gap] wide, while the
+    // sliders of all three rows still start and end at the same x.
+    val gap = 12.dp
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(text = label, style = MaterialTheme.typography.labelLarge, modifier = Modifier.width(20.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelLarge,
+            textAlign = TextAlign.End,
+            modifier = Modifier.width(16.dp),
+        )
+        Spacer(Modifier.width(gap))
         OneUiSlider(
             value = value,
             onValueChange = onValueChange,
             valueRange = 0f..1f,
             modifier = Modifier.weight(1f),
         )
+        Spacer(Modifier.width(gap))
         Text(
             text = (value * 255).roundToInt().toString(),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.width(36.dp),
+            modifier = Modifier.width(32.dp),
         )
     }
 }

@@ -42,26 +42,58 @@ fun Modifier.glassSurface(
     hazeState: HazeState?,
     tint: Color,
     alpha: Float = GlassAlpha.Card,
-    blurRadius: Dp = 44.dp,
+    blurRadius: Dp = LocalGlassSettings.current.blurRadius,
+    // Fine grain breaks up the high-contrast edges (text, icons) that a
+    // Gaussian blur alone still leaves faintly legible through the glass.
+    noiseFactor: Float = 0.12f,
+    // Modal surfaces (dialogs) pass false: nothing meaningful sits behind
+    // them, so thinning them out only makes their own content unreadable.
+    scaleOpacity: Boolean = true,
 ): Modifier {
+    // Scale by the user's global opacity preference, keeping each surface's
+    // base alpha as its relative density.
+    val opacityScale = if (scaleOpacity) LocalGlassSettings.current.opacityScale else 1f
+    val alpha = (alpha * opacityScale).coerceIn(0f, 1f)
     val clipped = clip(shape)
     val filled = if (hazeState != null) {
+        // Thinner tint up top so the blurred colors behind bloom through,
+        // denser toward the bottom where content (text) must stay hidden.
+        val tintBrush = Brush.verticalGradient(
+            colors = listOf(
+                tint.copy(alpha = (alpha - 0.25f).coerceAtLeast(0f)),
+                tint.copy(alpha = (alpha + 0.1f).coerceAtMost(1f)),
+            ),
+        )
         clipped.hazeEffect(
             state = hazeState,
-            style = HazeStyle(tint = HazeTint(tint.copy(alpha = alpha)), blurRadius = blurRadius),
+            style = HazeStyle(
+                // The captured source content has no background of its own
+                // (Scaffold paints it outside hazeSource), so without an
+                // opaque base the blurred layer is translucent and the sharp
+                // original text shows straight through it.
+                backgroundColor = MaterialTheme.colorScheme.background,
+                tint = HazeTint(tintBrush),
+                blurRadius = blurRadius,
+                noiseFactor = noiseFactor,
+            ),
         )
     } else {
         clipped.background(tint.copy(alpha = alpha))
     }
     // A light rim reads as a highlight on dark glass; a dark rim reads as one
     // on light glass - pick by the current theme's actual background, not a
-    // fixed assumption that the app is always dark.
-    val rim = if (MaterialTheme.colorScheme.background.luminance() < 0.5f) {
-        Color.White.copy(alpha = 0.16f)
-    } else {
-        Color.Black.copy(alpha = 0.10f)
-    }
-    return filled.border(1.dp, rim, shape)
+    // fixed assumption that the app is always dark. The rim is brightest at
+    // the top-left and bottom-right edges, like light catching real glass.
+    val rimColor = if (MaterialTheme.colorScheme.background.luminance() < 0.5f) Color.White else Color.Black
+    val rimStrength = if (rimColor == Color.White) 1f else 0.5f
+    val rim = Brush.linearGradient(
+        colors = listOf(
+            rimColor.copy(alpha = 0.38f * rimStrength),
+            rimColor.copy(alpha = 0.08f * rimStrength),
+            rimColor.copy(alpha = 0.22f * rimStrength),
+        ),
+    )
+    return filled.border(1.5.dp, rim, shape)
 }
 
 /**
@@ -74,6 +106,7 @@ fun BlurredArtBackdrop(
     coverArt: String?,
     colorSeed: Int,
     modifier: Modifier = Modifier,
+    blurRadius: Dp = LocalGlassSettings.current.backdropBlur,
 ) {
     val background = MaterialTheme.colorScheme.background
     Box(modifier = modifier.fillMaxSize()) {
@@ -82,7 +115,7 @@ fun BlurredArtBackdrop(
             colorSeed = colorSeed,
             modifier = Modifier
                 .fillMaxSize()
-                .blur(60.dp),
+                .blur(blurRadius),
         )
         Box(
             modifier = Modifier
@@ -98,3 +131,4 @@ fun BlurredArtBackdrop(
         )
     }
 }
+

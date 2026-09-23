@@ -47,7 +47,6 @@ import com.example.samsonic.data.ThemeMode
 import com.example.samsonic.playback.LocalPlayerState
 import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.OneUiRadius
-import com.example.samsonic.ui.theme.OneUiSlider
 import com.example.samsonic.ui.theme.glassSurface
 import com.example.samsonic.ui.theme.toHexRgb
 import kotlin.math.roundToInt
@@ -157,6 +156,7 @@ fun SettingsScreen(
                     valueRange = 0f..48f,
                     onValueChange = { container.themeManager.setAlbumArtCornerRadius(it.dp) },
                 )
+                GlassSliderRows(container.themeManager)
             }
         }
 
@@ -225,41 +225,6 @@ private fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
             ),
     ) {
         content()
-    }
-}
-
-@Composable
-private fun SliderRow(
-    icon: ImageVector,
-    title: String,
-    valueLabel: String,
-    value: Float,
-    valueRange: ClosedFloatingPointRange<Float>,
-    onValueChange: (Float) -> Unit,
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 10.dp),
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(22.dp))
-                Spacer(Modifier.width(14.dp))
-                Text(text = title, style = MaterialTheme.typography.bodyLarge)
-            }
-            Text(text = valueLabel, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        OneUiSlider(
-            value = value,
-            onValueChange = onValueChange,
-            valueRange = valueRange,
-            modifier = Modifier.fillMaxWidth(),
-        )
     }
 }
 

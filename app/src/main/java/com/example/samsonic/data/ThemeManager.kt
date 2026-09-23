@@ -28,6 +28,17 @@ class ThemeManager(context: Context) {
     private val _albumArtCornerRadius = MutableStateFlow(loadAlbumArtCornerRadius())
     val albumArtCornerRadius: StateFlow<Dp> = _albumArtCornerRadius.asStateFlow()
 
+    private val _glassOpacity = MutableStateFlow(prefs.getFloat(KEY_GLASS_OPACITY, DefaultGlassOpacity))
+    // Multiplier over each glass surface's own base alpha, so nav, cards and
+    // sheets keep their relative density while the user scales them together.
+    val glassOpacity: StateFlow<Float> = _glassOpacity.asStateFlow()
+
+    private val _glassBlur = MutableStateFlow(prefs.getFloat(KEY_GLASS_BLUR, DefaultGlassBlur.value).dp)
+    val glassBlur: StateFlow<Dp> = _glassBlur.asStateFlow()
+
+    private val _backdropBlur = MutableStateFlow(prefs.getFloat(KEY_BACKDROP_BLUR, DefaultBackdropBlur.value).dp)
+    val backdropBlur: StateFlow<Dp> = _backdropBlur.asStateFlow()
+
     fun setThemeMode(mode: ThemeMode) {
         prefs.edit().putString(KEY_MODE, mode.name).apply()
         _themeMode.value = mode
@@ -45,6 +56,21 @@ class ThemeManager(context: Context) {
         _albumArtCornerRadius.value = radius
     }
 
+    fun setGlassOpacity(scale: Float) {
+        prefs.edit().putFloat(KEY_GLASS_OPACITY, scale).apply()
+        _glassOpacity.value = scale
+    }
+
+    fun setGlassBlur(radius: Dp) {
+        prefs.edit().putFloat(KEY_GLASS_BLUR, radius.value).apply()
+        _glassBlur.value = radius
+    }
+
+    fun setBackdropBlur(radius: Dp) {
+        prefs.edit().putFloat(KEY_BACKDROP_BLUR, radius.value).apply()
+        _backdropBlur.value = radius
+    }
+
     private fun loadThemeMode(): ThemeMode =
         ThemeMode.entries.find { it.name == prefs.getString(KEY_MODE, null) } ?: ThemeMode.SYSTEM
 
@@ -58,7 +84,13 @@ class ThemeManager(context: Context) {
         private const val KEY_MODE = "theme_mode"
         private const val KEY_ACCENT = "accent_color"
         private const val KEY_ART_RADIUS = "album_art_corner_radius"
+        private const val KEY_GLASS_OPACITY = "glass_opacity"
+        private const val KEY_GLASS_BLUR = "glass_blur"
+        private const val KEY_BACKDROP_BLUR = "backdrop_blur"
         val DefaultAccent = Color(0xFF8875FF)
         val DefaultAlbumArtCornerRadius = 24.dp
+        const val DefaultGlassOpacity = 1f
+        val DefaultGlassBlur = 24.dp
+        val DefaultBackdropBlur = 20.dp
     }
 }

@@ -19,6 +19,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.data.ThemeMode
 import com.example.samsonic.playback.LocalPlayerState
 import com.example.samsonic.ui.navigation.SamSonicNavHost
+import com.example.samsonic.ui.theme.GlassSettings
+import com.example.samsonic.ui.theme.LocalGlassSettings
 import com.example.samsonic.ui.theme.SamSonicTheme
 
 class MainActivity : ComponentActivity() {
@@ -29,6 +31,9 @@ class MainActivity : ComponentActivity() {
         setContent {
             val themeMode by container.themeManager.themeMode.collectAsStateWithLifecycle()
             val accentColor by container.themeManager.accentColor.collectAsStateWithLifecycle()
+            val glassOpacity by container.themeManager.glassOpacity.collectAsStateWithLifecycle()
+            val glassBlur by container.themeManager.glassBlur.collectAsStateWithLifecycle()
+            val backdropBlur by container.themeManager.backdropBlur.collectAsStateWithLifecycle()
             val darkTheme = when (themeMode) {
                 ThemeMode.SYSTEM -> isSystemInDarkTheme()
                 ThemeMode.LIGHT -> false
@@ -47,6 +52,7 @@ class MainActivity : ComponentActivity() {
                 CompositionLocalProvider(
                     LocalAppContainer provides container,
                     LocalPlayerState provides container.playerState,
+                    LocalGlassSettings provides GlassSettings(glassOpacity, glassBlur, backdropBlur),
                 ) {
                     Surface(modifier = Modifier.fillMaxSize()) {
                         SamSonicNavHost()

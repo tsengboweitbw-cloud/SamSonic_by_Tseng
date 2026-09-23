@@ -33,10 +33,10 @@ val LightError = Color(0xFFBA1A1A)
 // One UI 9.0 glassmorphism: named translucency levels (0.7-0.85 alpha per
 // Rule.md) plus the thin light rim-stroke drawn along a glass surface's edge.
 object GlassAlpha {
-    const val Nav = 0.65f
-    const val MiniPlayer = 0.65f
+    const val Nav = 0.45f
+    const val MiniPlayer = 0.45f
     const val Card = 0.74f
-    const val Sheet = 0.85f
+    const val Sheet = 0.25f
 }
 
 // Deterministic gradient pairs used for generated "album art" placeholders.
