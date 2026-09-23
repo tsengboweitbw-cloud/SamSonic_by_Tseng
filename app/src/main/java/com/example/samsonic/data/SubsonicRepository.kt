@@ -236,6 +236,10 @@ class SubsonicRepository(
         durationSeconds = duration,
         coverArt = coverArt,
         liked = starred != null,
+        suffix = suffix,
+        bitRate = bitRate,
+        samplingRate = samplingRate,
+        bitDepth = bitDepth,
     )
 
     private fun PlaylistDto.toDomain() = Playlist(

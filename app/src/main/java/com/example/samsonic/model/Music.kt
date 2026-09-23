@@ -36,6 +36,10 @@ data class Song(
     val durationSeconds: Int,
     val coverArt: String?,
     val liked: Boolean = false,
+    val suffix: String? = null,
+    val bitRate: Int? = null,
+    val samplingRate: Int? = null,
+    val bitDepth: Int? = null,
 )
 
 data class Playlist(

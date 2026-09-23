@@ -56,6 +56,7 @@ import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.OneUiRadius
 import com.example.samsonic.ui.theme.OneUiSlider
 import com.example.samsonic.ui.theme.glassSurface
+import com.example.samsonic.util.formatAudioInfo
 import com.example.samsonic.util.formatDuration
 
 @Composable
@@ -100,19 +101,11 @@ fun NowPlayingScreen(
             IconButton(onClick = onCollapse) {
                 Icon(Icons.Filled.KeyboardArrowDown, contentDescription = "Collapse")
             }
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = "PLAYING FROM ALBUM",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(
-                    text = song.albumTitle,
-                    style = MaterialTheme.typography.labelLarge,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
+            Text(
+                text = "NOW PLAYING",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             IconButton(onClick = onShowQueue) {
                 Icon(Icons.AutoMirrored.Filled.QueueMusic, contentDescription = "Queue")
             }
@@ -143,6 +136,15 @@ fun NowPlayingScreen(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
+                if (song.albumTitle.isNotBlank()) {
+                    Text(
+                        text = song.albumTitle,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
                 Spacer(Modifier.height(4.dp))
                 Text(
                     text = song.artistName,
@@ -151,6 +153,17 @@ fun NowPlayingScreen(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
+                val audioInfo = formatAudioInfo(song)
+                if (audioInfo != null) {
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        text = audioInfo,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
             val liked = player.isLiked(song)
             IconButton(onClick = { player.toggleLike(song) }) {

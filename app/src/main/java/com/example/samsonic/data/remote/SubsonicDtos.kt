@@ -106,6 +106,13 @@ data class SongDto(
     val coverArt: String? = null,
     val duration: Int = 0,
     val starred: String? = null,
+    // Audio quality info, shown in Now Playing. suffix/bitRate are core
+    // Subsonic; samplingRate/bitDepth are OpenSubsonic extensions, so
+    // older servers just omit them - hence all nullable.
+    val suffix: String? = null,
+    val bitRate: Int? = null,
+    val samplingRate: Int? = null,
+    val bitDepth: Int? = null,
 )
 
 @Serializable
