@@ -5,6 +5,7 @@ import com.example.samsonic.playback.RepeatMode
 
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -69,6 +70,14 @@ fun NowPlayingScreen(
     val cornerRadius by LocalAppContainer.current.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
     val horizontalPadding = 24.dp
     Box(modifier = modifier.playerMorphRoot(PlayerSurface.Full).fillMaxSize()) {
+        // Crossfade fades the old and new backdrops at the same time, so mid-change
+        // neither is opaque and the screen behind the player shows through. An
+        // opaque base keeps the page solid while the art swaps.
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background),
+        )
         Crossfade(targetState = song, animationSpec = tween(500), label = "backdrop") { s ->
             BlurredArtBackdrop(coverArt = s.coverArt, colorSeed = s.id.artSeed())
         }
