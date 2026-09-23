@@ -37,6 +37,9 @@ object GlassAlpha {
     const val MiniPlayer = 0.45f
     const val Card = 0.74f
     const val Sheet = 0.25f
+    // Now Playing pills sit over already-blurred art, so a thin light veil
+    // (not a dense surface tint) is what reads as frosted glass there.
+    const val NowPlaying = 0.18f
 }
 
 // Deterministic gradient pairs used for generated "album art" placeholders.

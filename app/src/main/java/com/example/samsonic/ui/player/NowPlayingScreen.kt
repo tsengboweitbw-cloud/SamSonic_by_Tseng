@@ -3,7 +3,6 @@ package com.example.samsonic.ui.player
 import com.example.samsonic.playback.LocalPlayerState
 import com.example.samsonic.playback.RepeatMode
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -83,30 +82,16 @@ fun NowPlayingScreen(
                 .navigationBarsPadding()
                 .padding(horizontal = 24.dp),
         ) {
+        // Two separate floating glass buttons (One UI Gallery style) instead of one bar.
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                // No hazeState: nested inside the NavHost's own hazeSource subtree
-                // (see MediaLists.SongRow comment) - falls back to a flat translucent fill.
-                .glassSurface(
-                    shape = RoundedCornerShape(OneUiRadius.Pill),
-                    hazeState = null,
-                    tint = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    alpha = GlassAlpha.Card,
-                )
-                .padding(horizontal = 4.dp),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            IconButton(onClick = onCollapse) {
+            GlassCircleButton(onClick = onCollapse) {
                 Icon(Icons.Filled.KeyboardArrowDown, contentDescription = "Collapse")
             }
-            Text(
-                text = "NOW PLAYING",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            IconButton(onClick = onShowQueue) {
+            GlassCircleButton(onClick = onShowQueue) {
                 Icon(Icons.AutoMirrored.Filled.QueueMusic, contentDescription = "Queue")
             }
         }
@@ -211,15 +196,8 @@ fun NowPlayingScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                // No hazeState: nested inside the NavHost's own hazeSource subtree
-                // (see MediaLists.SongRow comment) - falls back to a flat translucent fill.
-                .glassSurface(
-                    shape = RoundedCornerShape(OneUiRadius.Pill),
-                    hazeState = null,
-                    tint = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    alpha = GlassAlpha.Card,
-                )
-                .padding(horizontal = 8.dp, vertical = 6.dp),
+                .nowPlayingGlass()
+                .padding(horizontal = 8.dp, vertical = 2.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -235,16 +213,12 @@ fun NowPlayingScreen(
             }
             IconButton(
                 onClick = { player.togglePlayPause() },
-                modifier = Modifier
-                    .size(72.dp)
-                    .clip(RoundedCornerShape(36.dp))
-                    .background(MaterialTheme.colorScheme.primary),
+                modifier = Modifier.size(56.dp),
             ) {
                 Icon(
                     imageVector = if (player.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                     contentDescription = if (player.isPlaying) "Pause" else "Play",
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(36.dp),
+                    modifier = Modifier.size(44.dp),
                 )
             }
             IconButton(onClick = { player.skipNext() }, modifier = Modifier.size(48.dp)) {
@@ -269,14 +243,7 @@ fun NowPlayingScreen(
         ) {
             Row(
                 modifier = Modifier
-                    // No hazeState: nested inside the NavHost's own hazeSource subtree
-                    // (see MediaLists.SongRow comment) - falls back to a flat translucent fill.
-                    .glassSurface(
-                        shape = RoundedCornerShape(OneUiRadius.Pill),
-                        hazeState = null,
-                        tint = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        alpha = GlassAlpha.Card,
-                    )
+                    .nowPlayingGlass()
                     .clickable(onClick = onShowLyrics)
                     .padding(horizontal = 20.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -289,3 +256,28 @@ fun NowPlayingScreen(
         }
     }
 }
+
+@Composable
+private fun GlassCircleButton(onClick: () -> Unit, content: @Composable () -> Unit) {
+    IconButton(
+        onClick = onClick,
+        modifier = Modifier
+            .size(56.dp)
+            .nowPlayingGlass(),
+        content = content,
+    )
+}
+
+/**
+ * Frosted pill for Now Playing. No hazeState: nested inside the NavHost's own
+ * hazeSource subtree (see MediaLists.SongRow comment), so this is a flat veil -
+ * but the backdrop is already blurred art, so a thin onSurface wash (light in
+ * dark theme) lets its colors glow through instead of a dense grey slab.
+ */
+@Composable
+private fun Modifier.nowPlayingGlass(): Modifier = glassSurface(
+    shape = RoundedCornerShape(OneUiRadius.Pill),
+    hazeState = null,
+    tint = MaterialTheme.colorScheme.onSurface,
+    alpha = GlassAlpha.NowPlaying,
+)
