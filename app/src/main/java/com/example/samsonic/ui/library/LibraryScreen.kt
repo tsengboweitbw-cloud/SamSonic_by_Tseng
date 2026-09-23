@@ -1,33 +1,46 @@
 package com.example.samsonic.ui.library
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyGridState
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.LocalAppContainer
+import com.example.samsonic.data.LibrarySection
+import com.example.samsonic.data.LibraryViewMode
 import com.example.samsonic.model.Album
 import com.example.samsonic.model.Artist
 import com.example.samsonic.model.Genre
@@ -37,15 +50,19 @@ import com.example.samsonic.ui.common.TitledPage
 import com.example.samsonic.ui.common.UiState
 import com.example.samsonic.ui.common.rememberScreenLoad
 import com.example.samsonic.ui.components.AlbumCard
+import com.example.samsonic.ui.components.AlbumRow
 import com.example.samsonic.ui.components.ArtistCard
+import com.example.samsonic.ui.components.ArtistRow
 import com.example.samsonic.ui.components.GlassTabBar
+import com.example.samsonic.ui.components.GlassTabBarHeight
 import com.example.samsonic.ui.components.PlaylistCard
+import com.example.samsonic.ui.components.PlaylistRow
 import kotlinx.coroutines.launch
 
 private val tabs = listOf("Artists", "Albums", "Playlists", "Genres")
 
-/** Space the tab content keeps clear: under the pinned tab bar, and above the floating chrome. */
-private data class LibraryPadding(val top: Dp, val bottom: Dp)
+/** The tab's user-adjustable view, by pager page; Genres (null) is always a list. */
+private fun sectionOf(page: Int): LibrarySection? = LibrarySection.entries.getOrNull(page)
 
 @Composable
 fun LibraryScreen(
@@ -55,18 +72,29 @@ fun LibraryScreen(
     modifier: Modifier = Modifier,
     contentPaddingBottom: Dp = 0.dp,
 ) {
-    // Saveable, so the tab and each tab's scroll position survive a trip to a
-    // detail page and back, not just switching between tabs.
-    var selectedTab by rememberSaveable { mutableIntStateOf(1) }
+    // Swipe between tabs. Pager state is saveable, so the tab and each tab's
+    // scroll position survive a trip to a detail page and back.
+    val pagerState = rememberPagerState(initialPage = 1) { tabs.size }
     val artistsGrid = rememberLazyGridState()
     val albumsGrid = rememberLazyGridState()
     val playlistsGrid = rememberLazyGridState()
     val genresList = rememberLazyListState()
     val scope = rememberCoroutineScope()
 
+    val layoutManager = LocalAppContainer.current.libraryLayoutManager
+    val layouts by layoutManager.layouts.collectAsStateWithLifecycle()
+    // The view options panel (open/closed, animated) and the tab it was opened for.
+    val viewOptions = remember { MutableTransitionState(false) }
+    var viewSection by remember { mutableStateOf(LibrarySection.ALBUMS) }
+
     // Each tab loads on its first visit and then keeps its data while on this
     // page, so switching back shows the list at once, right where it was left.
-    val visited = remember { mutableStateListOf(selectedTab) }
+    // A tab counts as visited as soon as a swipe brings it on screen.
+    val visited = remember { mutableStateListOf(pagerState.currentPage) }
+    LaunchedEffect(pagerState) {
+        snapshotFlow { pagerState.layoutInfo.visiblePagesInfo.map { it.index } }
+            .collect { pages -> pages.forEach { if (it !in visited) visited += it } }
+    }
     val repository = LocalAppContainer.current.repository
     val artists = if (0 in visited) {
         rememberScreenLoad(Unit, errorMessage = "Couldn't load artists") { repository.getArtists() }
@@ -84,7 +112,7 @@ fun LibraryScreen(
     } else UiState.Loading
 
     fun onTabSelected(tab: Int) {
-        if (tab == selectedTab) {
+        if (tab == pagerState.currentPage && !pagerState.isScrollInProgress) {
             // Tapping the current tab again: back to the top.
             scope.launch {
                 when (tab) {
@@ -96,92 +124,115 @@ fun LibraryScreen(
             }
             return
         }
-        selectedTab = tab
         if (tab !in visited) visited += tab
+        scope.launch { pagerState.animateScrollToPage(tab) }
     }
 
     // Fixed title, with the tab bar floating as glass right under it.
     TitledPage(
         modifier = modifier,
         title = {
-            Text(
-                text = "Library",
-                style = MaterialTheme.typography.displaySmall,
+            val currentSection = sectionOf(pagerState.targetPage)
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 12.dp),
-            )
+                    .padding(start = 20.dp, end = 16.dp, top = 12.dp, bottom = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = "Library",
+                    style = MaterialTheme.typography.displaySmall,
+                    modifier = Modifier.weight(1f),
+                )
+                ViewButtonSlot(
+                    visible = currentSection != null,
+                    mode = layouts.getValue(currentSection ?: LibrarySection.ALBUMS).mode,
+                    open = viewOptions.targetState,
+                    onClick = {
+                        if (!viewOptions.targetState && currentSection != null) viewSection = currentSection
+                        viewOptions.targetState = !viewOptions.targetState
+                    },
+                )
+            }
         },
-        bar = { hazeState ->
-            GlassTabBar(
-                labels = tabs,
-                selectedIndex = selectedTab,
-                onSelect = ::onTabSelected,
+        // The bar slot only reserves the pill's height (content padding and
+        // fade); the pill itself is drawn by the overlay, which can grow it
+        // into the view options panel without pushing the content down.
+        bar = { Spacer(Modifier.height(GlassTabBarHeight)) },
+        overlay = { hazeState ->
+            LibraryTabsPanel(
+                state = viewOptions,
                 hazeState = hazeState,
-                modifier = Modifier.padding(horizontal = 20.dp),
+                sectionName = tabs[viewSection.ordinal],
+                layout = layouts.getValue(viewSection),
+                onLayoutChange = { layoutManager.setLayout(viewSection, it) },
+                onDismiss = { viewOptions.targetState = false },
+                tabs = {
+                    GlassTabBar(
+                        labels = tabs,
+                        selectedIndex = pagerState.targetPage,
+                        onSelect = ::onTabSelected,
+                        hazeState = null,
+                        position = pagerState.currentPage + pagerState.currentPageOffsetFraction,
+                        // Faded out under the open panel: taps there must not switch tabs.
+                        enabled = !viewOptions.targetState,
+                        glass = false,
+                    )
+                },
             )
         },
     ) { topPadding ->
         val padding = LibraryPadding(top = topPadding, bottom = contentPaddingBottom)
-        when (selectedTab) {
-            0 -> ArtistGrid(artists, artistsGrid, onArtistClick, padding)
-            1 -> AlbumGrid(albums, albumsGrid, onAlbumClick, padding)
-            2 -> PlaylistGrid(playlists, playlistsGrid, onPlaylistClick, padding)
-            else -> GenreList(genres, genresList, padding)
-        }
-    }
-}
-
-@Composable
-private fun ArtistGrid(state: UiState<List<Artist>>, gridState: LazyGridState, onArtistClick: (Artist) -> Unit, padding: LibraryPadding) {
-    StateContent(state = state, modifier = Modifier.fillMaxSize()) { artists ->
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(3),
-            state = gridState,
-            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = padding.top, bottom = 16.dp + padding.bottom),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        // No swiping pages while the view options are open: the panel's scrim
+        // covers the content, so they always apply to the tab on screen.
+        HorizontalPager(
+            state = pagerState,
             modifier = Modifier.fillMaxSize(),
-        ) {
-            items(artists, key = { it.id }) { artist ->
-                ArtistCard(artist = artist, onClick = { onArtistClick(artist) })
+        ) { page ->
+            when (page) {
+                0 -> LibraryCollection(
+                    state = artists,
+                    gridState = artistsGrid,
+                    layout = layouts.getValue(LibrarySection.ARTISTS),
+                    padding = padding,
+                    key = { it.id },
+                    card = { artist, size -> ArtistCard(artist, onClick = { onArtistClick(artist) }, artSize = size) },
+                    row = { artist -> ArtistRow(artist, onClick = { onArtistClick(artist) }) },
+                )
+                1 -> LibraryCollection(
+                    state = albums,
+                    gridState = albumsGrid,
+                    layout = layouts.getValue(LibrarySection.ALBUMS),
+                    padding = padding,
+                    key = { it.id },
+                    card = { album, size -> AlbumCard(album, onClick = { onAlbumClick(album) }, artSize = size) },
+                    row = { album -> AlbumRow(album, onClick = { onAlbumClick(album) }) },
+                )
+                2 -> LibraryCollection(
+                    state = playlists,
+                    gridState = playlistsGrid,
+                    layout = layouts.getValue(LibrarySection.PLAYLISTS),
+                    padding = padding,
+                    key = { it.id },
+                    card = { playlist, size -> PlaylistCard(playlist, onClick = { onPlaylistClick(playlist) }, artSize = size) },
+                    row = { playlist -> PlaylistRow(playlist, onClick = { onPlaylistClick(playlist) }) },
+                )
+                else -> GenreList(genres, genresList, padding)
             }
         }
     }
 }
 
+/** Fixed-size slot, so the title row keeps its height when the button hides on Genres. */
 @Composable
-private fun AlbumGrid(state: UiState<List<Album>>, gridState: LazyGridState, onAlbumClick: (Album) -> Unit, padding: LibraryPadding) {
-    StateContent(state = state, modifier = Modifier.fillMaxSize()) { albums ->
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
-            state = gridState,
-            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = padding.top, bottom = 16.dp + padding.bottom),
-            verticalArrangement = Arrangement.spacedBy(20.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.fillMaxSize(),
+private fun ViewButtonSlot(visible: Boolean, mode: LibraryViewMode, open: Boolean, onClick: () -> Unit) {
+    Box(modifier = Modifier.size(48.dp)) {
+        AnimatedVisibility(
+            visible = visible,
+            enter = fadeIn() + scaleIn(initialScale = 0.8f),
+            exit = fadeOut() + scaleOut(targetScale = 0.8f),
         ) {
-            items(albums, key = { it.id }) { album ->
-                AlbumCard(album = album, onClick = { onAlbumClick(album) }, modifier = Modifier.fillMaxWidth())
-            }
-        }
-    }
-}
-
-@Composable
-private fun PlaylistGrid(state: UiState<List<Playlist>>, gridState: LazyGridState, onPlaylistClick: (Playlist) -> Unit, padding: LibraryPadding) {
-    StateContent(state = state, modifier = Modifier.fillMaxSize()) { playlists ->
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(2),
-            state = gridState,
-            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, top = padding.top, bottom = 16.dp + padding.bottom),
-            verticalArrangement = Arrangement.spacedBy(20.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            modifier = Modifier.fillMaxSize(),
-        ) {
-            items(playlists, key = { it.id }) { playlist ->
-                PlaylistCard(playlist = playlist, onClick = { onPlaylistClick(playlist) }, modifier = Modifier.fillMaxWidth())
-            }
+            LibraryViewButton(mode = mode, open = open, onClick = onClick)
         }
     }
 }

@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.compose.runtime.compositionLocalOf
 import com.example.samsonic.data.SessionManager
 import com.example.samsonic.data.SubsonicRepository
+import com.example.samsonic.data.LibraryLayoutManager
 import com.example.samsonic.data.ThemeManager
 import com.example.samsonic.playback.PlayerState
 import kotlinx.coroutines.CoroutineScope
@@ -34,6 +35,8 @@ class AppContainer(context: Context) {
     val sessionManager = SessionManager(appContext)
 
     val themeManager = ThemeManager(appContext)
+
+    val libraryLayoutManager = LibraryLayoutManager(appContext)
 
     val repository = SubsonicRepository(sessionManager, okHttpClient)
 

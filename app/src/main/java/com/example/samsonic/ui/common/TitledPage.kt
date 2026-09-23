@@ -45,12 +45,16 @@ private val ContentTopPadding = 16.dp
  *
  * [content] gets the top padding that keeps its first row clear of the fade
  * (and the bar) at rest.
+ *
+ * An optional [overlay] fills the content area above both, without pushing the
+ * content down: for a panel that grows out of the bar (it gets the same haze).
  */
 @Composable
 fun TitledPage(
     title: @Composable () -> Unit,
     modifier: Modifier = Modifier,
     bar: (@Composable (HazeState) -> Unit)? = null,
+    overlay: (@Composable (HazeState) -> Unit)? = null,
     content: @Composable (contentTopPadding: Dp) -> Unit,
 ) {
     val density = LocalDensity.current
@@ -73,6 +77,7 @@ fun TitledPage(
             }
             if (bar != null && contentHaze != null) {
                 Box(modifier = Modifier.onSizeChanged { barHeight = it.height }) { bar(contentHaze) }
+                overlay?.invoke(contentHaze)
             }
         }
     }

@@ -49,6 +49,9 @@ fun Modifier.glassSurface(
     // Modal surfaces (dialogs) pass false: nothing meaningful sits behind
     // them, so thinning them out only makes their own content unreadable.
     scaleOpacity: Boolean = true,
+    // False for a caller that draws [glassRimBrush] along its own (e.g.
+    // animated) outline instead of this surface's full bounds.
+    rim: Boolean = true,
 ): Modifier {
     // Scale by the user's global opacity preference, keeping each surface's
     // base alpha as its relative density.
@@ -80,20 +83,29 @@ fun Modifier.glassSurface(
     } else {
         clipped.background(tint.copy(alpha = alpha))
     }
-    // A light rim reads as a highlight on dark glass; a dark rim reads as one
-    // on light glass - pick by the current theme's actual background, not a
-    // fixed assumption that the app is always dark. The rim is brightest at
-    // the top-left and bottom-right edges, like light catching real glass.
+    return if (rim) filled.border(GlassRimWidth, glassRimBrush(), shape) else filled
+}
+
+val GlassRimWidth = 1.5.dp
+
+/**
+ * The thin rim [glassSurface] draws around its edge. A light rim reads as a
+ * highlight on dark glass; a dark rim reads as one on light glass - pick by
+ * the current theme's actual background, not a fixed assumption that the app
+ * is always dark. The rim is brightest at the top-left and bottom-right edges,
+ * like light catching real glass.
+ */
+@Composable
+fun glassRimBrush(): Brush {
     val rimColor = if (MaterialTheme.colorScheme.background.luminance() < 0.5f) Color.White else Color.Black
     val rimStrength = if (rimColor == Color.White) 1f else 0.5f
-    val rim = Brush.linearGradient(
+    return Brush.linearGradient(
         colors = listOf(
             rimColor.copy(alpha = 0.38f * rimStrength),
             rimColor.copy(alpha = 0.08f * rimStrength),
             rimColor.copy(alpha = 0.22f * rimStrength),
         ),
     )
-    return filled.border(1.5.dp, rim, shape)
 }
 
 /**

@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.LocalAppContainer
@@ -90,14 +91,15 @@ fun AlbumCard(
     album: Album,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    artSize: Dp = 140.dp,
 ) {
     val cornerRadius by LocalAppContainer.current.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
     Column(
         modifier = modifier
-            .widthIn(max = 140.dp)
+            .widthIn(max = artSize)
             .clickable(onClick = onClick),
     ) {
-        MediaArt(coverArt = album.coverArt, colorSeed = album.id.artSeed(), size = 140.dp, cornerRadius = cornerRadius)
+        MediaArt(coverArt = album.coverArt, colorSeed = album.id.artSeed(), size = artSize, cornerRadius = cornerRadius)
         Spacer(Modifier.height(8.dp))
         Text(
             text = album.title,
@@ -120,18 +122,19 @@ fun ArtistCard(
     artist: Artist,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    artSize: Dp = 104.dp,
 ) {
     Column(
         modifier = modifier
-            .width(104.dp)
+            .width(artSize)
             .clickable(onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         MediaArt(
             coverArt = artist.coverArt,
             colorSeed = artist.id.artSeed(),
-            size = 104.dp,
-            cornerRadius = 52.dp,
+            size = artSize,
+            cornerRadius = artSize / 2,
             icon = false,
             fit = false,
             modifier = Modifier.clip(CircleShape),
@@ -156,14 +159,15 @@ fun PlaylistCard(
     playlist: Playlist,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    artSize: Dp = 140.dp,
 ) {
     val cornerRadius by LocalAppContainer.current.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
     Column(
         modifier = modifier
-            .widthIn(max = 140.dp)
+            .widthIn(max = artSize)
             .clickable(onClick = onClick),
     ) {
-        MediaArt(coverArt = playlist.coverArt, colorSeed = playlist.id.artSeed(), size = 140.dp, cornerRadius = cornerRadius)
+        MediaArt(coverArt = playlist.coverArt, colorSeed = playlist.id.artSeed(), size = artSize, cornerRadius = cornerRadius)
         Spacer(Modifier.height(8.dp))
         Text(
             text = playlist.name,

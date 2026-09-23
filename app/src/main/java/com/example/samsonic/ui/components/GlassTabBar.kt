@@ -42,7 +42,8 @@ import dev.chrisbanes.haze.HazeState
 import kotlin.math.abs
 
 private val BarPadding = 6.dp
-private val TabBarHeight = 56.dp
+/** Height of a [GlassTabBar], for callers reserving its space. */
+val GlassTabBarHeight = 56.dp
 
 // Same slightly underdamped glide as the floating nav bar's indicator.
 private val IndicatorSpring = spring<Float>(dampingRatio = 0.5f, stiffness = Spring.StiffnessMediumLow)
@@ -59,25 +60,29 @@ fun GlassTabBar(
     onSelect: (Int) -> Unit,
     hazeState: HazeState?,
     modifier: Modifier = Modifier,
+    // The indicator's live position in tabs (e.g. a pager's page plus its
+    // offset fraction), so it tracks a swipe under the finger. Without it the
+    // indicator springs to [selectedIndex] on its own.
+    position: Float? = null,
+    // Frozen: taps do nothing and give no press feedback (the caller dims it).
+    enabled: Boolean = true,
+    // False draws only the tabs and indicator, for a caller that supplies
+    // its own glass pill (so the pill can stay put while its tabs swap).
+    glass: Boolean = true,
 ) {
-    val position = remember { Animatable(selectedIndex.toFloat()) }
+    val animated = remember { Animatable(selectedIndex.toFloat()) }
     LaunchedEffect(selectedIndex) {
-        position.animateTo(selectedIndex.toFloat(), IndicatorSpring)
+        animated.animateTo(selectedIndex.toFloat(), IndicatorSpring)
     }
     val count = labels.size
-    val p = position.value.coerceIn(0f, (count - 1).coerceAtLeast(0).toFloat())
+    val p = (position ?: animated.value).coerceIn(0f, (count - 1).coerceAtLeast(0).toFloat())
     val indicatorColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f)
 
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(TabBarHeight)
-            .glassSurface(
-                shape = RoundedCornerShape(OneUiRadius.Pill),
-                hazeState = hazeState,
-                tint = MaterialTheme.colorScheme.surfaceContainerHigh,
-                alpha = GlassAlpha.Nav,
-            )
+            .height(GlassTabBarHeight)
+            .then(if (glass) Modifier.glassTabPill(hazeState) else Modifier)
             .drawBehind {
                 if (count == 0) return@drawBehind
                 val inset = BarPadding.toPx()
@@ -98,17 +103,28 @@ fun GlassTabBar(
                 label = label,
                 selected = index == selectedIndex,
                 emphasis = (1f - abs(index - p)).coerceIn(0f, 1f),
+                enabled = enabled,
                 onClick = { onSelect(index) },
             )
         }
     }
 }
 
+/** The frosted pill a [GlassTabBar] sits on, for callers drawing it with `glass = false`. */
+@Composable
+fun Modifier.glassTabPill(hazeState: HazeState?): Modifier = glassSurface(
+    shape = RoundedCornerShape(OneUiRadius.Pill),
+    hazeState = hazeState,
+    tint = MaterialTheme.colorScheme.surfaceContainerHigh,
+    alpha = GlassAlpha.Nav,
+)
+
 @Composable
 private fun RowScope.GlassTab(
     label: String,
     selected: Boolean,
     emphasis: Float,
+    enabled: Boolean,
     onClick: () -> Unit,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -136,6 +152,7 @@ private fun RowScope.GlassTab(
             // No ripple: One UI answers a tap with a soft shrink-and-glow.
             .selectable(
                 selected = selected,
+                enabled = enabled,
                 interactionSource = interactionSource,
                 indication = null,
                 role = Role.Tab,

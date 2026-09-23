@@ -37,6 +37,9 @@ object GlassAlpha {
     const val MiniPlayer = 0.45f
     const val Card = 0.74f
     const val Sheet = 0.25f
+    // A panel floating over live content (the Library view options): its blur
+    // samples the content undimmed, so it needs a dense tint to stay readable.
+    const val Panel = 0.85f
     // Now Playing pills sit over already-blurred art, so a thin light veil
     // (not a dense surface tint) is what reads as frosted glass there.
     const val NowPlaying = 0.18f
