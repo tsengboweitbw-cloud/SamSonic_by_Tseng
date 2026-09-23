@@ -1,32 +1,20 @@
 package com.example.samsonic.ui.library
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Shuffle
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -52,8 +40,8 @@ import com.example.samsonic.ui.components.backButtonHazeSource
 import com.example.samsonic.ui.components.HorizontalCarousel
 import com.example.samsonic.ui.components.MediaArt
 import com.example.samsonic.ui.components.SectionHeader
+import com.example.samsonic.ui.components.PlayShuffleButtons
 import com.example.samsonic.ui.components.SongRow
-import com.example.samsonic.ui.theme.OneUiRadius
 import com.example.samsonic.ui.theme.scrollTopFade
 import dev.chrisbanes.haze.rememberHazeState
 
@@ -116,30 +104,7 @@ fun ArtistDetailScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                             Spacer(Modifier.height(20.dp))
-                            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                Button(
-                                    onClick = { if (topSongs.isNotEmpty()) player.play(topSongs.first(), topSongs) },
-                                    shape = RoundedCornerShape(OneUiRadius.Pill),
-                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                                    modifier = Modifier.height(52.dp),
-                                ) {
-                                    Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
-                                    Spacer(Modifier.width(6.dp))
-                                    Text("Play")
-                                }
-                                OutlinedButton(
-                                    onClick = {
-                                        val shuffled = topSongs.shuffled()
-                                        if (shuffled.isNotEmpty()) player.play(shuffled.first(), shuffled)
-                                    },
-                                    shape = RoundedCornerShape(OneUiRadius.Pill),
-                                    modifier = Modifier.height(52.dp),
-                                ) {
-                                    Icon(Icons.Filled.Shuffle, contentDescription = null, modifier = Modifier.size(18.dp))
-                                    Spacer(Modifier.width(6.dp))
-                                    Text("Shuffle")
-                                }
-                            }
+                            PlayShuffleButtons(songs = topSongs)
                         }
                         if (topSongs.isNotEmpty()) {
                             Spacer(Modifier.height(16.dp))
