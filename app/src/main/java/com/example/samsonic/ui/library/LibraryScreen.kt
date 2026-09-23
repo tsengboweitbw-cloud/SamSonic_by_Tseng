@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -32,6 +31,7 @@ import com.example.samsonic.model.Artist
 import com.example.samsonic.model.Genre
 import com.example.samsonic.model.Playlist
 import com.example.samsonic.ui.common.StateContent
+import com.example.samsonic.ui.common.ScrollAwayHeader
 import com.example.samsonic.ui.common.UiState
 import com.example.samsonic.ui.components.AlbumCard
 import com.example.samsonic.ui.components.ArtistCard
@@ -50,27 +50,34 @@ fun LibraryScreen(
     var selectedTab by remember { mutableIntStateOf(1) }
     val repository = LocalAppContainer.current.repository
 
-    Column(modifier = modifier.fillMaxSize().statusBarsPadding()) {
-        Text(
-            text = "Library",
-            style = MaterialTheme.typography.displaySmall,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 12.dp),
-        )
-        ScrollableTabRow(
-            selectedTabIndex = selectedTab,
-            containerColor = MaterialTheme.colorScheme.background,
-            edgePadding = 20.dp,
-        ) {
-            tabs.forEachIndexed { index, title ->
-                Tab(
-                    selected = selectedTab == index,
-                    onClick = { selectedTab = index },
-                    text = { Text(title) },
+    // Title and tabs scroll away together with the grid.
+    ScrollAwayHeader(
+        modifier = modifier,
+        header = {
+            Column {
+                Text(
+                    text = "Library",
+                    style = MaterialTheme.typography.displaySmall,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 20.dp, vertical = 12.dp),
                 )
+                ScrollableTabRow(
+                    selectedTabIndex = selectedTab,
+                    containerColor = MaterialTheme.colorScheme.background,
+                    edgePadding = 20.dp,
+                ) {
+                    tabs.forEachIndexed { index, title ->
+                        Tab(
+                            selected = selectedTab == index,
+                            onClick = { selectedTab = index },
+                            text = { Text(title) },
+                        )
+                    }
+                }
             }
-        }
+        },
+    ) {
         when (selectedTab) {
             0 -> ArtistGrid(repository, onArtistClick, contentPaddingBottom)
             1 -> AlbumGrid(repository, onAlbumClick, contentPaddingBottom)

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -38,6 +39,7 @@ import com.example.samsonic.ui.components.HorizontalCarousel
 import com.example.samsonic.ui.components.SectionHeader
 import com.example.samsonic.ui.components.SongRow
 import com.example.samsonic.ui.theme.OneUiRadius
+import com.example.samsonic.ui.theme.scrollTopFade
 import kotlinx.coroutines.delay
 
 @Composable
@@ -60,8 +62,10 @@ fun SearchScreen(
         value = runCatching { repository.search(query) }.getOrNull()
     }
 
+    val listState = rememberLazyListState()
     LazyColumn(
-        modifier = modifier.fillMaxSize().statusBarsPadding(),
+        modifier = modifier.fillMaxSize().statusBarsPadding().scrollTopFade(listState),
+        state = listState,
         contentPadding = PaddingValues(top = 12.dp, bottom = contentPaddingBottom),
     ) {
         item {

@@ -1,6 +1,7 @@
 package com.example.samsonic.ui.library
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -13,10 +14,10 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material3.Button
@@ -41,9 +42,12 @@ import com.example.samsonic.model.artSeed
 import com.example.samsonic.playback.LocalPlayerState
 import com.example.samsonic.ui.common.StateContent
 import com.example.samsonic.ui.common.UiState
+import com.example.samsonic.ui.components.BackButtonClearance
+import com.example.samsonic.ui.components.GlassBackButton
 import com.example.samsonic.ui.components.MediaArt
 import com.example.samsonic.ui.components.SongRow
 import com.example.samsonic.ui.theme.OneUiRadius
+import com.example.samsonic.ui.theme.scrollTopFade
 
 @Composable
 fun PlaylistDetailScreen(
@@ -59,20 +63,13 @@ fun PlaylistDetailScreen(
         repository.getPlaylist(playlistId)
     }
 
-    Column(modifier = modifier.fillMaxSize().statusBarsPadding()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 4.dp, top = 8.dp),
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-            }
-        }
+    Box(modifier = modifier.fillMaxSize().statusBarsPadding()) {
         StateContent(state = state, modifier = Modifier.fillMaxSize()) { (playlist, songs) ->
+            val listState = rememberLazyListState()
             LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(bottom = contentPaddingBottom),
+                modifier = Modifier.fillMaxSize().scrollTopFade(listState),
+                state = listState,
+                contentPadding = PaddingValues(top = BackButtonClearance, bottom = contentPaddingBottom),
             ) {
                 item {
                     Column(
@@ -144,5 +141,7 @@ fun PlaylistDetailScreen(
                 item { Spacer(Modifier.height(24.dp)) }
             }
         }
+        // Floats over the list: rows scroll up under it and fade out at the status bar.
+        GlassBackButton(onClick = onBack, modifier = Modifier.padding(start = 16.dp, top = 8.dp))
     }
 }

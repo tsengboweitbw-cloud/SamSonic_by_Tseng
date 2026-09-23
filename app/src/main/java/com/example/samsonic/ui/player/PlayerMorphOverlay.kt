@@ -4,9 +4,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -23,8 +21,6 @@ import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.toArgb
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -43,9 +39,9 @@ private val FullArtShadow = 16.dp
 
 /**
  * Draws the cover and progress line in flight between the mini player and Now
- * Playing (see [PlayerMorphState]). Sits above all other chrome. Everything
- * happens in the draw phase, so following the moving anchors costs no
- * recomposition or relayout.
+ * Playing (see [PlayerMorphState]). Fills the player sheet's host, above the
+ * sheet. Everything happens in the draw phase, so following the moving anchors
+ * costs no recomposition or relayout.
  */
 @Composable
 fun PlayerMorphOverlay(morph: PlayerMorphState, modifier: Modifier = Modifier) {
@@ -70,12 +66,11 @@ fun PlayerMorphOverlay(morph: PlayerMorphState, modifier: Modifier = Modifier) {
     val trackColor = MaterialTheme.colorScheme.surfaceContainerHighest
     val shadowPaint = remember { android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG) }
 
-    var origin by remember { mutableStateOf(Offset.Zero) }
-    Canvas(modifier.onGloballyPositioned { origin = it.positionInWindow() }) {
+    Canvas(modifier) {
         val fraction = morph.fraction
         morph.boundsOf(PlayerElement.Art)?.let { bounds ->
             drawArt(
-                bounds = bounds.translate(-origin),
+                bounds = bounds,
                 radius = cornerRadius.toPx(),
                 shadow = lerp(0f, FullArtShadow.toPx(), fraction),
                 gradient = gradient,
@@ -88,7 +83,7 @@ fun PlayerMorphOverlay(morph: PlayerMorphState, modifier: Modifier = Modifier) {
                 (player.positionSeconds / song.durationSeconds).coerceIn(0f, 1f)
             } else 0f
             drawProgress(
-                bounds = bounds.translate(-origin),
+                bounds = bounds,
                 // The mini line's stroke into the seek bar's resting track stroke.
                 stroke = lerp(2.dp.toPx(), 3.dp.toPx(), fraction),
                 progress = progress,

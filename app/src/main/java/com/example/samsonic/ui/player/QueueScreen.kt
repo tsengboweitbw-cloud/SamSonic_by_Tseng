@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -34,6 +35,7 @@ import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.OneUiRadius
 import com.example.samsonic.ui.theme.glassSurface
 import com.example.samsonic.util.formatDuration
+import com.example.samsonic.ui.theme.scrollTopFade
 
 @Composable
 fun QueueScreen(
@@ -59,7 +61,8 @@ fun QueueScreen(
             }
             Text(text = "Up Next", style = MaterialTheme.typography.titleLarge)
         }
-        LazyColumn(modifier = Modifier.fillMaxSize()) {
+        val listState = rememberLazyListState()
+        LazyColumn(modifier = Modifier.fillMaxSize().scrollTopFade(listState), state = listState) {
             items(player.queue, key = { it.id }) { song ->
                 val isCurrent = player.queue.indexOf(song) == player.currentIndex
                 Row(

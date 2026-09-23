@@ -13,11 +13,11 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material3.Button
@@ -44,12 +44,14 @@ import com.example.samsonic.model.artSeed
 import com.example.samsonic.playback.LocalPlayerState
 import com.example.samsonic.ui.common.StateContent
 import com.example.samsonic.ui.common.UiState
+import com.example.samsonic.ui.components.GlassBackButton
 import com.example.samsonic.ui.components.AlbumCard
 import com.example.samsonic.ui.components.HorizontalCarousel
 import com.example.samsonic.ui.components.MediaArt
 import com.example.samsonic.ui.components.SectionHeader
 import com.example.samsonic.ui.components.SongRow
 import com.example.samsonic.ui.theme.OneUiRadius
+import com.example.samsonic.ui.theme.scrollTopFade
 
 private data class ArtistDetail(
     val artist: Artist,
@@ -74,19 +76,19 @@ fun ArtistDetailScreen(
         ArtistDetail(artist, albums, topSongs)
     }
 
+    val listState = rememberLazyListState()
     LazyColumn(
-        modifier = modifier.fillMaxSize().statusBarsPadding(),
+        modifier = modifier.fillMaxSize().statusBarsPadding().scrollTopFade(listState),
+        state = listState,
         contentPadding = PaddingValues(bottom = contentPaddingBottom),
     ) {
         item {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 4.dp, top = 8.dp),
+                    .padding(start = 16.dp, top = 8.dp),
             ) {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                }
+                GlassBackButton(onClick = onBack)
             }
         }
         item {

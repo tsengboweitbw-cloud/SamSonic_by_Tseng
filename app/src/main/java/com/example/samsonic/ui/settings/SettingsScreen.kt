@@ -15,9 +15,9 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.CheckCircle
@@ -50,11 +50,11 @@ import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.OneUiRadius
 import com.example.samsonic.ui.theme.glassSurface
 import com.example.samsonic.ui.theme.toHexRgb
+import com.example.samsonic.ui.theme.scrollTopFade
 import kotlin.math.roundToInt
 
 @Composable
 fun SettingsScreen(
-    onBack: () -> Unit,
     onSignedOut: () -> Unit,
     modifier: Modifier = Modifier,
     contentPaddingBottom: Dp = 0.dp,
@@ -67,22 +67,21 @@ fun SettingsScreen(
     val albumArtCornerRadius by container.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
     var showColorPicker by remember { mutableStateOf(false) }
 
+    val listState = rememberLazyListState()
     LazyColumn(
-        modifier = modifier.fillMaxSize().statusBarsPadding(),
+        modifier = modifier.fillMaxSize().statusBarsPadding().scrollTopFade(listState),
+        state = listState,
         contentPadding = PaddingValues(bottom = 24.dp + contentPaddingBottom),
     ) {
         item {
-            Row(
+            // A nav bar tab like Search and Library, so the same large title and no back button.
+            Text(
+                text = "Settings",
+                style = MaterialTheme.typography.displaySmall,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 4.dp, top = 8.dp, bottom = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                IconButton(onClick = onBack) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                }
-                Text(text = "Settings", style = MaterialTheme.typography.titleLarge)
-            }
+                    .padding(horizontal = 20.dp, vertical = 8.dp),
+            )
         }
 
         item { GroupLabel("Server") }

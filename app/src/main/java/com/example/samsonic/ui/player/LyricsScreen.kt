@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -31,6 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.model.LyricLine
+import com.example.samsonic.ui.theme.scrollTopFade
 
 /** Synced-lyrics style screen; current line is highlighted based on live playback position. */
 @Composable
@@ -86,24 +88,29 @@ fun LyricsScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            else -> LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(horizontal = 28.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp),
-            ) {
-                items(lines!!) { line ->
-                    val isCurrent = lines!!.indexOf(line) == currentIndex
-                    Text(
-                        text = line.text,
-                        style = if (isCurrent) MaterialTheme.typography.headlineMedium else MaterialTheme.typography.titleMedium,
-                        fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
-                        color = if (isCurrent) {
-                            MaterialTheme.colorScheme.onSurface
-                        } else {
-                            MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f)
-                        },
-                    )
+            else -> {
+                val listState = rememberLazyListState()
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 28.dp)
+                        .scrollTopFade(listState),
+                    state = listState,
+                    verticalArrangement = Arrangement.spacedBy(20.dp),
+                ) {
+                    items(lines!!) { line ->
+                        val isCurrent = lines!!.indexOf(line) == currentIndex
+                        Text(
+                            text = line.text,
+                            style = if (isCurrent) MaterialTheme.typography.headlineMedium else MaterialTheme.typography.titleMedium,
+                            fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Normal,
+                            color = if (isCurrent) {
+                                MaterialTheme.colorScheme.onSurface
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.55f)
+                            },
+                        )
+                    }
                 }
             }
         }
