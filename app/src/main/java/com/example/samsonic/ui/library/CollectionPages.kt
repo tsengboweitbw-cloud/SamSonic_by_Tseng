@@ -1,6 +1,7 @@
 package com.example.samsonic.ui.library
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -47,7 +48,9 @@ internal data class PageContent<T>(val owner: String, val items: List<T>)
 
 /**
  * Every album of an artist or genre, opened from a section title on its page.
- * Laid out like the Library's Albums tab, in the grid or list the user picked there.
+ * Laid out like the Library's Albums tab, in the grid or list of [section]: with
+ * [ownView], one the page sets for itself from its view button; otherwise the
+ * Library Albums tab's own (a genre's albums).
  */
 @Composable
 internal fun AlbumsPage(
@@ -57,16 +60,22 @@ internal fun AlbumsPage(
     onAlbumClick: (Album) -> Unit,
     contentPaddingBottom: Dp,
     modifier: Modifier = Modifier,
+    section: LibrarySection = LibrarySection.ALBUMS,
+    ownView: Boolean = false,
 ) {
     val container = LocalAppContainer.current
     val layouts by container.libraryLayoutManager.layouts.collectAsStateWithLifecycle()
     val gridState = rememberLazyGridState()
-    BackButtonPage(onBack, modifier) { backHaze ->
+    BackButtonPage(
+        onBack,
+        modifier,
+        overlay = if (ownView) { haze -> CollectionViewMenu(section, title, haze) } else null,
+    ) { backHaze ->
         StateContent(state = state, modifier = Modifier.fillMaxSize()) { (owner, albums) ->
             LibraryCollection(
                 state = UiState.Success(albums),
                 gridState = gridState,
-                layout = layouts.getValue(LibrarySection.ALBUMS),
+                layout = layouts.getValue(section),
                 padding = LibraryPadding(top = BackButtonClearance, bottom = contentPaddingBottom),
                 key = { it.id },
                 card = { album, size -> AlbumCard(album, onClick = { onAlbumClick(album) }, artSize = size) },
@@ -147,11 +156,15 @@ internal fun SongsPage(
     }
 }
 
-/** A page with the glass back button floating over its [content], which blurs under it. */
+/**
+ * A page with the glass back button floating over its [content], which blurs under
+ * it, and the [overlay] (e.g. its view menu) over both, blurring the same content.
+ */
 @Composable
 private fun BackButtonPage(
     onBack: () -> Unit,
     modifier: Modifier,
+    overlay: (@Composable BoxScope.(haze: HazeState) -> Unit)? = null,
     content: @Composable (backHaze: HazeState) -> Unit,
 ) {
     val backHaze = rememberHazeState()
@@ -159,6 +172,7 @@ private fun BackButtonPage(
         content(backHaze)
         // Floats over the list: rows scroll up under it and fade out at the status bar.
         GlassBackButton(onClick = onBack, hazeState = backHaze, modifier = Modifier.padding(start = 16.dp, top = 8.dp))
+        overlay?.invoke(this, backHaze)
     }
 }
 

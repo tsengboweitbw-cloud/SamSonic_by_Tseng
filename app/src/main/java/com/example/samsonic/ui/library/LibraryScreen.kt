@@ -74,7 +74,7 @@ private val tabIcons = listOf(
 )
 
 /** The tab's user-adjustable view, by pager page; Genres (null) is always a list. */
-private fun sectionOf(page: Int): LibrarySection? = LibrarySection.entries.getOrNull(page)
+private fun sectionOf(page: Int): LibrarySection? = LibrarySection.Tabs.getOrNull(page)
 
 @Composable
 fun LibraryScreen(

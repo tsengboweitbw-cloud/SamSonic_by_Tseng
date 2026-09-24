@@ -19,12 +19,22 @@ import com.example.samsonic.ui.components.GlassTabBar
 
 private val columnChoices = (LibraryLayout.MIN_COLUMNS..LibraryLayout.MAX_COLUMNS).toList()
 
-/** The settings inside the Library's view options panel ([LibraryTabsPanel]). */
+/**
+ * The settings inside a view options panel: the Library's ([LibraryTabsPanel]), or
+ * a page's own ([CollectionViewMenu]), which titles itself, so [sectionName] is null.
+ */
 @Composable
-internal fun ViewOptionsPanel(sectionName: String, layout: LibraryLayout, onLayoutChange: (LibraryLayout) -> Unit) {
-    Column(modifier = Modifier.fillMaxWidth().padding(24.dp)) {
-        Text(text = "$sectionName view", style = MaterialTheme.typography.titleLarge)
-        Spacer(Modifier.height(20.dp))
+internal fun ViewOptionsPanel(
+    sectionName: String?,
+    layout: LibraryLayout,
+    onLayoutChange: (LibraryLayout) -> Unit,
+    modifier: Modifier = Modifier.padding(24.dp),
+) {
+    Column(modifier = Modifier.fillMaxWidth().then(modifier)) {
+        if (sectionName != null) {
+            Text(text = "$sectionName view", style = MaterialTheme.typography.titleLarge)
+            Spacer(Modifier.height(20.dp))
+        }
 
         PanelLabel("Layout")
         GlassTabBar(

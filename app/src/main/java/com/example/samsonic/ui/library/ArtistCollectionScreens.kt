@@ -5,6 +5,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.LocalAppContainer
+import com.example.samsonic.data.LibrarySection
 import com.example.samsonic.model.Album
 import com.example.samsonic.ui.common.rememberScreenLoad
 
@@ -34,6 +35,9 @@ fun ArtistAlbumsScreen(
         onAlbumClick = onAlbumClick,
         contentPaddingBottom = contentPaddingBottom,
         modifier = modifier,
+        // Its own view, apart from the Library Albums tab's and from each other's.
+        section = if (appearsOn) LibrarySection.APPEARS_ON else LibrarySection.ARTIST_ALBUMS,
+        ownView = true,
     )
 }
 
