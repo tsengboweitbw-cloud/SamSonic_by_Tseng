@@ -35,6 +35,9 @@ private const val MAX_ALBUMS = 20_000
 // How many songs a search for an artist's name looks through for their guest appearances.
 private const val ARTIST_SEARCH_SONGS = 500
 
+/** Latest [year] first; items without one go last, and ties keep their order. */
+private fun <T> newestFirst(year: (T) -> Int?): Comparator<T> = compareByDescending { year(it) ?: Int.MIN_VALUE }
+
 /**
  * Talks to a Subsonic/OpenSubsonic server (Navidrome, etc.) and maps the wire DTOs onto the
  * app's domain models. There's no server-side pagination UI yet, so list calls just ask for
@@ -154,7 +157,8 @@ class SubsonicRepository(
     suspend fun getArtist(id: String): Pair<Artist, List<Album>> {
         val detail = requireApi().getArtist(authParams() + ("id" to id)).response.artist
             ?: error("Artist not found")
-        val albums = detail.album.map { it.toDomain() }
+        // Newest first, as every list on an artist's pages is.
+        val albums = detail.album.map { it.toDomain() }.sortedWith(newestFirst { it.year })
         return detail.toDomain() to albums
     }
 
@@ -196,7 +200,8 @@ class SubsonicRepository(
                 if (size >= limit) break
             }
         }
-        val songs = (onAlbums + elsewhere.await()).distinctBy { it.id }
+        // Stable: within a year, songs keep their album and track order.
+        val songs = (onAlbums + elsewhere.await()).distinctBy { it.id }.sortedWith(newestFirst { it.year })
         if (limit == null) songs else songs.take(limit)
     }
 
@@ -226,6 +231,7 @@ class SubsonicRepository(
             .awaitAll()
             .filterNotNull()
             .filter { it.artistId != artist.id }
+            .sortedWith(newestFirst { it.year })
     }
 
     suspend fun getAlbumList(type: String = "newest", size: Int = 20): List<Album> {
