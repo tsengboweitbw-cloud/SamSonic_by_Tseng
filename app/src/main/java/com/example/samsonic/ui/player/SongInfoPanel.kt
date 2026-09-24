@@ -3,6 +3,8 @@ package com.example.samsonic.ui.player
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -13,6 +15,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.samsonic.LocalAppContainer
+import com.example.samsonic.playback.AudioOutput
+import com.example.samsonic.playback.describeEncoding
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.model.Song
@@ -48,6 +55,18 @@ internal fun SongInfoPanel(panel: PanelState, haze: HazeState) {
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 songDetails(song, albumArtist, links).forEach { DetailRow(it) }
+                // What's actually being played out, which can differ from the file (DSD
+                // decoded to PCM, high-res PCM cut to 16-bit), and where it goes.
+                val output by LocalAppContainer.current.audioOutput.output.collectAsStateWithLifecycle()
+                output?.let { out ->
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = "Playback",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    outputDetails(out).forEach { DetailRow(it) }
+                }
             }
         }
     }
@@ -87,6 +106,30 @@ private fun DetailRow(detail: Detail) {
         )
     }
 }
+
+/**
+ * The player's output: the PCM handed to Android, the device it plays on, and the rate
+ * Android's mixer runs at where it says (the phone's own outputs, not USB or Bluetooth).
+ */
+private fun outputDetails(output: AudioOutput): List<Detail> = listOfNotNull(
+    Detail(
+        "Output",
+        if (output.offload) {
+            "Hardware decoding"
+        } else {
+            listOf(
+                formatKilohertz(output.sampleRate),
+                describeEncoding(output.encoding),
+                if (output.channels == 1) "Mono" else if (output.channels == 2) "Stereo" else "${output.channels} channels",
+            ).joinToString(" · ")
+        },
+    ),
+    output.device?.let { Detail("Device", it) },
+    output.mixerRate?.let { Detail("Device rate", formatKilohertz(it)) },
+)
+
+private fun formatKilohertz(hertz: Int): String =
+    if (hertz % 1000 == 0) "${hertz / 1000} kHz" else "%.1f kHz".format(hertz / 1000f)
 
 /** Each detail the server reported; the rest are left out. */
 private fun songDetails(song: Song, albumArtist: ArtistLink?, links: PlayerLinks): List<Detail> = listOfNotNull(

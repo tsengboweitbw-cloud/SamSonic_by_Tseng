@@ -3,7 +3,6 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
 }
-
 android {
     namespace = "com.example.samsonic"
     compileSdk {
@@ -19,12 +18,17 @@ android {
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
-
     buildTypes {
         release {
             optimization {
                 enable = true
             }
+        }
+        // Its own app id, so it installs beside the release app (signed with another key)
+        // instead of over it, and keeps its own servers and settings. Named "Samsonic Dev".
+        debug {
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-debug"
         }
         // Non-debuggable, debug-signed build for judging animation smoothness on a
         // device: debug builds run Compose largely interpreted, so they stutter
@@ -33,6 +37,8 @@ android {
             initWith(getByName("release"))
             signingConfig = signingConfigs.getByName("debug")
             matchingFallbacks += "release"
+            applicationIdSuffix = ".debug"
+            versionNameSuffix = "-perfTest"
         }
     }
     compileOptions {

@@ -1,6 +1,7 @@
 package com.example.samsonic.data.remote
 
 import retrofit2.http.GET
+import retrofit2.http.Query
 import retrofit2.http.QueryMap
 
 /**
@@ -29,6 +30,19 @@ interface SubsonicApi {
 
     @GET("rest/getPlaylist.view")
     suspend fun getPlaylist(@QueryMap params: Map<String, String>): SubsonicEnvelope
+
+    // The song ids repeat the one parameter, which a query map can't hold.
+    @GET("rest/createPlaylist.view")
+    suspend fun createPlaylist(
+        @QueryMap params: Map<String, String>,
+        @Query("songId") songIds: List<String>,
+    ): SubsonicEnvelope
+
+    @GET("rest/updatePlaylist.view")
+    suspend fun updatePlaylist(
+        @QueryMap params: Map<String, String>,
+        @Query("songIdToAdd") songIdsToAdd: List<String>,
+    ): SubsonicEnvelope
 
     @GET("rest/getGenres.view")
     suspend fun getGenres(@QueryMap params: Map<String, String>): SubsonicEnvelope

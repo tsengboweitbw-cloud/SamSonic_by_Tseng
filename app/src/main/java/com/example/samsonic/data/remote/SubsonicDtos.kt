@@ -147,6 +147,7 @@ data class PlaylistDto(
     val id: String,
     val name: String,
     val comment: String? = null,
+    val owner: String? = null,
     val songCount: Int = 0,
     val duration: Int = 0,
     val coverArt: String? = null,

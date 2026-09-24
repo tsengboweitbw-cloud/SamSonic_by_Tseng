@@ -11,6 +11,7 @@ import com.example.samsonic.data.SubsonicRepository
 import com.example.samsonic.data.LibraryLayoutManager
 import com.example.samsonic.data.ThemeManager
 import com.example.samsonic.data.device.DeviceLibrary
+import com.example.samsonic.playback.AudioOutputMonitor
 import com.example.samsonic.playback.PlayerState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -46,6 +47,9 @@ class AppContainer(context: Context) {
     val libraryLayoutManager = LibraryLayoutManager(appContext)
 
     val imageCacheSettings = ImageCacheSettings(appContext)
+
+    /** What the player sends out and where; the playback service feeds it, Song info shows it. */
+    val audioOutput = AudioOutputMonitor(appContext)
 
     private val subsonic = SubsonicRepository(okHttpClient)
 

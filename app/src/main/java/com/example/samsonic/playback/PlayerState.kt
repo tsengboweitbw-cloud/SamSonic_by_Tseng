@@ -143,10 +143,26 @@ class PlayerState(
     }
 
     /** Inserts [song] right after the current track; with nothing queued yet, starts playing it. */
-    fun playNext(song: Song) {
+    fun playNext(song: Song) = playNext(listOf(song))
+
+    /** Inserts [songs] right after the current track, in order; with nothing queued yet, starts playing them. */
+    fun playNext(songs: List<Song>) {
         val c = controller ?: return
-        if (c.mediaItemCount == 0) return play(song, listOf(song))
-        insert((c.currentMediaItemIndex + 1).coerceAtMost(queue.size), listOf(song), ShufflePlacement.Next)
+        if (songs.isEmpty()) return
+        if (c.mediaItemCount == 0) return play(songs.first(), songs)
+        insert((c.currentMediaItemIndex + 1).coerceAtMost(queue.size), songs, ShufflePlacement.Next)
+    }
+
+    /**
+     * [playNext] (with [next]) or [addToQueue] for songs still to be fetched, such as an
+     * album's from its list row. Runs here rather than in the row, which may scroll away
+     * first; if the fetch fails, nothing is queued.
+     */
+    fun queueLater(next: Boolean, load: suspend () -> List<Song>) {
+        scope.launch {
+            val songs = runCatching { load() }.getOrNull() ?: return@launch
+            if (next) playNext(songs) else addToQueue(songs)
+        }
     }
 
     /**

@@ -1,5 +1,10 @@
 package com.example.samsonic.ui.search
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -12,6 +17,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -36,6 +42,7 @@ import com.example.samsonic.ui.components.ArtistCard
 import com.example.samsonic.ui.components.HorizontalCarousel
 import com.example.samsonic.ui.components.ListItemFade
 import com.example.samsonic.ui.components.ListItemMove
+import com.example.samsonic.ui.components.PressIconButton
 import com.example.samsonic.ui.components.SectionHeader
 import com.example.samsonic.ui.components.SongRow
 import com.example.samsonic.ui.theme.GlassAlpha
@@ -194,6 +201,18 @@ private fun SearchField(
             ),
         placeholder = { Text("Artists, albums, songs") },
         leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+        // Clears the field in one tap; only there while there's something to clear.
+        trailingIcon = {
+            AnimatedVisibility(
+                visible = query.isNotEmpty(),
+                enter = fadeIn() + scaleIn(initialScale = 0.6f),
+                exit = fadeOut() + scaleOut(targetScale = 0.6f),
+            ) {
+                PressIconButton(onClick = { onQueryChange("") }) {
+                    Icon(Icons.Filled.Close, contentDescription = "Clear search")
+                }
+            }
+        },
         singleLine = true,
         shape = RoundedCornerShape(OneUiRadius.Pill),
         colors = OutlinedTextFieldDefaults.colors(

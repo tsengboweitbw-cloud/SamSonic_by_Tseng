@@ -50,19 +50,24 @@ import com.example.samsonic.model.Album
 import com.example.samsonic.model.Artist
 import com.example.samsonic.model.Genre
 import com.example.samsonic.model.Playlist
+import com.example.samsonic.model.favouritesPlaylist
 import com.example.samsonic.ui.common.StateContent
 import com.example.samsonic.ui.common.TitledPage
 import com.example.samsonic.ui.common.UiState
+import com.example.samsonic.ui.common.ScreenRefresh
 import com.example.samsonic.ui.common.rememberScreenLoad
 import com.example.samsonic.ui.components.AlbumCard
 import com.example.samsonic.ui.components.AlbumRow
 import com.example.samsonic.ui.components.ArtistCard
 import com.example.samsonic.ui.components.ArtistRow
 import com.example.samsonic.ui.components.GlassTabBar
+import com.example.samsonic.ui.components.OneUiPullToRefresh
 import com.example.samsonic.ui.components.GlassTabBarSize
 import com.example.samsonic.ui.components.PlaylistCard
 import com.example.samsonic.ui.components.PlaylistRow
 import com.example.samsonic.ui.theme.oneUiRowClickable
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
 private val tabs = listOf("Artists", "Albums", "Playlists", "Genres")
@@ -97,6 +102,7 @@ fun LibraryScreen(
     val layoutManager = LocalAppContainer.current.libraryLayoutManager
     val layouts by layoutManager.layouts.collectAsStateWithLifecycle()
     val albumArtistsOnly by layoutManager.albumArtistsOnly.collectAsStateWithLifecycle()
+    val showFavourites by layoutManager.showFavourites.collectAsStateWithLifecycle()
     // The view options panel (open/closed, animated) and the tab it was opened for.
     val viewOptions = remember { MutableTransitionState(false) }
     var viewSection by remember { mutableStateOf(LibrarySection.ALBUMS) }
@@ -110,21 +116,30 @@ fun LibraryScreen(
             .collect { pages -> pages.forEach { if (it !in visited) visited += it } }
     }
     val repository = LocalAppContainer.current.repository
+    // A pull-to-refresh per tab, reloading just that tab while its list stays up.
+    val refreshes = remember { List(tabs.size) { ScreenRefresh() } }
     val artists = if (0 in visited) {
-        rememberScreenLoad(albumArtistsOnly, errorMessage = "Couldn't load artists") {
+        rememberScreenLoad(albumArtistsOnly, errorMessage = "Couldn't load artists", refresh = refreshes[0]) {
             if (albumArtistsOnly) repository.getAlbumArtists() else repository.getArtists()
         }
     } else UiState.Loading
     val albums = if (1 in visited) {
-        rememberScreenLoad(Unit, errorMessage = "Couldn't load albums") {
+        rememberScreenLoad(Unit, errorMessage = "Couldn't load albums", refresh = refreshes[1]) {
             repository.getAlbumList("alphabeticalByArtist", 500)
         }
     } else UiState.Loading
     val playlists = if (2 in visited) {
-        rememberScreenLoad(Unit, errorMessage = "Couldn't load playlists") { repository.getPlaylists() }
+        // Favourites (the liked songs) first, when shown; the rest are the library's own.
+        rememberScreenLoad(showFavourites, errorMessage = "Couldn't load playlists", refresh = refreshes[2]) {
+            coroutineScope {
+                val liked = if (showFavourites) async { runCatching { repository.getLikedSongs() }.getOrNull() } else null
+                val own = repository.getPlaylists()
+                listOfNotNull(liked?.await()?.let(::favouritesPlaylist)) + own
+            }
+        }
     } else UiState.Loading
     val genres = if (3 in visited) {
-        rememberScreenLoad(Unit, errorMessage = "Couldn't load genres") { repository.getGenres() }
+        rememberScreenLoad(Unit, errorMessage = "Couldn't load genres", refresh = refreshes[3]) { repository.getGenres() }
     } else UiState.Loading
 
     fun onTabSelected(tab: Int) {
@@ -209,35 +224,43 @@ fun LibraryScreen(
             state = pagerState,
             modifier = Modifier.fillMaxSize(),
         ) { page ->
-            when (page) {
-                0 -> LibraryCollection(
-                    state = artists,
-                    gridState = artistsGrid,
-                    layout = layouts.getValue(LibrarySection.ARTISTS),
-                    padding = padding,
-                    key = { it.id },
-                    card = { artist, size -> ArtistCard(artist, onClick = { onArtistClick(artist) }, artSize = size) },
-                    row = { artist -> ArtistRow(artist, onClick = { onArtistClick(artist) }) },
-                )
-                1 -> LibraryCollection(
-                    state = albums,
-                    gridState = albumsGrid,
-                    layout = layouts.getValue(LibrarySection.ALBUMS),
-                    padding = padding,
-                    key = { it.id },
-                    card = { album, size -> AlbumCard(album, onClick = { onAlbumClick(album) }, artSize = size) },
-                    row = { album -> AlbumRow(album, onClick = { onAlbumClick(album) }) },
-                )
-                2 -> LibraryCollection(
-                    state = playlists,
-                    gridState = playlistsGrid,
-                    layout = layouts.getValue(LibrarySection.PLAYLISTS),
-                    padding = padding,
-                    key = { it.id },
-                    card = { playlist, size -> PlaylistCard(playlist, onClick = { onPlaylistClick(playlist) }, artSize = size) },
-                    row = { playlist -> PlaylistRow(playlist, onClick = { onPlaylistClick(playlist) }) },
-                )
-                else -> GenreList(genres, genresList, padding, onGenreClick)
+            // Pulling down past the top reloads the tab, as on Home.
+            OneUiPullToRefresh(
+                isRefreshing = refreshes[page].isRefreshing,
+                onRefresh = refreshes[page]::refresh,
+                topInset = topPadding,
+            ) {
+                when (page) {
+                    0 -> LibraryCollection(
+                        state = artists,
+                        gridState = artistsGrid,
+                        layout = layouts.getValue(LibrarySection.ARTISTS),
+                        padding = padding,
+                        key = { it.id },
+                        card = { artist, size -> ArtistCard(artist, onClick = { onArtistClick(artist) }, artSize = size) },
+                        row = { artist -> ArtistRow(artist, onClick = { onArtistClick(artist) }) },
+                    )
+                    1 -> LibraryCollection(
+                        state = albums,
+                        gridState = albumsGrid,
+                        layout = layouts.getValue(LibrarySection.ALBUMS),
+                        padding = padding,
+                        key = { it.id },
+                        card = { album, size -> AlbumCard(album, onClick = { onAlbumClick(album) }, artSize = size) },
+                        // Sideways swipes here change tabs, so no swipe actions.
+                        row = { album -> AlbumRow(album, onClick = { onAlbumClick(album) }, swipeActions = false) },
+                    )
+                    2 -> LibraryCollection(
+                        state = playlists,
+                        gridState = playlistsGrid,
+                        layout = layouts.getValue(LibrarySection.PLAYLISTS),
+                        padding = padding,
+                        key = { it.id },
+                        card = { playlist, size -> PlaylistCard(playlist, onClick = { onPlaylistClick(playlist) }, artSize = size) },
+                        row = { playlist -> PlaylistRow(playlist, onClick = { onPlaylistClick(playlist) }) },
+                    )
+                    else -> GenreList(genres, genresList, padding, onGenreClick)
+                }
             }
         }
     }

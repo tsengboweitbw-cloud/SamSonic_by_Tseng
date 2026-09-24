@@ -22,6 +22,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.samsonic.LocalAppContainer
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,19 +36,23 @@ import com.example.samsonic.model.artSeed
 import com.example.samsonic.ui.components.ListItemFade
 import com.example.samsonic.ui.components.ListItemMove
 import com.example.samsonic.ui.components.MediaArt
+import com.example.samsonic.ui.components.SongRowEnd
+import com.example.samsonic.ui.components.audioFormatDisplay
+import com.example.samsonic.ui.components.songSubtitle
 import com.example.samsonic.ui.components.SwipeAction
 import com.example.samsonic.ui.components.SwipeActions
 import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.OneUiRadius
 import com.example.samsonic.ui.theme.OneUiRow
 import com.example.samsonic.ui.theme.glassSurface
-import com.example.samsonic.util.formatDuration
 import com.example.samsonic.ui.theme.scrollTopFade
 
 /** The queue's rows in play order, swipeable to play next or remove; the body of the Up Next card. */
 @Composable
 fun QueueScreen(modifier: Modifier = Modifier) {
     val player = LocalPlayerState.current
+    val likesEnabled by LocalAppContainer.current.themeManager.likesEnabled.collectAsStateWithLifecycle()
+    val display = audioFormatDisplay()
 
     Column(modifier = modifier.fillMaxSize()) {
         // Queue indices in play order (the shuffle order when shuffle is on). playOrder catches
@@ -123,18 +130,14 @@ fun QueueScreen(modifier: Modifier = Modifier) {
                                 overflow = TextOverflow.Ellipsis,
                             )
                             Text(
-                                text = song.artistName,
+                                text = songSubtitle(song.artistName, song, display),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )
                         }
-                        Text(
-                            text = formatDuration(song.durationSeconds),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                        SongRowEnd(song, display, liked = player.isLiked(song), likesEnabled = likesEnabled, heartButton = null)
                     }
                 }
             }

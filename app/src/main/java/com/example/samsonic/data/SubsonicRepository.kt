@@ -9,6 +9,7 @@ import com.example.samsonic.data.remote.PlaylistDto
 import com.example.samsonic.data.remote.SongDto
 import com.example.samsonic.data.remote.SubsonicApi
 import com.example.samsonic.data.remote.SubsonicAuth
+import com.example.samsonic.data.remote.SubsonicResponseBody
 import com.example.samsonic.model.Album
 import com.example.samsonic.model.Artist
 import com.example.samsonic.model.ArtistCredit
@@ -308,6 +309,29 @@ class SubsonicRepository(
         return detail.toDomain() to songs
     }
 
+    override val canEditPlaylists: Boolean get() = true
+
+    override suspend fun getOwnPlaylists(): List<Playlist> {
+        val username = credentials?.username
+        return requireApi().getPlaylists(authParams()).response.playlists?.playlist.orEmpty()
+            // A server that doesn't say whose a playlist is leaves it to the add to be refused.
+            .filter { it.owner == null || it.owner == username }
+            .map { it.toDomain() }
+    }
+
+    override suspend fun addToPlaylist(playlistId: String, songIds: List<String>) {
+        requireApi().updatePlaylist(authParams() + ("playlistId" to playlistId), songIds).response.requireOk()
+    }
+
+    override suspend fun createPlaylist(name: String, songIds: List<String>) {
+        requireApi().createPlaylist(authParams() + ("name" to name), songIds).response.requireOk()
+    }
+
+    /** Subsonic reports a refused call in the body, still with HTTP 200. */
+    private fun SubsonicResponseBody.requireOk() {
+        if (status != "ok") error(error?.message ?: "The server refused the change")
+    }
+
     override suspend fun getTopSongs(artistName: String, count: Int): List<Song> {
         val params = authParams() + mapOf("artist" to artistName, "count" to count.toString())
         return requireApi().getTopSongs(params).response.topSongs?.song.orEmpty().map { it.toDomain() }
@@ -342,6 +366,8 @@ class SubsonicRepository(
     suspend fun getStarredSongs(): List<Song> {
         return requireApi().getStarred2(authParams()).response.starred2?.song.orEmpty().map { it.toDomain() }
     }
+
+    override suspend fun getLikedSongs(): List<Song> = getStarredSongs()
 
     override suspend fun star(id: String) {
         requireApi().star(authParams() + ("id" to id))

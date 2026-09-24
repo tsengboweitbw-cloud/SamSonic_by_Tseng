@@ -44,6 +44,8 @@ import kotlinx.coroutines.coroutineScope
 
 /** How many of the artist's songs their page lists; the section's title opens them all. */
 private const val SONGS_PREVIEW = 10
+// How many albums the Albums shelf needs before it stacks them in two rows.
+private const val TWO_ROW_MIN_ALBUMS = 6
 
 private data class ArtistDetail(
     val artist: Artist,
@@ -125,7 +127,9 @@ fun ArtistDetailScreen(
                     }
                 }
                 songSection("popular", "Popular", topSongs, player, onTitleClick = null)
-                albumShelf("albums", "Albums", albums, onAllAlbumsClick, onAlbumClick, rows = 2)
+                // Two rows only once there are enough albums to fill them; fewer sit in one.
+                val albumRows = if (albums.size < TWO_ROW_MIN_ALBUMS) 1 else 2
+                albumShelf("albums", "Albums", albums, onAllAlbumsClick, onAlbumClick, rows = albumRows)
                 songSection("songs", "Songs", songs, player, onTitleClick = onAllSongsClick)
                 albumShelf("appearsOn", "Appears on", appearsOn, onAppearsOnClick, onAlbumClick)
                 item(key = "end") { Spacer(Modifier.height(24.dp)) }

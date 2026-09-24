@@ -24,7 +24,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.ui.common.rememberScreenLoad
 import com.example.samsonic.LocalAppContainer
+import com.example.samsonic.model.FAVOURITES_PLAYLIST_ID
 import com.example.samsonic.model.Playlist
+import com.example.samsonic.model.favouritesPlaylist
 import com.example.samsonic.model.Song
 import com.example.samsonic.model.artSeed
 import com.example.samsonic.playback.LocalPlayerState
@@ -38,7 +40,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.ui.components.BackButtonClearance
 import com.example.samsonic.ui.components.backButtonHazeSource
 import com.example.samsonic.ui.components.GlassBackButton
-import com.example.samsonic.ui.components.MediaArt
+import com.example.samsonic.ui.components.PlaylistArt
 import com.example.samsonic.ui.components.PlayShuffleButtons
 import com.example.samsonic.ui.components.SongRow
 import com.example.samsonic.ui.theme.scrollTopFade
@@ -56,7 +58,12 @@ fun PlaylistDetailScreen(
     val cornerRadius by LocalAppContainer.current.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
 
     val state = rememberScreenLoad(playlistId, errorMessage = "Couldn't load playlist") {
-        repository.getPlaylist(playlistId)
+        if (playlistId == FAVOURITES_PLAYLIST_ID) {
+            val liked = repository.getLikedSongs()
+            favouritesPlaylist(liked) to liked
+        } else {
+            repository.getPlaylist(playlistId)
+        }
     }
 
     // The playlist as the card tapped to open it knew it: its header shows at once, for
@@ -119,9 +126,8 @@ private fun PlaylistHeader(playlist: Playlist, songCount: Int, cornerRadius: Dp,
             .padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        MediaArt(
-            coverArt = playlist.coverArt,
-            colorSeed = playlist.id.artSeed(),
+        PlaylistArt(
+            playlist = playlist,
             size = 180.dp,
             cornerRadius = cornerRadius,
             smallFirst = true,

@@ -32,6 +32,8 @@ fun HomeScreen(
     onAlbumClick: (Album) -> Unit,
     onShelfClick: (HomeShelf) -> Unit,
     modifier: Modifier = Modifier,
+    // Also run when the user pulls to refresh, for what else a refresh resets.
+    onRefresh: () -> Unit = {},
     contentPaddingBottom: Dp = 0.dp,
 ) {
     val viewModel = rememberHomeViewModel()
@@ -50,7 +52,10 @@ fun HomeScreen(
             // Pulling down past the top reloads every shelf, re-rolling "Picked For You".
             OneUiPullToRefresh(
                 isRefreshing = viewModel.isRefreshing,
-                onRefresh = viewModel::refresh,
+                onRefresh = {
+                    viewModel.refresh()
+                    onRefresh()
+                },
                 topInset = topPadding,
             ) {
                 LazyColumn(

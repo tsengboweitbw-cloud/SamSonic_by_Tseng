@@ -26,6 +26,7 @@ import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.lerp
 import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -139,6 +140,9 @@ private val CloseSpring = spring<Float>(dampingRatio = 0.72f, stiffness = 269f)
 
 private val IconSize = 22.dp
 
+// How far open a panel from a glassless origin is when its glass is fully in (see MorphPanel).
+private const val OriginFade = 0.35f
+
 /** Maps [value] from [start]..[end] onto 0..1, clamped. */
 private fun ramp(value: Float, start: Float, end: Float) = ((value - start) / (end - start)).coerceIn(0f, 1f)
 
@@ -152,6 +156,13 @@ private fun ramp(value: Float, start: Float, end: Float) = ((value - start) / (e
  * and [icon] (if any; a row has none) rides the shape's center, fading as the content fades in. Its top
  * edge moves with [panel]'s drags, so with [dragToClose] a pull down on the
  * panel (or past the top of its list) folds it back up.
+ * [originRadius] is for an origin with no glass of its own, such as a list row: the
+ * shape folds into its corners rather than a circle, draws no veil, and its glass
+ * fades out as it lands (and in as it leaves), since there's no glass button to
+ * hand over to - a blurred copy of the row would otherwise pop back to the row.
+ * [resizable] is for content that animates its size while open: the glass is laid
+ * out once at all the height the panel may take, so the size animation doesn't
+ * resize it (and rebuild its blur) every frame.
  * Not composed while folded away.
  */
 @Composable
@@ -164,11 +175,16 @@ internal fun MorphPanel(
     dragToClose: Boolean = true,
     wash: Color = Color.Transparent,
     washAlpha: Float = 0f,
+    originRadius: Dp? = null,
+    resizable: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val showing by remember(panel) { derivedStateOf { panel.progress > 0f } }
     if (!showing) return
-    val veil = MaterialTheme.colorScheme.onSurface.copy(alpha = GlassAlpha.NowPlaying)
+    val veil = if (originRadius == null) MaterialTheme.colorScheme.onSurface.copy(alpha = GlassAlpha.NowPlaying) else Color.Transparent
+    val originRadiusPx = originRadius?.let { with(LocalDensity.current) { it.toPx() } }
+    // How much of the glass shows: all of it, except near a glassless origin.
+    fun glassAlpha() = if (originRadius == null) 1f else ramp(panel.progress, 0f, OriginFade)
     val iconTint = MaterialTheme.colorScheme.onSurface
     val rimBrush = glassRimBrush()
     val rimWidthPx = with(LocalDensity.current) { GlassRimWidth.toPx() }
@@ -183,14 +199,27 @@ internal fun MorphPanel(
         val from = panel.origin.takeIf { it != Rect.Zero }?.translate(-placed[0], -placed[1]) ?: full
         val t = panel.progress
         // t overshoots past 1 on an elastic open, so the shape briefly grows past `full`.
-        return lerp(from, full, t) to lerp(from.minDimension / 2, radiusPx, t).coerceAtLeast(0f)
+        return lerp(from, full, t) to lerp(originRadiusPx ?: (from.minDimension / 2), radiusPx, t).coerceAtLeast(0f)
     }
     // The glass's top-left in this element's coordinates (see its layout); read in draw.
     val glassAt = remember { floatArrayOf(0f, 0f) }
+    // The most height this element may take (see [resizable]); read in the glass's layout.
+    val room = remember { intArrayOf(0) }
     val pullDown = remember(panel) { PanelPullDown(panel) }
     val dragState = rememberDraggableState { panel.dragBy(it) }
     Box(
         modifier
+            .then(
+                if (resizable) {
+                    Modifier.layout { measurable, constraints ->
+                        if (constraints.hasBoundedHeight) room[0] = constraints.maxHeight
+                        val placeable = measurable.measure(constraints)
+                        layout(placeable.width, placeable.height) { placeable.place(0, 0) }
+                    }
+                } else {
+                    Modifier
+                },
+            )
             // onPlaced, not onGloballyPositioned: it runs before the children are placed and
             // before anything draws, so even the first frame after composing uses the real
             // position. Otherwise that frame drew the shape as if at the root's corner - a flash.
@@ -251,7 +280,9 @@ internal fun MorphPanel(
                 .matchParentSize()
                 .layout { measurable, constraints ->
                     val width = constraints.maxWidth
-                    val height = constraints.maxHeight
+                    // A resizable panel's glass reaches down all the room it has, so its
+                    // growing and shrinking only moves the clip, never resizes the glass.
+                    val height = maxOf(constraints.maxHeight, room[0])
                     val origin = panel.origin
                     val at = panel.placedAt
                     val area = if (origin == Rect.Zero || !at.isSpecified) {
@@ -272,7 +303,9 @@ internal fun MorphPanel(
                     )
                     glassAt[0] = left.toFloat()
                     glassAt[1] = top.toFloat()
-                    layout(width, height) { glass.place(left, top) }
+                    // This element's own size, not the glass's: a layout larger than its
+                    // constraints is centered on them, which shifted a taller glass up.
+                    layout(width, constraints.maxHeight) { glass.place(left, top) }
                 }
                 .drawWithContent {
                     // This element's bounds and the shape, in the glass's coordinates.
@@ -294,6 +327,11 @@ internal fun MorphPanel(
                             }
                         }
                     } else {
+                        // A glassless origin's fade. Only near the origin, as a brief layer in
+                        // draw: a lasting fade on the glass drops its blur out (see above), but
+                        // here the shape is small and nearly gone by then.
+                        val fade = glassAlpha()
+                        if (fade < 1f) drawContext.canvas.saveLayer(rect, Paint().apply { alpha = fade })
                         clipPath(Path().apply { addRoundRect(RoundRect(rect, CornerRadius(corner))) }) {
                             this@drawWithContent.drawContent()
                             // Thickens the glass as it grows, in draw: a fade on the glass
@@ -304,11 +342,13 @@ internal fun MorphPanel(
                             // dark the moment it left the button, as if its glass had gone.
                             drawRect(veil, rect.topLeft, rect.size, alpha = veil.alpha * (1f - ramp(panel.progress, 0f, 0.6f)))
                         }
+                        if (fade < 1f) drawContext.canvas.restore()
                     }
                     // The rim along the shape, as the button has, all the way open.
                     val inset = rimWidthPx / 2
                     drawRoundRect(
                         brush = rimBrush,
+                        alpha = glassAlpha(),
                         topLeft = rect.topLeft + Offset(inset, inset),
                         size = Size(rect.width - rimWidthPx, rect.height - rimWidthPx),
                         cornerRadius = CornerRadius((corner - inset).coerceAtLeast(0f)),

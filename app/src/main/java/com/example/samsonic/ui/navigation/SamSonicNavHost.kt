@@ -23,7 +23,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -44,7 +43,10 @@ import com.example.samsonic.ui.home.SongShelfScreen
 import com.example.samsonic.ui.home.AlbumShelfScreen
 import com.example.samsonic.ui.home.HomeScreen
 import com.example.samsonic.ui.home.rememberHomeViewModel
+import com.example.samsonic.ui.library.AddToPlaylistMenu
 import com.example.samsonic.ui.library.LibraryScreen
+import com.example.samsonic.ui.library.LocalAddToPlaylist
+import com.example.samsonic.ui.library.rememberAddToPlaylistState
 import com.example.samsonic.ui.player.PlayerSheet
 import com.example.samsonic.ui.player.rememberPlayerSheetState
 import com.example.samsonic.ui.search.SearchScreen
@@ -54,7 +56,6 @@ import com.example.samsonic.ui.theme.LocalHazeState
 import com.example.samsonic.ui.theme.OneUiChrome
 import com.example.samsonic.ui.theme.bottomFade
 import dev.chrisbanes.haze.hazeSource
-import kotlinx.coroutines.delay
 import dev.chrisbanes.haze.rememberHazeState
 
 data class BottomDestination(val route: String, val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector)
@@ -94,21 +95,21 @@ fun SamSonicNavHost() {
     val hazeState = rememberHazeState()
     val playerSheet = rememberPlayerSheetState()
     val artTransitions = remember { ArtTransitions() }
+    // The query and results stay through tab switches (which also keep Search's scroll and
+    // any page opened from it) until the app closes, Home is pulled to refresh, or the
+    // source changes and rebuilds this.
     val searchSession = remember { SearchSession() }
-    // A new search each time Search is left for another tab and come back to; a page
-    // opened from the results stays under Search, so returning from it keeps the query.
-    // Cleared once Search has faded out, so it doesn't empty on the way out.
-    LaunchedEffect(currentTab) {
-        if (currentTab != Routes.SEARCH && searchSession.query.isNotEmpty()) {
-            delay(500)
-            searchSession.clear()
-        }
-    }
+    // Offered only where there are playlists to add to; the host is rebuilt with the source.
+    val addToPlaylist = rememberAddToPlaylistState()
+    val canEditPlaylists = remember { container.repository.canEditPlaylists }
     val navBarHeight = OneUiChrome.BarHeight
     val navBarBottomInset = 16.dp
 
     Scaffold(containerColor = MaterialTheme.colorScheme.background) { innerPadding ->
-        CompositionLocalProvider(LocalHazeState provides hazeState) {
+        CompositionLocalProvider(
+            LocalHazeState provides hazeState,
+            LocalAddToPlaylist provides addToPlaylist.takeIf { canEditPlaylists },
+        ) {
         Box(modifier = Modifier.fillMaxSize()) {
             // The chrome keeps its resting spot while it animates out, so these ignore showChrome.
             val chromeBottomInset = innerPadding.calculateBottomPadding()
@@ -154,6 +155,12 @@ fun SamSonicNavHost() {
                     HomeScreen(
                         onAlbumClick = { navController.navigate(Routes.album(it.id)) },
                         onShelfClick = { navController.navigate(Routes.shelf(it.key)) },
+                        // A refresh starts Search over too: the query, and whatever was
+                        // opened from its results (Search's saved tab state).
+                        onRefresh = {
+                            searchSession.clear()
+                            navController.clearBackStack(Routes.SEARCH)
+                        },
                         contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve,
                     )
                 }
@@ -256,6 +263,9 @@ fun SamSonicNavHost() {
                     modifier = Modifier.fillMaxSize(),
                 )
             }
+
+            // Over everything, the nav bar included; it grows out of the long-pressed song row.
+            if (canEditPlaylists) AddToPlaylistMenu(addToPlaylist, hazeState)
         }
         }
     }

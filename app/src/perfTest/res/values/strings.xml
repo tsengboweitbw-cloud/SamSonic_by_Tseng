@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Tells this build apart from the release app installed beside it. -->
+    <string name="app_name">Samsonic Dev</string>
+</resources>

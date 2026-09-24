@@ -61,9 +61,8 @@ fun PlaylistRow(playlist: Playlist, onClick: () -> Unit, modifier: Modifier = Mo
         onClick = art.onClick,
         modifier = modifier,
     ) {
-        MediaArt(
-            coverArt = playlist.coverArt,
-            colorSeed = playlist.id.artSeed(),
+        PlaylistArt(
+            playlist = playlist,
             size = RowArtSize,
             cornerRadius = cornerRadius,
             shadowElevation = 0.dp,

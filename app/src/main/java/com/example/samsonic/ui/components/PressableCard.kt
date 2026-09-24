@@ -1,6 +1,6 @@
 package com.example.samsonic.ui.components
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
@@ -27,9 +27,23 @@ val PlateOutset = 6.dp
  * never clipped - cover art keeps the corner radius the user picked.
  */
 @Composable
-fun PressableCard(onClick: () -> Unit, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+fun PressableCard(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    onLongClick: (() -> Unit)? = null,
+    onLongClickLabel: String? = null,
+    content: @Composable () -> Unit,
+) {
     val interaction = remember { MutableInteractionSource() }
-    Box(modifier.clickable(interactionSource = interaction, indication = null, onClick = onClick)) {
+    Box(
+        modifier.combinedClickable(
+            interactionSource = interaction,
+            indication = null,
+            onClick = onClick,
+            onLongClick = onLongClick,
+            onLongClickLabel = onLongClickLabel,
+        ),
+    ) {
         content()
         Box(
             Modifier

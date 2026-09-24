@@ -72,12 +72,29 @@ interface MusicLibrary {
 
     suspend fun getPlaylist(id: String): Pair<Playlist, List<Song>>
 
+    /** Whether songs can be added to playlists here ([getOwnPlaylists], [addToPlaylist], [createPlaylist]). */
+    val canEditPlaylists: Boolean get() = false
+
+    /** The playlists the user may add songs to: their own, not ones others share. */
+    suspend fun getOwnPlaylists(): List<Playlist> = emptyList()
+
+    /** Adds songs [songIds] to the end of playlist [playlistId], in order. */
+    suspend fun addToPlaylist(playlistId: String, songIds: List<String>): Unit =
+        throw UnsupportedOperationException("This library has no playlists")
+
+    /** Makes a new playlist called [name] holding songs [songIds]. */
+    suspend fun createPlaylist(name: String, songIds: List<String>): Unit =
+        throw UnsupportedOperationException("This library has no playlists")
+
     suspend fun getTopSongs(artistName: String, count: Int = 5): List<Song>
 
     /** Genres, most songs first. */
     suspend fun getGenres(): List<Genre>
 
     suspend fun search(query: String): SearchResults
+
+    /** The songs the user has liked ([star]red): the Favourites playlist. */
+    suspend fun getLikedSongs(): List<Song>
 
     suspend fun star(id: String)
 

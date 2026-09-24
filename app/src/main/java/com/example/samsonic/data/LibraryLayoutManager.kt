@@ -54,6 +54,15 @@ class LibraryLayoutManager(context: Context) {
         _albumArtistsOnly.value = enabled
     }
 
+    // Whether the Playlists tab starts with Favourites, the liked songs.
+    private val _showFavourites = MutableStateFlow(prefs.getBoolean(KEY_SHOW_FAVOURITES, true))
+    val showFavourites: StateFlow<Boolean> = _showFavourites.asStateFlow()
+
+    fun setShowFavourites(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_SHOW_FAVOURITES, enabled).apply()
+        _showFavourites.value = enabled
+    }
+
     fun setLayout(section: LibrarySection, layout: LibraryLayout) {
         val columns = layout.columns.coerceIn(LibraryLayout.MIN_COLUMNS, LibraryLayout.MAX_COLUMNS)
         prefs.edit()
@@ -81,5 +90,6 @@ class LibraryLayoutManager(context: Context) {
 
     private companion object {
         const val KEY_ALBUM_ARTISTS_ONLY = "artists_album_artists_only"
+        const val KEY_SHOW_FAVOURITES = "playlists_show_favourites"
     }
 }

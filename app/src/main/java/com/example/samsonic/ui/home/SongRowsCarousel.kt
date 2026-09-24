@@ -1,10 +1,9 @@
 package com.example.samsonic.ui.home
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.snapping.SnapPosition
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
 import androidx.compose.ui.Alignment
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -31,6 +30,10 @@ import com.example.samsonic.model.Song
 import com.example.samsonic.model.artSeed
 import com.example.samsonic.playback.LocalPlayerState
 import com.example.samsonic.ui.components.MediaArt
+import com.example.samsonic.ui.components.SongRowEnd
+import com.example.samsonic.ui.components.audioFormatDisplay
+import com.example.samsonic.ui.components.songSubtitle
+import com.example.samsonic.ui.library.rememberAddToPlaylistLongPress
 import com.example.samsonic.ui.theme.OneUiRow
 import com.example.samsonic.ui.theme.horizontalScrollFade
 
@@ -78,12 +81,21 @@ fun SongRowsCarousel(songs: List<Song>, modifier: Modifier = Modifier) {
 @Composable
 private fun ShelfSongRow(song: Song, isCurrent: Boolean, onClick: () -> Unit) {
     val cornerRadius by LocalAppContainer.current.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
+    val likesEnabled by LocalAppContainer.current.themeManager.likesEnabled.collectAsStateWithLifecycle()
+    val display = audioFormatDisplay()
+    val player = LocalPlayerState.current
+    val addToPlaylist = rememberAddToPlaylistLongPress(song)
     Row(
         modifier = Modifier
             .fillMaxWidth()
             .padding(OneUiRow.Inset)
             .clip(OneUiRow.Shape)
-            .clickable(onClick = onClick)
+            .then(addToPlaylist.origin)
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = addToPlaylist.onLongClick,
+                onLongClickLabel = addToPlaylist.label,
+            )
             .padding(horizontal = 8.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -105,7 +117,7 @@ private fun ShelfSongRow(song: Song, isCurrent: Boolean, onClick: () -> Unit) {
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = listOfNotNull(song.artistName, song.year?.takeIf { it > 0 }?.toString()).joinToString(" • "),
+                text = songSubtitle(listOfNotNull(song.artistName, song.year?.takeIf { it > 0 }?.toString()).joinToString(" • "), song, display),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
@@ -113,31 +125,8 @@ private fun ShelfSongRow(song: Song, isCurrent: Boolean, onClick: () -> Unit) {
             )
         }
         Spacer(Modifier.width(12.dp))
-        Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(2.dp)) {
-            shortAudioFormat(song)?.let {
-                Text(text = it, style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-            Text(
-                text = "%02d:%02d".format(song.durationSeconds / 60, song.durationSeconds % 60),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        // As every song row: the audio format the way Settings shows it; no heart button here.
+        SongRowEnd(song, display, liked = player.isLiked(song), likesEnabled = likesEnabled, heartButton = null)
     }
 }
 
-/**
- * The format in short: "FLAC • 16/44" (bit depth / sample rate in kHz) for lossless
- * files that report both, else the bit rate ("MP3 • 320k"), else just the format.
- */
-private fun shortAudioFormat(song: Song): String? {
-    val format = song.suffix?.uppercase() ?: return null
-    val depth = song.bitDepth?.takeIf { it > 0 }
-    val rate = song.samplingRate?.takeIf { it > 0 }
-    val detail = when {
-        depth != null && rate != null -> "$depth/${rate / 1000}"
-        song.bitRate != null -> "${song.bitRate}k"
-        else -> null
-    }
-    return listOfNotNull(format, detail).joinToString(" • ")
-}

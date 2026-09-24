@@ -5,9 +5,13 @@ import androidx.compose.animation.EnterExitState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.currentCompositeKeyHash
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.lifecycle.ViewModel
@@ -17,6 +21,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 
@@ -65,12 +70,14 @@ class ScreenLoadCache : ViewModel() {
  *   spinner for real content, keeping that heavy first layout off the animation frames;
  * - the fetch and mapping run off the main thread;
  * - what loaded is kept with the destination ([ScreenLoadCache]), by its place in the
- *   screen and [keys], and shown at once when the user comes back to it.
+ *   screen and [keys], and shown at once when the user comes back to it;
+ * - [refresh] (for a pull-to-refresh) fetches again while what's shown stays up.
  */
 @Composable
 fun <T> rememberScreenLoad(
     vararg keys: Any?,
     errorMessage: String,
+    refresh: ScreenRefresh? = null,
     load: suspend () -> T,
 ): UiState<T> {
     val phase = LocalScreenPhase.current
@@ -98,5 +105,50 @@ fun <T> rememberScreenLoad(
                 state.value = result
             }
     }
+    if (refresh != null) {
+        LaunchedEffect(slot, refresh) {
+            // Requests made from here on; one from before this composition was someone else's.
+            snapshotFlow { refresh.requests }
+                .drop(1)
+                .collectLatest {
+                    try {
+                        // Still on its first load: that one is already fetching.
+                        if (state.value is UiState.Loading) return@collectLatest
+                        val result = withContext(Dispatchers.Default) { runCatching { load() } }
+                        result.onSuccess {
+                            val loaded = UiState.Success(it)
+                            cache?.results?.set(slot, loaded)
+                            state.value = loaded
+                        }
+                        // A failed refresh keeps what's shown, unless that was an error too.
+                        result.onFailure {
+                            if (it is CancellationException) throw it
+                            if (state.value is UiState.Error) state.value = UiState.Error(it.message ?: errorMessage)
+                        }
+                    } finally {
+                        refresh.isRefreshing = false
+                    }
+                }
+        }
+    }
     return state.value
+}
+
+/**
+ * A pull-to-refresh for [rememberScreenLoad]s: [refresh] has the loads given it fetch
+ * again, and [isRefreshing] holds until they're done.
+ */
+@Stable
+class ScreenRefresh {
+    internal var requests by mutableIntStateOf(0)
+        private set
+
+    var isRefreshing by mutableStateOf(false)
+        internal set
+
+    fun refresh() {
+        if (isRefreshing) return
+        isRefreshing = true
+        requests++
+    }
 }

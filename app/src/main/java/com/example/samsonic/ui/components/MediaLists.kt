@@ -1,6 +1,6 @@
 package com.example.samsonic.ui.components
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.ui.common.ArtKeys
 import com.example.samsonic.ui.common.rememberSharedArt
+import com.example.samsonic.ui.library.rememberAddToPlaylistLongPress
 import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.model.Album
 import com.example.samsonic.model.Artist
@@ -40,7 +41,6 @@ import com.example.samsonic.model.artSeed
 import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.OneUiRow
 import com.example.samsonic.ui.theme.glassSurface
-import com.example.samsonic.util.formatDuration
 
 @Composable
 fun SectionHeader(
@@ -90,7 +90,14 @@ fun AlbumCard(
 ) {
     val cornerRadius by LocalAppContainer.current.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
     val art = rememberSharedArt(ArtKeys.album(album.id), album, onClick)
-    PressableCard(onClick = art.onClick, modifier = modifier) {
+    // The menu grows out of the cover.
+    val addToPlaylist = rememberAddToPlaylistLongPress(album, originRadius = cornerRadius)
+    PressableCard(
+        onClick = art.onClick,
+        modifier = modifier,
+        onLongClick = addToPlaylist.onLongClick,
+        onLongClickLabel = addToPlaylist.label,
+    ) {
         Column(
             modifier = Modifier.widthIn(max = artSize),
         ) {
@@ -99,7 +106,7 @@ fun AlbumCard(
                 colorSeed = album.id.artSeed(),
                 size = artSize,
                 cornerRadius = cornerRadius,
-                modifier = art.modifier,
+                modifier = art.modifier.then(addToPlaylist.origin),
             )
             Spacer(Modifier.height(8.dp))
             Text(
@@ -170,9 +177,8 @@ fun PlaylistCard(
         Column(
             modifier = Modifier.widthIn(max = artSize),
         ) {
-            MediaArt(
-                coverArt = playlist.coverArt,
-                colorSeed = playlist.id.artSeed(),
+            PlaylistArt(
+                playlist = playlist,
                 size = artSize,
                 cornerRadius = cornerRadius,
                 modifier = art.modifier,
@@ -207,6 +213,8 @@ fun SongRow(
 ) {
     val cornerRadius by LocalAppContainer.current.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
     val likesEnabled by LocalAppContainer.current.themeManager.likesEnabled.collectAsStateWithLifecycle()
+    val display = audioFormatDisplay()
+    val addToPlaylist = rememberAddToPlaylistLongPress(song)
 
     // No hazeState here: this row is nested inside the NavHost's own hazeSource
     // subtree, and haze warns that a hazeEffect nested inside its own hazeSource
@@ -230,7 +238,12 @@ fun SongRow(
                         Modifier
                     }
                 )
-                .clickable(onClick = onClick)
+                .then(addToPlaylist.origin)
+                .combinedClickable(
+                    onClick = onClick,
+                    onLongClick = addToPlaylist.onLongClick,
+                    onLongClickLabel = addToPlaylist.label,
+                )
                 .padding(horizontal = 12.dp, vertical = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -257,26 +270,32 @@ fun SongRow(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = song.artistName,
+                    text = songSubtitle(song.artistName, song, display),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            if (onToggleLike != null && likesEnabled) {
-                PressIconButton(onClick = onToggleLike) {
-                    Icon(
-                        imageVector = if (liked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                        contentDescription = if (liked) "Unlike" else "Like",
-                        tint = if (liked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-            Text(
-                text = formatDuration(song.durationSeconds),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            val hasHeart = onToggleLike != null && likesEnabled
+            SongRowEnd(
+                song = song,
+                display = display,
+                liked = liked,
+                likesEnabled = hasHeart,
+                heartButton = if (hasHeart) {
+                    {
+                        PressIconButton(onClick = onToggleLike) {
+                            Icon(
+                                imageVector = if (liked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                                contentDescription = if (liked) "Unlike" else "Like",
+                                tint = if (liked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                } else {
+                    null
+                },
             )
             if (onMoreClick != null) {
                 PressIconButton(onClick = onMoreClick) {

@@ -12,9 +12,11 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
@@ -56,9 +58,12 @@ fun SettingsScreen(
     val accentColor by container.themeManager.accentColor.collectAsStateWithLifecycle()
     val albumArtCornerRadius by container.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
     val likesEnabled by container.themeManager.likesEnabled.collectAsStateWithLifecycle()
+    val audioFormatDisplay by container.themeManager.audioFormatDisplay.collectAsStateWithLifecycle()
     val albumArtistsOnly by container.libraryLayoutManager.albumArtistsOnly.collectAsStateWithLifecycle()
+    val showFavourites by container.libraryLayoutManager.showFavourites.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     val themeMenu = remember { PanelState(scope) }
+    val audioFormatMenu = remember { PanelState(scope) }
     val accentMenu = remember { PanelState(scope) }
     val cacheLocationMenu = remember { PanelState(scope) }
     val cacheAllMenu = remember { PanelState(scope) }
@@ -80,6 +85,12 @@ fun SettingsScreen(
         },
         overlay = { haze ->
             ThemeMenu(themeMenu, haze, current = themeMode, onSelect = container.themeManager::setThemeMode)
+            AudioFormatMenu(
+                audioFormatMenu,
+                haze,
+                current = audioFormatDisplay,
+                onSelect = container.themeManager::setAudioFormatDisplay,
+            )
             AccentColorMenu(
                 accentMenu,
                 haze,
@@ -109,6 +120,14 @@ fun SettingsScreen(
                         checked = likesEnabled,
                         onCheckedChange = container.themeManager::setLikesEnabled,
                     )
+                    // How every song list shows each song's format, or not at all.
+                    NavRow(
+                        icon = Icons.Filled.GraphicEq,
+                        title = "Audio format",
+                        value = audioFormatDisplay.label,
+                        onClick = { audioFormatMenu.open() },
+                        modifier = Modifier.menuOrigin(audioFormatMenu),
+                    )
                 }
             }
 
@@ -124,6 +143,13 @@ fun SettingsScreen(
                         title = "Album artists only",
                         checked = albumArtistsOnly,
                         onCheckedChange = container.libraryLayoutManager::setAlbumArtistsOnly,
+                    )
+                    // Your liked songs, first in the Playlists tab.
+                    SwitchRow(
+                        icon = Icons.AutoMirrored.Filled.QueueMusic,
+                        title = "Favourites playlist",
+                        checked = showFavourites,
+                        onCheckedChange = container.libraryLayoutManager::setShowFavourites,
                     )
                 }
             }

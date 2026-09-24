@@ -70,6 +70,21 @@ data class Playlist(
     val coverArt: String?,
 )
 
+/** The id of the Favourites playlist: the liked songs, kept by the app rather than the server. */
+const val FAVOURITES_PLAYLIST_ID = "samsonic:favourites"
+
+val Playlist.isFavourites: Boolean get() = id == FAVOURITES_PLAYLIST_ID
+
+/** The Favourites playlist, holding [songs] liked songs. */
+fun favouritesPlaylist(songs: List<Song>) = Playlist(
+    id = FAVOURITES_PLAYLIST_ID,
+    name = "Favourites",
+    description = "",
+    songCount = songs.size,
+    durationSeconds = songs.sumOf { it.durationSeconds },
+    coverArt = null,
+)
+
 data class Genre(
     val name: String,
     val songCount: Int,

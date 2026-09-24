@@ -11,6 +11,19 @@ import kotlinx.coroutines.flow.asStateFlow
 
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
 
+/** How song rows show a song's audio format (see SongFormat in the UI). */
+enum class AudioFormatDisplay {
+    OFF,
+    /** "Artist · FLAC 96/24" as the row's second line. */
+    UNDER_ARTIST,
+    /** The format over the duration; the heart button goes, a small heart marks liked songs. */
+    QUIET_HEART,
+    /** A small outlined codec badge ("FLAC") by the duration. */
+    CODEC_BADGE,
+    /** A "Hi-Res" badge on hi-res songs only. */
+    HI_RES_BADGE,
+}
+
 /**
  * Persists the user's theme mode, accent color and other UI preferences via plain SharedPreferences - unlike
  * [SessionManager], this is non-sensitive UI preference data, so no encryption is needed.
@@ -50,6 +63,23 @@ class ThemeManager(context: Context) {
     // Whether the heart (like/unlike) buttons are shown at all.
     private val _likesEnabled = MutableStateFlow(prefs.getBoolean(KEY_LIKES_ENABLED, true))
     val likesEnabled: StateFlow<Boolean> = _likesEnabled.asStateFlow()
+
+    // How song rows show each song's audio format, if at all. Off until chosen.
+    private val _audioFormatDisplay = MutableStateFlow(loadAudioFormatDisplay())
+    val audioFormatDisplay: StateFlow<AudioFormatDisplay> = _audioFormatDisplay.asStateFlow()
+
+    fun setAudioFormatDisplay(display: AudioFormatDisplay) {
+        prefs.edit().putString(KEY_AUDIO_FORMAT_DISPLAY, display.name).apply()
+        _audioFormatDisplay.value = display
+    }
+
+    private fun loadAudioFormatDisplay(): AudioFormatDisplay {
+        prefs.getString(KEY_AUDIO_FORMAT_DISPLAY, null)?.let { saved ->
+            return AudioFormatDisplay.entries.find { it.name == saved } ?: AudioFormatDisplay.OFF
+        }
+        // The earlier on/off switch: on becomes the nearest layout.
+        return if (prefs.getBoolean(KEY_SHOW_AUDIO_FORMAT, false)) AudioFormatDisplay.UNDER_ARTIST else AudioFormatDisplay.OFF
+    }
 
     // Which Now Playing swipes open a panel: right for lyrics, left for song info, up for the queue.
     // Only the queue's is on until the user turns the others on.
@@ -144,6 +174,8 @@ class ThemeManager(context: Context) {
         private const val KEY_PANEL_OPACITY = "panel_opacity"
         private const val KEY_PANEL_BLUR = "panel_blur"
         private const val KEY_LIKES_ENABLED = "likes_enabled"
+        private const val KEY_SHOW_AUDIO_FORMAT = "show_audio_format"
+        private const val KEY_AUDIO_FORMAT_DISPLAY = "audio_format_display"
         private const val KEY_SWIPE_LYRICS = "swipe_for_lyrics"
         private const val KEY_SWIPE_INFO = "swipe_for_info"
         private const val KEY_SWIPE_QUEUE = "swipe_for_queue"

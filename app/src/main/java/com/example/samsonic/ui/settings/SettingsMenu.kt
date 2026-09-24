@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.ui.common.pageScrim
 import com.example.samsonic.ui.player.MorphPanel
@@ -55,6 +56,10 @@ internal fun SettingsMenu(
     panel: PanelState,
     haze: HazeState,
     title: String,
+    // For an origin with no glass of its own, such as a song row (see MorphPanel).
+    originRadius: Dp? = null,
+    // For content that animates its size while the card is out (see MorphPanel).
+    resizable: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     BackHandler(enabled = panel.isOpen) { panel.close() }
@@ -99,6 +104,8 @@ internal fun SettingsMenu(
             radius = OneUiRadius.Card,
             // A short card may sit above its row, where a drag would have no travel to follow.
             dragToClose = false,
+            originRadius = originRadius,
+            resizable = resizable,
         ) {
             Column(Modifier.padding(vertical = 20.dp)) {
                 Text(

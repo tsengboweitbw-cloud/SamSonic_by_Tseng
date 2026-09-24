@@ -42,6 +42,8 @@ import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import com.example.samsonic.LocalAppContainer
+import com.example.samsonic.model.Album
 import com.example.samsonic.model.Song
 import com.example.samsonic.playback.LocalPlayerState
 import com.example.samsonic.ui.theme.GlassAlpha
@@ -85,6 +87,23 @@ fun SongSwipeActions(song: Song, modifier: Modifier = Modifier, content: @Compos
     SwipeActions(
         swipeRight = SwipeAction("Play next", Icons.Filled.SkipNext) { player.playNext(song) },
         swipeLeft = SwipeAction("Add to queue", Icons.AutoMirrored.Filled.PlaylistAdd) { player.addToQueue(listOf(song)) },
+        modifier = modifier,
+        content = content,
+    )
+}
+
+/**
+ * [SongSwipeActions] for an album's list row: its songs, in album order, play next
+ * or go to the end of the queue, once fetched.
+ */
+@Composable
+fun AlbumSwipeActions(album: Album, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    val player = LocalPlayerState.current
+    val container = LocalAppContainer.current
+    val load: suspend () -> List<Song> = { container.repository.getAlbum(album.id).second }
+    SwipeActions(
+        swipeRight = SwipeAction("Play next", Icons.Filled.SkipNext) { player.queueLater(next = true, load) },
+        swipeLeft = SwipeAction("Add to queue", Icons.AutoMirrored.Filled.PlaylistAdd) { player.queueLater(next = false, load) },
         modifier = modifier,
         content = content,
     )

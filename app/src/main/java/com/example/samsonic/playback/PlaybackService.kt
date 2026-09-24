@@ -3,9 +3,11 @@ package com.example.samsonic.playback
 import android.app.PendingIntent
 import android.content.Intent
 import android.os.Bundle
+import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
@@ -16,6 +18,7 @@ import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionResult
 import com.example.samsonic.MainActivity
 import com.example.samsonic.SamSonicApplication
+import com.example.samsonic.playback.dsd.DsdExtractorsFactory
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 
@@ -29,6 +32,7 @@ class PlaybackService : MediaSessionService() {
     private var mediaSession: MediaSession? = null
     private var scrobbler: Scrobbler? = null
 
+    @OptIn(UnstableApi::class) // Media3's extractor API, for DSD.
     override fun onCreate() {
         super.onCreate()
         val container = (application as SamSonicApplication).container
@@ -37,7 +41,8 @@ class PlaybackService : MediaSessionService() {
             this,
             OkHttpDataSource.Factory(okHttpClient),
         )
-        val mediaSourceFactory = DefaultMediaSourceFactory(this).setDataSourceFactory(dataSourceFactory)
+        // DSD (DSF/DFF) has no Android decoder; its extractor turns it into PCM itself.
+        val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory, DsdExtractorsFactory())
 
         val player = ExoPlayer.Builder(this)
             .setMediaSourceFactory(mediaSourceFactory)
@@ -57,6 +62,7 @@ class PlaybackService : MediaSessionService() {
         })
         // Application-scoped, so a scrobble sent just before the service stops still goes out.
         scrobbler = Scrobbler(player, { container.repository }, container.applicationScope)
+        container.audioOutput.attach(player)
 
         // One UI builds its status bar music chip and Now Bar card only for a media
         // notification that opens something when tapped, so the session needs an activity.
@@ -104,6 +110,7 @@ class PlaybackService : MediaSessionService() {
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = mediaSession
 
     override fun onDestroy() {
+        (application as SamSonicApplication).container.audioOutput.detach()
         scrobbler?.release()
         scrobbler = null
         mediaSession?.run {

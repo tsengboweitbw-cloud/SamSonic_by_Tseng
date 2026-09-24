@@ -130,6 +130,12 @@ class DeviceLibrary(context: Context) : MusicLibrary {
         )
     }
 
+    // From the saved likes rather than the index's, which only knew those it was built with.
+    override suspend fun getLikedSongs(): List<Song> {
+        val liked = likes.getStringSet(KEY_LIKED, null).orEmpty()
+        return index().songs.filter { it.id in liked }.map { it.copy(liked = true) }
+    }
+
     override suspend fun star(id: String) = setLiked(id, true)
 
     override suspend fun unstar(id: String) = setLiked(id, false)
