@@ -29,6 +29,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.samsonic.ui.common.ArtKeys
+import com.example.samsonic.ui.common.rememberSharedArt
 import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.model.Album
 import com.example.samsonic.model.Artist
@@ -87,11 +89,18 @@ fun AlbumCard(
     artSize: Dp = 140.dp,
 ) {
     val cornerRadius by LocalAppContainer.current.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
-    PressableCard(onClick = onClick, modifier = modifier) {
+    val art = rememberSharedArt(ArtKeys.album(album.id), album, onClick)
+    PressableCard(onClick = art.onClick, modifier = modifier) {
         Column(
             modifier = Modifier.widthIn(max = artSize),
         ) {
-            MediaArt(coverArt = album.coverArt, colorSeed = album.id.artSeed(), size = artSize, cornerRadius = cornerRadius)
+            MediaArt(
+                coverArt = album.coverArt,
+                colorSeed = album.id.artSeed(),
+                size = artSize,
+                cornerRadius = cornerRadius,
+                modifier = art.modifier,
+            )
             Spacer(Modifier.height(8.dp))
             Text(
                 text = album.title,
@@ -117,7 +126,8 @@ fun ArtistCard(
     modifier: Modifier = Modifier,
     artSize: Dp = 104.dp,
 ) {
-    PressableCard(onClick = onClick, modifier = modifier) {
+    val art = rememberSharedArt(ArtKeys.artist(artist.id), artist, onClick)
+    PressableCard(onClick = art.onClick, modifier = modifier) {
         Column(
             modifier = Modifier.width(artSize),
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -129,7 +139,7 @@ fun ArtistCard(
                 cornerRadius = artSize / 2,
                 icon = false,
                 fit = false,
-                modifier = Modifier.clip(CircleShape),
+                modifier = art.modifier.clip(CircleShape),
             )
             Spacer(Modifier.height(8.dp))
             Text(
@@ -155,11 +165,18 @@ fun PlaylistCard(
     artSize: Dp = 140.dp,
 ) {
     val cornerRadius by LocalAppContainer.current.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
-    PressableCard(onClick = onClick, modifier = modifier) {
+    val art = rememberSharedArt(ArtKeys.playlist(playlist.id), playlist, onClick)
+    PressableCard(onClick = art.onClick, modifier = modifier) {
         Column(
             modifier = Modifier.widthIn(max = artSize),
         ) {
-            MediaArt(coverArt = playlist.coverArt, colorSeed = playlist.id.artSeed(), size = artSize, cornerRadius = cornerRadius)
+            MediaArt(
+                coverArt = playlist.coverArt,
+                colorSeed = playlist.id.artSeed(),
+                size = artSize,
+                cornerRadius = cornerRadius,
+                modifier = art.modifier,
+            )
             Spacer(Modifier.height(8.dp))
             Text(
                 text = playlist.name,

@@ -17,6 +17,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.samsonic.ui.common.ArtKeys
+import com.example.samsonic.ui.common.rememberSharedArt
 import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.model.Artist
 import com.example.samsonic.model.Playlist
@@ -28,10 +30,11 @@ private val RowArtSize = 64.dp
 /** An artist as a list row, laid out like [AlbumRow]: round photo, name, album count. */
 @Composable
 fun ArtistRow(artist: Artist, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val art = rememberSharedArt(ArtKeys.artist(artist.id), artist, onClick)
     LibraryRow(
         title = artist.name,
         details = "${artist.albumCount} albums",
-        onClick = onClick,
+        onClick = art.onClick,
         modifier = modifier,
     ) {
         MediaArt(
@@ -42,7 +45,7 @@ fun ArtistRow(artist: Artist, onClick: () -> Unit, modifier: Modifier = Modifier
             icon = false,
             fit = false,
             shadowElevation = 0.dp,
-            modifier = Modifier.clip(CircleShape),
+            modifier = art.modifier.clip(CircleShape),
         )
     }
 }
@@ -51,10 +54,11 @@ fun ArtistRow(artist: Artist, onClick: () -> Unit, modifier: Modifier = Modifier
 @Composable
 fun PlaylistRow(playlist: Playlist, onClick: () -> Unit, modifier: Modifier = Modifier) {
     val cornerRadius by LocalAppContainer.current.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
+    val art = rememberSharedArt(ArtKeys.playlist(playlist.id), playlist, onClick)
     LibraryRow(
         title = playlist.name,
         details = "${playlist.songCount} songs",
-        onClick = onClick,
+        onClick = art.onClick,
         modifier = modifier,
     ) {
         MediaArt(
@@ -63,6 +67,7 @@ fun PlaylistRow(playlist: Playlist, onClick: () -> Unit, modifier: Modifier = Mo
             size = RowArtSize,
             cornerRadius = cornerRadius,
             shadowElevation = 0.dp,
+            modifier = art.modifier,
         )
     }
 }

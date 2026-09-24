@@ -22,6 +22,15 @@ import com.example.samsonic.model.Song
 import com.example.samsonic.model.artSeed
 import com.example.samsonic.playback.LocalPlayerState
 import com.example.samsonic.ui.common.StateContent
+import com.example.samsonic.ui.common.UiState
+import com.example.samsonic.ui.common.ArtKeys
+import com.example.samsonic.ui.common.LocalArtTransitions
+import com.example.samsonic.ui.common.sharedArt
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.Alignment
 import com.example.samsonic.ui.common.rememberScreenLoad
 import com.example.samsonic.ui.components.BackButtonClearance
 import com.example.samsonic.ui.components.GlassBackButton
@@ -72,10 +81,33 @@ fun ArtistDetailScreen(
         }
     }
 
+    // The artist as the card tapped to open it knew them: the header shows at once,
+    // for the picture to grow into while the rest loads.
+    val preview = LocalArtTransitions.current.preview<Artist>(ArtKeys.artist(artistId))
+
     val listState = rememberLazyListState()
     val backHaze = rememberHazeState()
     Box(modifier = modifier.fillMaxSize().statusBarsPadding()) {
-        StateContent(state = state, modifier = Modifier.fillMaxSize()) { detail ->
+        if (state is UiState.Loading && preview != null) {
+            // Just where the loaded list puts its header, so the two swap unseen.
+            Column(Modifier.fillMaxSize().padding(top = BackButtonClearance)) {
+                DetailHeader(
+                    title = preview.name,
+                    subtitle = "${preview.albumCount} albums",
+                    art = { ArtistPicture(preview) },
+                    actions = {},
+                )
+                Box(Modifier.fillMaxWidth().padding(top = 24.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                }
+            }
+        }
+        StateContent(
+            state = state,
+            modifier = Modifier.fillMaxSize(),
+            // The preview above stands in for the spinner.
+            loading = if (preview != null) ({}) else null,
+        ) { detail ->
             val (artist, albums, topSongs, songs, appearsOn) = detail
             LazyColumn(
                 modifier = Modifier.fillMaxSize().scrollTopFade(listState).backButtonHazeSource(backHaze),
@@ -86,17 +118,7 @@ fun ArtistDetailScreen(
                     DetailHeader(
                         title = artist.name,
                         subtitle = "${artist.albumCount} albums",
-                        art = {
-                            MediaArt(
-                                coverArt = artist.coverArt,
-                                colorSeed = artist.id.artSeed(),
-                                size = 140.dp,
-                                cornerRadius = 70.dp,
-                                icon = false,
-                                fit = false,
-                                modifier = Modifier.clip(CircleShape),
-                            )
-                        },
+                        art = { ArtistPicture(artist) },
                     ) {
                         // Plays everything, not just the songs listed here.
                         PlayShuffleButtons(key = artist.id, loadSongs = { repository.getArtistSongs(artist, albums) })
@@ -112,4 +134,19 @@ fun ArtistDetailScreen(
         // Floats over the list: rows scroll up under it and fade out at the status bar.
         GlassBackButton(onClick = onBack, hazeState = backHaze, modifier = Modifier.padding(start = 16.dp, top = 8.dp))
     }
+}
+
+/** The artist's round picture, which the tapped card's picture grows into. */
+@Composable
+private fun ArtistPicture(artist: Artist) {
+    MediaArt(
+        coverArt = artist.coverArt,
+        colorSeed = artist.id.artSeed(),
+        size = 140.dp,
+        cornerRadius = 70.dp,
+        icon = false,
+        fit = false,
+        smallFirst = true,
+        modifier = Modifier.sharedArt(ArtKeys.artist(artist.id)).clip(CircleShape),
+    )
 }

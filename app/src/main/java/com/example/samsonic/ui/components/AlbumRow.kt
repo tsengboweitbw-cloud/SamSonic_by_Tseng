@@ -15,6 +15,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.samsonic.ui.common.ArtKeys
+import com.example.samsonic.ui.common.rememberSharedArt
 import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.model.Album
 import com.example.samsonic.model.artSeed
@@ -28,6 +30,7 @@ fun AlbumRow(
     modifier: Modifier = Modifier,
 ) {
     val cornerRadius by LocalAppContainer.current.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
+    val art = rememberSharedArt(ArtKeys.album(album.id), album, onClick)
     val details = listOfNotNull(
         album.artistName,
         album.year?.toString(),
@@ -37,7 +40,7 @@ fun AlbumRow(
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .oneUiRowClickable(onClick)
+            .oneUiRowClickable(art.onClick)
             .padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -47,6 +50,7 @@ fun AlbumRow(
             size = 64.dp,
             cornerRadius = cornerRadius,
             shadowElevation = 0.dp,
+            modifier = art.modifier,
         )
         Spacer(Modifier.width(16.dp))
         Column(Modifier.weight(1f)) {

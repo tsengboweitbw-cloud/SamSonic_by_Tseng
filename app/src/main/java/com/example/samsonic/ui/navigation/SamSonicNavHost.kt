@@ -1,6 +1,8 @@
 package com.example.samsonic.ui.navigation
 
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExperimentalSharedTransitionApi
+import androidx.compose.animation.SharedTransitionLayout
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -32,6 +34,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.ui.auth.LoginScreen
+import com.example.samsonic.ui.common.ArtTransitions
+import com.example.samsonic.ui.common.LocalArtTransitions
+import com.example.samsonic.ui.common.LocalSharedTransitionScope
 import com.example.samsonic.ui.home.HomeShelf
 import com.example.samsonic.ui.home.ShelfKind
 import com.example.samsonic.ui.home.SongShelfScreen
@@ -60,6 +65,7 @@ private val bottomDestinations = listOf(
 
 private val noChromeRoutes = setOf(Routes.LOGIN, Routes.ADD_SERVER)
 
+@OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun SamSonicNavHost() {
     val container = LocalAppContainer.current
@@ -84,6 +90,7 @@ fun SamSonicNavHost() {
     val navTransitions = remember { NavTransitions(tabRoutes) }
     val hazeState = rememberHazeState()
     val playerSheet = rememberPlayerSheetState()
+    val artTransitions = remember { ArtTransitions() }
     val navBarHeight = OneUiChrome.BarHeight
     val navBarBottomInset = 16.dp
 
@@ -112,6 +119,9 @@ fun SamSonicNavHost() {
             // it - LazyColumn content otherwise has known gaps in Haze's
             // capture (text and item edges stay sharp/unblurred).
             Box(modifier = Modifier.fillMaxSize().bottomFade(bottomFadeHeight).graphicsLayer().hazeSource(hazeState)) {
+            // Covers and pictures travel from the card tapped to the page it opens (see sharedArt).
+            SharedTransitionLayout {
+            CompositionLocalProvider(LocalSharedTransitionScope provides this, LocalArtTransitions provides artTransitions) {
             NavHost(
                 navController = navController,
                 startDestination = startDestination,
@@ -182,6 +192,8 @@ fun SamSonicNavHost() {
                     )
                 }
                 detailScreens(navController, contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve)
+            }
+            }
             }
             }
 

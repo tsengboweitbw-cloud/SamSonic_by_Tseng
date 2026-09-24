@@ -4,10 +4,12 @@ import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import com.example.samsonic.ui.common.ScreenHost
+import com.example.samsonic.ui.common.LocalNavAnimatedScope
 
 private typealias Enter = (AnimatedContentTransitionScope<NavBackStackEntry>.() -> EnterTransition?)
 private typealias Exit = (AnimatedContentTransitionScope<NavBackStackEntry>.() -> ExitTransition?)
@@ -31,5 +33,8 @@ internal fun NavGraphBuilder.screen(
     popEnterTransition = enterTransition,
     popExitTransition = exitTransition,
 ) { entry ->
-    ScreenHost { content(entry) }
+    // Its enter/exit drives the art that travels to and from it (see sharedArt).
+    CompositionLocalProvider(LocalNavAnimatedScope provides this) {
+        ScreenHost { content(entry) }
+    }
 }

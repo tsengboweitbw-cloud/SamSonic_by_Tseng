@@ -25,12 +25,14 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
+import com.example.samsonic.data.CoverArtSizes
 import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.ui.theme.ArtGradients
 import com.example.samsonic.ui.theme.OneUiRadius
@@ -57,15 +59,22 @@ fun MediaArt(
     icon: Boolean = true,
     shadowElevation: Dp = 6.dp,
     fit: Boolean = true,
+    // Shows the small (list-row) size until this one loads: for a page's header,
+    // whose art may have just grown out of a row's thumbnail, already in memory.
+    smallFirst: Boolean = false,
 ) {
     val repository = LocalAppContainer.current.repository
     val density = LocalDensity.current
     val pixelSize = remember(size, density) { with(density) { size.roundToPx() }.coerceAtLeast(64) }
     val url = remember(coverArt, pixelSize) { repository.coverArtUrl(coverArt, pixelSize) }
+    val smallUrl = remember(coverArt, smallFirst) {
+        if (smallFirst) repository.coverArtUrl(coverArt, CoverArtSizes.Small)?.takeIf { it != url } else null
+    }
 
     Box(modifier = modifier.size(size), contentAlignment = Alignment.Center) {
         ArtSurface(
             url = url,
+            fallbackUrl = smallUrl,
             colorSeed = colorSeed,
             icon = icon,
             iconSize = size * 0.36f,
@@ -114,13 +123,34 @@ private fun ArtSurface(
     shape: Shape,
     shadowElevation: Dp,
     fit: Boolean,
+    fallbackUrl: String? = null,
 ) {
     val painter = rememberAsyncImagePainter(url)
     val state by painter.state.collectAsState()
-    val loaded = state is AsyncImagePainter.State.Success
+    // Stands in until [painter] has loaded; null when there's none.
+    val fallback = fallbackUrl?.let { rememberAsyncImagePainter(it) }
+    val fallbackState = fallback?.state?.collectAsState()?.value
+    val mainLoaded = state is AsyncImagePainter.State.Success
+    val shown = if (!mainLoaded && fallbackState is AsyncImagePainter.State.Success) fallback else painter
+    val loaded = mainLoaded || shown === fallback
     // Until the art is in, the placeholder fills the whole square.
-    val ratio = if (fit && loaded) painter.intrinsicSize.aspectRatioOrNull() else null
+    val ratio = if (fit && loaded) shown.intrinsicSize.aspectRatioOrNull() else null
+    ArtBox(url, shown, loaded, ratio, colorSeed, icon, iconSize, shape, shadowElevation, fit)
+}
 
+@Composable
+private fun ArtBox(
+    url: String?,
+    painter: Painter,
+    loaded: Boolean,
+    ratio: Float?,
+    colorSeed: Int,
+    icon: Boolean,
+    iconSize: Dp,
+    shape: Shape,
+    shadowElevation: Dp,
+    fit: Boolean,
+) {
     Box(
         modifier = (if (ratio != null) Modifier.aspectRatio(ratio) else Modifier.fillMaxSize())
             .then(

@@ -26,10 +26,12 @@ fun <T> StateContent(
     state: UiState<T>,
     modifier: Modifier = Modifier,
     onRetry: (() -> Unit)? = null,
+    // What shows while loading, in place of the centered spinner.
+    loading: (@Composable () -> Unit)? = null,
     content: @Composable (T) -> Unit,
 ) {
     when (state) {
-        is UiState.Loading -> Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+        is UiState.Loading -> if (loading != null) loading() else Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
         }
         is UiState.Error -> Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

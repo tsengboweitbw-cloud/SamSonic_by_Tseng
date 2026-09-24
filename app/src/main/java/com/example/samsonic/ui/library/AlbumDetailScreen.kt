@@ -14,6 +14,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,6 +33,9 @@ import com.example.samsonic.model.artSeed
 import com.example.samsonic.playback.LocalPlayerState
 import com.example.samsonic.ui.common.StateContent
 import com.example.samsonic.ui.common.UiState
+import com.example.samsonic.ui.common.ArtKeys
+import com.example.samsonic.ui.common.LocalArtTransitions
+import com.example.samsonic.ui.common.sharedArt
 import com.example.samsonic.ui.components.BackButtonClearance
 import com.example.samsonic.ui.components.backButtonHazeSource
 import com.example.samsonic.ui.components.GlassBackButton
@@ -57,9 +61,27 @@ fun AlbumDetailScreen(
         repository.getAlbum(albumId)
     }
 
+    // The album as the card tapped to open it knew it: its header shows at once, for
+    // the cover to grow into while the rest loads.
+    val preview = LocalArtTransitions.current.preview<Album>(ArtKeys.album(albumId))
+
     val backHaze = rememberHazeState()
     Box(modifier = modifier.fillMaxSize().statusBarsPadding()) {
-        StateContent(state = state, modifier = Modifier.fillMaxSize()) { (album, songs) ->
+        if (state is UiState.Loading && preview != null) {
+            // Just where the loaded list puts its header, so the two swap unseen.
+            Column(Modifier.fillMaxSize().padding(top = BackButtonClearance)) {
+                AlbumHeader(preview, cornerRadius, actions = null)
+                Box(Modifier.fillMaxWidth().padding(top = 24.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+                }
+            }
+        }
+        StateContent(
+            state = state,
+            modifier = Modifier.fillMaxSize(),
+            // The preview above stands in for the spinner.
+            loading = if (preview != null) ({}) else null,
+        ) { (album, songs) ->
             val listState = rememberLazyListState()
             LazyColumn(
                 modifier = Modifier.fillMaxSize().scrollTopFade(listState).backButtonHazeSource(backHaze),
@@ -67,37 +89,7 @@ fun AlbumDetailScreen(
                 contentPadding = PaddingValues(top = BackButtonClearance, bottom = contentPaddingBottom),
             ) {
                 item {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 24.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        MediaArt(
-                            coverArt = album.coverArt,
-                            colorSeed = album.id.artSeed(),
-                            size = 200.dp,
-                            cornerRadius = cornerRadius,
-                        )
-                        Spacer(Modifier.height(16.dp))
-                        Text(text = album.title, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            text = album.artistName,
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            text = listOfNotNull(album.year?.toString(), album.genre, formatAlbumDuration(album.durationSeconds))
-                                .joinToString(" • "),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        Spacer(Modifier.height(20.dp))
-                        PlayShuffleButtons(songs = songs)
-                        Spacer(Modifier.height(12.dp))
-                    }
+                    AlbumHeader(album, cornerRadius) { PlayShuffleButtons(songs = songs) }
                 }
                 items(songs, key = { it.id }) { song ->
                     SongRow(
@@ -122,5 +114,48 @@ fun AlbumDetailScreen(
         }
         // Floats over the list: rows scroll up under it and fade out at the status bar.
         GlassBackButton(onClick = onBack, hazeState = backHaze, modifier = Modifier.padding(start = 16.dp, top = 8.dp))
+    }
+}
+
+/**
+ * The album's cover (which the tapped card's cover grows into), title, artist and
+ * details, over its [actions] (play and shuffle), or none while it's loading.
+ */
+@Composable
+private fun AlbumHeader(album: Album, cornerRadius: Dp, actions: (@Composable () -> Unit)?) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        MediaArt(
+            coverArt = album.coverArt,
+            colorSeed = album.id.artSeed(),
+            size = 200.dp,
+            cornerRadius = cornerRadius,
+            smallFirst = true,
+            modifier = Modifier.sharedArt(ArtKeys.album(album.id)),
+        )
+        Spacer(Modifier.height(16.dp))
+        Text(text = album.title, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = album.artistName,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(4.dp))
+        Text(
+            text = listOfNotNull(album.year?.toString(), album.genre, formatAlbumDuration(album.durationSeconds))
+                .joinToString(" • "),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(20.dp))
+        if (actions != null) {
+            actions()
+            Spacer(Modifier.height(12.dp))
+        }
     }
 }
