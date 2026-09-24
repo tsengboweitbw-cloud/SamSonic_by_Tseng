@@ -12,6 +12,7 @@ import com.example.samsonic.data.remote.SubsonicAuth
 import com.example.samsonic.model.Album
 import com.example.samsonic.model.Artist
 import com.example.samsonic.model.Genre
+import com.example.samsonic.model.GenreContents
 import com.example.samsonic.model.LyricLine
 import com.example.samsonic.model.Playlist
 import com.example.samsonic.model.SearchResults
@@ -34,6 +35,9 @@ private const val ALBUM_PAGE_SIZE = 500
 private const val MAX_ALBUMS = 20_000
 // How many songs a search for an artist's name looks through for their guest appearances.
 private const val ARTIST_SEARCH_SONGS = 500
+// getSongsByGenre returns at most 500 songs per call; a genre page lists up to this many.
+private const val SONG_PAGE_SIZE = 500
+private const val MAX_GENRE_SONGS = 5_000
 
 /** Latest [year] first; items without one go last, and ties keep their order. */
 private fun <T> newestFirst(year: (T) -> Int?): Comparator<T> = compareByDescending { year(it) ?: Int.MIN_VALUE }
@@ -121,24 +125,53 @@ class SubsonicRepository(
      * picture taken from getArtists where it has one.
      */
     suspend fun getAlbumArtists(): List<Artist> = coroutineScope {
-        val covers = async {
-            runCatching { getArtists() }.getOrDefault(emptyList()).associate { it.id to it.coverArt }
-        }
-        val albums = buildList {
-            var offset = 0
-            do {
-                val params = authParams() + mapOf(
-                    "type" to "alphabeticalByArtist",
-                    "size" to ALBUM_PAGE_SIZE.toString(),
-                    "offset" to offset.toString(),
-                )
-                val page = requireApi().getAlbumList2(params).response.albumList2?.album.orEmpty()
-                addAll(page)
-                offset += page.size
-            } while (page.size == ALBUM_PAGE_SIZE && offset < MAX_ALBUMS)
-        }
-        val coverById = covers.await()
-        albums
+        val covers = async { artistCovers() }
+        albumArtistsOf(allAlbums(mapOf("type" to "alphabeticalByArtist")), covers.await())
+    }
+
+    /**
+     * A genre's albums (newest first), their album artists (as [getAlbumArtists]
+     * builds them) and up to [songCount] of its songs (newest first).
+     */
+    suspend fun getGenre(genre: String, songCount: Int = MAX_GENRE_SONGS): GenreContents = coroutineScope {
+        val songs = async { if (songCount > 0) getGenreSongs(genre, songCount) else emptyList() }
+        val covers = async { artistCovers() }
+        val albums = allAlbums(mapOf("type" to "byGenre", "genre" to genre))
+        GenreContents(
+            albums = albums.map { it.toDomain() }.sortedWith(newestFirst { it.year }),
+            artists = albumArtistsOf(albums, covers.await()),
+            songs = songs.await(),
+        )
+    }
+
+    /** Up to [count] of [genre]'s songs, newest first; getSongsByGenre pages at 500. */
+    suspend fun getGenreSongs(genre: String, count: Int = MAX_GENRE_SONGS): List<Song> = buildList {
+        do {
+            val size = minOf(SONG_PAGE_SIZE, count - this.size)
+            val params = authParams() + mapOf("genre" to genre, "count" to "$size", "offset" to "${this.size}")
+            val page = requireApi().getSongsByGenre(params).response.songsByGenre?.song.orEmpty()
+            addAll(page.map { it.toDomain() })
+        } while (page.size == size && this.size < count)
+    }.distinctBy { it.id }.sortedWith(newestFirst { it.year })
+
+    /** Every album getAlbumList2 lists for [query] (its type and filters), page after page. */
+    private suspend fun allAlbums(query: Map<String, String>): List<AlbumDto> = buildList {
+        var offset = 0
+        do {
+            val params = authParams() + query + mapOf("size" to "$ALBUM_PAGE_SIZE", "offset" to "$offset")
+            val page = requireApi().getAlbumList2(params).response.albumList2?.album.orEmpty()
+            addAll(page)
+            offset += page.size
+        } while (page.size == ALBUM_PAGE_SIZE && offset < MAX_ALBUMS)
+    }
+
+    /** Each artist's picture by id, from getArtists; empty if that fails. */
+    private suspend fun artistCovers(): Map<String, String?> =
+        runCatching { getArtists() }.getOrDefault(emptyList()).associate { it.id to it.coverArt }
+
+    /** The artists [albums] are filed under, A to Z, with pictures from [coverById] where it has one. */
+    private fun albumArtistsOf(albums: List<AlbumDto>, coverById: Map<String, String?>): List<Artist> {
+        return albums
             .filter { !it.artist.isNullOrBlank() }
             // By id where the server gives one, else by name.
             .groupBy { it.artistId ?: "name:${it.artist}" }

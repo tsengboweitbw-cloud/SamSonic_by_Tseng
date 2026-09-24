@@ -37,12 +37,7 @@ import com.example.samsonic.ui.home.AlbumShelf
 import com.example.samsonic.ui.home.AlbumShelfScreen
 import com.example.samsonic.ui.home.HomeScreen
 import com.example.samsonic.ui.home.rememberHomeViewModel
-import com.example.samsonic.ui.library.AlbumDetailScreen
-import com.example.samsonic.ui.library.ArtistAlbumsScreen
-import com.example.samsonic.ui.library.ArtistDetailScreen
-import com.example.samsonic.ui.library.ArtistSongsScreen
 import com.example.samsonic.ui.library.LibraryScreen
-import com.example.samsonic.ui.library.PlaylistDetailScreen
 import com.example.samsonic.ui.player.PlayerSheet
 import com.example.samsonic.ui.player.rememberPlayerSheetState
 import com.example.samsonic.ui.search.SearchScreen
@@ -142,6 +137,7 @@ fun SamSonicNavHost() {
                         onArtistClick = { navController.navigate(Routes.artist(it.id)) },
                         onAlbumClick = { navController.navigate(Routes.album(it.id)) },
                         onPlaylistClick = { navController.navigate(Routes.playlist(it.id)) },
+                        onGenreClick = { navController.navigate(Routes.genre(it.name)) },
                         contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve,
                     )
                 }
@@ -177,61 +173,7 @@ fun SamSonicNavHost() {
                         contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve,
                     )
                 }
-                screen(Routes.ARTIST) { entry ->
-                    val artistId = entry.arguments?.getString("artistId") ?: return@screen
-                    ArtistDetailScreen(
-                        artistId = artistId,
-                        onBack = { navController.popBackStack() },
-                        onAlbumClick = { navController.navigate(Routes.album(it.id)) },
-                        onAllAlbumsClick = { navController.navigate(Routes.artistAlbums(artistId)) },
-                        onAllSongsClick = { navController.navigate(Routes.artistSongs(artistId)) },
-                        onAppearsOnClick = { navController.navigate(Routes.artistAppearsOn(artistId)) },
-                        contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve,
-                    )
-                }
-                screen(Routes.ARTIST_ALBUMS) { entry ->
-                    val artistId = entry.arguments?.getString("artistId") ?: return@screen
-                    ArtistAlbumsScreen(
-                        artistId = artistId,
-                        onBack = { navController.popBackStack() },
-                        onAlbumClick = { navController.navigate(Routes.album(it.id)) },
-                        contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve,
-                    )
-                }
-                screen(Routes.ARTIST_APPEARS_ON) { entry ->
-                    val artistId = entry.arguments?.getString("artistId") ?: return@screen
-                    ArtistAlbumsScreen(
-                        artistId = artistId,
-                        appearsOn = true,
-                        onBack = { navController.popBackStack() },
-                        onAlbumClick = { navController.navigate(Routes.album(it.id)) },
-                        contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve,
-                    )
-                }
-                screen(Routes.ARTIST_SONGS) { entry ->
-                    val artistId = entry.arguments?.getString("artistId") ?: return@screen
-                    ArtistSongsScreen(
-                        artistId = artistId,
-                        onBack = { navController.popBackStack() },
-                        contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve,
-                    )
-                }
-                screen(Routes.ALBUM) { entry ->
-                    val albumId = entry.arguments?.getString("albumId") ?: return@screen
-                    AlbumDetailScreen(
-                        albumId = albumId,
-                        onBack = { navController.popBackStack() },
-                        contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve,
-                    )
-                }
-                screen(Routes.PLAYLIST) { entry ->
-                    val playlistId = entry.arguments?.getString("playlistId") ?: return@screen
-                    PlaylistDetailScreen(
-                        playlistId = playlistId,
-                        onBack = { navController.popBackStack() },
-                        contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve,
-                    )
-                }
+                detailScreens(navController, contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve)
             }
             }
 

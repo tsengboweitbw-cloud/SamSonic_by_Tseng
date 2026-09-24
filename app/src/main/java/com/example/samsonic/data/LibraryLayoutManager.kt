@@ -18,8 +18,8 @@ data class LibraryLayout(val mode: LibraryViewMode, val columns: Int) {
 }
 
 /**
- * Persists how each Library tab is shown - list or grid, and the grid's column
- * count - via plain SharedPreferences, like [ThemeManager].
+ * Persists how each Library tab is shown - list or grid, the grid's column
+ * count, and which artists the Artists tab lists - via plain SharedPreferences, like [ThemeManager].
  */
 class LibraryLayoutManager(context: Context) {
     private val prefs = context.applicationContext
@@ -27,6 +27,15 @@ class LibraryLayoutManager(context: Context) {
 
     private val _layouts = MutableStateFlow(LibrarySection.entries.associateWith(::load))
     val layouts: StateFlow<Map<LibrarySection, LibraryLayout>> = _layouts.asStateFlow()
+
+    // Whether the Artists tab lists album artists (what albums are filed under) or every artist.
+    private val _albumArtistsOnly = MutableStateFlow(prefs.getBoolean(KEY_ALBUM_ARTISTS_ONLY, true))
+    val albumArtistsOnly: StateFlow<Boolean> = _albumArtistsOnly.asStateFlow()
+
+    fun setAlbumArtistsOnly(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_ALBUM_ARTISTS_ONLY, enabled).apply()
+        _albumArtistsOnly.value = enabled
+    }
 
     fun setLayout(section: LibrarySection, layout: LibraryLayout) {
         val columns = layout.columns.coerceIn(LibraryLayout.MIN_COLUMNS, LibraryLayout.MAX_COLUMNS)
@@ -46,4 +55,8 @@ class LibraryLayoutManager(context: Context) {
 
     private fun modeKey(section: LibrarySection) = "${section.name.lowercase()}_view_mode"
     private fun columnsKey(section: LibrarySection) = "${section.name.lowercase()}_columns"
+
+    private companion object {
+        const val KEY_ALBUM_ARTISTS_ONLY = "artists_album_artists_only"
+    }
 }

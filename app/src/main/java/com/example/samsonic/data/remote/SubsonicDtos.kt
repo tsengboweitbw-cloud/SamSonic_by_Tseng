@@ -28,6 +28,7 @@ data class SubsonicResponseBody(
     val searchResult3: SearchResult3Dto? = null,
     val randomSongs: SongsDto? = null,
     val topSongs: SongsDto? = null,
+    val songsByGenre: SongsDto? = null,
     val starred2: Starred2Dto? = null,
     val lyricsList: LyricsListDto? = null,
 )

@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.RoundedCorner
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -58,6 +59,7 @@ fun SettingsScreen(
     val accentColor by container.themeManager.accentColor.collectAsStateWithLifecycle()
     val albumArtCornerRadius by container.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
     val likesEnabled by container.themeManager.likesEnabled.collectAsStateWithLifecycle()
+    val albumArtistsOnly by container.libraryLayoutManager.albumArtistsOnly.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     val themeMenu = remember { PanelState(scope) }
     val accentMenu = remember { PanelState(scope) }
@@ -124,6 +126,19 @@ fun SettingsScreen(
                         title = "Like button",
                         checked = likesEnabled,
                         onCheckedChange = container.themeManager::setLikesEnabled,
+                    )
+                }
+            }
+
+            item { GroupLabel("Library") }
+            item {
+                SettingsCard {
+                    // The Artists tab reloads with the other list the next time it shows.
+                    SwitchRow(
+                        icon = Icons.Filled.Person,
+                        title = "Album artists only",
+                        checked = albumArtistsOnly,
+                        onCheckedChange = container.libraryLayoutManager::setAlbumArtistsOnly,
                     )
                 }
             }

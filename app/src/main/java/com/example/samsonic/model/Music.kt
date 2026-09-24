@@ -81,3 +81,10 @@ data class SearchResults(
 
 /** Deterministic fallback color used for the gradient placeholder when there's no cover art. */
 fun String.artSeed(): Int = hashCode()
+
+/** What a genre holds, for its page: albums and songs newest first, artists A to Z. */
+data class GenreContents(
+    val albums: List<Album>,
+    val artists: List<Artist>,
+    val songs: List<Song>,
+)

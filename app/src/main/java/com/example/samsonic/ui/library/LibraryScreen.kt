@@ -62,6 +62,7 @@ import com.example.samsonic.ui.components.GlassTabBar
 import com.example.samsonic.ui.components.GlassTabBarSize
 import com.example.samsonic.ui.components.PlaylistCard
 import com.example.samsonic.ui.components.PlaylistRow
+import com.example.samsonic.ui.theme.oneUiRowClickable
 import kotlinx.coroutines.launch
 
 private val tabs = listOf("Artists", "Albums", "Playlists", "Genres")
@@ -80,6 +81,7 @@ fun LibraryScreen(
     onArtistClick: (Artist) -> Unit,
     onAlbumClick: (Album) -> Unit,
     onPlaylistClick: (Playlist) -> Unit,
+    onGenreClick: (Genre) -> Unit,
     modifier: Modifier = Modifier,
     contentPaddingBottom: Dp = 0.dp,
 ) {
@@ -94,6 +96,7 @@ fun LibraryScreen(
 
     val layoutManager = LocalAppContainer.current.libraryLayoutManager
     val layouts by layoutManager.layouts.collectAsStateWithLifecycle()
+    val albumArtistsOnly by layoutManager.albumArtistsOnly.collectAsStateWithLifecycle()
     // The view options panel (open/closed, animated) and the tab it was opened for.
     val viewOptions = remember { MutableTransitionState(false) }
     var viewSection by remember { mutableStateOf(LibrarySection.ALBUMS) }
@@ -108,7 +111,9 @@ fun LibraryScreen(
     }
     val repository = LocalAppContainer.current.repository
     val artists = if (0 in visited) {
-        rememberScreenLoad(Unit, errorMessage = "Couldn't load artists") { repository.getAlbumArtists() }
+        rememberScreenLoad(albumArtistsOnly, errorMessage = "Couldn't load artists") {
+            if (albumArtistsOnly) repository.getAlbumArtists() else repository.getArtists()
+        }
     } else UiState.Loading
     val albums = if (1 in visited) {
         rememberScreenLoad(Unit, errorMessage = "Couldn't load albums") {
@@ -232,7 +237,7 @@ fun LibraryScreen(
                     card = { playlist, size -> PlaylistCard(playlist, onClick = { onPlaylistClick(playlist) }, artSize = size) },
                     row = { playlist -> PlaylistRow(playlist, onClick = { onPlaylistClick(playlist) }) },
                 )
-                else -> GenreList(genres, genresList, padding)
+                else -> GenreList(genres, genresList, padding, onGenreClick)
             }
         }
     }
@@ -253,7 +258,12 @@ private fun ViewButtonSlot(visible: Boolean, mode: LibraryViewMode, open: Boolea
 }
 
 @Composable
-private fun GenreList(state: UiState<List<Genre>>, listState: LazyListState, padding: LibraryPadding) {
+private fun GenreList(
+    state: UiState<List<Genre>>,
+    listState: LazyListState,
+    padding: LibraryPadding,
+    onGenreClick: (Genre) -> Unit,
+) {
     StateContent(state = state, modifier = Modifier.fillMaxSize()) { genres ->
         LazyColumn(
             state = listState,
@@ -265,7 +275,8 @@ private fun GenreList(state: UiState<List<Genre>>, listState: LazyListState, pad
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 20.dp, vertical = 14.dp),
+                        .oneUiRowClickable { onGenreClick(genre) }
+                        .padding(horizontal = 12.dp, vertical = 12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Text(text = genre.name, style = MaterialTheme.typography.bodyLarge)

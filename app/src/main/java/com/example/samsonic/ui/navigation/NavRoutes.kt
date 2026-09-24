@@ -1,5 +1,6 @@
 package com.example.samsonic.ui.navigation
 
+import android.net.Uri
 import androidx.navigation.NavBackStackEntry
 
 internal object Routes {
@@ -15,6 +16,10 @@ internal object Routes {
     const val ALBUM = "album/{albumId}"
     const val PLAYLIST = "playlist/{playlistId}"
     const val SHELF = "shelf/{shelfType}"
+    const val GENRE = "genre/{genre}"
+    const val GENRE_ARTISTS = "genre/{genre}/artists"
+    const val GENRE_ALBUMS = "genre/{genre}/albums"
+    const val GENRE_SONGS = "genre/{genre}/songs"
 
     fun artist(id: String) = "artist/$id"
     fun artistAlbums(id: String) = "artist/$id/albums"
@@ -23,6 +28,12 @@ internal object Routes {
     fun album(id: String) = "album/$id"
     fun playlist(id: String) = "playlist/$id"
     fun shelf(type: String) = "shelf/$type"
+
+    // Genre names are free text (spaces, slashes, "&"), so they travel encoded; the arg arrives decoded.
+    fun genre(name: String) = "genre/${Uri.encode(name)}"
+    fun genreArtists(name: String) = "genre/${Uri.encode(name)}/artists"
+    fun genreAlbums(name: String) = "genre/${Uri.encode(name)}/albums"
+    fun genreSongs(name: String) = "genre/${Uri.encode(name)}/songs"
 }
 
 /** This entry's route with its arguments filled in, e.g. "album/42", to compare against a built route. */

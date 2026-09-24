@@ -33,6 +33,9 @@ interface SubsonicApi {
     @GET("rest/getGenres.view")
     suspend fun getGenres(@QueryMap params: Map<String, String>): SubsonicEnvelope
 
+    @GET("rest/getSongsByGenre.view")
+    suspend fun getSongsByGenre(@QueryMap params: Map<String, String>): SubsonicEnvelope
+
     @GET("rest/search3.view")
     suspend fun search3(@QueryMap params: Map<String, String>): SubsonicEnvelope
 
