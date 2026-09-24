@@ -52,7 +52,8 @@ fun OneUiSlider(
 
     val activeColor = MaterialTheme.colorScheme.primary
     val inactiveColor = MaterialTheme.colorScheme.surfaceContainerHighest
-    val thumbDiameter by animateDpAsState(if (active) 18.dp else 1.dp, label = "OneUiSliderThumb")
+    // Shrinks all the way to nothing at rest, so no stray dot is left beside the line.
+    val thumbDiameter by animateDpAsState(if (active) 18.dp else 0.dp, label = "OneUiSliderThumb")
     val trackStrokeWidth by animateDpAsState(if (active) 6.dp else 3.dp, label = "OneUiSliderTrackWidth")
 
     Slider(
@@ -83,7 +84,9 @@ fun OneUiSlider(
                             Modifier
                         },
                     )
-                    .background(activeColor, CircleShape),
+                    .then(
+                        if (thumbDiameter > 0.5.dp) Modifier.background(activeColor, CircleShape) else Modifier,
+                    ),
             )
         },
         track = { sliderState ->
