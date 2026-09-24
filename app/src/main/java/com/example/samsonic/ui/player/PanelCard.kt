@@ -98,12 +98,16 @@ internal fun PanelCard(
                 shape = shape,
                 hazeState = haze,
                 tint = MaterialTheme.colorScheme.surfaceContainerHigh,
-                // The menu settings, apart from the chrome's: a modal panel keeps
-                // its own look whatever the chrome's glass is set to.
-                alpha = 2f * GlassAlpha.Sheet * glass.panelOpacity,
+                // Starts thin, like its button's glass; the wash below thickens it.
+                alpha = MorphGlassBase,
                 blurRadius = glass.panelBlur,
                 scaleOpacity = false,
+                rim = false,
             ),
+            wash = MaterialTheme.colorScheme.surfaceContainerHigh,
+            // The menu settings, apart from the chrome's: a modal panel keeps
+            // its own look whatever the chrome's glass is set to.
+            washAlpha = washToReach(MorphGlassBase, 2f * GlassAlpha.Sheet * glass.panelOpacity),
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight(CardHeight)

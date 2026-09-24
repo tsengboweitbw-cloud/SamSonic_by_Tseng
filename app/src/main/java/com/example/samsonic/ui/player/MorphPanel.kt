@@ -27,6 +27,8 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.lerp
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.Shape
@@ -35,9 +37,12 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.geometry.isSpecified
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
@@ -46,7 +51,11 @@ import androidx.compose.ui.unit.Velocity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import com.example.samsonic.ui.theme.GlassAlpha
+import com.example.samsonic.ui.theme.GlassRimWidth
+import com.example.samsonic.ui.theme.glassRimBrush
 import kotlinx.coroutines.CoroutineScope
+import kotlin.math.ceil
+import kotlin.math.floor
 import kotlin.math.roundToInt
 
 /**
@@ -81,6 +90,12 @@ class PanelState internal constructor(scope: CoroutineScope) {
             // any travel, a first drag up would throw it fully open in a single step.
             if (!travelMeasured) track.travelPx = value.top.coerceAtLeast(1f)
         }
+
+    /**
+     * Where the panel sits in the root, from its last layout: kept here, since the panel
+     * isn't composed while folded, so its glass has the size it needs from the first frame.
+     */
+    internal var placedAt by mutableStateOf(Offset.Unspecified)
 
     /** Pixels the panel's top edge travels from the button's to its own; set by its layout. */
     internal var travelPx: Float
@@ -131,6 +146,9 @@ private fun ramp(value: Float, start: Float, end: Float) = ((value - start) / (e
  * Draws [content] as [panel], morphing from its button into this element's own
  * bounds: the button's circle grows and its corners ease to [radius], its glass
  * veil gives way to [surface] (a background modifier, such as a glass surface),
+ * thickened as it grows by [washAlpha] of [wash] over it (so a thin glass, like the
+ * button's, becomes the panel's dense one: see [washToReach]), with the glass rim
+ * following the shape rather than the full bounds (so [surface] should draw none),
  * and [icon] (if any; a row has none) rides the shape's center, fading as the content fades in. Its top
  * edge moves with [panel]'s drags, so with [dragToClose] a pull down on the
  * panel (or past the top of its list) folds it back up.
@@ -144,12 +162,16 @@ internal fun MorphPanel(
     modifier: Modifier = Modifier,
     radius: Dp = 0.dp,
     dragToClose: Boolean = true,
+    wash: Color = Color.Transparent,
+    washAlpha: Float = 0f,
     content: @Composable () -> Unit,
 ) {
     val showing by remember(panel) { derivedStateOf { panel.progress > 0f } }
     if (!showing) return
     val veil = MaterialTheme.colorScheme.onSurface.copy(alpha = GlassAlpha.NowPlaying)
     val iconTint = MaterialTheme.colorScheme.onSurface
+    val rimBrush = glassRimBrush()
+    val rimWidthPx = with(LocalDensity.current) { GlassRimWidth.toPx() }
     val density = LocalDensity.current
     val radiusPx = with(density) { radius.toPx() }
     val iconPx = with(density) { IconSize.toPx() }
@@ -163,6 +185,8 @@ internal fun MorphPanel(
         // t overshoots past 1 on an elastic open, so the shape briefly grows past `full`.
         return lerp(from, full, t) to lerp(from.minDimension / 2, radiusPx, t).coerceAtLeast(0f)
     }
+    // The glass's top-left in this element's coordinates (see its layout); read in draw.
+    val glassAt = remember { floatArrayOf(0f, 0f) }
     val pullDown = remember(panel) { PanelPullDown(panel) }
     val dragState = rememberDraggableState { panel.dragBy(it) }
     Box(
@@ -176,6 +200,7 @@ internal fun MorphPanel(
                 placed[1] = position.y
                 placed[2] = it.size.width.toFloat()
                 placed[3] = it.size.height.toFloat()
+                if (position != panel.placedAt) panel.placedAt = position
                 // A drag moves the top edge with the finger, from the button's top to ours.
                 panel.travelPx = (panel.origin.top - position.y).coerceAtLeast(1f)
             }
@@ -217,26 +242,78 @@ internal fun MorphPanel(
         // panel at rest (seen in screen recordings). So the clip and the stretch are done
         // in draw, and the glass shows at full strength inside the window from the start,
         // taking over from the veil as the window grows.
+        // It covers the button as well as this element: early on the shape still reaches
+        // the button, often outside this element (below a panel over the control row),
+        // and glass laid out only over this element left that part as bare veil, a seam
+        // across the shape. Still one fixed size for the whole morph.
         Box(
             Modifier
                 .matchParentSize()
+                .layout { measurable, constraints ->
+                    val width = constraints.maxWidth
+                    val height = constraints.maxHeight
+                    val origin = panel.origin
+                    val at = panel.placedAt
+                    val area = if (origin == Rect.Zero || !at.isSpecified) {
+                        Rect(0f, 0f, width.toFloat(), height.toFloat())
+                    } else {
+                        val button = origin.translate(-at.x, -at.y)
+                        Rect(
+                            minOf(0f, button.left),
+                            minOf(0f, button.top),
+                            maxOf(width.toFloat(), button.right),
+                            maxOf(height.toFloat(), button.bottom),
+                        )
+                    }
+                    val left = floor(area.left).toInt()
+                    val top = floor(area.top).toInt()
+                    val glass = measurable.measure(
+                        Constraints.fixed(ceil(area.right).toInt() - left, ceil(area.bottom).toInt() - top),
+                    )
+                    glassAt[0] = left.toFloat()
+                    glassAt[1] = top.toFloat()
+                    layout(width, height) { glass.place(left, top) }
+                }
                 .drawWithContent {
-                    val (rect, corner) = bounds(size)
-                    if (panel.progress > 1f && size.width > 0f && size.height > 0f) {
-                        // Stretched onto the grown bounds, so the clip is the whole glass.
+                    // This element's bounds and the shape, in the glass's coordinates.
+                    val shift = Offset(-glassAt[0], -glassAt[1])
+                    val own = Rect(shift, Size(placed[2], placed[3]))
+                    val (bounds, corner) = bounds(own.size)
+                    val rect = bounds.translate(shift)
+                    if (panel.progress > 1f && own.width > 0f && own.height > 0f) {
+                        // This element's part of the glass, stretched onto the grown bounds
+                        // and clipped to its own edges.
                         withTransform({
                             translate(rect.left, rect.top)
-                            scale(rect.width / size.width, rect.height / size.height, pivot = Offset.Zero)
+                            scale(rect.width / own.width, rect.height / own.height, pivot = Offset.Zero)
+                            translate(-own.left, -own.top)
                         }) {
-                            clipPath(Path().apply { addRoundRect(RoundRect(Rect(Offset.Zero, size), CornerRadius(corner))) }) {
+                            clipPath(Path().apply { addRoundRect(RoundRect(own, CornerRadius(corner))) }) {
                                 this@drawWithContent.drawContent()
+                                drawRect(wash, own.topLeft, own.size, alpha = washAlpha)
                             }
                         }
                     } else {
                         clipPath(Path().apply { addRoundRect(RoundRect(rect, CornerRadius(corner))) }) {
                             this@drawWithContent.drawContent()
+                            // Thickens the glass as it grows, in draw: a fade on the glass
+                            // itself would drop the blur out (see above).
+                            drawRect(wash, rect.topLeft, rect.size, alpha = washAlpha * ramp(panel.progress, 0f, 0.8f))
+                            // The button's light veil over the glass, fading out: the glass paints
+                            // an opaque base, so the veil under it was hidden and the shape turned
+                            // dark the moment it left the button, as if its glass had gone.
+                            drawRect(veil, rect.topLeft, rect.size, alpha = veil.alpha * (1f - ramp(panel.progress, 0f, 0.6f)))
                         }
                     }
+                    // The rim along the shape, as the button has, all the way open.
+                    val inset = rimWidthPx / 2
+                    drawRoundRect(
+                        brush = rimBrush,
+                        topLeft = rect.topLeft + Offset(inset, inset),
+                        size = Size(rect.width - rimWidthPx, rect.height - rimWidthPx),
+                        cornerRadius = CornerRadius((corner - inset).coerceAtLeast(0f)),
+                        style = Stroke(rimWidthPx),
+                    )
                 }
                 .then(surface),
         )
@@ -265,6 +342,16 @@ internal fun MorphPanel(
         )
     }
 }
+
+/** How dense a [MorphPanel]'s glass starts, near a button's thin glass; its wash makes up the rest. */
+internal const val MorphGlassBase = 0.2f
+
+/**
+ * How much extra [MorphPanel] wash brings a glass of [base] alpha up to [target]:
+ * layered, two tints cover 1 - (1 - base)(1 - wash).
+ */
+internal fun washToReach(base: Float, target: Float): Float =
+    (1f - (1f - target.coerceIn(0f, 1f)) / (1f - base)).coerceIn(0f, 1f)
 
 /** A rounded [rect] inside the layer, rather than the layer's whole bounds. */
 private class MorphShape(private val rect: Rect, private val radius: Float) : Shape {

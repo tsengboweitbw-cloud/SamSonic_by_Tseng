@@ -28,6 +28,8 @@ import androidx.compose.ui.unit.dp
 import com.example.samsonic.ui.common.pageScrim
 import com.example.samsonic.ui.player.MorphPanel
 import com.example.samsonic.ui.player.PanelState
+import com.example.samsonic.ui.player.MorphGlassBase
+import com.example.samsonic.ui.player.washToReach
 import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.LocalGlassSettings
 import com.example.samsonic.ui.theme.OneUiRadius
@@ -82,10 +84,14 @@ internal fun SettingsMenu(
                 shape = RoundedCornerShape(OneUiRadius.Card),
                 hazeState = haze,
                 tint = MaterialTheme.colorScheme.surfaceContainerHigh,
-                alpha = (GlassAlpha.Panel * glass.panelOpacity).coerceIn(0f, 1f),
+                // Starts thin; the wash thickens it to the panel's density.
+                alpha = MorphGlassBase,
                 blurRadius = glass.panelBlur,
                 scaleOpacity = false,
+                rim = false,
             ),
+            wash = MaterialTheme.colorScheme.surfaceContainerHigh,
+            washAlpha = washToReach(MorphGlassBase, GlassAlpha.Panel * glass.panelOpacity),
             modifier = Modifier
                 .fillMaxWidth()
                 // Swallows taps so only the space around the card dismisses.

@@ -37,6 +37,8 @@ import com.example.samsonic.data.LibrarySection
 import com.example.samsonic.data.LibraryViewMode
 import com.example.samsonic.ui.player.MorphPanel
 import com.example.samsonic.ui.player.PanelState
+import com.example.samsonic.ui.player.MorphGlassBase
+import com.example.samsonic.ui.player.washToReach
 import com.example.samsonic.ui.settings.menuOrigin
 import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.LocalGlassSettings
@@ -108,10 +110,14 @@ internal fun BoxScope.CollectionViewMenu(section: LibrarySection, title: String,
                 shape = RoundedCornerShape(OneUiRadius.Card),
                 hazeState = haze,
                 tint = MaterialTheme.colorScheme.surfaceContainerHigh,
-                alpha = (GlassAlpha.Panel * glass.panelOpacity).coerceIn(0f, 1f),
+                // Starts thin; the wash thickens it to the panel's density.
+                alpha = MorphGlassBase,
                 blurRadius = glass.panelBlur,
                 scaleOpacity = false,
+                rim = false,
             ),
+            wash = MaterialTheme.colorScheme.surfaceContainerHigh,
+            washAlpha = washToReach(MorphGlassBase, GlassAlpha.Panel * glass.panelOpacity),
             modifier = Modifier
                 .padding(top = libraryTitleRowHeight(), start = 16.dp, end = 16.dp)
                 .fillMaxWidth()
