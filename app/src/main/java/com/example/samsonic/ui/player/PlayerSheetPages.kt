@@ -7,6 +7,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import com.example.samsonic.ui.library.AddToPlaylistMenu
+import com.example.samsonic.ui.library.LocalAddToPlaylist
+import com.example.samsonic.ui.library.rememberAddToPlaylistState
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.CancellationException
@@ -25,6 +28,10 @@ internal fun PlayerPages(sheet: PlayerSheetState) {
     // as a haze effect nested in its own source can draw recursively. graphicsLayer()
     // flattens it first, as for the NavHost's source, or text and edges stay sharp.
     val haze = remember { HazeState() }
+    // Its own Add to playlist card, over Now Playing and blurring it, like the panels'; the
+    // app's one blurs the page under the sheet. Only where there are playlists to add to.
+    val canAddToPlaylist = LocalAddToPlaylist.current != null
+    val addToPlaylist = rememberAddToPlaylistState()
     Box(Modifier.fillMaxSize()) {
         NowPlayingScreen(
             modifier = Modifier.graphicsLayer().hazeSource(haze),
@@ -32,6 +39,7 @@ internal fun PlayerPages(sheet: PlayerSheetState) {
             lyrics = sheet.lyrics,
             queue = sheet.queue,
             info = sheet.info,
+            addToPlaylist = addToPlaylist.takeIf { canAddToPlaylist },
         )
         PanelCard(sheet.lyrics, PanelIcons.Lyrics, title = "Lyrics", haze = haze) {
             LyricsScreen(onCollapse = { sheet.lyrics.close() })
@@ -40,6 +48,7 @@ internal fun PlayerPages(sheet: PlayerSheetState) {
             QueueScreen()
         }
         SongInfoPanel(sheet.info, haze)
+        if (canAddToPlaylist) AddToPlaylistMenu(addToPlaylist, haze)
     }
 }
 

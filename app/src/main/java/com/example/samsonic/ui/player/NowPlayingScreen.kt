@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.LibraryAdd
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -41,10 +42,17 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.LocalAppContainer
+import com.example.samsonic.model.Song
 import com.example.samsonic.model.artSeed
+import com.example.samsonic.ui.library.AddToPlaylistState
+import com.example.samsonic.ui.library.toPlaylistItems
 import com.example.samsonic.ui.components.PressIconButton
 import com.example.samsonic.ui.theme.BlurredArtBackdrop
 import com.example.samsonic.ui.theme.GlassAlpha
@@ -60,6 +68,8 @@ fun NowPlayingScreen(
     queue: PanelState,
     info: PanelState,
     modifier: Modifier = Modifier,
+    // Where the top-right button opens Add to playlist; null hides it (no playlists to add to).
+    addToPlaylist: AddToPlaylistState? = null,
 ) {
     val player = LocalPlayerState.current
     val song = player.currentSong ?: return
@@ -96,11 +106,15 @@ fun NowPlayingScreen(
                 .navigationBarsPadding()
                 .padding(horizontal = horizontalPadding),
         ) {
-        // A floating glass button (One UI Gallery style) instead of a bar.
-        Box(Modifier.padding(top = 12.dp)) {
+        // Floating glass buttons (One UI Gallery style) instead of a bar.
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
             GlassCircleButton(onClick = onCollapse) {
                 Icon(Icons.Filled.KeyboardArrowDown, contentDescription = "Collapse")
             }
+            if (addToPlaylist != null) AddToPlaylistButton(addToPlaylist, song)
         }
 
         Spacer(Modifier.height(28.dp))
@@ -221,13 +235,38 @@ fun NowPlayingScreen(
 }
 
 @Composable
-private fun GlassCircleButton(onClick: () -> Unit, content: @Composable () -> Unit) {
+private fun GlassCircleButton(onClick: () -> Unit, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     PressIconButton(
         onClick = onClick,
         size = 56.dp,
-        modifier = Modifier.nowPlayingGlass(),
+        modifier = modifier.nowPlayingGlass(),
         content = content,
     )
+}
+
+// How much the button shrinks per unit of its card's close overshoot, as the panel buttons do.
+private const val AddButtonLandingSqueeze = 3f
+
+/**
+ * Opens Add to playlist for [song], the card growing out of this button as Now Playing's
+ * panels grow out of theirs: hidden while the card is out, then catching its landing.
+ */
+@Composable
+private fun AddToPlaylistButton(state: AddToPlaylistState, song: Song) {
+    val bounds = remember { arrayOf(Rect.Zero) }
+    GlassCircleButton(
+        onClick = { state.open(song.toPlaylistItems(), bounds[0], originRadius = null) },
+        modifier = Modifier
+            .onGloballyPositioned { bounds[0] = it.boundsInRoot() }
+            .graphicsLayer {
+                alpha = if (state.panel.progress > 0f) 0f else 1f
+                val squeeze = 1f - state.panel.landing * AddButtonLandingSqueeze
+                scaleX = squeeze
+                scaleY = squeeze
+            },
+    ) {
+        Icon(Icons.Filled.LibraryAdd, contentDescription = "Add to playlist")
+    }
 }
 
 /**

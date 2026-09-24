@@ -94,7 +94,7 @@ fun PlaylistDetailScreen(
                 contentPadding = PaddingValues(top = BackButtonClearance, bottom = contentPaddingBottom),
             ) {
                 item {
-                    PlaylistHeader(playlist, songs.size, cornerRadius) { PlayShuffleButtons(songs = songs) }
+                    PlaylistHeader(playlist, songs.size, cornerRadius) { PlayShuffleButtons(songs = songs, playlistTitle = playlist.name) }
                 }
                 items(songs, key = { it.id }) { song ->
                     SongRow(

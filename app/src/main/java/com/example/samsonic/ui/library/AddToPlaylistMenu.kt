@@ -91,12 +91,18 @@ class AddToPlaylistState internal constructor(scope: CoroutineScope) {
     internal var items by mutableStateOf<PlaylistItems?>(null)
         private set
 
-    /** The corner radius of what the menu grows out of, for it to fold back into. */
-    internal var originRadius by mutableStateOf(OneUiRadius.Art)
+    /**
+     * The corner radius of what the menu grows out of, for it to fold back into; null for
+     * a round glass button, which the menu folds into as Now Playing's panels do theirs.
+     */
+    internal var originRadius by mutableStateOf<Dp?>(OneUiRadius.Art)
         private set
 
-    /** Opens the menu for [items], growing out of [from] (bounds in the root, with [originRadius] corners). */
-    fun open(items: PlaylistItems, from: Rect, originRadius: Dp) {
+    /**
+     * Opens the menu for [items], growing out of [from] (bounds in the root): a row or
+     * cover with [originRadius] corners, or with null a round glass button.
+     */
+    fun open(items: PlaylistItems, from: Rect, originRadius: Dp?) {
         this.items = items
         this.originRadius = originRadius
         panel.origin = from

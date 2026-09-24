@@ -89,7 +89,7 @@ fun AlbumDetailScreen(
                 contentPadding = PaddingValues(top = BackButtonClearance, bottom = contentPaddingBottom),
             ) {
                 item {
-                    AlbumHeader(album, cornerRadius) { PlayShuffleButtons(songs = songs) }
+                    AlbumHeader(album, cornerRadius) { PlayShuffleButtons(songs = songs, playlistTitle = album.title) }
                 }
                 items(songs, key = { it.id }) { song ->
                     SongRow(

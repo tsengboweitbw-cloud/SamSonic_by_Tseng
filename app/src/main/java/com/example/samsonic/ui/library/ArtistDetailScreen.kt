@@ -123,7 +123,11 @@ fun ArtistDetailScreen(
                         art = { ArtistPicture(artist) },
                     ) {
                         // Plays everything, not just the songs listed here.
-                        PlayShuffleButtons(key = artist.id, loadSongs = { repository.getArtistSongs(artist, albums) })
+                        PlayShuffleButtons(
+                            key = artist.id,
+                            loadSongs = { repository.getArtistSongs(artist, albums) },
+                            playlistTitle = artist.name,
+                        )
                     }
                 }
                 songSection("popular", "Popular", topSongs, player, onTitleClick = null)
