@@ -111,6 +111,8 @@ class DeviceLibrary(context: Context) : MusicLibrary {
 
     override suspend fun getAlbumList(type: String, size: Int): List<Album> = index().albumList(type).take(size)
 
+    override suspend fun getSongList(type: String, size: Int): List<Song> = index().songList(type).take(size)
+
     override suspend fun getPlaylists(): List<Playlist> = emptyList()
 
     override suspend fun getPlaylist(id: String): Pair<Playlist, List<Song>> = error("Playlist not found")

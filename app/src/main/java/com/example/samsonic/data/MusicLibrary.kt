@@ -61,6 +61,13 @@ interface MusicLibrary {
     /** Albums for a Home shelf or list, by Subsonic `getAlbumList2` [type] ("newest", "random", ...). */
     suspend fun getAlbumList(type: String = "newest", size: Int = 20): List<Album>
 
+    /**
+     * Songs for a Home shelf, at most [size]: "newest" (recently added), "recent"
+     * (recently played, latest first), "frequent" (most played first) or "random".
+     * Empty where the library keeps no such history.
+     */
+    suspend fun getSongList(type: String, size: Int): List<Song>
+
     suspend fun getPlaylists(): List<Playlist>
 
     suspend fun getPlaylist(id: String): Pair<Playlist, List<Song>>

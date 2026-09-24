@@ -49,6 +49,10 @@ data class Song(
     val path: String? = null,
     val playCount: Long? = null,
     val channelCount: Int? = null,
+    // ISO 8601 timestamps from the server: added to the library, and last played. They
+    // sort as text in time order. The music on this phone has neither.
+    val created: String? = null,
+    val played: String? = null,
     // OpenSubsonic only: each of the song's artists on its own, which [artistName]
     // runs together (e.g. "A feat. B"). Empty elsewhere; then [artistId] is the one link.
     val artists: List<ArtistCredit> = emptyList(),

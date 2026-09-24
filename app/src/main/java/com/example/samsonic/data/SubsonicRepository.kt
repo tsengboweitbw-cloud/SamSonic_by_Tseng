@@ -36,6 +36,9 @@ private const val ALBUM_PAGE_SIZE = 500
 private const val MAX_ALBUMS = 20_000
 // How many songs a search for an artist's name looks through for their guest appearances.
 private const val ARTIST_SEARCH_SONGS = 500
+// How many albums of a list a song list (see getSongList) takes its songs from.
+private const val SONG_LIST_MIN_ALBUMS = 10
+private const val SONG_LIST_MAX_ALBUMS = 50
 // getSongsByGenre returns at most 500 songs per call; a genre page lists up to MAX_GENRE_SONGS.
 private const val SONG_PAGE_SIZE = 500
 
@@ -268,6 +271,28 @@ class SubsonicRepository(
         return requireApi().getAlbumList2(params).response.albumList2?.album.orEmpty().map { it.toDomain() }
     }
 
+    /**
+     * Random songs come straight from getRandomSongs. Subsonic has no song lists by date
+     * added or play history, though, so those come from the album lists of the same
+     * [type]: the songs of its first albums, sorted by the
+     * songs' own date added, last played or play count. A song played on its own from
+     * an album that isn't among those is missed, but the albums a user plays most (or
+     * last) hold nearly all of their most (or last) played songs.
+     */
+    override suspend fun getSongList(type: String, size: Int): List<Song> {
+        // Random picks are the one song list Subsonic has itself.
+        if (type == "random") return getRandomSongs(size)
+        val albums = getAlbumList(type, (size / 2).coerceIn(SONG_LIST_MIN_ALBUMS, SONG_LIST_MAX_ALBUMS))
+        val songs = getAlbumsSongs(albums)
+        val sorted = when (type) {
+            "newest" -> songs.sortedByDescending { it.created }
+            "recent" -> songs.filter { it.played != null }.sortedByDescending { it.played }
+            "frequent" -> songs.filter { (it.playCount ?: 0L) > 0L }.sortedByDescending { it.playCount }
+            else -> songs
+        }
+        return sorted.take(size)
+    }
+
     /** Every album on the server, A to Z. */
     suspend fun getAllAlbums(): List<Album> =
         allAlbums(mapOf("type" to "alphabeticalByName")).map { it.toDomain() }
@@ -404,6 +429,8 @@ class SubsonicRepository(
         path = path,
         playCount = playCount,
         channelCount = channelCount,
+        created = created,
+        played = played,
         artists = artists.mapNotNull { ref -> ref.name?.takeIf { it.isNotBlank() }?.let { ArtistCredit(ref.id, it) } },
         albumArtistId = albumArtists.firstOrNull()?.id,
         albumArtistName = displayAlbumArtist?.takeIf { it.isNotBlank() } ?: albumArtists.firstOrNull()?.name,

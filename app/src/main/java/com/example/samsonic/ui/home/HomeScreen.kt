@@ -21,13 +21,16 @@ import com.example.samsonic.ui.components.HorizontalCarousel
 import com.example.samsonic.ui.components.OneUiPullToRefresh
 import com.example.samsonic.ui.components.SectionHeader
 
-/** Shelves that only make sense once the user has play history; hidden while empty. */
-private val historyShelves = setOf(AlbumShelf.RecentlyPlayed, AlbumShelf.MostPlayed)
+/**
+ * Hidden while empty: history shelves until there's play history, and song shelves,
+ * which a library without per-song dates or history can't fill.
+ */
+private fun HomeShelf.hiddenWhenEmpty() = history || kind == ShelfKind.Songs
 
 @Composable
 fun HomeScreen(
     onAlbumClick: (Album) -> Unit,
-    onShelfClick: (AlbumShelf) -> Unit,
+    onShelfClick: (HomeShelf) -> Unit,
     modifier: Modifier = Modifier,
     contentPaddingBottom: Dp = 0.dp,
 ) {
@@ -43,7 +46,7 @@ fun HomeScreen(
         },
     ) { topPadding ->
         StateContent(state = viewModel.state, modifier = Modifier.fillMaxSize(), onRetry = viewModel::retry) { sections ->
-            val shown = sections.filter { (shelf, albums) -> albums.isNotEmpty() || shelf !in historyShelves }
+            val shown = sections.filter { (shelf, items) -> !items.isEmpty || !shelf.hiddenWhenEmpty() }
             // Pulling down past the top reloads every shelf, re-rolling "Picked For You".
             OneUiPullToRefresh(
                 isRefreshing = viewModel.isRefreshing,
@@ -54,12 +57,15 @@ fun HomeScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(top = topPadding, bottom = contentPaddingBottom),
                 ) {
-                    shown.entries.forEachIndexed { index, (shelf, albums) ->
-                        item(key = shelf.type) {
+                    shown.entries.forEachIndexed { index, (shelf, items) ->
+                        item(key = shelf.key) {
                             // The title opens the shelf's full list as its own page.
                             SectionHeader(title = shelf.title, onTitleClick = { onShelfClick(shelf) })
-                            HorizontalCarousel(items = albums, key = { it.id }) { album ->
-                                AlbumCard(album = album, onClick = { onAlbumClick(album) })
+                            when (items) {
+                                is ShelfItems.Albums -> HorizontalCarousel(items = items.albums, key = { it.id }) { album ->
+                                    AlbumCard(album = album, onClick = { onAlbumClick(album) })
+                                }
+                                is ShelfItems.Songs -> SongRowsCarousel(items.songs)
                             }
                             Spacer(Modifier.height(if (index == shown.size - 1) 24.dp else 20.dp))
                         }

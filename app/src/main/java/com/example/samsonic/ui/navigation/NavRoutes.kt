@@ -28,7 +28,7 @@ internal object Routes {
     fun artistAppearsOn(id: String) = "artist/$id/appears-on"
     fun album(id: String) = "album/$id"
     fun playlist(id: String) = "playlist/$id"
-    fun shelf(type: String) = "shelf/$type"
+    fun shelf(key: String) = "shelf/$key"
 
     // Genre names are free text (spaces, slashes, "&"), so they travel encoded; the arg arrives decoded.
     fun genre(name: String) = "genre/${Uri.encode(name)}"

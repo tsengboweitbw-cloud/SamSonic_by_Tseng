@@ -118,6 +118,10 @@ data class SongDto(
     val size: Long? = null,
     val contentType: String? = null,
     val path: String? = null,
+    // When it was added to the library (core Subsonic) and last played (OpenSubsonic),
+    // as ISO 8601 timestamps.
+    val created: String? = null,
+    val played: String? = null,
     val playCount: Long? = null,
     // OpenSubsonic extension.
     val channelCount: Int? = null,

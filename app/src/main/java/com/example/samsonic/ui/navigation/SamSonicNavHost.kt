@@ -32,7 +32,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.ui.auth.LoginScreen
-import com.example.samsonic.ui.home.AlbumShelf
+import com.example.samsonic.ui.home.HomeShelf
+import com.example.samsonic.ui.home.ShelfKind
+import com.example.samsonic.ui.home.SongShelfScreen
 import com.example.samsonic.ui.home.AlbumShelfScreen
 import com.example.samsonic.ui.home.HomeScreen
 import com.example.samsonic.ui.home.rememberHomeViewModel
@@ -128,7 +130,7 @@ fun SamSonicNavHost() {
                 screen(Routes.HOME) {
                     HomeScreen(
                         onAlbumClick = { navController.navigate(Routes.album(it.id)) },
-                        onShelfClick = { navController.navigate(Routes.shelf(it.type)) },
+                        onShelfClick = { navController.navigate(Routes.shelf(it.key)) },
                         contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve,
                     )
                 }
@@ -155,12 +157,22 @@ fun SamSonicNavHost() {
                     )
                 }
                 screen(Routes.SHELF) { entry ->
-                    val shelf = entry.arguments?.getString("shelfType")?.let(AlbumShelf::fromType) ?: return@screen
+                    val shelf = entry.arguments?.getString("shelfType")?.let(HomeShelf::fromKey) ?: return@screen
                     // A shelf page is only opened from Home, so Home's entry is below it in the stack.
-                    val homeAlbums = if (shelf.sharesHomeList) {
+                    val home = if (shelf.sharesHomeList) {
                         val homeEntry = remember(entry) { navController.getBackStackEntry(Routes.HOME) }
-                        rememberHomeViewModel(homeEntry).shelfState(shelf)
+                        rememberHomeViewModel(homeEntry)
                     } else null
+                    if (shelf.kind == ShelfKind.Songs) {
+                        SongShelfScreen(
+                            shelf = shelf,
+                            homeSongs = home?.songShelfState(shelf),
+                            onBack = { navController.popBackStack() },
+                            contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve,
+                        )
+                        return@screen
+                    }
+                    val homeAlbums = home?.shelfState(shelf)
                     AlbumShelfScreen(
                         shelf = shelf,
                         homeAlbums = homeAlbums,

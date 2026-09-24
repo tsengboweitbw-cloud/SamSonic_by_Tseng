@@ -33,6 +33,8 @@ internal class DeviceIndex(tracks: List<DeviceTrack>, likedIds: Set<String>) {
     private val songsByAlbum: Map<String, List<Song>>
     /** Newest file first, for "Recently Added". */
     private val albumsByDateAdded: List<Album>
+    /** Newest file first, for "Recently Added Songs". */
+    private val songsByDateAdded: List<Song>
     private val genresBySong: Map<String, String>
 
     /** A to Z by album artist, then title. */
@@ -53,6 +55,8 @@ internal class DeviceIndex(tracks: List<DeviceTrack>, likedIds: Set<String>) {
         songs = albums.flatMap { songsByAlbum.getValue(it.id) }
         val added = groups.mapValues { (_, group) -> group.maxOf { it.dateAdded } }
         albumsByDateAdded = albums.sortedByDescending { added[it.id] ?: 0L }
+        val songAdded = tracks.associate { it.id.toString() to it.dateAdded }
+        songsByDateAdded = songs.sortedByDescending { songAdded[it.id] ?: 0L }
         genresBySong = tracks.mapNotNull { t -> t.genre?.let { t.id.toString() to it } }.toMap()
     }
 
@@ -134,6 +138,13 @@ internal class DeviceIndex(tracks: List<DeviceTrack>, likedIds: Set<String>) {
         "alphabeticalByName" -> albums.sortedBy { it.title.lowercase() }
         "alphabeticalByArtist" -> albums
         // "recent", "frequent" and the like need play history, which the phone doesn't keep.
+        else -> emptyList()
+    }
+
+    /** "newest" by date added, or "random"; the phone keeps no play history for the rest. */
+    fun songList(type: String): List<Song> = when (type) {
+        "newest" -> songsByDateAdded
+        "random" -> songs.shuffled()
         else -> emptyList()
     }
 
