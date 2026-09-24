@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Dns
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.RoundedCorner
@@ -62,6 +63,7 @@ fun SettingsScreen(
     val themeMode by container.themeManager.themeMode.collectAsStateWithLifecycle()
     val accentColor by container.themeManager.accentColor.collectAsStateWithLifecycle()
     val albumArtCornerRadius by container.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
+    val likesEnabled by container.themeManager.likesEnabled.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     val themeMenu = remember { PanelState(scope) }
     val accentMenu = remember { PanelState(scope) }
@@ -131,6 +133,12 @@ fun SettingsScreen(
                             val currentIdx = options.indexOf(player.sleepTimerMinutes)
                             player.setSleepTimer(options[(currentIdx + 1) % options.size])
                         },
+                    )
+                    SwitchRow(
+                        icon = Icons.Filled.Favorite,
+                        title = "Like button",
+                        checked = likesEnabled,
+                        onCheckedChange = container.themeManager::setLikesEnabled,
                     )
                 }
             }

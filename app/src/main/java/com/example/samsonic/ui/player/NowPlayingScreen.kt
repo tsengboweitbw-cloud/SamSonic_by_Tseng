@@ -66,6 +66,7 @@ fun NowPlayingScreen(
     val player = LocalPlayerState.current
     val song = player.currentSong ?: return
     val cornerRadius by LocalAppContainer.current.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
+    val likesEnabled by LocalAppContainer.current.themeManager.likesEnabled.collectAsStateWithLifecycle()
     val horizontalPadding = 24.dp
     Box(
         modifier = modifier
@@ -153,14 +154,16 @@ fun NowPlayingScreen(
                     )
                 }
             }
-            val liked = player.isLiked(song)
-            PressIconButton(onClick = { player.toggleLike(song) }) {
-                Icon(
-                    imageVector = if (liked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                    contentDescription = if (liked) "Unlike" else "Like",
-                    tint = if (liked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.size(28.dp),
-                )
+            if (likesEnabled) {
+                val liked = player.isLiked(song)
+                PressIconButton(onClick = { player.toggleLike(song) }) {
+                    Icon(
+                        imageVector = if (liked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                        contentDescription = if (liked) "Unlike" else "Like",
+                        tint = if (liked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.size(28.dp),
+                    )
+                }
             }
         }
 

@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.asStateFlow
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
 
 /**
- * Persists the user's theme mode and accent color choice via plain SharedPreferences - unlike
+ * Persists the user's theme mode, accent color and other UI preferences via plain SharedPreferences - unlike
  * [SessionManager], this is non-sensitive UI preference data, so no encryption is needed.
  */
 class ThemeManager(context: Context) {
@@ -46,6 +46,10 @@ class ThemeManager(context: Context) {
 
     private val _panelBlur = MutableStateFlow(prefs.getFloat(KEY_PANEL_BLUR, DefaultPanelBlur.value).dp)
     val panelBlur: StateFlow<Dp> = _panelBlur.asStateFlow()
+
+    // Whether the heart (like/unlike) buttons are shown at all.
+    private val _likesEnabled = MutableStateFlow(prefs.getBoolean(KEY_LIKES_ENABLED, true))
+    val likesEnabled: StateFlow<Boolean> = _likesEnabled.asStateFlow()
 
     fun setThemeMode(mode: ThemeMode) {
         prefs.edit().putString(KEY_MODE, mode.name).apply()
@@ -89,6 +93,11 @@ class ThemeManager(context: Context) {
         _panelBlur.value = radius
     }
 
+    fun setLikesEnabled(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_LIKES_ENABLED, enabled).apply()
+        _likesEnabled.value = enabled
+    }
+
     private fun loadThemeMode(): ThemeMode =
         ThemeMode.entries.find { it.name == prefs.getString(KEY_MODE, null) } ?: ThemeMode.SYSTEM
 
@@ -107,6 +116,7 @@ class ThemeManager(context: Context) {
         private const val KEY_BACKDROP_BLUR = "backdrop_blur"
         private const val KEY_PANEL_OPACITY = "panel_opacity"
         private const val KEY_PANEL_BLUR = "panel_blur"
+        private const val KEY_LIKES_ENABLED = "likes_enabled"
         val DefaultAccent = Color(0xFF8875FF)
         val DefaultAlbumArtCornerRadius = 2.dp
         const val DefaultGlassOpacity = 1f

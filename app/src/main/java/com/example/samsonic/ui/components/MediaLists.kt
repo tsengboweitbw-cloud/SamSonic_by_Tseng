@@ -189,6 +189,7 @@ fun SongRow(
     leading: @Composable (() -> Unit)? = null,
 ) {
     val cornerRadius by LocalAppContainer.current.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
+    val likesEnabled by LocalAppContainer.current.themeManager.likesEnabled.collectAsStateWithLifecycle()
 
     // No hazeState here: this row is nested inside the NavHost's own hazeSource
     // subtree, and haze warns that a hazeEffect nested inside its own hazeSource
@@ -246,7 +247,7 @@ fun SongRow(
                     overflow = TextOverflow.Ellipsis,
                 )
             }
-            if (onToggleLike != null) {
+            if (onToggleLike != null && likesEnabled) {
                 PressIconButton(onClick = onToggleLike) {
                     Icon(
                         imageVector = if (liked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
