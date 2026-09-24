@@ -4,22 +4,14 @@ import com.example.samsonic.playback.LocalPlayerState
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,10 +23,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.model.LyricLine
-import com.example.samsonic.ui.components.PressIconButton
 import com.example.samsonic.ui.theme.scrollTopFade
 
-/** Synced-lyrics style screen; current line is highlighted based on live playback position. */
+/** Synced lyrics, the current line highlighted from the live playback position; the body of the Lyrics card. */
 @Composable
 fun LyricsScreen(
     onCollapse: () -> Unit,
@@ -52,31 +43,7 @@ fun LyricsScreen(
     val positionMs = (player.positionSeconds * 1000).toLong()
     val currentIndex = lines.orEmpty().indexOfLast { it.timeMs <= positionMs }.coerceAtLeast(0)
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .statusBarsPadding()
-            .navigationBarsPadding(),
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            PressIconButton(onClick = onCollapse) {
-                Icon(Icons.Filled.KeyboardArrowDown, contentDescription = "Collapse")
-            }
-            Column {
-                Text(text = song.title, style = MaterialTheme.typography.titleMedium)
-                Text(
-                    text = song.artistName,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-        Spacer(Modifier.height(16.dp))
+    Column(modifier = modifier.fillMaxSize()) {
         when {
             lines == null -> Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
@@ -93,7 +60,7 @@ fun LyricsScreen(
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(horizontal = 28.dp)
+                        .padding(horizontal = 24.dp)
                         .scrollTopFade(listState),
                     state = listState,
                     verticalArrangement = Arrangement.spacedBy(20.dp),

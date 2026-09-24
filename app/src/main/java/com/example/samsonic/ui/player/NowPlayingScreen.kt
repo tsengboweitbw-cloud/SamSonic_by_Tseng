@@ -24,10 +24,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.Lyrics
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.RepeatOne
 import androidx.compose.material.icons.filled.Shuffle
@@ -49,7 +47,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.model.artSeed
 import com.example.samsonic.ui.components.PressIconButton
-import com.example.samsonic.ui.components.pressClickable
 import com.example.samsonic.ui.theme.BlurredArtBackdrop
 import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.OneUiRadius
@@ -61,15 +58,21 @@ import com.example.samsonic.util.formatDuration
 @Composable
 fun NowPlayingScreen(
     onCollapse: () -> Unit,
-    onShowQueue: () -> Unit,
-    onShowLyrics: () -> Unit,
+    lyrics: PanelState,
+    queue: PanelState,
+    info: PanelState,
     modifier: Modifier = Modifier,
 ) {
     val player = LocalPlayerState.current
     val song = player.currentSong ?: return
     val cornerRadius by LocalAppContainer.current.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
     val horizontalPadding = 24.dp
-    Box(modifier = modifier.playerMorphRoot(PlayerSurface.Full).fillMaxSize()) {
+    Box(
+        modifier = modifier
+            .playerMorphRoot(PlayerSurface.Full)
+            .fillMaxSize()
+            .swipeOpensPanels(swipeLeft = info, swipeRight = lyrics),
+    ) {
         // Crossfade fades the old and new backdrops at the same time, so mid-change
         // neither is opaque and the screen behind the player shows through. An
         // opaque base keeps the page solid while the art swaps.
@@ -89,19 +92,10 @@ fun NowPlayingScreen(
                 .navigationBarsPadding()
                 .padding(horizontal = horizontalPadding),
         ) {
-        // Two separate floating glass buttons (One UI Gallery style) instead of one bar.
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
+        // A floating glass button (One UI Gallery style) instead of a bar.
+        Box(Modifier.padding(top = 12.dp)) {
             GlassCircleButton(onClick = onCollapse) {
                 Icon(Icons.Filled.KeyboardArrowDown, contentDescription = "Collapse")
-            }
-            GlassCircleButton(onClick = onShowQueue) {
-                Icon(Icons.AutoMirrored.Filled.QueueMusic, contentDescription = "Queue")
             }
         }
 
@@ -242,24 +236,12 @@ fun NowPlayingScreen(
 
         Spacer(Modifier.height(16.dp))
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 128.dp),
-            horizontalArrangement = Arrangement.Center,
-        ) {
-            Row(
-                modifier = Modifier
-                    .nowPlayingGlass()
-                    .pressClickable(onShowLyrics, pressedScale = 0.92f)
-                    .padding(horizontal = 20.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(Icons.Filled.Lyrics, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(8.dp))
-                Text("Lyrics")
-            }
-        }
+        NowPlayingActions(
+            lyrics = lyrics,
+            queue = queue,
+            info = info,
+            modifier = Modifier.padding(bottom = 128.dp),
+        )
         }
     }
 }
@@ -281,7 +263,7 @@ private fun GlassCircleButton(onClick: () -> Unit, content: @Composable () -> Un
  * dark theme) lets its colors glow through instead of a dense grey slab.
  */
 @Composable
-private fun Modifier.nowPlayingGlass(): Modifier = glassSurface(
+internal fun Modifier.nowPlayingGlass(): Modifier = glassSurface(
     shape = RoundedCornerShape(OneUiRadius.Pill),
     hazeState = null,
     tint = MaterialTheme.colorScheme.onSurface,

@@ -3,14 +3,13 @@ package com.example.samsonic.ui.player
 import com.example.samsonic.playback.LocalPlayerState
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -18,7 +17,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Equalizer
-import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -35,7 +33,6 @@ import com.example.samsonic.model.artSeed
 import com.example.samsonic.ui.components.ListItemFade
 import com.example.samsonic.ui.components.ListItemMove
 import com.example.samsonic.ui.components.MediaArt
-import com.example.samsonic.ui.components.PressIconButton
 import com.example.samsonic.ui.components.SwipeAction
 import com.example.samsonic.ui.components.SwipeActions
 import com.example.samsonic.ui.theme.GlassAlpha
@@ -45,36 +42,23 @@ import com.example.samsonic.ui.theme.glassSurface
 import com.example.samsonic.util.formatDuration
 import com.example.samsonic.ui.theme.scrollTopFade
 
+/** The queue's rows in play order, swipeable to play next or remove; the body of the Up Next card. */
 @Composable
-fun QueueScreen(
-    onCollapse: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
+fun QueueScreen(modifier: Modifier = Modifier) {
     val player = LocalPlayerState.current
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .statusBarsPadding()
-            .navigationBarsPadding(),
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            PressIconButton(onClick = onCollapse) {
-                Icon(Icons.Filled.KeyboardArrowDown, contentDescription = "Collapse")
-            }
-            Text(text = "Up Next", style = MaterialTheme.typography.titleLarge)
-        }
+    Column(modifier = modifier.fillMaxSize()) {
         // Queue indices in play order (the shuffle order when shuffle is on). playOrder catches
         // up a moment after an insert, so until then fall back to the queue's own order.
         val order = player.playOrder.takeIf { it.size == player.queue.size } ?: player.queue.indices.toList()
         val listState = rememberLazyListState()
         val rowKeys = player.queue.occurrenceKeys()
-        LazyColumn(modifier = Modifier.fillMaxSize().scrollTopFade(listState), state = listState) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().scrollTopFade(listState),
+            state = listState,
+            // Lines the rows' text up with the card's title.
+            contentPadding = PaddingValues(horizontal = 4.dp),
+        ) {
             // Keyed by song plus which copy of it this is, since the same song can be queued
             // more than once; stable across moves, so a moved row animates to its new place.
             items(order, key = { rowKeys.getOrElse(it) { "$it" } }) { index ->

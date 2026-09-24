@@ -24,3 +24,11 @@ fun formatAlbumDuration(totalSeconds: Int): String {
     val minutes = (totalSeconds % 3600) / 60
     return if (hours > 0) "$hours hr $minutes min" else "$minutes min"
 }
+
+/** e.g. "8.4 MB"; binary units, one decimal place from MB up. */
+fun formatFileSize(bytes: Long): String = when {
+    bytes >= 1L shl 30 -> "%.1f GB".format(bytes / (1L shl 30).toDouble())
+    bytes >= 1L shl 20 -> "%.1f MB".format(bytes / (1L shl 20).toDouble())
+    bytes >= 1L shl 10 -> "${bytes shr 10} KB"
+    else -> "$bytes B"
+}

@@ -36,7 +36,7 @@ object GlassAlpha {
     const val Nav = 0.45f
     const val MiniPlayer = 0.45f
     const val Card = 0.74f
-    const val Sheet = 0.25f
+    const val Sheet = 0.28f
     // A panel floating over live content (the Library view options): its blur
     // samples the content undimmed, so it needs a dense tint to stay readable.
     const val Panel = 0.85f

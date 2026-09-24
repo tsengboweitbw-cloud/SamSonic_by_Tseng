@@ -40,6 +40,15 @@ data class Song(
     val bitRate: Int? = null,
     val samplingRate: Int? = null,
     val bitDepth: Int? = null,
+    // Shown in the song info sheet; each is whatever the server reported, else null.
+    val year: Int? = null,
+    val genre: String? = null,
+    val discNumber: Int? = null,
+    val sizeBytes: Long? = null,
+    val contentType: String? = null,
+    val path: String? = null,
+    val playCount: Long? = null,
+    val channelCount: Int? = null,
 )
 
 data class Playlist(

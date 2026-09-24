@@ -258,6 +258,14 @@ class SubsonicRepository(
         bitRate = bitRate,
         samplingRate = samplingRate,
         bitDepth = bitDepth,
+        year = year,
+        genre = genre,
+        discNumber = discNumber,
+        sizeBytes = size,
+        contentType = contentType,
+        path = path,
+        playCount = playCount,
+        channelCount = channelCount,
     )
 
     private fun PlaylistDto.toDomain() = Playlist(

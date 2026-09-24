@@ -2,7 +2,6 @@ package com.example.samsonic.ui.library
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.Crossfade
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -40,6 +39,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.graphicsLayer
@@ -62,8 +62,15 @@ import kotlin.math.roundToInt
 
 private val columnChoices = (LibraryLayout.MIN_COLUMNS..LibraryLayout.MAX_COLUMNS).toList()
 
-// Soft, barely underdamped growth, like the tab indicator's glide.
-private val MorphSpring = spring<Float>(dampingRatio = 0.9f, stiffness = Spring.StiffnessMediumLow)
+// Both overshoot and spring back: open stretches the panel past its height,
+// close dips past the pill, which then squeezes a little (see the glass's layer).
+// A spring's duration goes with 1/sqrt(stiffness): 269 runs 25% longer than 420.
+private val OpenSpring = spring<Float>(dampingRatio = 0.62f, stiffness = 269f)
+private val CloseSpring = spring<Float>(dampingRatio = 0.7f, stiffness = 269f)
+private val ScrimSpring = spring<Float>(stiffness = 960f)
+
+// How much the pill shrinks per unit of the close overshoot (a few % at most).
+private const val LandingSqueeze = 1.5f
 
 /**
  * Frosted glass circle next to the Library title: shows the current tab's view,
@@ -122,8 +129,13 @@ internal fun LibraryTabsPanel(
     val transition = rememberTransition(state, label = "viewOptions")
     // One progress (0 = pill, 1 = panel) drives the height, both fades and the
     // glass, so every part of the morph moves together.
-    val progress by transition.animateFloat(transitionSpec = { MorphSpring }, label = "morph") { if (it) 1f else 0f }
-    val scrimAlpha by transition.animateFloat(label = "scrim") { if (it) 0.32f else 0f }
+    val progress by transition.animateFloat(
+        transitionSpec = { if (targetState) OpenSpring else CloseSpring },
+        label = "morph",
+    ) { if (it) 1f else 0f }
+    // The default spring (StiffnessMedium, 1500) slowed to match the morph: 25% longer.
+    // Critically damped, as a fade must not bounce.
+    val scrimAlpha by transition.animateFloat(transitionSpec = { ScrimSpring }, label = "scrim") { if (it) 0.32f else 0f }
     // The glass is the tab pill's (user opacity included); an extra wash of the
     // same tint, faded with the morph, thickens it into a readable panel.
     // Animating the glass's own alpha instead restyled the blur and recomposed
@@ -159,10 +171,26 @@ internal fun LibraryTabsPanel(
             modifier = Modifier
                 .padding(horizontal = 20.dp)
                 .fillMaxWidth()
+                // The window stays between the pill and the full glass, so neither overshoot
+                // can show through it. Open's stretches the whole panel down from the top;
+                // close's squeezes the pill about its own center.
+                .graphicsLayer {
+                    if (size.height <= 0f) return@graphicsLayer
+                    val pill = pillHeight[0].toFloat()
+                    if (progress > 1f) {
+                        scaleY = 1f + (lerp(pill, size.height, progress) - size.height) / size.height
+                        transformOrigin = TransformOrigin(0.5f, 0f)
+                    } else if (progress < 0f) {
+                        val squeeze = 1f + progress * LandingSqueeze
+                        scaleX = squeeze
+                        scaleY = squeeze
+                        transformOrigin = TransformOrigin(0.5f, pill / 2f / size.height)
+                    }
+                }
                 .drawWithContent {
                     val radius = cornerRadius.toPx()
                     val windowHeight = lerp(pillHeight[0].toFloat(), size.height, progress)
-                        .coerceIn(0f, size.height)
+                        .coerceIn(pillHeight[0].toFloat().coerceAtMost(size.height), size.height)
                     val window = RoundRect(0f, 0f, size.width, windowHeight, CornerRadius(radius))
                     val path = Path().apply { addRoundRect(window) }
                     clipPath(path) { this@drawWithContent.drawContent() }

@@ -48,7 +48,8 @@ private fun ramp(value: Float, start: Float, end: Float) = ((value - start) / (e
  * dragged down it shrinks back. The pill widens and its corners square off as
  * it grows, the mini player's contents fade out as Now Playing's fade in, and
  * the cover and progress line travel between the two ([PlayerMorphState]).
- * Queue and lyrics open inside the sheet, on top of Now Playing.
+ * Lyrics, queue and song info open inside the sheet, growing out of their buttons
+ * over Now Playing; dragging up on an open Now Playing pulls the queue up with the finger.
  *
  * [collapsedBottom] is the gap between the pill and the bottom of the screen.
  */
@@ -115,10 +116,10 @@ private fun SheetSurface(sheet: PlayerSheetState, song: Song, collapsed: Rect, f
             .draggable(
                 state = dragState,
                 orientation = Orientation.Vertical,
-                // Queue and lyrics scroll vertically; they close with their own button.
-                enabled = sheet.page == PlayerPage.NowPlaying,
+                // Panels over Now Playing take their own drags.
+                enabled = !sheet.hasPanelOpen,
                 startDragImmediately = sheet.isMoving,
-                onDragStarted = { sheet.stop() },
+                onDragStarted = { sheet.startDrag() },
                 onDragStopped = { velocity -> sheet.settle(velocity) },
             ),
     ) {

@@ -4,10 +4,10 @@
     <selectionStates>
       <SelectionState runConfigName="app">
         <option name="selectionMode" value="DIALOG" />
-        <DropdownSelection timestamp="2026-09-23T13:29:41.962281500Z">
+        <DropdownSelection timestamp="2026-09-23T20:49:04.315752Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="PhysicalDevice" identifier="serial=RFCN80TVSZB" />
+              <DeviceId pluginId="Wireless" identifier="serviceName=adb-RFCN80TVSZB-PW2lrR" />
             </handle>
           </Target>
         </DropdownSelection>
@@ -15,12 +15,12 @@
           <targets>
             <Target type="DEFAULT_BOOT">
               <handle>
-                <DeviceId pluginId="PhysicalDevice" identifier="serial=RFCN80TVSZB" />
+                <DeviceId pluginId="PhysicalDevice" identifier="serial=R5CX21WRTXN" />
               </handle>
             </Target>
             <Target type="DEFAULT_BOOT">
               <handle>
-                <DeviceId pluginId="PhysicalDevice" identifier="serial=R5CX21WRTXN" />
+                <DeviceId pluginId="PhysicalDevice" identifier="serial=RFCN80TVSZB" />
               </handle>
             </Target>
           </targets>

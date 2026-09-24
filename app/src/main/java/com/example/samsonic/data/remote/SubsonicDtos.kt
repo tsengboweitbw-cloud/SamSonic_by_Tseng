@@ -113,6 +113,13 @@ data class SongDto(
     val bitRate: Int? = null,
     val samplingRate: Int? = null,
     val bitDepth: Int? = null,
+    val discNumber: Int? = null,
+    val size: Long? = null,
+    val contentType: String? = null,
+    val path: String? = null,
+    val playCount: Long? = null,
+    // OpenSubsonic extension.
+    val channelCount: Int? = null,
 )
 
 @Serializable
