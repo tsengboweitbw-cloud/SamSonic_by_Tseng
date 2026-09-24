@@ -13,9 +13,11 @@ import androidx.compose.material.icons.filled.BlurOn
 import androidx.compose.material.icons.filled.Opacity
 import androidx.compose.material.icons.filled.Wallpaper
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,6 +27,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.data.ThemeManager
 import com.example.samsonic.ui.theme.OneUiSlider
 import kotlin.math.roundToInt
+
+private val SliderTouchHeight = 32.dp
+// Extra room when a slider row is first/last in its card (see cardEdgeInset).
+private val SliderEdgeInsetTop = 4.dp
+private val SliderEdgeInsetBottom = 6.dp
 
 /**
  * Sliders for the global glass look: opacity of every glass surface, blur of
@@ -89,11 +96,18 @@ internal fun SliderRow(
     value: Float,
     valueRange: ClosedFloatingPointRange<Float>,
     onValueChange: (Float) -> Unit,
+    onValueChangeFinished: (() -> Unit)? = null,
+    modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = Modifier
+        modifier = modifier
+            // Against a card edge the title and the bare line sit closer than
+            // other rows' content does, so ask the card for a little more room.
+            .cardEdgeInset(top = SliderEdgeInsetTop, bottom = SliderEdgeInsetBottom)
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            // No bottom padding: the slider's own touch area already leaves
+            // room under the line.
+            .padding(start = 16.dp, end = 16.dp, top = 10.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -107,11 +121,17 @@ internal fun SliderRow(
             }
             Text(text = valueLabel, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
-        OneUiSlider(
-            value = value,
-            onValueChange = onValueChange,
-            valueRange = valueRange,
-            modifier = Modifier.fillMaxWidth(),
-        )
+        // Material pads every slider to a 48dp touch area; in a settings list
+        // that leaves the line floating over a big gap. 32dp is still easy to
+        // drag. (Now Playing's seek bar keeps the full 48dp.)
+        CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides SliderTouchHeight) {
+            OneUiSlider(
+                value = value,
+                onValueChange = onValueChange,
+                onValueChangeFinished = onValueChangeFinished,
+                valueRange = valueRange,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
     }
 }

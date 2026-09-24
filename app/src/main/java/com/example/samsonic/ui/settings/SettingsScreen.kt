@@ -2,7 +2,6 @@ package com.example.samsonic.ui.settings
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,10 +12,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material.icons.filled.Bedtime
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DarkMode
@@ -43,9 +40,6 @@ import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.data.ThemeManager
 import com.example.samsonic.playback.LocalPlayerState
 import com.example.samsonic.ui.player.PanelState
-import com.example.samsonic.ui.theme.GlassAlpha
-import com.example.samsonic.ui.theme.OneUiRadius
-import com.example.samsonic.ui.theme.glassSurface
 import com.example.samsonic.ui.theme.oneUiRowClickable
 import com.example.samsonic.ui.theme.toHexRgb
 import com.example.samsonic.ui.common.TitledPage
@@ -124,16 +118,7 @@ fun SettingsScreen(
             item { GroupLabel("Playback") }
             item {
                 SettingsCard {
-                    NavRow(
-                        icon = Icons.Filled.Bedtime,
-                        title = "Sleep timer",
-                        value = player.sleepTimerMinutes?.let { "$it min" } ?: "Off",
-                        onClick = {
-                            val options = listOf(null, 15, 30, 45, 60)
-                            val currentIdx = options.indexOf(player.sleepTimerMinutes)
-                            player.setSleepTimer(options[(currentIdx + 1) % options.size])
-                        },
-                    )
+                    SleepTimerRow(player)
                     SwitchRow(
                         icon = Icons.Filled.Favorite,
                         title = "Like button",
@@ -208,25 +193,6 @@ private fun GroupLabel(text: String) {
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(start = 24.dp, top = 20.dp, bottom = 8.dp),
     )
-}
-
-@Composable
-private fun SettingsCard(content: @Composable ColumnScope.() -> Unit) {
-    // No hazeState: nested inside the NavHost's own hazeSource subtree (see
-    // MediaLists.SongRow comment) - falls back to a flat translucent fill.
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .glassSurface(
-                shape = RoundedCornerShape(OneUiRadius.Card),
-                hazeState = null,
-                tint = MaterialTheme.colorScheme.surfaceContainerHigh,
-                alpha = GlassAlpha.Sheet,
-            ),
-    ) {
-        content()
-    }
 }
 
 @Composable
