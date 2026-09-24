@@ -51,6 +51,18 @@ class ThemeManager(context: Context) {
     private val _likesEnabled = MutableStateFlow(prefs.getBoolean(KEY_LIKES_ENABLED, true))
     val likesEnabled: StateFlow<Boolean> = _likesEnabled.asStateFlow()
 
+    // Which Now Playing swipes open a panel: right for lyrics, left for song info, up for the queue.
+    // Only the queue's is on until the user turns the others on.
+    // Each panel still opens from its button either way.
+    private val _swipeForLyrics = MutableStateFlow(prefs.getBoolean(KEY_SWIPE_LYRICS, false))
+    val swipeForLyrics: StateFlow<Boolean> = _swipeForLyrics.asStateFlow()
+
+    private val _swipeForInfo = MutableStateFlow(prefs.getBoolean(KEY_SWIPE_INFO, false))
+    val swipeForInfo: StateFlow<Boolean> = _swipeForInfo.asStateFlow()
+
+    private val _swipeForQueue = MutableStateFlow(prefs.getBoolean(KEY_SWIPE_QUEUE, true))
+    val swipeForQueue: StateFlow<Boolean> = _swipeForQueue.asStateFlow()
+
     fun setThemeMode(mode: ThemeMode) {
         prefs.edit().putString(KEY_MODE, mode.name).apply()
         _themeMode.value = mode
@@ -98,6 +110,21 @@ class ThemeManager(context: Context) {
         _likesEnabled.value = enabled
     }
 
+    fun setSwipeForLyrics(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_SWIPE_LYRICS, enabled).apply()
+        _swipeForLyrics.value = enabled
+    }
+
+    fun setSwipeForInfo(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_SWIPE_INFO, enabled).apply()
+        _swipeForInfo.value = enabled
+    }
+
+    fun setSwipeForQueue(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_SWIPE_QUEUE, enabled).apply()
+        _swipeForQueue.value = enabled
+    }
+
     private fun loadThemeMode(): ThemeMode =
         ThemeMode.entries.find { it.name == prefs.getString(KEY_MODE, null) } ?: ThemeMode.SYSTEM
 
@@ -117,6 +144,9 @@ class ThemeManager(context: Context) {
         private const val KEY_PANEL_OPACITY = "panel_opacity"
         private const val KEY_PANEL_BLUR = "panel_blur"
         private const val KEY_LIKES_ENABLED = "likes_enabled"
+        private const val KEY_SWIPE_LYRICS = "swipe_for_lyrics"
+        private const val KEY_SWIPE_INFO = "swipe_for_info"
+        private const val KEY_SWIPE_QUEUE = "swipe_for_queue"
         val DefaultAccent = Color(0xFF8875FF)
         val DefaultAlbumArtCornerRadius = 2.dp
         const val DefaultGlassOpacity = 1f

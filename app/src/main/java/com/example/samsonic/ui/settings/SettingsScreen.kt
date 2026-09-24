@@ -111,6 +111,9 @@ fun SettingsScreen(
                 }
             }
 
+            item { GroupLabel("Now Playing gestures") }
+            item { SettingsCard { SwipeGestureRows(container.themeManager) } }
+
             item { GroupLabel("Library") }
             item {
                 SettingsCard {

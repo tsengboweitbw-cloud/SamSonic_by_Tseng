@@ -65,12 +65,17 @@ fun NowPlayingScreen(
     val song = player.currentSong ?: return
     val cornerRadius by LocalAppContainer.current.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
     val likesEnabled by LocalAppContainer.current.themeManager.likesEnabled.collectAsStateWithLifecycle()
+    val swipeForLyrics by LocalAppContainer.current.themeManager.swipeForLyrics.collectAsStateWithLifecycle()
+    val swipeForInfo by LocalAppContainer.current.themeManager.swipeForInfo.collectAsStateWithLifecycle()
     val horizontalPadding = 24.dp
     Box(
         modifier = modifier
             .playerMorphRoot(PlayerSurface.Full)
             .fillMaxSize()
-            .swipeOpensPanels(swipeLeft = info, swipeRight = lyrics),
+            .swipeOpensPanels(
+                swipeLeft = info.takeIf { swipeForInfo },
+                swipeRight = lyrics.takeIf { swipeForLyrics },
+            ),
     ) {
         // Crossfade fades the old and new backdrops at the same time, so mid-change
         // neither is opaque and the screen behind the player shows through. An

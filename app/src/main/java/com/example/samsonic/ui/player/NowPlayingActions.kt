@@ -82,29 +82,39 @@ private const val SwipeTravel = 0.5f
  * [swipeLeft] for a swipe to the left, [swipeRight] for one to the right. Its first
  * step picks the panel; a release settles it open or closed, as a drag on the panel
  * would. The cover and the seek bar take their own sideways drags first.
+ * A null panel turns that direction off (its switch in Settings): a swipe that
+ * starts that way opens nothing, even if it then turns back the other way.
  */
 @Composable
-internal fun Modifier.swipeOpensPanels(swipeLeft: PanelState, swipeRight: PanelState): Modifier {
-    // Plain holders, read only inside the gesture: the panel being pulled, and our width.
+internal fun Modifier.swipeOpensPanels(swipeLeft: PanelState?, swipeRight: PanelState?): Modifier {
+    // Plain holders, read only inside the gesture: the panel being pulled, whether this
+    // swipe has picked its direction yet, and our width.
     val pulling = remember { arrayOfNulls<PanelState>(1) }
+    val decided = remember { booleanArrayOf(false) }
     val width = remember { floatArrayOf(1f) }
     // Panels move by their top edge's travel; scale sideways pixels onto it.
     fun PanelState.scale() = travelPx / (width[0] * SwipeTravel)
     // A panel grows for negative (upward) drags, so a swipe toward the right is flipped.
     fun PanelState.opening(sideways: Float) = if (this === swipeLeft) sideways else -sideways
     val state = rememberDraggableState { delta ->
-        val panel = pulling[0] ?: when {
-            delta < 0f -> swipeLeft
-            delta > 0f -> swipeRight
-            else -> return@rememberDraggableState
-        }.also { pulling[0] = it }
+        if (!decided[0]) {
+            if (delta == 0f) return@rememberDraggableState
+            pulling[0] = if (delta < 0f) swipeLeft else swipeRight
+            decided[0] = true
+        }
+        val panel = pulling[0] ?: return@rememberDraggableState
         panel.dragBy(panel.opening(delta) * panel.scale())
     }
     return onSizeChanged { width[0] = it.width.toFloat() }
         .draggable(
             state = state,
             orientation = Orientation.Horizontal,
-            onDragStarted = { pulling[0] = null },
+            // With both off, sideways drags are left to whatever else wants them.
+            enabled = swipeLeft != null || swipeRight != null,
+            onDragStarted = {
+                pulling[0] = null
+                decided[0] = false
+            },
             onDragStopped = { velocity ->
                 val panel = pulling[0] ?: return@draggable
                 pulling[0] = null

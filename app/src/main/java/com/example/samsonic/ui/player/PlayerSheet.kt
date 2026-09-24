@@ -28,6 +28,8 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.model.Song
 import com.example.samsonic.playback.LocalPlayerState
 import com.example.samsonic.ui.theme.GlassAlpha
@@ -64,6 +66,9 @@ fun PlayerSheet(
 ) {
     val song = LocalPlayerState.current.currentSong
     SideEffect { if (song == null && sheet.isExpanded) sheet.collapse() }
+    // Read here, not inside the SideEffect, so a change in Settings recomposes and reaches the sheet.
+    val swipeForQueue = LocalAppContainer.current.themeManager.swipeForQueue.collectAsStateWithLifecycle().value
+    SideEffect { sheet.swipeUpForQueue = swipeForQueue }
     val morph = remember(sheet) { PlayerMorphState(progress = { sheet.progress }, active = { sheet.isMoving }) }
     val links = remember(sheet, onAlbumClick, onArtistClick) {
         PlayerLinks(
