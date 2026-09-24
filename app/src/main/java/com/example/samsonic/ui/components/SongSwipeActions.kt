@@ -1,5 +1,6 @@
 package com.example.samsonic.ui.components
 
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animate
@@ -17,6 +18,7 @@ import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -31,7 +33,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.CustomAccessibilityAction
@@ -52,8 +56,12 @@ import kotlin.math.roundToInt
 import kotlin.math.sign
 
 private val SwipeThreshold = 88.dp
-/** Past the threshold the row keeps following the finger, but only at this fraction of its speed. */
-private const val OverDragResistance = 0.3f
+/**
+ * Until the swipe passes its threshold the row is held back by its neighbors (Android 16's
+ * magnetic swipe), moving this fraction of the finger's travel; past it, it breaks free and
+ * springs up to the finger.
+ */
+private const val AttachedFollow = 0.75f
 private const val DismissResetDelayMillis = 500L
 
 /**
@@ -102,6 +110,13 @@ fun SwipeActions(
     val right by rememberUpdatedState(swipeRight)
     var widthPx by remember { mutableIntStateOf(0) }
     val panelHaze = remember { HazeState() }
+    // For the magnetic pull on neighboring rows (see SwipeNeighbors): this row's identity, and
+    // its on-screen center and height in plain holders, so scrolling doesn't recompose.
+    val rowToken = remember { Any() }
+    val center = remember { floatArrayOf(Float.NaN, 0f) }
+    // Set when a release fires an action: the neighbors stay let go through the spring-back.
+    val releasedArmed = remember { booleanArrayOf(false) }
+    DisposableEffect(rowToken) { onDispose { SwipeNeighbors.end(rowToken) } }
 
     // Raw finger travel; the row itself is drawn at [visual], which damps travel past the threshold.
     var dragX by remember { mutableFloatStateOf(0f) }
@@ -113,23 +128,32 @@ fun SwipeActions(
     // The side last swiped toward, kept so the panel can finish fading after the row is home.
     var towardEnd by remember { mutableStateOf(false) }
     val armed = abs(dragX) >= thresholdPx
-    val visual = when {
-        !dismissX.isNaN() -> dismissX
-        armed -> sign(dragX) * (thresholdPx + (abs(dragX) - thresholdPx) * OverDragResistance)
-        else -> dragX
-    }
-    LaunchedEffect(armed) {
+    // How much of the finger's travel the row follows: held back until the threshold, then
+    // springing free with a small overshoot. Only while the finger is down: after release the
+    // spring-back carries the row home at whatever ratio it had, without a hitch midway.
+    var dragging by remember { mutableStateOf(false) }
+    val follow = remember { Animatable(AttachedFollow) }
+    LaunchedEffect(armed, dragging) {
+        if (!dragging) return@LaunchedEffect
         if (armed) haptics.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate)
+        val spec = if (armed) spring<Float>(dampingRatio = 0.5f, stiffness = 600f) else spring(dampingRatio = 0.85f, stiffness = 500f)
+        follow.animateTo(if (armed) 1f else AttachedFollow, spec)
     }
+    val visual = if (!dismissX.isNaN()) dismissX else dragX * follow.value
 
     val dragState = rememberDraggableState { delta ->
         dragX = (dragX + delta).coerceIn(-thresholdPx * 3, thresholdPx * 3)
         // Not once the spring-back is home: its overshoot would flip the panel mid-fade.
         if (dragX != 0f && !returned) towardEnd = dragX < 0
+        SwipeNeighbors.update(rowToken, dragX, detached = releasedArmed[0] || abs(dragX) >= thresholdPx)
     }
     Box(
         modifier = modifier
             .onSizeChanged { widthPx = it.width }
+            .onGloballyPositioned {
+                center[0] = it.positionInRoot().y + it.size.height / 2f
+                center[1] = it.size.height.toFloat()
+            }
             .semantics {
                 customActions = listOf(
                     CustomAccessibilityAction(left.label) { left.onSwipe(); true },
@@ -139,9 +163,20 @@ fun SwipeActions(
             .draggable(
                 state = dragState,
                 orientation = Orientation.Horizontal,
-                onDragStarted = { returned = false },
+                onDragStarted = {
+                    dragging = true
+                    follow.snapTo(if (abs(dragX) >= thresholdPx) 1f else AttachedFollow)
+                    returned = false
+                    releasedArmed[0] = false
+                    SwipeNeighbors.begin(rowToken, centerY = center[0], height = center[1])
+                },
                 onDragStopped = {
+                    dragging = false
                     val action = if (abs(dragX) < thresholdPx) null else if (dragX < 0) left else right
+                    if (action != null) {
+                        releasedArmed[0] = true
+                        SwipeNeighbors.update(rowToken, dragX, detached = true)
+                    }
                     if (action?.destructive == true) {
                         animate(visual, sign(dragX) * widthPx, animationSpec = tween(180)) { value, _ -> dismissX = value }
                         haptics.performHapticFeedback(HapticFeedbackType.Confirm)
@@ -151,6 +186,7 @@ fun SwipeActions(
                         delay(DismissResetDelayMillis)
                         dragX = 0f
                         dismissX = Float.NaN
+                        SwipeNeighbors.end(rowToken)
                         return@draggable
                     }
                     if (action != null) {
@@ -169,6 +205,7 @@ fun SwipeActions(
                         }
                     }
                     returned = true
+                    SwipeNeighbors.end(rowToken)
                 },
             ),
     ) {
@@ -191,9 +228,11 @@ fun SwipeActions(
                 modifier = Modifier.matchParentSize().graphicsLayer { alpha = lift }.hazeSource(panelHaze),
             )
         }
+        val pull = rememberNeighborPull(rowToken, center)
         Box(
             Modifier
-                .offset { IntOffset(visual.roundToInt(), 0) }
+                // Its own swipe, plus any magnetic pull while a neighboring row is swiped.
+                .offset { IntOffset((visual + pull()).roundToInt(), 0) }
                 .padding(OneUiRow.Inset),
         ) {
             if (lift > 0f) LiftedCard(lift, panelHaze, Modifier.matchParentSize())
