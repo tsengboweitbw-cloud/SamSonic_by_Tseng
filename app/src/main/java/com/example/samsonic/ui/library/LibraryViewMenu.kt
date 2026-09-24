@@ -3,18 +3,14 @@ package com.example.samsonic.ui.library
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.core.rememberTransition
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,20 +20,16 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -49,7 +41,7 @@ import androidx.compose.ui.util.lerp
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.data.LibraryLayout
 import com.example.samsonic.data.LibraryViewMode
-import com.example.samsonic.ui.components.GlassTabBar
+import com.example.samsonic.ui.common.pageScrim
 import com.example.samsonic.ui.components.PressIconButton
 import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.GlassRimWidth
@@ -58,9 +50,6 @@ import com.example.samsonic.ui.theme.OneUiRadius
 import com.example.samsonic.ui.theme.glassRimBrush
 import com.example.samsonic.ui.theme.glassSurface
 import dev.chrisbanes.haze.HazeState
-import kotlin.math.roundToInt
-
-private val columnChoices = (LibraryLayout.MIN_COLUMNS..LibraryLayout.MAX_COLUMNS).toList()
 
 // Both overshoot and spring back: open stretches the panel past its height,
 // close dips past the pill, which then squeezes a little (see the glass's layer).
@@ -103,7 +92,7 @@ internal fun LibraryViewButton(mode: LibraryViewMode, open: Boolean, onClick: ()
 
 /**
  * The Library's tab pill, which can grow into the tab's view options panel (in
- * the style of the accent color picker): the pill's glass stretches down into
+ * the style of the Settings menus): the pill's glass stretches down into
  * the panel while the tabs cross-fade into its settings, and shrinks back into
  * the pill on close. While open, the content behind dims and a tap there closes it.
  *
@@ -141,13 +130,18 @@ internal fun LibraryTabsPanel(
     // Animating the glass's own alpha instead restyled the blur and recomposed
     // the whole panel every frame, which stuttered.
     val tint = MaterialTheme.colorScheme.surfaceContainerHigh
-    val pillAlpha = GlassAlpha.Nav * LocalGlassSettings.current.opacityScale
+    val glass = LocalGlassSettings.current
+    val pillAlpha = GlassAlpha.Nav * glass.opacityScale
     // The glass's tint runs thin at the top to dense at the bottom of the full
     // panel, so the pill (just its top strip) gets a little wash to match the
     // standalone pill's average density; the open panel gets enough to reach
-    // GlassAlpha.Panel.
+    // GlassAlpha.Panel, scaled by the user's menu opacity.
     val closedWash = 0.2f * pillAlpha / GlassAlpha.Nav
-    val openWash = (1f - (1f - GlassAlpha.Panel) / (1f - pillAlpha)).coerceIn(0f, 1f)
+    val panelAlpha = (GlassAlpha.Panel * glass.panelOpacity).coerceIn(0f, 1f)
+    val openWash = (1f - (1f - panelAlpha) / (1f - pillAlpha)).coerceIn(0f, 1f)
+    // The glass is the tab pill's too: the menu blur only while the panel is out,
+    // switched once as it starts to open and once it's home, never per frame.
+    val blurRadius = if (state.isShown) glass.panelBlur else glass.blurRadius
     val rimBrush = glassRimBrush()
     val cornerRadius = OneUiRadius.Card
     // The pill's measured height, handed from layout to draw (both per frame).
@@ -159,7 +153,7 @@ internal fun LibraryTabsPanel(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .drawBehind { drawRect(Color.Black, alpha = scrimAlpha) }
+                    .pageScrim { scrimAlpha }
                     .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onDismiss),
             )
         }
@@ -209,6 +203,7 @@ internal fun LibraryTabsPanel(
                     hazeState = hazeState,
                     tint = tint,
                     alpha = pillAlpha,
+                    blurRadius = blurRadius,
                     // Already scaled above; the panel's wash must not be thinned again.
                     scaleOpacity = false,
                     rim = false,
@@ -255,49 +250,6 @@ internal fun LibraryTabsPanel(
             }
         }
     }
-}
-
-@Composable
-private fun ViewOptionsPanel(sectionName: String, layout: LibraryLayout, onLayoutChange: (LibraryLayout) -> Unit) {
-    Column(modifier = Modifier.fillMaxWidth().padding(24.dp)) {
-        Text(text = "$sectionName view", style = MaterialTheme.typography.titleLarge)
-        Spacer(Modifier.height(20.dp))
-
-        PanelLabel("Layout")
-        GlassTabBar(
-            labels = listOf("List", "Grid"),
-            selectedIndex = if (layout.mode == LibraryViewMode.GRID) 1 else 0,
-            onSelect = { index ->
-                onLayoutChange(layout.copy(mode = if (index == 1) LibraryViewMode.GRID else LibraryViewMode.LIST))
-            },
-            hazeState = null,
-        )
-        Spacer(Modifier.height(20.dp))
-
-        // Frozen in list view: the saved count still shows, dimmed, for when grid comes back.
-        val grid = layout.mode == LibraryViewMode.GRID
-        val frozenAlpha by animateFloatAsState(if (grid) 1f else 0.38f, label = "columnsAlpha")
-        Column(Modifier.alpha(frozenAlpha)) {
-            PanelLabel("Grid columns")
-            GlassTabBar(
-                labels = columnChoices.map { it.toString() },
-                selectedIndex = columnChoices.indexOf(layout.columns).coerceAtLeast(0),
-                onSelect = { index -> onLayoutChange(layout.copy(columns = columnChoices[index])) },
-                hazeState = null,
-                enabled = grid,
-            )
-        }
-    }
-}
-
-@Composable
-private fun PanelLabel(text: String) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(start = 4.dp, bottom = 8.dp),
-    )
 }
 
 /** True while the view options panel is on screen: open, or still animating open or shut. */

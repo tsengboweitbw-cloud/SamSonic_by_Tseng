@@ -28,13 +28,16 @@ import kotlin.math.roundToInt
 
 /**
  * Sliders for the global glass look: opacity of every glass surface, blur of
- * the floating frosted chrome, and blur of the Now Playing album-art backdrop.
+ * the floating frosted chrome, blur of the Now Playing album-art backdrop, and
+ * the opacity and blur of the secondary menus.
  */
 @Composable
 fun GlassSliderRows(themeManager: ThemeManager) {
     val glassOpacity by themeManager.glassOpacity.collectAsStateWithLifecycle()
     val glassBlur by themeManager.glassBlur.collectAsStateWithLifecycle()
     val backdropBlur by themeManager.backdropBlur.collectAsStateWithLifecycle()
+    val panelOpacity by themeManager.panelOpacity.collectAsStateWithLifecycle()
+    val panelBlur by themeManager.panelBlur.collectAsStateWithLifecycle()
 
     SliderRow(
         icon = Icons.Filled.Opacity,
@@ -59,6 +62,22 @@ fun GlassSliderRows(themeManager: ThemeManager) {
         value = backdropBlur.value,
         valueRange = 0f..100f,
         onValueChange = { themeManager.setBackdropBlur(it.dp) },
+    )
+    SliderRow(
+        icon = Icons.Filled.Opacity,
+        title = "Menu opacity",
+        valueLabel = "${(panelOpacity * 100).roundToInt()}%",
+        value = panelOpacity,
+        valueRange = 0.5f..1.3f,
+        onValueChange = themeManager::setPanelOpacity,
+    )
+    SliderRow(
+        icon = Icons.Filled.BlurOn,
+        title = "Menu blur",
+        valueLabel = "${panelBlur.value.roundToInt()}dp",
+        value = panelBlur.value,
+        valueRange = 0f..80f,
+        onValueChange = { themeManager.setPanelBlur(it.dp) },
     )
 }
 

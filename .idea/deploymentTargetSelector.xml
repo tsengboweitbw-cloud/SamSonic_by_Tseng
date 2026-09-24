@@ -3,11 +3,11 @@
   <component name="deploymentTargetSelector">
     <selectionStates>
       <SelectionState runConfigName="app">
-        <option name="selectionMode" value="DIALOG" />
-        <DropdownSelection timestamp="2026-09-23T20:49:04.315752Z">
+        <option name="selectionMode" value="DROPDOWN" />
+        <DropdownSelection timestamp="2026-09-24T03:28:53.233570200Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="Wireless" identifier="serviceName=adb-RFCN80TVSZB-PW2lrR" />
+              <DeviceId pluginId="Default" identifier="serial=100.111.206.52:5555;connection=1381eabf" />
             </handle>
           </Target>
         </DropdownSelection>

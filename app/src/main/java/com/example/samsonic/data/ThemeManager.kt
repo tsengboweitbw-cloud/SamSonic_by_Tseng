@@ -39,6 +39,14 @@ class ThemeManager(context: Context) {
     private val _backdropBlur = MutableStateFlow(prefs.getFloat(KEY_BACKDROP_BLUR, DefaultBackdropBlur.value).dp)
     val backdropBlur: StateFlow<Dp> = _backdropBlur.asStateFlow()
 
+    // The secondary menus' own pair (the Library view options, the Now Playing
+    // panels): they float over dimmed content, so they get their own look.
+    private val _panelOpacity = MutableStateFlow(prefs.getFloat(KEY_PANEL_OPACITY, DefaultPanelOpacity))
+    val panelOpacity: StateFlow<Float> = _panelOpacity.asStateFlow()
+
+    private val _panelBlur = MutableStateFlow(prefs.getFloat(KEY_PANEL_BLUR, DefaultPanelBlur.value).dp)
+    val panelBlur: StateFlow<Dp> = _panelBlur.asStateFlow()
+
     fun setThemeMode(mode: ThemeMode) {
         prefs.edit().putString(KEY_MODE, mode.name).apply()
         _themeMode.value = mode
@@ -71,6 +79,16 @@ class ThemeManager(context: Context) {
         _backdropBlur.value = radius
     }
 
+    fun setPanelOpacity(scale: Float) {
+        prefs.edit().putFloat(KEY_PANEL_OPACITY, scale).apply()
+        _panelOpacity.value = scale
+    }
+
+    fun setPanelBlur(radius: Dp) {
+        prefs.edit().putFloat(KEY_PANEL_BLUR, radius.value).apply()
+        _panelBlur.value = radius
+    }
+
     private fun loadThemeMode(): ThemeMode =
         ThemeMode.entries.find { it.name == prefs.getString(KEY_MODE, null) } ?: ThemeMode.SYSTEM
 
@@ -87,10 +105,14 @@ class ThemeManager(context: Context) {
         private const val KEY_GLASS_OPACITY = "glass_opacity"
         private const val KEY_GLASS_BLUR = "glass_blur"
         private const val KEY_BACKDROP_BLUR = "backdrop_blur"
+        private const val KEY_PANEL_OPACITY = "panel_opacity"
+        private const val KEY_PANEL_BLUR = "panel_blur"
         val DefaultAccent = Color(0xFF8875FF)
         val DefaultAlbumArtCornerRadius = 2.dp
         const val DefaultGlassOpacity = 1f
         val DefaultGlassBlur = 16.dp
         val DefaultBackdropBlur = 40.dp
+        const val DefaultPanelOpacity = 1f
+        val DefaultPanelBlur = 28.dp
     }
 }

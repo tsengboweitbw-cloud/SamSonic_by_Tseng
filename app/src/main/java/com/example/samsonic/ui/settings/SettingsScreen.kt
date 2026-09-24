@@ -30,9 +30,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -41,8 +40,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.data.ThemeManager
-import com.example.samsonic.data.ThemeMode
 import com.example.samsonic.playback.LocalPlayerState
+import com.example.samsonic.ui.player.PanelState
 import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.OneUiRadius
 import com.example.samsonic.ui.theme.glassSurface
@@ -63,7 +62,9 @@ fun SettingsScreen(
     val themeMode by container.themeManager.themeMode.collectAsStateWithLifecycle()
     val accentColor by container.themeManager.accentColor.collectAsStateWithLifecycle()
     val albumArtCornerRadius by container.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
-    var showColorPicker by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    val themeMenu = remember { PanelState(scope) }
+    val accentMenu = remember { PanelState(scope) }
 
     // A nav bar tab like Search and Library, so the same fixed large title and no back button.
     TitledPage(
@@ -75,6 +76,16 @@ fun SettingsScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 20.dp, vertical = 8.dp),
+            )
+        },
+        overlay = { haze ->
+            ThemeMenu(themeMenu, haze, current = themeMode, onSelect = container.themeManager::setThemeMode)
+            AccentColorMenu(
+                accentMenu,
+                haze,
+                initialColor = accentColor,
+                defaultColor = ThemeManager.DefaultAccent,
+                onConfirm = container.themeManager::setAccentColor,
             )
         },
     ) { topPadding ->
@@ -130,21 +141,16 @@ fun SettingsScreen(
                     NavRow(
                         icon = Icons.Filled.DarkMode,
                         title = "Theme",
-                        value = when (themeMode) {
-                            ThemeMode.SYSTEM -> "System"
-                            ThemeMode.LIGHT -> "Light"
-                            ThemeMode.DARK -> "Dark"
-                        },
-                        onClick = {
-                            val modes = ThemeMode.entries
-                            container.themeManager.setThemeMode(modes[(themeMode.ordinal + 1) % modes.size])
-                        },
+                        value = themeMode.label,
+                        onClick = { themeMenu.open() },
+                        modifier = Modifier.menuOrigin(themeMenu),
                     )
                     NavRow(
                         icon = Icons.Filled.Palette,
                         title = "Accent color",
                         value = "#${accentColor.toHexRgb()}",
-                        onClick = { showColorPicker = true },
+                        onClick = { accentMenu.open() },
+                        modifier = Modifier.menuOrigin(accentMenu),
                     )
                     SliderRow(
                         icon = Icons.Filled.RoundedCorner,
@@ -184,18 +190,6 @@ fun SettingsScreen(
             }
         }
     }
-
-    if (showColorPicker) {
-        AccentColorPickerDialog(
-            initialColor = accentColor,
-            defaultColor = ThemeManager.DefaultAccent,
-            onDismiss = { showColorPicker = false },
-            onConfirm = {
-                container.themeManager.setAccentColor(it)
-                showColorPicker = false
-            },
-        )
-    }
 }
 
 @Composable
@@ -233,10 +227,11 @@ private fun NavRow(
     title: String,
     value: String,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
     tint: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurfaceVariant,
 ) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .oneUiRowClickable(onClick)
             .padding(horizontal = 8.dp, vertical = 12.dp),

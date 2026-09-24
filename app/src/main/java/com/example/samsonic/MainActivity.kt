@@ -34,6 +34,8 @@ class MainActivity : ComponentActivity() {
             val glassOpacity by container.themeManager.glassOpacity.collectAsStateWithLifecycle()
             val glassBlur by container.themeManager.glassBlur.collectAsStateWithLifecycle()
             val backdropBlur by container.themeManager.backdropBlur.collectAsStateWithLifecycle()
+            val panelOpacity by container.themeManager.panelOpacity.collectAsStateWithLifecycle()
+            val panelBlur by container.themeManager.panelBlur.collectAsStateWithLifecycle()
             val darkTheme = when (themeMode) {
                 ThemeMode.SYSTEM -> isSystemInDarkTheme()
                 ThemeMode.LIGHT -> false
@@ -52,7 +54,7 @@ class MainActivity : ComponentActivity() {
                 CompositionLocalProvider(
                     LocalAppContainer provides container,
                     LocalPlayerState provides container.playerState,
-                    LocalGlassSettings provides GlassSettings(glassOpacity, glassBlur, backdropBlur),
+                    LocalGlassSettings provides GlassSettings(glassOpacity, glassBlur, backdropBlur, panelOpacity, panelBlur),
                 ) {
                     Surface(modifier = Modifier.fillMaxSize()) {
                         SamSonicNavHost()

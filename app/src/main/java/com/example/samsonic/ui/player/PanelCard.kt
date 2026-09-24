@@ -29,6 +29,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.ui.components.pressClickable
 import com.example.samsonic.ui.theme.GlassAlpha
+import com.example.samsonic.ui.theme.LocalGlassSettings
 import com.example.samsonic.ui.theme.OneUiRadius
 import com.example.samsonic.ui.theme.glassSurface
 import dev.chrisbanes.haze.HazeState
@@ -37,8 +38,8 @@ import dev.chrisbanes.haze.HazeState
 private const val CardHeight = 0.88f
 
 /**
- * How much a dialog dims the screen behind it, as the accent color picker's Dialog
- * does: Compose sets no amount of its own, so it is the platform dialog theme's.
+ * How much a platform dialog dims the screen behind it: Compose's Dialog sets
+ * no amount of its own, so it is the platform dialog theme's.
  */
 @Composable
 private fun dialogDimAmount(): Float {
@@ -57,7 +58,7 @@ private fun dialogDimAmount(): Float {
 
 /**
  * A panel as a floating glass card over a dimmed Now Playing, styled like the
- * accent color picker: [title] on top, [content] below, and Close at the bottom.
+ * Settings menus: [title] on top, [content] below, and Close at the bottom.
  * It grows out of its button ([MorphPanel]); tapping outside it, back, or Close
  * folds it back, as does pulling it down from the top of its content. Every card
  * has the same fixed height, which [content] fills.
@@ -75,6 +76,7 @@ internal fun PanelCard(
     if (!showing) return
     val shape = RoundedCornerShape(OneUiRadius.Card)
     val dim = dialogDimAmount()
+    val glass = LocalGlassSettings.current
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -96,10 +98,10 @@ internal fun PanelCard(
                 shape = shape,
                 hazeState = haze,
                 tint = MaterialTheme.colorScheme.surfaceContainerHigh,
-                alpha = 2f * GlassAlpha.Sheet,
-                // Fixed, stronger than the chrome's user-set blur: a modal
-                // panel must stay readable at any slider setting.
-                blurRadius = 28.dp,
+                // The menu settings, apart from the chrome's: a modal panel keeps
+                // its own look whatever the chrome's glass is set to.
+                alpha = 2f * GlassAlpha.Sheet * glass.panelOpacity,
+                blurRadius = glass.panelBlur,
                 scaleOpacity = false,
             ),
             modifier = Modifier

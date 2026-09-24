@@ -5,10 +5,8 @@ import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -20,6 +18,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -27,17 +26,18 @@ import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.lerp
 import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.clipPath
+import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.layout.layout
-import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
@@ -131,7 +131,7 @@ private fun ramp(value: Float, start: Float, end: Float) = ((value - start) / (e
  * Draws [content] as [panel], morphing from its button into this element's own
  * bounds: the button's circle grows and its corners ease to [radius], its glass
  * veil gives way to [surface] (a background modifier, such as a glass surface),
- * and [icon] rides the shape's center, fading as the content fades in. Its top
+ * and [icon] (if any; a row has none) rides the shape's center, fading as the content fades in. Its top
  * edge moves with [panel]'s drags, so with [dragToClose] a pull down on the
  * panel (or past the top of its list) folds it back up.
  * Not composed while folded away.
@@ -139,7 +139,7 @@ private fun ramp(value: Float, start: Float, end: Float) = ((value - start) / (e
 @Composable
 internal fun MorphPanel(
     panel: PanelState,
-    icon: ImageVector,
+    icon: ImageVector?,
     surface: Modifier,
     modifier: Modifier = Modifier,
     radius: Dp = 0.dp,
@@ -154,7 +154,7 @@ internal fun MorphPanel(
     val radiusPx = with(density) { radius.toPx() }
     val iconPx = with(density) { IconSize.toPx() }
     // This element's top-left in root coordinates (to bring the button's bounds into
-    // local ones) and its size; a plain holder, read only in layout and draw.
+    // local ones) and its size; a plain holder, read only in placement and draw.
     val placed = remember { floatArrayOf(0f, 0f, 0f, 0f) }
     fun bounds(size: Size): Pair<Rect, Float> {
         val full = Rect(Offset.Zero, size)
@@ -167,7 +167,10 @@ internal fun MorphPanel(
     val dragState = rememberDraggableState { panel.dragBy(it) }
     Box(
         modifier
-            .onGloballyPositioned {
+            // onPlaced, not onGloballyPositioned: it runs before the children are placed and
+            // before anything draws, so even the first frame after composing uses the real
+            // position. Otherwise that frame drew the shape as if at the root's corner - a flash.
+            .onPlaced {
                 val position = it.positionInRoot()
                 placed[0] = position.x
                 placed[1] = position.y
@@ -189,30 +192,54 @@ internal fun MorphPanel(
                 } else {
                     Modifier
                 },
-            ),
+            )
+            // The button's veil, drawn at the in-between bounds (unclipped, so early on it
+            // reaches past this element's edges to where the button is). Worked out at draw
+            // time from the latest position, never ahead of it in measure.
+            .drawBehind {
+                val (rect, corner) = bounds(size)
+                drawRoundRect(
+                    color = veil.copy(alpha = veil.alpha * (1f - ramp(panel.progress, 0f, 0.5f))),
+                    topLeft = rect.topLeft,
+                    size = rect.size,
+                    cornerRadius = CornerRadius(corner),
+                )
+            },
     ) {
-        // The shape itself, laid out at the in-between bounds rather than drawn inside this
-        // element, so early on it can reach past this element's edges to where the button is.
+        // The glass, by contrast, is always laid out at full size and never resizes: the
+        // morph only moves a rounded clip over it, as the Library view options' glass does.
+        // Resizing a blurred surface every frame rebuilds its blur each frame, which flickered.
+        // On the open's overshoot it stretches to the grown bounds instead, since its clip
+        // can't reach past its own edges.
+        // Nothing fades or layers the blur: with a graphicsLayer around it (even just for
+        // the stretch) or a fade on it (even the blur's own alpha), it dropped out about
+        // once a second, showing the page behind unblurred for a frame, even with the
+        // panel at rest (seen in screen recordings). So the clip and the stretch are done
+        // in draw, and the glass shows at full strength inside the window from the start,
+        // taking over from the veil as the window grows.
         Box(
             Modifier
                 .matchParentSize()
-                .layout { measurable, constraints ->
-                    val (rect, _) = bounds(Size(constraints.maxWidth.toFloat(), constraints.maxHeight.toFloat()))
-                    val placeable = measurable.measure(
-                        Constraints.fixed(rect.width.roundToInt().coerceAtLeast(0), rect.height.roundToInt().coerceAtLeast(0)),
-                    )
-                    layout(constraints.maxWidth, constraints.maxHeight) {
-                        placeable.place(rect.left.roundToInt(), rect.top.roundToInt())
+                .drawWithContent {
+                    val (rect, corner) = bounds(size)
+                    if (panel.progress > 1f && size.width > 0f && size.height > 0f) {
+                        // Stretched onto the grown bounds, so the clip is the whole glass.
+                        withTransform({
+                            translate(rect.left, rect.top)
+                            scale(rect.width / size.width, rect.height / size.height, pivot = Offset.Zero)
+                        }) {
+                            clipPath(Path().apply { addRoundRect(RoundRect(Rect(Offset.Zero, size), CornerRadius(corner))) }) {
+                                this@drawWithContent.drawContent()
+                            }
+                        }
+                    } else {
+                        clipPath(Path().apply { addRoundRect(RoundRect(rect, CornerRadius(corner))) }) {
+                            this@drawWithContent.drawContent()
+                        }
                     }
                 }
-                .graphicsLayer {
-                    shape = RoundedCornerShape(bounds(Size(placed[2], placed[3])).second)
-                    clip = true
-                }
-                .drawBehind { drawRect(veil.copy(alpha = veil.alpha * (1f - ramp(panel.progress, 0f, 0.5f)))) },
-        ) {
-            Box(Modifier.fillMaxSize().graphicsLayer { alpha = ramp(panel.progress, 0f, 0.5f) }.then(surface))
-        }
+                .then(surface),
+        )
         // The content stays laid out at full size, revealed through the growing shape.
         Box(
             Modifier.graphicsLayer {
@@ -224,7 +251,7 @@ internal fun MorphPanel(
         ) {
             content()
         }
-        Icon(
+        if (icon != null) Icon(
             imageVector = icon,
             contentDescription = null,
             tint = iconTint,

@@ -4,14 +4,20 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
@@ -47,7 +53,8 @@ private val ContentTopPadding = 16.dp
  * (and the bar) at rest.
  *
  * An optional [overlay] fills the content area above both, without pushing the
- * content down: for a panel that grows out of the bar (it gets the same haze).
+ * content down: for a panel that grows out of the bar or a row (it gets the
+ * same haze, which the page then sets up even without a bar).
  */
 @Composable
 fun TitledPage(
@@ -60,11 +67,13 @@ fun TitledPage(
     val density = LocalDensity.current
     var barHeight by remember { mutableIntStateOf(0) }
     val barHeightDp = with(density) { barHeight.toDp() }
-    val contentHaze = if (bar != null) rememberHazeState() else null
+    val contentHaze = if (bar != null || overlay != null) rememberHazeState() else null
     val fade = if (bar != null) barHeightDp else FadeHeight
+    var titleHeight by remember { mutableIntStateOf(0) }
+    val aboveContent = WindowInsets.statusBars.getTop(density) + titleHeight
 
     Column(modifier = modifier.fillMaxSize().statusBarsPadding()) {
-        title()
+        Box(modifier = Modifier.onSizeChanged { titleHeight = it.height }) { title() }
         Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
             Box(
                 modifier = Modifier
@@ -75,11 +84,34 @@ fun TitledPage(
             ) {
                 content(if (bar != null) barHeightDp + 8.dp else ContentTopPadding)
             }
-            if (bar != null && contentHaze != null) {
-                Box(modifier = Modifier.onSizeChanged { barHeight = it.height }) { bar(contentHaze) }
-                overlay?.invoke(contentHaze)
+            if (contentHaze != null) {
+                if (bar != null) Box(modifier = Modifier.onSizeChanged { barHeight = it.height }) { bar(contentHaze) }
+                if (overlay != null) {
+                    CompositionLocalProvider(LocalAboveContent provides aboveContent) { overlay(contentHaze) }
+                }
             }
         }
+    }
+}
+
+/** Pixels of the page above an [TitledPage] overlay: the status bar and the title. */
+private val LocalAboveContent = compositionLocalOf { 0 }
+
+/**
+ * Dims the page behind a [TitledPage] overlay's menu by [alpha] (read at draw
+ * time): its own area, and up past its top over the title and status bar, so
+ * the whole page darkens together rather than leaving the title lit.
+ */
+@Composable
+fun Modifier.pageScrim(alpha: () -> Float): Modifier {
+    val above = LocalAboveContent.current.toFloat()
+    return drawBehind {
+        drawRect(
+            color = Color.Black,
+            topLeft = Offset(0f, -above),
+            size = Size(size.width, size.height + above),
+            alpha = alpha().coerceIn(0f, 1f),
+        )
     }
 }
 

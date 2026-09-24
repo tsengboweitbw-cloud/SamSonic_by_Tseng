@@ -18,6 +18,10 @@ data class GlassSettings(
     val blurRadius: Dp = ThemeManager.DefaultGlassBlur,
     /** Blur of the album art behind the Now Playing screen. */
     val backdropBlur: Dp = ThemeManager.DefaultBackdropBlur,
+    /** Multiplier over each secondary menu's base alpha (1f = design default). */
+    val panelOpacity: Float = ThemeManager.DefaultPanelOpacity,
+    /** Frosted-glass blur of the secondary menus (Library view options, Now Playing panels). */
+    val panelBlur: Dp = ThemeManager.DefaultPanelBlur,
 )
 
 val LocalGlassSettings = staticCompositionLocalOf { GlassSettings() }

@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -31,57 +30,38 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
-import com.example.samsonic.ui.theme.LocalHazeState
-import com.example.samsonic.ui.theme.GlassAlpha
-import com.example.samsonic.ui.theme.OneUiRadius
+import com.example.samsonic.ui.player.PanelState
 import com.example.samsonic.ui.theme.OneUiSlider
-import com.example.samsonic.ui.theme.glassSurface
 import com.example.samsonic.ui.theme.parseHexColor
 import com.example.samsonic.ui.theme.toHexRgb
+import dev.chrisbanes.haze.HazeState
 import kotlin.math.roundToInt
 
+/**
+ * The Accent color setting's secondary menu ([SettingsMenu]), grown out of its
+ * row like the Theme menu: a preview, a hex field and RGB sliders. Apply saves
+ * the color and folds the menu back; Cancel, back or a tap outside drops it.
+ */
 @Composable
-fun AccentColorPickerDialog(
+internal fun AccentColorMenu(
+    panel: PanelState,
+    haze: HazeState,
     initialColor: Color,
     defaultColor: Color,
-    onDismiss: () -> Unit,
     onConfirm: (Color) -> Unit,
 ) {
-    var workingColor by remember { mutableStateOf(initialColor) }
-    var hexText by remember { mutableStateOf(initialColor.toHexRgb()) }
+    SettingsMenu(panel, haze, title = "Accent Color") {
+        // Inside the menu's content, so every open starts again from the saved color.
+        var workingColor by remember { mutableStateOf(initialColor) }
+        var hexText by remember { mutableStateOf(initialColor.toHexRgb()) }
 
-    fun applyColor(color: Color) {
-        workingColor = color
-        hexText = color.toHexRgb()
-    }
+        fun applyColor(color: Color) {
+            workingColor = color
+            hexText = color.toHexRgb()
+        }
 
-    // Grabbed outside the Dialog: its content lives in a separate window, but
-    // Haze can still sample the main window's hazeSource from there, so
-    // only the panel itself is frosted - the rest of the screen stays sharp.
-    val hazeState = LocalHazeState.current
-
-    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 28.dp)
-                .glassSurface(
-                    shape = RoundedCornerShape(OneUiRadius.Card),
-                    hazeState = hazeState,
-                    tint = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    alpha = GlassAlpha.Sheet,
-                    // Fixed, stronger than the chrome's user-set blur: a modal
-                    // panel must stay readable at any slider setting.
-                    blurRadius = 16.dp,
-                    scaleOpacity = false,
-                )
-                .padding(24.dp),
-        ) {
-            Text(text = "Accent Color", style = MaterialTheme.typography.titleLarge)
-            Spacer(Modifier.height(20.dp))
-
+        Column(Modifier.padding(horizontal = 24.dp)) {
+            Spacer(Modifier.height(8.dp))
             Box(
                 modifier = Modifier
                     .align(Alignment.CenterHorizontally)
@@ -122,9 +102,14 @@ fun AccentColorPickerDialog(
             ) {
                 TextButton(onClick = { applyColor(defaultColor) }) { Text("Reset") }
                 Row {
-                    TextButton(onClick = onDismiss) { Text("Cancel") }
+                    TextButton(onClick = { panel.close() }) { Text("Cancel") }
                     Spacer(Modifier.width(8.dp))
-                    Button(onClick = { onConfirm(workingColor) }) { Text("Apply") }
+                    Button(
+                        onClick = {
+                            onConfirm(workingColor)
+                            panel.close()
+                        },
+                    ) { Text("Apply") }
                 }
             }
         }
