@@ -28,7 +28,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -48,6 +47,7 @@ import com.example.samsonic.playback.LocalPlayerState
 import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.OneUiRow
 import com.example.samsonic.ui.theme.glassSurface
+import com.example.samsonic.ui.theme.outerShadow
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.delay
@@ -247,16 +247,18 @@ private val CardShape = OneUiRow.Shape
  * Frosted glass behind the lifted row that blurs the action panel beneath it, so the
  * action's color glows through. Faded as one layer: the blur paints an opaque base, so
  * thinning only its tint would leave the card solid until it vanished at once.
+ *
+ * Its shadow is only drawn outside the card: an elevation shadow would also lie under
+ * the fading glass and show through it as a light bar across the row.
  */
 @Composable
 private fun LiftedCard(lift: Float, panelHaze: HazeState, modifier: Modifier) {
     Box(
         modifier
-            .shadow(
+            .outerShadow(
                 elevation = 10.dp * lift,
                 shape = CardShape,
-                ambientColor = Color.Black.copy(alpha = 0.3f),
-                spotColor = Color.Black.copy(alpha = 0.3f),
+                color = Color.Black.copy(alpha = 0.2f * lift),
             )
             .graphicsLayer { alpha = lift }
             .glassSurface(
