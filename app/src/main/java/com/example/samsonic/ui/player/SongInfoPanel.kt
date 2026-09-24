@@ -17,15 +17,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.model.Song
 import com.example.samsonic.playback.LocalPlayerState
+import com.example.samsonic.ui.components.pressClickable
 import com.example.samsonic.util.formatDuration
 import com.example.samsonic.util.formatFileSize
 import dev.chrisbanes.haze.HazeState
+
+/** One line of song info; [onClick] opens the page it names (album, artist), if any. */
+private data class Detail(val label: String, val value: String, val onClick: (() -> Unit)? = null)
 
 /** The current song's details, as a [PanelCard] grown out of the info button. */
 @Composable
 internal fun SongInfoPanel(panel: PanelState, haze: HazeState) {
     val song = LocalPlayerState.current.currentSong ?: return
     PanelCard(panel, PanelIcons.Info, title = "Song info", haze = haze) {
+        val links = LocalPlayerLinks.current
+        val albumArtist = rememberAlbumArtist(song)
         SelectionContainer(
             Modifier
                 .fillMaxSize()
@@ -33,42 +39,56 @@ internal fun SongInfoPanel(panel: PanelState, haze: HazeState) {
                 .padding(horizontal = 24.dp),
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                songDetails(song).forEach { (label, value) -> DetailRow(label, value) }
+                songDetails(song, albumArtist, links).forEach { DetailRow(it) }
             }
         }
     }
 }
 
 @Composable
-private fun DetailRow(label: String, value: String) {
+private fun DetailRow(detail: Detail) {
     Row(Modifier.fillMaxWidth()) {
         Text(
-            text = label,
+            text = detail.label,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.width(104.dp),
         )
-        Text(text = value, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
+        // Linked values take the accent color, so they read as tappable.
+        val onClick = detail.onClick
+        Text(
+            text = detail.value,
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (onClick != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier
+                .weight(1f, fill = false)
+                .then(if (onClick != null) Modifier.pressClickable(onClick, pressedScale = 0.95f) else Modifier),
+        )
     }
 }
 
-/** Label and value for each detail the server reported; the rest are left out. */
-private fun songDetails(song: Song): List<Pair<String, String>> = listOfNotNull(
-    "Title" to song.title,
-    "Artist" to song.artistName,
-    song.albumTitle.takeIf { it.isNotBlank() }?.let { "Album" to it },
-    song.trackNumber.takeIf { it > 0 }?.let { track ->
-        "Track" to (song.discNumber?.takeIf { it > 0 }?.let { "Disc $it · $track" } ?: "$track")
+/** Each detail the server reported; the rest are left out. */
+private fun songDetails(song: Song, albumArtist: ArtistLink?, links: PlayerLinks): List<Detail> = listOfNotNull(
+    Detail("Title", song.title),
+    Detail("Artist", song.artistName, song.artistId?.let { id -> { links.openArtist(id) } }),
+    song.albumTitle.takeIf { it.isNotBlank() }?.let { title ->
+        Detail("Album", title, song.albumId?.let { id -> { links.openAlbum(id) } })
     },
-    song.year?.takeIf { it > 0 }?.let { "Year" to "$it" },
-    song.genre?.takeIf { it.isNotBlank() }?.let { "Genre" to it },
-    "Duration" to formatDuration(song.durationSeconds),
-    (song.suffix?.uppercase() ?: song.contentType)?.let { "Format" to it },
-    song.bitRate?.let { "Bit rate" to "$it kbps" },
-    song.samplingRate?.let { "Sample rate" to "%.1f kHz".format(it / 1000f) },
-    song.bitDepth?.let { "Bit depth" to "$it-bit" },
-    song.channelCount?.let { "Channels" to if (it == 1) "Mono" else if (it == 2) "Stereo" else "$it" },
-    song.sizeBytes?.let { "File size" to formatFileSize(it) },
-    song.playCount?.let { "Play count" to "$it" },
-    song.path?.takeIf { it.isNotBlank() }?.let { "Path" to it },
+    albumArtist?.let { artist ->
+        Detail("Album artist", artist.name, artist.id?.let { id -> { links.openArtist(id) } })
+    },
+    song.trackNumber.takeIf { it > 0 }?.let { track ->
+        Detail("Track", song.discNumber?.takeIf { it > 0 }?.let { "Disc $it · $track" } ?: "$track")
+    },
+    song.year?.takeIf { it > 0 }?.let { Detail("Year", "$it") },
+    song.genre?.takeIf { it.isNotBlank() }?.let { Detail("Genre", it) },
+    Detail("Duration", formatDuration(song.durationSeconds)),
+    (song.suffix?.uppercase() ?: song.contentType)?.let { Detail("Format", it) },
+    song.bitRate?.let { Detail("Bit rate", "$it kbps") },
+    song.samplingRate?.let { Detail("Sample rate", "%.1f kHz".format(it / 1000f)) },
+    song.bitDepth?.let { Detail("Bit depth", "$it-bit") },
+    song.channelCount?.let { Detail("Channels", if (it == 1) "Mono" else if (it == 2) "Stereo" else "$it") },
+    song.sizeBytes?.let { Detail("File size", formatFileSize(it)) },
+    song.playCount?.let { Detail("Play count", "$it") },
+    song.path?.takeIf { it.isNotBlank() }?.let { Detail("Path", it) },
 )

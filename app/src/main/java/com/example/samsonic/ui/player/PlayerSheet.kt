@@ -52,16 +52,29 @@ private fun ramp(value: Float, start: Float, end: Float) = ((value - start) / (e
  * over Now Playing; dragging up on an open Now Playing pulls the queue up with the finger.
  *
  * [collapsedBottom] is the gap between the pill and the bottom of the screen.
+ * [onAlbumClick] and [onArtistClick] open those pages from Now Playing, after the sheet folds away.
  */
 @Composable
-fun PlayerSheet(sheet: PlayerSheetState, collapsedBottom: Dp, modifier: Modifier = Modifier) {
+fun PlayerSheet(
+    sheet: PlayerSheetState,
+    collapsedBottom: Dp,
+    onAlbumClick: (albumId: String) -> Unit,
+    onArtistClick: (artistId: String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     val song = LocalPlayerState.current.currentSong
     SideEffect { if (song == null && sheet.isExpanded) sheet.collapse() }
     val morph = remember(sheet) { PlayerMorphState(progress = { sheet.progress }, active = { sheet.isMoving }) }
+    val links = remember(sheet, onAlbumClick, onArtistClick) {
+        PlayerLinks(
+            openAlbum = { sheet.collapse(); onAlbumClick(it) },
+            openArtist = { sheet.collapse(); onArtistClick(it) },
+        )
+    }
 
     AnimatedVisibility(visible = song != null, enter = fadeIn(), exit = fadeOut(), modifier = modifier) {
         if (song == null) return@AnimatedVisibility
-        CompositionLocalProvider(LocalPlayerMorph provides morph) {
+        CompositionLocalProvider(LocalPlayerMorph provides morph, LocalPlayerLinks provides links) {
             BoxWithConstraints(Modifier.fillMaxSize()) {
                 val density = LocalDensity.current
                 val full = Rect(0f, 0f, constraints.maxWidth.toFloat(), constraints.maxHeight.toFloat())

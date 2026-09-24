@@ -49,6 +49,9 @@ data class Song(
     val path: String? = null,
     val playCount: Long? = null,
     val channelCount: Int? = null,
+    // OpenSubsonic only; on other servers the album artist comes from the album.
+    val albumArtistId: String? = null,
+    val albumArtistName: String? = null,
 )
 
 data class Playlist(

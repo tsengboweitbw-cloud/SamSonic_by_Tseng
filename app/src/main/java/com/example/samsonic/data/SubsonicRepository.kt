@@ -310,6 +310,8 @@ class SubsonicRepository(
         path = path,
         playCount = playCount,
         channelCount = channelCount,
+        albumArtistId = albumArtists.firstOrNull()?.id,
+        albumArtistName = displayAlbumArtist?.takeIf { it.isNotBlank() } ?: albumArtists.firstOrNull()?.name,
     )
 
     private fun PlaylistDto.toDomain() = Playlist(

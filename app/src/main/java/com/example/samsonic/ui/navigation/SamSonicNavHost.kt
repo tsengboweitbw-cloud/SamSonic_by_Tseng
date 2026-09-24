@@ -27,6 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -223,9 +224,15 @@ fun SamSonicNavHost() {
             // The player: the mini player's pill, which drags up into Now Playing.
             // Under the nav bar, so the bar can sink away over it as it grows.
             if (showChrome) {
+                // From Now Playing; a page already on top is just revealed, not stacked again.
+                val openFromPlayer = remember(navController) {
+                    { route: String -> if (navController.currentBackStackEntry?.routeWithArgs() != route) navController.navigate(route) }
+                }
                 PlayerSheet(
                     sheet = playerSheet,
                     collapsedBottom = chromeBottomInset + navBarHeight + navBarBottomInset + 8.dp,
+                    onAlbumClick = remember(openFromPlayer) { { openFromPlayer(Routes.album(it)) } },
+                    onArtistClick = remember(openFromPlayer) { { openFromPlayer(Routes.artist(it)) } },
                 )
             }
 
@@ -257,4 +264,10 @@ fun SamSonicNavHost() {
         }
         }
     }
+}
+
+/** This entry's route with its arguments filled in, e.g. "album/42", to compare against a built route. */
+private fun NavBackStackEntry.routeWithArgs(): String? {
+    val pattern = destination.route ?: return null
+    return Regex("""\{(\w+)\}""").replace(pattern) { arguments?.getString(it.groupValues[1]).orEmpty() }
 }

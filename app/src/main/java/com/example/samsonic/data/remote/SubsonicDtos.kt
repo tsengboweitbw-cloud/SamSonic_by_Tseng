@@ -120,7 +120,14 @@ data class SongDto(
     val playCount: Long? = null,
     // OpenSubsonic extension.
     val channelCount: Int? = null,
+    // OpenSubsonic extensions: the album's artist, which core Subsonic leaves
+    // to the album itself (getAlbum).
+    val albumArtists: List<ArtistRefDto> = emptyList(),
+    val displayAlbumArtist: String? = null,
 )
+
+@Serializable
+data class ArtistRefDto(val id: String? = null, val name: String? = null)
 
 @Serializable
 data class SongsDto(val song: List<SongDto> = emptyList())
