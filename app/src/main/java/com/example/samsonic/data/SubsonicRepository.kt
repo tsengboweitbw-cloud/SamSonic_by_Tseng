@@ -178,11 +178,16 @@ class SubsonicRepository(
 
     /**
      * [artist]'s songs: every track of their [albums], album after album, then the
-     * tracks they appear on elsewhere (found by searching their name). With [limit],
-     * albums are fetched only until that many songs are in hand.
+     * tracks they appear on elsewhere ([getSongsBy], or [songsBy] if already fetched).
+     * With [limit], albums are fetched only until that many songs are in hand.
      */
-    suspend fun getArtistSongs(artist: Artist, albums: List<Album>, limit: Int? = null): List<Song> = coroutineScope {
-        val elsewhere = async { runCatching { searchSongsBy(artist) }.getOrDefault(emptyList()) }
+    suspend fun getArtistSongs(
+        artist: Artist,
+        albums: List<Album>,
+        limit: Int? = null,
+        songsBy: List<Song>? = null,
+    ): List<Song> = coroutineScope {
+        val elsewhere = async { songsBy ?: runCatching { getSongsBy(artist) }.getOrDefault(emptyList()) }
         val onAlbums = if (limit == null) {
             getAlbumsSongs(albums)
         } else buildList {
@@ -196,7 +201,7 @@ class SubsonicRepository(
     }
 
     /** Songs whose artist is [artist], from a search for their name (which also matches titles). */
-    private suspend fun searchSongsBy(artist: Artist): List<Song> {
+    suspend fun getSongsBy(artist: Artist): List<Song> {
         val params = authParams() + mapOf(
             "query" to artist.name,
             "artistCount" to "0",
@@ -206,6 +211,21 @@ class SubsonicRepository(
         return requireApi().search3(params).response.searchResult3?.song.orEmpty()
             .filter { it.artistId == artist.id }
             .map { it.toDomain() }
+    }
+
+    /**
+     * Other artists' albums that [artist] sings on: the albums of [songsBy] (their
+     * songs, from [getSongsBy]) that aren't among their own [albums], in first-seen order.
+     * An album that fails to load is left out.
+     */
+    suspend fun getAppearsOn(artist: Artist, albums: List<Album>, songsBy: List<Song>): List<Album> = coroutineScope {
+        val own = albums.mapTo(HashSet()) { it.id }
+        val ids = songsBy.mapNotNull { it.albumId }.distinct().filter { it !in own }
+        val permits = Semaphore(ALBUM_FETCH_CONCURRENCY)
+        ids.map { id -> async { permits.withPermit { runCatching { getAlbum(id).first }.getOrNull() } } }
+            .awaitAll()
+            .filterNotNull()
+            .filter { it.artistId != artist.id }
     }
 
     suspend fun getAlbumList(type: String = "newest", size: Int = 20): List<Album> {

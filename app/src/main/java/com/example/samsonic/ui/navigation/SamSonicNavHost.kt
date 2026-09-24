@@ -27,7 +27,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -53,27 +52,6 @@ import com.example.samsonic.ui.theme.OneUiChrome
 import com.example.samsonic.ui.theme.bottomFade
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
-
-private object Routes {
-    const val LOGIN = "login"
-    const val HOME = "home"
-    const val LIBRARY = "library"
-    const val SEARCH = "search"
-    const val SETTINGS = "settings"
-    const val ARTIST = "artist/{artistId}"
-    const val ARTIST_ALBUMS = "artist/{artistId}/albums"
-    const val ARTIST_SONGS = "artist/{artistId}/songs"
-    const val ALBUM = "album/{albumId}"
-    const val PLAYLIST = "playlist/{playlistId}"
-    const val SHELF = "shelf/{shelfType}"
-
-    fun artist(id: String) = "artist/$id"
-    fun artistAlbums(id: String) = "artist/$id/albums"
-    fun artistSongs(id: String) = "artist/$id/songs"
-    fun album(id: String) = "album/$id"
-    fun playlist(id: String) = "playlist/$id"
-    fun shelf(type: String) = "shelf/$type"
-}
 
 data class BottomDestination(val route: String, val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector)
 
@@ -207,6 +185,7 @@ fun SamSonicNavHost() {
                         onAlbumClick = { navController.navigate(Routes.album(it.id)) },
                         onAllAlbumsClick = { navController.navigate(Routes.artistAlbums(artistId)) },
                         onAllSongsClick = { navController.navigate(Routes.artistSongs(artistId)) },
+                        onAppearsOnClick = { navController.navigate(Routes.artistAppearsOn(artistId)) },
                         contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve,
                     )
                 }
@@ -214,6 +193,16 @@ fun SamSonicNavHost() {
                     val artistId = entry.arguments?.getString("artistId") ?: return@screen
                     ArtistAlbumsScreen(
                         artistId = artistId,
+                        onBack = { navController.popBackStack() },
+                        onAlbumClick = { navController.navigate(Routes.album(it.id)) },
+                        contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve,
+                    )
+                }
+                screen(Routes.ARTIST_APPEARS_ON) { entry ->
+                    val artistId = entry.arguments?.getString("artistId") ?: return@screen
+                    ArtistAlbumsScreen(
+                        artistId = artistId,
+                        appearsOn = true,
                         onBack = { navController.popBackStack() },
                         onAlbumClick = { navController.navigate(Routes.album(it.id)) },
                         contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve,
@@ -289,10 +278,4 @@ fun SamSonicNavHost() {
         }
         }
     }
-}
-
-/** This entry's route with its arguments filled in, e.g. "album/42", to compare against a built route. */
-private fun NavBackStackEntry.routeWithArgs(): String? {
-    val pattern = destination.route ?: return null
-    return Regex("""\{(\w+)\}""").replace(pattern) { arguments?.getString(it.groupValues[1]).orEmpty() }
 }

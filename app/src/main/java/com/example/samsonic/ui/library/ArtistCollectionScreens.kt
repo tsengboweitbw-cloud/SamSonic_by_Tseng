@@ -39,8 +39,9 @@ import com.example.samsonic.ui.theme.scrollTopFade
 import dev.chrisbanes.haze.rememberHazeState
 
 /**
- * All of an artist's albums, opened from the Albums section of their page. Laid
- * out like the Library's Albums tab, in the grid or list the user picked there.
+ * All of an artist's albums, opened from the Albums section of their page, or with
+ * [appearsOn] the other artists' albums they sing on, from Appears on. Laid out
+ * like the Library's Albums tab, in the grid or list the user picked there.
  */
 @Composable
 fun ArtistAlbumsScreen(
@@ -48,12 +49,16 @@ fun ArtistAlbumsScreen(
     onBack: () -> Unit,
     onAlbumClick: (Album) -> Unit,
     modifier: Modifier = Modifier,
+    appearsOn: Boolean = false,
     contentPaddingBottom: Dp = 0.dp,
 ) {
     val container = LocalAppContainer.current
     val repository = container.repository
     val layouts by container.libraryLayoutManager.layouts.collectAsStateWithLifecycle()
-    val state = rememberScreenLoad(artistId, errorMessage = "Couldn't load albums") { repository.getArtist(artistId) }
+    val state = rememberScreenLoad(artistId, appearsOn, errorMessage = "Couldn't load albums") {
+        val (artist, albums) = repository.getArtist(artistId)
+        artist to if (appearsOn) repository.getAppearsOn(artist, albums, repository.getSongsBy(artist)) else albums
+    }
 
     val gridState = rememberLazyGridState()
     val backHaze = rememberHazeState()
@@ -68,7 +73,7 @@ fun ArtistAlbumsScreen(
                 card = { album, size -> AlbumCard(album, onClick = { onAlbumClick(album) }, artSize = size) },
                 row = { album -> AlbumRow(album, onClick = { onAlbumClick(album) }) },
                 header = {
-                    ArtistListHeader(artistName = artist.name, title = "Albums") {
+                    ArtistListHeader(artistName = artist.name, title = if (appearsOn) "Appears on" else "Albums") {
                         PlayShuffleButtons(key = albums, loadSongs = { repository.getAlbumsSongs(albums) })
                     }
                 },

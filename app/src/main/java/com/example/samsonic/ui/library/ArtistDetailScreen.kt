@@ -44,15 +44,18 @@ import com.example.samsonic.ui.components.SongRow
 import com.example.samsonic.ui.components.backButtonHazeSource
 import com.example.samsonic.ui.theme.scrollTopFade
 import dev.chrisbanes.haze.rememberHazeState
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 
 /** How many of the artist's songs their page lists; the section's title opens them all. */
-private const val SONGS_PREVIEW = 20
+private const val SONGS_PREVIEW = 10
 
 private data class ArtistDetail(
     val artist: Artist,
     val albums: List<Album>,
     val topSongs: List<Song>,
     val songs: List<Song>,
+    val appearsOn: List<Album>,
 )
 
 @Composable
@@ -62,6 +65,7 @@ fun ArtistDetailScreen(
     onAlbumClick: (Album) -> Unit,
     onAllAlbumsClick: () -> Unit,
     onAllSongsClick: () -> Unit,
+    onAppearsOnClick: () -> Unit,
     modifier: Modifier = Modifier,
     contentPaddingBottom: Dp = 0.dp,
 ) {
@@ -70,16 +74,23 @@ fun ArtistDetailScreen(
 
     val state = rememberScreenLoad(artistId, errorMessage = "Couldn't load artist") {
         val (artist, albums) = repository.getArtist(artistId)
-        val topSongs = runCatching { repository.getTopSongs(artist.name) }.getOrDefault(emptyList())
-        val songs = runCatching { repository.getArtistSongs(artist, albums, limit = SONGS_PREVIEW) }.getOrDefault(emptyList())
-        ArtistDetail(artist, albums, topSongs, songs)
+        coroutineScope {
+            val topSongs = async { runCatching { repository.getTopSongs(artist.name) }.getOrDefault(emptyList()) }
+            // One search for their songs feeds both the Songs and the Appears on sections.
+            val songsBy = runCatching { repository.getSongsBy(artist) }.getOrDefault(emptyList())
+            val songs = async {
+                runCatching { repository.getArtistSongs(artist, albums, SONGS_PREVIEW, songsBy) }.getOrDefault(emptyList())
+            }
+            val appearsOn = async { runCatching { repository.getAppearsOn(artist, albums, songsBy) }.getOrDefault(emptyList()) }
+            ArtistDetail(artist, albums, topSongs.await(), songs.await(), appearsOn.await())
+        }
     }
 
     val listState = rememberLazyListState()
     val backHaze = rememberHazeState()
     Box(modifier = modifier.fillMaxSize().statusBarsPadding()) {
         StateContent(state = state, modifier = Modifier.fillMaxSize()) { detail ->
-            val (artist, albums, topSongs, songs) = detail
+            val (artist, albums, topSongs, songs, appearsOn) = detail
             LazyColumn(
                 modifier = Modifier.fillMaxSize().scrollTopFade(listState).backButtonHazeSource(backHaze),
                 state = listState,
@@ -107,6 +118,17 @@ fun ArtistDetailScreen(
                     }
                 }
                 songSection("songs", "Songs", songs, player, onTitleClick = onAllSongsClick)
+                if (appearsOn.isNotEmpty()) {
+                    item(key = "appearsOn") {
+                        Column {
+                            Spacer(Modifier.height(16.dp))
+                            SectionHeader(title = "Appears on", onTitleClick = onAppearsOnClick)
+                            HorizontalCarousel(items = appearsOn, key = { it.id }) { album ->
+                                AlbumCard(album = album, onClick = { onAlbumClick(album) })
+                            }
+                        }
+                    }
+                }
                 item(key = "end") { Spacer(Modifier.height(24.dp)) }
             }
         }
