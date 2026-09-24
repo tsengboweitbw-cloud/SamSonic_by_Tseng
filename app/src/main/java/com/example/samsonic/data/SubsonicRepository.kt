@@ -317,7 +317,7 @@ class SubsonicRepository(
         requireApi().unstar(authParams() + ("id" to id))
     }
 
-    suspend fun scrobble(id: String, submission: Boolean) {
+    override suspend fun scrobble(id: String, submission: Boolean) {
         requireApi().scrobble(authParams() + mapOf("id" to id, "submission" to submission.toString()))
     }
 

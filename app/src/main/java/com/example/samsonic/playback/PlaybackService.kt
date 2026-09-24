@@ -27,10 +27,12 @@ import com.google.common.util.concurrent.ListenableFuture
  */
 class PlaybackService : MediaSessionService() {
     private var mediaSession: MediaSession? = null
+    private var scrobbler: Scrobbler? = null
 
     override fun onCreate() {
         super.onCreate()
-        val okHttpClient = (application as SamSonicApplication).container.okHttpClient
+        val container = (application as SamSonicApplication).container
+        val okHttpClient = container.okHttpClient
         val dataSourceFactory = DefaultDataSource.Factory(
             this,
             OkHttpDataSource.Factory(okHttpClient),
@@ -53,6 +55,8 @@ class PlaybackService : MediaSessionService() {
                 if (shuffleModeEnabled) player.reshuffleFromCurrent()
             }
         })
+        // Application-scoped, so a scrobble sent just before the service stops still goes out.
+        scrobbler = Scrobbler(player, { container.repository }, container.applicationScope)
 
         // One UI builds its status bar music chip and Now Bar card only for a media
         // notification that opens something when tapped, so the session needs an activity.
@@ -100,6 +104,8 @@ class PlaybackService : MediaSessionService() {
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = mediaSession
 
     override fun onDestroy() {
+        scrobbler?.release()
+        scrobbler = null
         mediaSession?.run {
             player.release()
             release()
