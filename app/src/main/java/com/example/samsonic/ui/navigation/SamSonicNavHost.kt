@@ -176,9 +176,14 @@ fun SamSonicNavHost() {
             // The player: the mini player's pill, which drags up into Now Playing.
             // Under the nav bar, so the bar can sink away over it as it grows.
             if (showChrome) {
-                // From Now Playing; a page already on top is just revealed, not stacked again.
-                val openFromPlayer = remember(navController) {
-                    { route: String -> if (navController.currentBackStackEntry?.routeWithArgs() != route) navController.navigate(route) }
+                // From Now Playing, always under the Library tab: switched to first (with
+                // whatever it had open), so the nav bar and back lead through Library. A
+                // page already on top there is just revealed, not stacked again.
+                val openFromPlayer = remember(navController, currentTab) {
+                    { route: String ->
+                        if (currentTab != Routes.LIBRARY) navController.selectTab(Routes.LIBRARY, currentTab)
+                        if (navController.currentBackStackEntry?.routeWithArgs() != route) navController.navigate(route)
+                    }
                 }
                 PlayerSheet(
                     sheet = playerSheet,
