@@ -1,5 +1,10 @@
 package com.example.samsonic.ui.library
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.QueueMusic
+import androidx.compose.material.icons.filled.Album
+import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.MutableTransitionState
 import androidx.compose.animation.fadeIn
@@ -54,12 +59,18 @@ import com.example.samsonic.ui.components.AlbumRow
 import com.example.samsonic.ui.components.ArtistCard
 import com.example.samsonic.ui.components.ArtistRow
 import com.example.samsonic.ui.components.GlassTabBar
-import com.example.samsonic.ui.components.GlassTabBarHeight
+import com.example.samsonic.ui.components.GlassTabBarSize
 import com.example.samsonic.ui.components.PlaylistCard
 import com.example.samsonic.ui.components.PlaylistRow
 import kotlinx.coroutines.launch
 
 private val tabs = listOf("Artists", "Albums", "Playlists", "Genres")
+private val tabIcons = listOf(
+    Icons.Filled.Person,
+    Icons.Filled.Album,
+    Icons.AutoMirrored.Filled.QueueMusic,
+    Icons.Filled.Category,
+)
 
 /** The tab's user-adjustable view, by pager page; Genres (null) is always a list. */
 private fun sectionOf(page: Int): LibrarySection? = LibrarySection.entries.getOrNull(page)
@@ -158,7 +169,7 @@ fun LibraryScreen(
         // The bar slot only reserves the pill's height (content padding and
         // fade); the pill itself is drawn by the overlay, which can grow it
         // into the view options panel without pushing the content down.
-        bar = { Spacer(Modifier.height(GlassTabBarHeight)) },
+        bar = { Spacer(Modifier.height(GlassTabBarSize.Chrome.height)) },
         overlay = { hazeState ->
             LibraryTabsPanel(
                 state = viewOptions,
@@ -177,6 +188,10 @@ fun LibraryScreen(
                         // Faded out under the open panel: taps there must not switch tabs.
                         enabled = !viewOptions.targetState,
                         glass = false,
+                        // Sized like the floating nav bar, so the two pills match.
+                        barSize = GlassTabBarSize.Chrome,
+                        // Icons like the nav bar: the label shows only on the selected tab.
+                        icons = tabIcons,
                     )
                 },
             )

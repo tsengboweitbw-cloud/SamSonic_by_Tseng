@@ -26,32 +26,37 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.ui.theme.GlassAlpha
+import com.example.samsonic.ui.theme.OneUiChrome
 import com.example.samsonic.ui.theme.OneUiRadius
 import com.example.samsonic.ui.theme.glassSurface
 import dev.chrisbanes.haze.HazeState
-import kotlin.math.abs
-
-private val BarPadding = 6.dp
-/** Height of a [GlassTabBar], for callers reserving its space. */
-val GlassTabBarHeight = 56.dp
-
-// Same slightly underdamped glide as the floating nav bar's indicator.
-private val IndicatorSpring = spring<Float>(dampingRatio = 0.5f, stiffness = Spring.StiffnessMediumLow)
 
 /**
- * A frosted-glass pill of text tabs, styled after the floating nav bar: one
- * shared indicator pill glides between equal-width tabs, the selected label
- * takes the accent color, and taps give a soft press-scale instead of a ripple.
+ * How big a [GlassTabBar] is, and how it moves. [Chrome] matches the floating
+ * nav bar exactly (height, indicator inset, label size, and the tab under the
+ * indicator widening as it passes), for a tab pill that sits on the page as
+ * chrome; [Compact] keeps equal-width tabs, for pickers inside panels.
+ */
+enum class GlassTabBarSize(val height: Dp, internal val padding: Dp, internal val selectedExtraWeight: Float) {
+    Compact(56.dp, 6.dp, 0f),
+    Chrome(OneUiChrome.BarHeight, 8.dp, SelectedTabExtraWeight),
+}
+
+/**
+ * A frosted-glass pill of tabs, styled after the floating nav bar: one shared
+ * indicator pill glides between the tabs (see [GlassTabBarSize]), and taps
+ * give a soft press-scale instead of a ripple. With [icons], each tab is the
+ * nav bar's own [IconLabelTab] (icon only, label sliding out when selected);
+ * without, the tabs are text and the selected label takes the accent color.
  */
 @Composable
 fun GlassTabBar(
@@ -69,43 +74,52 @@ fun GlassTabBar(
     // False draws only the tabs and indicator, for a caller that supplies
     // its own glass pill (so the pill can stay put while its tabs swap).
     glass: Boolean = true,
+    barSize: GlassTabBarSize = GlassTabBarSize.Compact,
+    // One per label, in order.
+    icons: List<ImageVector>? = null,
 ) {
     val animated = remember { Animatable(selectedIndex.toFloat()) }
     LaunchedEffect(selectedIndex) {
-        animated.animateTo(selectedIndex.toFloat(), IndicatorSpring)
+        animated.animateTo(selectedIndex.toFloat(), TabIndicatorSpring)
     }
     val count = labels.size
     val p = (position ?: animated.value).coerceIn(0f, (count - 1).coerceAtLeast(0).toFloat())
+    val weights = tabWeights(count, p, barSize.selectedExtraWeight)
     val indicatorColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f)
 
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .height(GlassTabBarHeight)
+            .height(barSize.height)
             .then(if (glass) Modifier.glassTabPill(hazeState) else Modifier)
-            .drawBehind {
-                if (count == 0) return@drawBehind
-                val inset = BarPadding.toPx()
-                val unit = (size.width - inset * 2) / count
-                val height = size.height - inset * 2
-                drawRoundRect(
-                    color = indicatorColor,
-                    topLeft = Offset(inset + p * unit, inset),
-                    size = Size(unit, height),
-                    cornerRadius = CornerRadius(height / 2),
-                )
-            }
-            .padding(horizontal = BarPadding),
+            .drawBehind { drawTabIndicator(weights, p, barSize.padding.toPx(), indicatorColor) }
+            .padding(horizontal = barSize.padding),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         labels.forEachIndexed { index, label ->
-            GlassTab(
-                label = label,
-                selected = index == selectedIndex,
-                emphasis = (1f - abs(index - p)).coerceIn(0f, 1f),
-                enabled = enabled,
-                onClick = { onSelect(index) },
-            )
+            val icon = icons?.getOrNull(index)
+            if (icon != null) {
+                IconLabelTab(
+                    icon = icon,
+                    label = label,
+                    selected = index == selectedIndex,
+                    emphasis = tabProximity(index, p),
+                    weight = weights[index],
+                    verticalPadding = barSize.padding,
+                    enabled = enabled,
+                    onClick = { onSelect(index) },
+                )
+            } else {
+                GlassTab(
+                    label = label,
+                    selected = index == selectedIndex,
+                    emphasis = tabProximity(index, p),
+                    weight = weights[index],
+                    enabled = enabled,
+                    size = barSize,
+                    onClick = { onSelect(index) },
+                )
+            }
         }
     }
 }
@@ -124,7 +138,9 @@ private fun RowScope.GlassTab(
     label: String,
     selected: Boolean,
     emphasis: Float,
+    weight: Float,
     enabled: Boolean,
+    size: GlassTabBarSize,
     onClick: () -> Unit,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -144,9 +160,9 @@ private fun RowScope.GlassTab(
 
     Row(
         modifier = Modifier
-            .weight(1f)
+            .weight(weight)
             .fillMaxHeight()
-            .padding(vertical = BarPadding)
+            .padding(vertical = size.padding)
             .clip(RoundedCornerShape(OneUiRadius.Pill))
             .drawBehind { if (pressGlow > 0f) drawRect(glowColor, alpha = pressGlow) }
             // No ripple: One UI answers a tap with a soft shrink-and-glow.
@@ -168,7 +184,7 @@ private fun RowScope.GlassTab(
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.titleSmall,
+            style = if (size == GlassTabBarSize.Chrome) MaterialTheme.typography.titleMedium else MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.SemiBold,
             color = color,
             maxLines = 1,

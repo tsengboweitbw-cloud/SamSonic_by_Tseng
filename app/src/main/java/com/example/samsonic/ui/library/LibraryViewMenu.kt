@@ -163,7 +163,8 @@ internal fun LibraryTabsPanel(
         // gradient rebuild each frame, and the background flickered.
         Box(
             modifier = Modifier
-                .padding(horizontal = 20.dp)
+                // Same side margins as the floating nav bar.
+                .padding(horizontal = 16.dp)
                 .fillMaxWidth()
                 // The window stays between the pill and the full glass, so neither overshoot
                 // can show through it. Open's stretches the whole panel down from the top;
@@ -182,7 +183,9 @@ internal fun LibraryTabsPanel(
                     }
                 }
                 .drawWithContent {
-                    val radius = cornerRadius.toPx()
+                    // A full capsule while closed, like the nav bar, easing to the
+                    // panel's card corners as it opens.
+                    val radius = lerp(pillHeight[0] / 2f, cornerRadius.toPx(), progress.coerceIn(0f, 1f))
                     val windowHeight = lerp(pillHeight[0].toFloat(), size.height, progress)
                         .coerceIn(pillHeight[0].toFloat().coerceAtMost(size.height), size.height)
                     val window = RoundRect(0f, 0f, size.width, windowHeight, CornerRadius(radius))
