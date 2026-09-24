@@ -1,0 +1,164 @@
+package com.example.samsonic.ui.settings
+
+import android.net.ConnectivityManager
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.PhoneAndroid
+import androidx.compose.material.icons.filled.SdCard
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.samsonic.data.CoverArtPrefetcher
+import com.example.samsonic.data.ImageCacheSettings
+import com.example.samsonic.data.PrefetchState
+import com.example.samsonic.ui.player.PanelState
+import dev.chrisbanes.haze.HazeState
+
+/** Where the cover art cache lives: the phone's storage or an SD card, each with its free space. */
+@Composable
+internal fun CacheLocationMenu(panel: PanelState, haze: HazeState, settings: ImageCacheSettings) {
+    SettingsMenu(panel, haze, title = "Cache location") {
+        val current by settings.locationId.collectAsStateWithLifecycle()
+        // Composed afresh at every open, so a card put in since shows up.
+        val locations = remember { settings.locations() }
+        locations.forEach { location ->
+            MenuOption(
+                icon = if (location.isInternal) Icons.Filled.PhoneAndroid else Icons.Filled.SdCard,
+                label = location.label,
+                supporting = "${ImageCacheSettings.usageLabel(location.freeBytes)} free",
+                selected = location.id == current,
+                onClick = {
+                    settings.setLocation(location.id)
+                    panel.close()
+                },
+            )
+        }
+        MenuNote(
+            if (locations.size == 1) {
+                "No SD card found. Put one in to keep the cache there."
+            } else {
+                "Moving the cache starts it empty; the old one is deleted the next time SamSonic starts."
+            },
+        )
+    }
+}
+
+/**
+ * Asks before caching every cover, spelling out that it takes storage and data
+ * (and saying so louder on a metered network); [onConfirm] starts it.
+ */
+@Composable
+internal fun CacheAllMenu(panel: PanelState, haze: HazeState, settings: ImageCacheSettings, onConfirm: () -> Unit) {
+    SettingsMenu(panel, haze, title = "Cache all album art?") {
+        val context = LocalContext.current
+        val metered = remember {
+            context.getSystemService(ConnectivityManager::class.java)?.isActiveNetworkMetered ?: false
+        }
+        val limit = ImageCacheSettings.label(settings.activeMaxSizeBytes)
+        Column(Modifier.padding(horizontal = 24.dp)) {
+            Text(
+                text = "This downloads the art of every album, song, artist and playlist on the server, " +
+                    "at two sizes. On a big library that can use several GB of storage and as much mobile data.",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            Spacer(Modifier.height(12.dp))
+            Text(
+                text = "The cache holds up to $limit; past that, the covers used longest ago make room for new ones.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            if (metered) {
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = "You're on mobile data right now. Connect to Wi-Fi first if your data plan is limited.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+            Spacer(Modifier.height(20.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                TextButton(onClick = { panel.close() }) { Text("Cancel") }
+                Spacer(Modifier.width(8.dp))
+                Button(
+                    onClick = {
+                        onConfirm()
+                        panel.close()
+                    },
+                ) { Text("Cache all") }
+            }
+        }
+    }
+}
+
+/**
+ * Asks before emptying the cover art cache, saying how much it frees and that the
+ * covers download again as they're shown. A run of [prefetcher] stops too, or it
+ * would carry on filling the cache straight back up.
+ */
+@Composable
+internal fun ClearCacheMenu(panel: PanelState, haze: HazeState, usage: CacheUsage, prefetcher: CoverArtPrefetcher) {
+    SettingsMenu(panel, haze, title = "Clear album art cache?") {
+        val prefetch by prefetcher.state.collectAsStateWithLifecycle()
+        val caching = prefetch is PrefetchState.Gathering || prefetch is PrefetchState.Running
+        val used = usage.usedBytes?.let(ImageCacheSettings::usageLabel)
+        Column(Modifier.padding(horizontal = 24.dp)) {
+            Text(
+                text = "This deletes ${used ?: "all"} of saved covers. They download again as you browse, " +
+                    "which uses data, and may load slower until they're back.",
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            if (caching) {
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    text = "Caching all album art is still running and will stop.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Spacer(Modifier.height(20.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                TextButton(onClick = { panel.close() }) { Text("Cancel") }
+                Spacer(Modifier.width(8.dp))
+                Button(
+                    onClick = {
+                        if (caching) prefetcher.cancel()
+                        usage.clear()
+                        panel.close()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.error,
+                        contentColor = MaterialTheme.colorScheme.onError,
+                    ),
+                ) { Text("Clear") }
+            }
+        }
+    }
+}
+
+@Composable
+private fun MenuNote(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 12.dp),
+    )
+}

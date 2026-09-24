@@ -97,6 +97,9 @@ internal fun SliderRow(
     valueRange: ClosedFloatingPointRange<Float>,
     onValueChange: (Float) -> Unit,
     onValueChangeFinished: (() -> Unit)? = null,
+    steps: Int = 0,
+    // A note under the slider, e.g. when the value only applies later.
+    supportingText: String? = null,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -130,7 +133,16 @@ internal fun SliderRow(
                 onValueChange = onValueChange,
                 onValueChangeFinished = onValueChangeFinished,
                 valueRange = valueRange,
+                steps = steps,
                 modifier = Modifier.fillMaxWidth(),
+            )
+        }
+        if (supportingText != null) {
+            Text(
+                text = supportingText,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 10.dp),
             )
         }
     }

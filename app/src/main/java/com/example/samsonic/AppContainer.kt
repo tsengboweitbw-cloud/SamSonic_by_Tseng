@@ -2,6 +2,8 @@ package com.example.samsonic
 
 import android.content.Context
 import androidx.compose.runtime.compositionLocalOf
+import com.example.samsonic.data.CoverArtPrefetcher
+import com.example.samsonic.data.ImageCacheSettings
 import com.example.samsonic.data.MusicLibrary
 import com.example.samsonic.data.MusicSources
 import com.example.samsonic.data.SessionManager
@@ -43,7 +45,14 @@ class AppContainer(context: Context) {
 
     val libraryLayoutManager = LibraryLayoutManager(appContext)
 
-    val sources = MusicSources(sessionManager, SubsonicRepository(okHttpClient), DeviceLibrary(appContext))
+    val imageCacheSettings = ImageCacheSettings(appContext)
+
+    private val subsonic = SubsonicRepository(okHttpClient)
+
+    val sources = MusicSources(sessionManager, subsonic, DeviceLibrary(appContext))
+
+    /** Caches every cover of the signed-in server; the music on this phone has its art on hand. */
+    val coverArtPrefetcher = CoverArtPrefetcher(appContext, subsonic, applicationScope)
 
     /** The active source's library. Read it where it's used rather than holding on to it: it changes with the source. */
     val repository: MusicLibrary get() = sources.library
@@ -55,6 +64,10 @@ class AppContainer(context: Context) {
     init {
         // What's playing belongs to the library just left.
         applicationScope.launch { sources.active.drop(1).collect { playerState.stopAndClearQueue() } }
+        // So are the covers being cached.
+        applicationScope.launch { sources.active.drop(1).collect { coverArtPrefetcher.cancel() } }
+        // A cache left behind by moving it to or from an SD card.
+        applicationScope.launch(Dispatchers.IO) { imageCacheSettings.deleteUnusedCaches() }
     }
 }
 

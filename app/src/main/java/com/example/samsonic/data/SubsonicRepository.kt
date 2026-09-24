@@ -263,6 +263,10 @@ class SubsonicRepository(
         return requireApi().getAlbumList2(params).response.albumList2?.album.orEmpty().map { it.toDomain() }
     }
 
+    /** Every album on the server, A to Z. */
+    suspend fun getAllAlbums(): List<Album> =
+        allAlbums(mapOf("type" to "alphabeticalByName")).map { it.toDomain() }
+
     override suspend fun getPlaylists(): List<Playlist> {
         return requireApi().getPlaylists(authParams()).response.playlists?.playlist.orEmpty().map { it.toDomain() }
     }
@@ -333,7 +337,8 @@ class SubsonicRepository(
 
     override fun coverArtUrl(coverArt: String?, size: Int): String? {
         if (coverArt.isNullOrBlank()) return null
-        return buildUrl("rest/getCoverArt.view", mapOf("id" to coverArt, "size" to size.toString()))
+        val bucket = CoverArtSizes.bucket(size)
+        return buildUrl("rest/getCoverArt.view", mapOf("id" to coverArt, "size" to bucket.toString()))
     }
 
     private fun buildUrl(path: String, extra: Map<String, String>): String {

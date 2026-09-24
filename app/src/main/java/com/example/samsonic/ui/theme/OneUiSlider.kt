@@ -41,6 +41,8 @@ fun OneUiSlider(
     onValueChange: (Float) -> Unit,
     modifier: Modifier = Modifier,
     valueRange: ClosedFloatingPointRange<Float> = 0f..1f,
+    // Snaps to this many stops between the ends (no tick marks are drawn).
+    steps: Int = 0,
     onValueChangeFinished: (() -> Unit)? = null,
     // Applied to the drawn line only (not the touch area), e.g. to morph it as a shared element.
     trackModifier: Modifier = Modifier,
@@ -61,6 +63,7 @@ fun OneUiSlider(
         onValueChange = onValueChange,
         onValueChangeFinished = onValueChangeFinished,
         valueRange = valueRange,
+        steps = steps,
         modifier = modifier,
         interactionSource = interactionSource,
         colors = SliderDefaults.colors(

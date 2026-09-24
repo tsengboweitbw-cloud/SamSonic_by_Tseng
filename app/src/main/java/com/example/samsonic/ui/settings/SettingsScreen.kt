@@ -34,6 +34,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.LocalAppContainer
+import com.example.samsonic.data.ActiveSource
 import com.example.samsonic.data.ThemeManager
 import com.example.samsonic.playback.LocalPlayerState
 import com.example.samsonic.ui.player.PanelState
@@ -58,6 +59,11 @@ fun SettingsScreen(
     val scope = rememberCoroutineScope()
     val themeMenu = remember { PanelState(scope) }
     val accentMenu = remember { PanelState(scope) }
+    val cacheLocationMenu = remember { PanelState(scope) }
+    val cacheAllMenu = remember { PanelState(scope) }
+    val clearCacheMenu = remember { PanelState(scope) }
+    val cacheUsage = rememberCacheUsage()
+    val source by container.sources.active.collectAsStateWithLifecycle()
 
     // A nav bar tab like Search and Library, so the same fixed large title and no back button.
     TitledPage(
@@ -80,6 +86,9 @@ fun SettingsScreen(
                 defaultColor = ThemeManager.DefaultAccent,
                 onConfirm = container.themeManager::setAccentColor,
             )
+            CacheLocationMenu(cacheLocationMenu, haze, container.imageCacheSettings)
+            CacheAllMenu(cacheAllMenu, haze, container.imageCacheSettings, onConfirm = container.coverArtPrefetcher::start)
+            ClearCacheMenu(clearCacheMenu, haze, cacheUsage, container.coverArtPrefetcher)
         },
     ) { topPadding ->
         LazyColumn(
@@ -144,6 +153,22 @@ fun SettingsScreen(
                 }
             }
 
+            item { GroupLabel("Storage") }
+            item {
+                SettingsCard {
+                    ImageCacheRows(
+                        settings = container.imageCacheSettings,
+                        prefetcher = container.coverArtPrefetcher,
+                        locationMenu = cacheLocationMenu,
+                        cacheAllMenu = cacheAllMenu,
+                        usage = cacheUsage,
+                        clearMenu = clearCacheMenu,
+                        // The music on this phone has its art on hand already.
+                        canCacheAll = source is ActiveSource.Server,
+                    )
+                }
+            }
+
             item { GroupLabel("About") }
             item {
                 SettingsCard {
@@ -166,7 +191,7 @@ private fun GroupLabel(text: String) {
 }
 
 @Composable
-private fun NavRow(
+internal fun NavRow(
     icon: ImageVector,
     title: String,
     value: String,
