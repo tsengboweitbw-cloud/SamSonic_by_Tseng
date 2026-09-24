@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.samsonic.BuildConfig
 import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.data.ActiveSource
 import com.example.samsonic.data.ThemeManager
@@ -175,7 +176,7 @@ fun SettingsScreen(
             item { GroupLabel("About") }
             item {
                 SettingsCard {
-                    NavRow(icon = Icons.Filled.Info, title = "SamSonic", value = "v0.2.0 • Navidrome/Subsonic", onClick = {})
+                    NavRow(icon = Icons.Filled.Info, title = "SamSonic", value = "v${BuildConfig.VERSION_NAME} • Navidrome/Subsonic", onClick = {})
                 }
                 Spacer(Modifier.height(8.dp))
             }
