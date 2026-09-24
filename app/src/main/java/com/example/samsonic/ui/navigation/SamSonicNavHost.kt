@@ -23,6 +23,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -47,11 +48,13 @@ import com.example.samsonic.ui.library.LibraryScreen
 import com.example.samsonic.ui.player.PlayerSheet
 import com.example.samsonic.ui.player.rememberPlayerSheetState
 import com.example.samsonic.ui.search.SearchScreen
+import com.example.samsonic.ui.search.SearchSession
 import com.example.samsonic.ui.settings.SettingsScreen
 import com.example.samsonic.ui.theme.LocalHazeState
 import com.example.samsonic.ui.theme.OneUiChrome
 import com.example.samsonic.ui.theme.bottomFade
 import dev.chrisbanes.haze.hazeSource
+import kotlinx.coroutines.delay
 import dev.chrisbanes.haze.rememberHazeState
 
 data class BottomDestination(val route: String, val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector)
@@ -91,6 +94,16 @@ fun SamSonicNavHost() {
     val hazeState = rememberHazeState()
     val playerSheet = rememberPlayerSheetState()
     val artTransitions = remember { ArtTransitions() }
+    val searchSession = remember { SearchSession() }
+    // A new search each time Search is left for another tab and come back to; a page
+    // opened from the results stays under Search, so returning from it keeps the query.
+    // Cleared once Search has faded out, so it doesn't empty on the way out.
+    LaunchedEffect(currentTab) {
+        if (currentTab != Routes.SEARCH && searchSession.query.isNotEmpty()) {
+            delay(500)
+            searchSession.clear()
+        }
+    }
     val navBarHeight = OneUiChrome.BarHeight
     val navBarBottomInset = 16.dp
 
@@ -155,6 +168,7 @@ fun SamSonicNavHost() {
                 }
                 screen(Routes.SEARCH) {
                     SearchScreen(
+                        session = searchSession,
                         onArtistClick = { navController.navigate(Routes.artist(it.id)) },
                         onAlbumClick = { navController.navigate(Routes.album(it.id)) },
                         contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve,

@@ -20,11 +20,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.produceState
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -33,7 +29,6 @@ import androidx.compose.ui.unit.dp
 import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.model.Album
 import com.example.samsonic.model.Artist
-import com.example.samsonic.model.SearchResults
 import com.example.samsonic.playback.LocalPlayerState
 import com.example.samsonic.ui.common.TitledPage
 import com.example.samsonic.ui.components.AlbumCard
@@ -53,30 +48,34 @@ private fun LazyListState.isScrolled(): Boolean = firstVisibleItemIndex > 0 || f
 
 @Composable
 fun SearchScreen(
+    session: SearchSession,
     onArtistClick: (Artist) -> Unit,
     onAlbumClick: (Album) -> Unit,
     modifier: Modifier = Modifier,
     contentPaddingBottom: Dp = 0.dp,
 ) {
-    var query by remember { mutableStateOf("") }
+    val query = session.query
     val player = LocalPlayerState.current
     val repository = LocalAppContainer.current.repository
 
     val listState = rememberLazyListState()
 
-    val results by produceState<SearchResults?>(initialValue = null, key1 = query) {
+    LaunchedEffect(query) {
         if (query.isBlank()) {
-            value = null
-            return@produceState
+            session.show(query, null)
+            return@LaunchedEffect
         }
+        // Back from a page opened from these results: they're already here.
+        if (session.resultsQuery == query) return@LaunchedEffect
         delay(350) // debounce
         val next = runCatching { repository.search(query) }.getOrNull()
         // Scrolled into the old results: glide back to the top first, so the new
         // results fade in from their top instead of the list snapping wherever
         // the old scroll position lands.
         if (listState.isScrolled()) listState.animateScrollToItem(0)
-        value = next
+        session.show(query, next)
     }
+    val results = session.results
 
     // Fixed title, with the search pill floating as glass right under it.
     TitledPage(
@@ -93,7 +92,7 @@ fun SearchScreen(
         bar = { hazeState ->
             SearchField(
                 query = query,
-                onQueryChange = { query = it },
+                onQueryChange = { session.query = it },
                 hazeState = hazeState,
                 modifier = Modifier.padding(horizontal = 20.dp),
             )
