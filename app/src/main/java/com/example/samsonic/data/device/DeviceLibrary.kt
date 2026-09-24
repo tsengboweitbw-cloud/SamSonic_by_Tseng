@@ -3,7 +3,6 @@ package com.example.samsonic.data.device
 import android.content.ContentUris
 import android.content.Context
 import android.database.ContentObserver
-import android.os.Build
 import android.provider.MediaStore
 import androidx.core.content.edit
 import com.example.samsonic.data.MusicLibrary
@@ -145,17 +144,10 @@ class DeviceLibrary(context: Context) : MusicLibrary {
     override fun streamUrl(songId: String): String =
         ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, songId.toLong()).toString()
 
-    /**
-     * The album's thumbnail. Coil loads MediaStore album URIs through the system's
-     * thumbnail API on Android 10+; before that the old album art URI does the same job.
-     */
+    /** The album's thumbnail. Coil loads MediaStore album URIs through the system's thumbnail API. */
     override fun coverArtUrl(coverArt: String?, size: Int): String? {
         val albumId = coverArt?.toLongOrNull() ?: return null
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-            ContentUris.withAppendedId(MediaStore.Audio.Albums.EXTERNAL_CONTENT_URI, albumId).toString()
-        } else {
-            artworkUrl(coverArt)
-        }
+        return ContentUris.withAppendedId(MediaStore.Audio.Albums.EXTERNAL_CONTENT_URI, albumId).toString()
     }
 
     /** The notification reads the image as a plain file, which the album art URI serves on every version. */

@@ -45,9 +45,9 @@ This project adheres to the **`Samsonic by <Author Name>`** naming convention:
 
 ## 📥 Download & Installation | 下載與安裝
 
-Please visit [GitHub Releases](https://github.com/TsengBoWei/SamSonic/releases) to download the latest `Samsonic-by-Tseng.apk`.
+Please visit [GitHub Releases](https://github.com/TsengBoWei/SamSonic/releases) to download the latest `Samsonic.apk`.
 
-請至 [GitHub Releases](https://github.com/TsengBoWei/SamSonic/releases) 下載最新發佈的 `Samsonic-by-Tseng.apk` 進行安裝。
+請至 [GitHub Releases](https://github.com/TsengBoWei/SamSonic/releases) 下載最新發佈的 `Samsonic.apk` 進行安裝。
 
 ---
 

@@ -2,7 +2,6 @@ package com.example.samsonic.data.device
 
 import android.content.ContentResolver
 import android.database.Cursor
-import android.os.Build
 import android.provider.MediaStore.Audio.Media
 
 /** One audio file as MediaStore describes it. */
@@ -38,7 +37,6 @@ private const val DATA_COLUMN = Media.DATA
 
 /** Every music file MediaStore knows of. Needs the audio read permission ([audioPermission]). */
 internal fun ContentResolver.scanDeviceTracks(): List<DeviceTrack> {
-    val newColumns = Build.VERSION.SDK_INT >= Build.VERSION_CODES.R
     val projection = buildList {
         add(Media._ID)
         add(Media.TITLE)
@@ -52,12 +50,10 @@ internal fun ContentResolver.scanDeviceTracks(): List<DeviceTrack> {
         add(Media.SIZE)
         add(Media.MIME_TYPE)
         add(DATA_COLUMN)
-        if (newColumns) {
-            add(Media.ALBUM_ARTIST)
-            add(Media.GENRE)
-            add(Media.DISC_NUMBER)
-            add(Media.BITRATE)
-        }
+        add(Media.ALBUM_ARTIST)
+        add(Media.GENRE)
+        add(Media.DISC_NUMBER)
+        add(Media.BITRATE)
     }.toTypedArray()
 
     val cursor = query(Media.EXTERNAL_CONTENT_URI, projection, "${Media.IS_MUSIC} != 0", null, null)
@@ -72,20 +68,20 @@ internal fun ContentResolver.scanDeviceTracks(): List<DeviceTrack> {
                         id = c.getLong(c.getColumnIndexOrThrow(Media._ID)),
                         title = c.string(Media.TITLE) ?: "",
                         artist = c.tag(Media.ARTIST) ?: "Unknown Artist",
-                        albumArtist = if (newColumns) c.tag(Media.ALBUM_ARTIST) else null,
+                        albumArtist = c.tag(Media.ALBUM_ARTIST),
                         album = c.tag(Media.ALBUM) ?: "",
                         albumId = c.getLong(c.getColumnIndexOrThrow(Media.ALBUM_ID)),
                         track = packedTrack % 1000,
                         disc = (packedTrack / 1000).takeIf { it > 0 }
-                            ?: if (newColumns) c.string(Media.DISC_NUMBER)?.substringBefore('/')?.trim()?.toIntOrNull() else null,
+                            ?: c.string(Media.DISC_NUMBER)?.substringBefore('/')?.trim()?.toIntOrNull(),
                         durationMs = c.long(Media.DURATION) ?: 0L,
                         year = c.int(Media.YEAR)?.takeIf { it > 0 },
-                        genre = if (newColumns) c.tag(Media.GENRE) else null,
+                        genre = c.tag(Media.GENRE),
                         dateAdded = c.long(Media.DATE_ADDED) ?: 0L,
                         sizeBytes = c.long(Media.SIZE),
                         mimeType = c.string(Media.MIME_TYPE),
                         path = c.string(DATA_COLUMN),
-                        bitRate = if (newColumns) c.int(Media.BITRATE) else null,
+                        bitRate = c.int(Media.BITRATE),
                     ),
                 )
             }
