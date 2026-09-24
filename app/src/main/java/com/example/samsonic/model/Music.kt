@@ -49,6 +49,9 @@ data class Song(
     val path: String? = null,
     val playCount: Long? = null,
     val channelCount: Int? = null,
+    // OpenSubsonic only: each of the song's artists on its own, which [artistName]
+    // runs together (e.g. "A feat. B"). Empty elsewhere; then [artistId] is the one link.
+    val artists: List<ArtistCredit> = emptyList(),
     // OpenSubsonic only; on other servers the album artist comes from the album.
     val albumArtistId: String? = null,
     val albumArtistName: String? = null,
@@ -88,3 +91,6 @@ data class GenreContents(
     val artists: List<Artist>,
     val songs: List<Song>,
 )
+
+/** One artist credited on a song; [id] is null when the server gave none, so it can't be opened. */
+data class ArtistCredit(val id: String?, val name: String)

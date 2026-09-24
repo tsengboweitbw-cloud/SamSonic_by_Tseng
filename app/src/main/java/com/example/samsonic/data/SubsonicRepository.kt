@@ -11,6 +11,7 @@ import com.example.samsonic.data.remote.SubsonicApi
 import com.example.samsonic.data.remote.SubsonicAuth
 import com.example.samsonic.model.Album
 import com.example.samsonic.model.Artist
+import com.example.samsonic.model.ArtistCredit
 import com.example.samsonic.model.Genre
 import com.example.samsonic.model.GenreContents
 import com.example.samsonic.model.LyricLine
@@ -229,7 +230,11 @@ class SubsonicRepository(
         if (limit == null) songs else songs.take(limit)
     }
 
-    /** Songs whose artist is [artist], from a search for their name (which also matches titles). */
+    /**
+     * Songs [artist] is credited on, from a search for their name (which also matches
+     * titles). On OpenSubsonic servers that's any of a song's artists, not just the
+     * first, which is all [SongDto.artistId] names.
+     */
     override suspend fun getSongsBy(artist: Artist): List<Song> {
         val params = authParams() + mapOf(
             "query" to artist.name,
@@ -238,7 +243,7 @@ class SubsonicRepository(
             "songCount" to ARTIST_SEARCH_SONGS.toString(),
         )
         return requireApi().search3(params).response.searchResult3?.song.orEmpty()
-            .filter { it.artistId == artist.id }
+            .filter { song -> song.artistId == artist.id || song.artists.any { it.id == artist.id } }
             .map { it.toDomain() }
     }
 
@@ -399,6 +404,7 @@ class SubsonicRepository(
         path = path,
         playCount = playCount,
         channelCount = channelCount,
+        artists = artists.mapNotNull { ref -> ref.name?.takeIf { it.isNotBlank() }?.let { ArtistCredit(ref.id, it) } },
         albumArtistId = albumArtists.firstOrNull()?.id,
         albumArtistName = displayAlbumArtist?.takeIf { it.isNotBlank() } ?: albumArtists.firstOrNull()?.name,
     )

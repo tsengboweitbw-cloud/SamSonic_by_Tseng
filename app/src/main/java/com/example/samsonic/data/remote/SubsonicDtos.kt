@@ -121,6 +121,8 @@ data class SongDto(
     val playCount: Long? = null,
     // OpenSubsonic extension.
     val channelCount: Int? = null,
+    // OpenSubsonic extension: every artist of the song, where [artist] has them in one string.
+    val artists: List<ArtistRefDto> = emptyList(),
     // OpenSubsonic extensions: the album's artist, which core Subsonic leaves
     // to the album itself (getAlbum).
     val albumArtists: List<ArtistRefDto> = emptyList(),

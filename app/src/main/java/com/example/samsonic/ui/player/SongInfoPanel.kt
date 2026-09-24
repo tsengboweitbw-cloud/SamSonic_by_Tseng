@@ -22,8 +22,16 @@ import com.example.samsonic.util.formatDuration
 import com.example.samsonic.util.formatFileSize
 import dev.chrisbanes.haze.HazeState
 
-/** One line of song info; [onClick] opens the page it names (album, artist), if any. */
-private data class Detail(val label: String, val value: String, val onClick: (() -> Unit)? = null)
+/**
+ * One line of song info; [onClick] opens the page it names (album, artist), if any.
+ * [artistsOf] makes it the song's artist line instead, each artist opening their own.
+ */
+private data class Detail(
+    val label: String,
+    val value: String,
+    val onClick: (() -> Unit)? = null,
+    val artistsOf: Song? = null,
+)
 
 /** The current song's details, as a [PanelCard] grown out of the info button. */
 @Composable
@@ -55,6 +63,19 @@ private fun DetailRow(detail: Detail) {
             modifier = Modifier.width(104.dp),
         )
         // Linked values take the accent color, so they read as tappable.
+        val artistsOf = detail.artistsOf
+        if (artistsOf != null) {
+            val linked = artistsOf.artistCredits.any { it.id != null }
+            ArtistNames(
+                song = artistsOf,
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (linked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                onOpen = LocalPlayerLinks.current.openArtist,
+                maxLines = Int.MAX_VALUE,
+                modifier = Modifier.weight(1f, fill = false),
+            )
+            return@Row
+        }
         val onClick = detail.onClick
         Text(
             text = detail.value,
@@ -70,7 +91,7 @@ private fun DetailRow(detail: Detail) {
 /** Each detail the server reported; the rest are left out. */
 private fun songDetails(song: Song, albumArtist: ArtistLink?, links: PlayerLinks): List<Detail> = listOfNotNull(
     Detail("Title", song.title),
-    Detail("Artist", song.artistName, song.artistId?.let { id -> { links.openArtist(id) } }),
+    Detail("Artist", song.artistName, artistsOf = song),
     song.albumTitle.takeIf { it.isNotBlank() }?.let { title ->
         Detail("Album", title, song.albumId?.let { id -> { links.openAlbum(id) } })
     },

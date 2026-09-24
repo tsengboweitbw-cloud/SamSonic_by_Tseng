@@ -33,10 +33,11 @@ internal fun NowPlayingTitle(song: Song, modifier: Modifier = Modifier) {
             )
         }
         Spacer(Modifier.height(4.dp))
-        SubLine(
-            text = song.artistName,
+        ArtistNames(
+            song = song,
             style = MaterialTheme.typography.titleMedium,
-            onClick = song.artistId?.let { id -> { links.openArtist(id) } },
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            onOpen = links.openArtist,
         )
         val audioInfo = formatAudioInfo(song)
         if (audioInfo != null) {
