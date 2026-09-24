@@ -1,68 +1,93 @@
-# 🎵 SamSonic
+# 🎵 Samsonic by Tseng
 
-[![Android](https://img.shields.io/badge/Android-28%2B-green.svg)](https://developer.android.com)
+[![Android](https://img.shields.io/badge/Android-31%2B-green.svg)](https://developer.android.com)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.0-blue.svg)](https://kotlinlang.org)
 [![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-M3-purple.svg)](https://developer.android.com/jetpack/compose)
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+[![Licence: GPL v3](https://img.shields.io/badge/Licence-GPLv3-blue.svg)](LICENSE)
 
-**SamSonic** 是一款專為 Android 打造、採用 **Samsung One UI 9.0 空間視覺風格 (Glassmorphism)** 的 Subsonic / Navidrome 自建音樂伺服器串流播放器。
+**Samsonic by Tseng** is a native Android music streaming player tailored for self-hosted Subsonic and Navidrome servers, featuring a **Samsung One UI 9.0 spatial visual style (Glassmorphism)**.
 
----
-
-## ✨ 核心特色 (Features)
-
-- 🎨 **Samsung One UI 9.0 空間視覺設計**
-  - 高度個人化的 **Glassmorphism (毛玻璃與動態採樣模糊)** 介面。
-  - **Obsidian 深色空間調色盤** 與半透明懸浮面板，帶有細緻的邊緣高光。
-  - **Bottom-Heavy 手持優化**：懸浮導航列、懸浮迷你播放器與大圓角卡片設計，極致單手操作體驗。
-- 🎶 **Subsonic & Navidrome 相容**
-  - 原生支援 Subsonic / Navidrome REST API 認證與數據串流。
-  - 支援專輯、歌手、歌單、隨機播放、搜尋與動態歌詞。
-- 🔊 **AndroidX Media3 (ExoPlayer) 播放引擎**
-  - 高品質低延遲串流，原生背景播放、鎖屏控制、系統媒體通知與 MediaSession 整合。
-- ⚡ **Jetpack Compose 全現代化架構**
-  - 採用 MVVM 架構、Coroutines / Flow 響應式資料流與 Haze 毛玻璃渲染。
+**Samsonic by Tseng** 是一款專為 Android 打造、採用 **Samsung One UI 9.0 空間視覺風格 (Glassmorphism)** 的 Subsonic / Navidrome 自建音樂伺服器串流播放器。
 
 ---
 
-## 📥 下載與安裝 (Download)
+## 🏷️ Naming Guidelines | 命名規範
 
-請至 [GitHub Releases](https://github.com/TsengBoWei/SamSonic/releases) 下載最新發佈的 `SamSonic.apk` 進行安裝。
+This project adheres to the **`Samsonic by <Author Name>`** naming convention:
+- **Official Repository Name**: `Samsonic by Tseng`
+- **For Modifiers & Forkers**: Developers are warmly welcomed to fork and adapt this project! If you publicly release a modified version or derivative work, please name your project **`Samsonic by <Author Name>`** (e.g. `Samsonic by Alice`).
+
+本專案採用 **`Samsonic by <Author Name>`** 的命名約定：
+- **官方主專案名稱**：`Samsonic by Tseng`
+- **給修改者與衍生者的聲明**：歡迎任何開發者 Fork 或修改本專案！如果您公開發佈修改版或衍生版本，請遵循相同的命名規範將您的作品命名為 **`Samsonic by <Author Name>`**（例如 `Samsonic by Alice`）。
 
 ---
 
-## 🛠️ 開發與建置 (Build & Setup)
+## ✨ Features | 核心特色
 
-### 環境需求
-- **Android Studio**: Ladybug / Jellyfish (或更高版本)
-- **JDK**: 17 或以上
-- **Minimum SDK**: Android 9.0 (API Level 28)
+- 🎨 **Samsung One UI 9.0 Spatial Visual Design | Samsung One UI 9.0 空間視覺設計**
+  - **UK English**: Personalised **Glassmorphism (frosted glass with dynamic sampling blur)** interface. Obsidian dark spatial colour palette with translucent floating panels featuring refined rim-stroke highlighting.
+  - **UK English**: **Bottom-heavy reachability**: Floating navigation bar, floating mini player, and large rounded card design optimised for effortless one-handed operation.
+  - **繁體中文**: 高度個人化的 **Glassmorphism (毛玻璃與動態採樣模糊)** 介面。Obsidian 深色空間調色盤與半透明懸浮面板，帶有細緻的邊緣高光。底部優化懸浮導航列與大圓角卡片設計，極致單手操作體驗。
+
+- 🎶 **Subsonic & Navidrome Compatibility | Subsonic & Navidrome 相容**
+  - **UK English**: Native support for Subsonic / Navidrome REST API authentication and audio streaming. Supports albums, artists, playlists, random shuffle, search, and dynamic synchronised lyrics.
+  - **繁體中文**: 原生支援 Subsonic / Navidrome REST API 認證與數據串流。支援專輯、歌手、歌單、隨機播放、搜尋與動態歌詞。
+
+- 🔊 **AndroidX Media3 (ExoPlayer) Audio Engine | AndroidX Media3 (ExoPlayer) 播放引擎**
+  - **UK English**: High-quality, low-latency streaming with background playback, lock screen controls, system media notifications, and MediaSession integration.
+  - **繁體中文**: 高品質低延遲串流，原生背景播放、鎖屏控制、系統媒體通知與 MediaSession 整合。
+
+- ⚡ **Modern Jetpack Compose Architecture | Jetpack Compose 全現代化架構**
+  - **UK English**: Built with MVVM architecture, Coroutines / Flow reactive data streams, and Haze frosted glass rendering.
+  - **繁體中文**: 採用 MVVM 架構、Coroutines / Flow 響應式資料流與 Haze 毛玻璃渲染。
+
+---
+
+## 📥 Download & Installation | 下載與安裝
+
+Please visit [GitHub Releases](https://github.com/TsengBoWei/SamSonic/releases) to download the latest `Samsonic-by-Tseng.apk`.
+
+請至 [GitHub Releases](https://github.com/TsengBoWei/SamSonic/releases) 下載最新發佈的 `Samsonic-by-Tseng.apk` 進行安裝。
+
+---
+
+## 🛠️ Build & Setup | 開發與建置
+
+### Requirements | 環境需求
+- **Android Studio**: Ladybug / Jellyfish (or newer)
+- **JDK**: 17 or higher
+- **Minimum SDK**: Android 12 (API Level 31)
 - **Target SDK**: Android 15 (API Level 35)
 
-### 建置步驟
-1. **Clone 專案庫**：
+### Build Steps | 建置步驟
+1. **Clone repository | 複製專案**:
    ```bash
    git clone https://github.com/TsengBoWei/SamSonic.git
    cd SamSonic
    ```
-2. **開啟專案**：
-   在 Android Studio 中選擇 `Open` 並選取 `SamSonic` 根目錄。
-3. **編譯並執行**：
-   等待 Gradle Sync 完成後，選擇連接的 Android 裝置或模擬器，點擊 **▶️ Run**。
+2. **Open in Android Studio | 開啟專案**:
+   Select `Open` in Android Studio and select the `SamSonic` root directory.
+3. **Build & Run | 編譯並執行**:
+   Wait for Gradle Sync to complete, select your connected Android device or emulator, and click **▶️ Run**.
 
 ---
 
-## 🙏 特別致謝 (Acknowledgements)
+## 🙏 Acknowledgements | 特別致謝
 
+Sincere gratitude to the developers of these outstanding music applications for their design inspiration:  
 特別感謝以下優秀音樂播放器與其開發團隊給予的靈感與啟發：
 
-- **[Symfonium](https://symfonium.app/)**：提供高度模組化的音樂庫介面與優異的使用者體驗啟發。
-- **Obsidian-Music**：啟發了極致質感的 Obsidian 暗色視覺美學與調色盤靈感。
-- **UAPP (USB Audio Player PRO)**：提供了專業級音樂播放控制與架構設計靈感。
+- **[Symfonium](https://symfonium.app/)**: Inspired the highly modular library interface and outstanding user experience.
+- **Obsidian-Music**: Inspired the exquisite Obsidian dark visual aesthetics and refined colour palette.
+- **UAPP (USB Audio Player PRO)**: Inspired the professional-grade playback controls and architectural design.
 
 ---
 
-## 📄 授權條款 (License)
+## 📄 Licence | 授權條款
 
-本專案採用 **[GNU General Public License v3.0 (GPLv3)](LICENSE)** 授權開源。
-任何人均可自由下載、使用、修改與散佈本專案，但**任何引用、修改或基於本專案開發的衍生作品，也必須強制以 GPLv3 條款公開開源**。
+This project is open-source under the **[GNU General Public License v3.0 (GPLv3)](LICENSE)**.  
+Anyone is free to download, use, modify, and distribute this project. However, **any modifications or derivative works based on this project must also be open-sourced under GPLv3, adhering to the `Samsonic by <Author Name>` naming convention**.
+
+本專案採用 **[GNU General Public License v3.0 (GPLv3)](LICENSE)** 授權開源。  
+任何人均可自由下載、使用、修改與散佈本專案，但**任何引用、修改或基於本專案開發的衍生作品，也必須強制以 GPLv3 條款公開開源，並遵循 `Samsonic by <Author Name>` 的命名規範**。
