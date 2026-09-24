@@ -25,22 +25,21 @@ This project adheres to the **`Samsonic by <Author Name>`** naming convention:
 
 ## ✨ Features | 核心特色
 
-- 🎨 **Samsung One UI 9.0 Spatial Visual Design | Samsung One UI 9.0 空間視覺設計**
-  - **UK English**: Personalised **Glassmorphism (frosted glass with dynamic sampling blur)** interface. Obsidian dark spatial colour palette with translucent floating panels featuring refined rim-stroke highlighting.
-  - **UK English**: **Bottom-heavy reachability**: Floating navigation bar, floating mini player, and large rounded card design optimised for effortless one-handed operation.
-  - **繁體中文**: 高度個人化的 **Glassmorphism (毛玻璃與動態採樣模糊)** 介面。Obsidian 深色空間調色盤與半透明懸浮面板，帶有細緻的邊緣高光。底部優化懸浮導航列與大圓角卡片設計，極致單手操作體驗。
+- 🎨 **Samsung One UI 9.0 Spatial Visual Design | Samsung One UI 9.0 空間視覺設計**  
+  Personalised **Glassmorphism (frosted glass with dynamic sampling blur)** interface. Obsidian dark spatial colour palette with translucent floating panels featuring refined rim-stroke highlighting. **Bottom-heavy reachability**: Floating navigation bar, floating mini player, and large rounded card design optimised for effortless one-handed operation.  
+  高度個人化的 **Glassmorphism (毛玻璃與動態採樣模糊)** 介面。Obsidian 深色空間調色盤與半透明懸浮面板，帶有細緻的邊緣高光。底部優化懸浮導航列與大圓角卡片設計，極致單手操作體驗。
 
-- 🎶 **Subsonic & Navidrome Compatibility | Subsonic & Navidrome 相容**
-  - **UK English**: Native support for Subsonic / Navidrome REST API authentication and audio streaming. Supports albums, artists, playlists, random shuffle, search, and dynamic synchronised lyrics.
-  - **繁體中文**: 原生支援 Subsonic / Navidrome REST API 認證與數據串流。支援專輯、歌手、歌單、隨機播放、搜尋與動態歌詞。
+- 🎶 **Subsonic & Navidrome Compatibility | Subsonic & Navidrome 相容**  
+  Native support for Subsonic / Navidrome REST API authentication and audio streaming. Supports albums, artists, playlists, random shuffle, search, and dynamic synchronised lyrics.  
+  原生支援 Subsonic / Navidrome REST API 認證與數據串流。支援專輯、歌手、歌單、隨機播放、搜尋與動態歌詞。
 
-- 🔊 **AndroidX Media3 (ExoPlayer) Audio Engine | AndroidX Media3 (ExoPlayer) 播放引擎**
-  - **UK English**: High-quality, low-latency streaming with background playback, lock screen controls, system media notifications, and MediaSession integration.
-  - **繁體中文**: 高品質低延遲串流，原生背景播放、鎖屏控制、系統媒體通知與 MediaSession 整合。
+- 🔊 **AndroidX Media3 (ExoPlayer) Audio Engine | AndroidX Media3 (ExoPlayer) 播放引擎**  
+  High-quality, low-latency streaming with background playback, lock screen controls, system media notifications, and MediaSession integration.  
+  高品質低延遲串流，原生背景播放、鎖屏控制、系統媒體通知與 MediaSession 整合。
 
-- ⚡ **Modern Jetpack Compose Architecture | Jetpack Compose 全現代化架構**
-  - **UK English**: Built with MVVM architecture, Coroutines / Flow reactive data streams, and Haze frosted glass rendering.
-  - **繁體中文**: 採用 MVVM 架構、Coroutines / Flow 響應式資料流與 Haze 毛玻璃渲染。
+- ⚡ **Modern Jetpack Compose Architecture | Jetpack Compose 全現代化架構**  
+  Built with MVVM architecture, Coroutines / Flow reactive data streams, and Haze frosted glass rendering.  
+  採用 MVVM 架構、Coroutines / Flow 響應式資料流與 Haze 毛玻璃渲染。
 
 ---
 
