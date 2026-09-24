@@ -2,6 +2,7 @@ package com.example.samsonic.ui.player
 
 import androidx.compose.foundation.interaction.DragInteraction
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -17,6 +18,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.layout
@@ -29,8 +31,6 @@ import com.example.samsonic.ui.components.MediaArtFill
 import kotlinx.coroutines.flow.filter
 import kotlin.math.abs
 
-// How much of the neighbouring covers peeks in from each side.
-private val PeekPadding = 40.dp
 private val PageSpacing = 12.dp
 // Beyond this many pages away, jump instead of animating through every cover.
 private const val MaxAnimatedJump = 2
@@ -65,50 +65,58 @@ fun CoverCarousel(
         if (index != null && index != player.currentIndex) player.playQueueIndex(index)
     }
 
-    HorizontalPager(
-        state = pagerState,
-        contentPadding = PaddingValues(horizontal = bleed + PeekPadding),
-        pageSpacing = PageSpacing,
-        beyondViewportPageCount = 1,
-        key = { order.getOrElse(it) { -1 - it } },
-        modifier = modifier
-            .fillMaxWidth()
-            .bleedHorizontally(bleed),
-    ) { page ->
-        val song = order.getOrNull(page)?.let { player.queue.getOrNull(it) }
-        // 0 when centred, 1 when a full page away.
-        val distance = abs(pagerState.currentPage - page + pagerState.currentPageOffsetFraction)
-            .coerceIn(0f, 1f)
-        val shape = RoundedCornerShape(cornerRadius)
-        Box(
+    // The cover is the largest square that fits: up to the full content width,
+    // or shorter when the height given is tighter; then the side padding widens
+    // so it stays centred and the neighbours peek into the freed margin. Sits at
+    // the bottom of its space, next to the song info.
+    BoxWithConstraints(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.BottomCenter) {
+        val side = minOf(maxWidth, maxHeight).coerceAtLeast(0.dp)
+        val sidePadding = bleed + (maxWidth - side) / 2
+        HorizontalPager(
+            state = pagerState,
+            contentPadding = PaddingValues(horizontal = sidePadding),
+            pageSpacing = PageSpacing,
+            beyondViewportPageCount = 1,
+            key = { order.getOrElse(it) { -1 - it } },
             modifier = Modifier
                 .fillMaxWidth()
-                .aspectRatio(1f)
-                // Only the playing cover morphs to/from the mini player's art.
-                .then(
-                    if (page == targetPage) {
-                        Modifier.playerMorphAnchor(PlayerElement.Art, PlayerSurface.Full)
-                    } else {
-                        Modifier
+                .bleedHorizontally(bleed),
+        ) { page ->
+            val song = order.getOrNull(page)?.let { player.queue.getOrNull(it) }
+            // 0 when centred, 1 when a full page away.
+            val distance = abs(pagerState.currentPage - page + pagerState.currentPageOffsetFraction)
+                .coerceIn(0f, 1f)
+            val shape = RoundedCornerShape(cornerRadius)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(1f)
+                    // Only the playing cover morphs to/from the mini player's art.
+                    .then(
+                        if (page == targetPage) {
+                            Modifier.playerMorphAnchor(PlayerElement.Art, PlayerSurface.Full)
+                        } else {
+                            Modifier
+                        },
+                    )
+                    .graphicsLayer {
+                        val scale = lerp(1f, 0.86f, distance)
+                        scaleX = scale
+                        scaleY = scale
+                        alpha = lerp(1f, 0.55f, distance)
                     },
-                )
-                .graphicsLayer {
-                    val scale = lerp(1f, 0.86f, distance)
-                    scaleX = scale
-                    scaleY = scale
-                    alpha = lerp(1f, 0.55f, distance)
-                },
-        ) {
-            // Corners and shadow go on the art itself, which keeps its own proportions
-            // inside the square page.
-            if (song != null) {
-                MediaArtFill(
-                    coverArt = song.coverArt,
-                    colorSeed = song.id.artSeed(),
-                    fit = true,
-                    shape = shape,
-                    shadowElevation = 16.dp,
-                )
+            ) {
+                // Corners and shadow go on the art itself, which keeps its own proportions
+                // inside the square page.
+                if (song != null) {
+                    MediaArtFill(
+                        coverArt = song.coverArt,
+                        colorSeed = song.id.artSeed(),
+                        fit = true,
+                        shape = shape,
+                        shadowElevation = 16.dp,
+                    )
+                }
             }
         }
     }

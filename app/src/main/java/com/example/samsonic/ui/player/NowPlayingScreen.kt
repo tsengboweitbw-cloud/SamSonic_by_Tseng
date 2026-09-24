@@ -101,7 +101,14 @@ fun NowPlayingScreen(
 
         Spacer(Modifier.height(28.dp))
 
-        CoverCarousel(player = player, cornerRadius = cornerRadius, bleed = horizontalPadding)
+        // Everything below stacks up from the bottom; the cover takes whatever
+        // height is left and grows as large as that space allows.
+        CoverCarousel(
+            player = player,
+            cornerRadius = cornerRadius,
+            bleed = horizontalPadding,
+            modifier = Modifier.weight(1f),
+        )
 
         Spacer(Modifier.height(32.dp))
 
@@ -158,10 +165,6 @@ fun NowPlayingScreen(
         }
 
         Spacer(Modifier.height(12.dp))
-        // Leftover height goes between the song info and the seek bar (Symfonium
-        // layout): the cover stays up under the top buttons while the controls
-        // stay down in the thumb-reachable part of the screen.
-        Spacer(Modifier.weight(1f))
 
         var dragPosition by remember(song.id) { mutableFloatStateOf(-1f) }
         val fraction = if (dragPosition >= 0f) dragPosition else {
@@ -240,7 +243,7 @@ fun NowPlayingScreen(
             lyrics = lyrics,
             queue = queue,
             info = info,
-            modifier = Modifier.padding(bottom = 128.dp),
+            modifier = Modifier.padding(bottom = 24.dp),
         )
         }
     }
