@@ -15,7 +15,7 @@ import androidx.media3.common.Player
 import androidx.media3.common.Timeline
 import androidx.media3.session.MediaController
 import androidx.media3.session.SessionToken
-import com.example.samsonic.data.SubsonicRepository
+import com.example.samsonic.data.MusicLibrary
 import com.example.samsonic.model.Song
 import com.google.common.util.concurrent.MoreExecutors
 import kotlinx.coroutines.CoroutineScope
@@ -36,7 +36,8 @@ private const val ShuffleInsertBatch = 200
  */
 class PlayerState(
     private val context: Context,
-    private val repository: SubsonicRepository,
+    // The active source's library, read at each use: it changes when the user switches sources.
+    private val repository: () -> MusicLibrary,
     private val scope: CoroutineScope,
 ) {
     private var controller: MediaController? = null
@@ -128,7 +129,7 @@ class PlayerState(
         queue.clear()
         queue.addAll(playbackContext)
         val startIndex = playbackContext.indexOf(song).coerceAtLeast(0)
-        c.setMediaItems(playbackContext.map { it.toMediaItem(repository) }, startIndex, 0L)
+        c.setMediaItems(playbackContext.map { it.toMediaItem(repository()) }, startIndex, 0L)
         c.prepare()
         c.play()
     }
@@ -157,9 +158,9 @@ class PlayerState(
         val c = controller ?: return
         songById = songById + songs.associateBy { it.id }
         queue.addAll(index, songs)
-        if (!c.shuffleModeEnabled) return c.addMediaItems(index, songs.map { it.toMediaItem(repository) })
+        if (!c.shuffleModeEnabled) return c.addMediaItems(index, songs.map { it.toMediaItem(repository()) })
         songs.chunked(ShuffleInsertBatch).forEachIndexed { batch, chunk ->
-            val args = shuffleInsertArgs(index + batch * ShuffleInsertBatch, chunk.map { it.toMediaItem(repository) }, placement)
+            val args = shuffleInsertArgs(index + batch * ShuffleInsertBatch, chunk.map { it.toMediaItem(repository()) }, placement)
             c.sendCustomCommand(ShuffleInsertCommand, args)
         }
     }
@@ -245,14 +246,17 @@ class PlayerState(
         }
     }
 
-    /** Stops playback and clears the queue - used when signing out so the mini player doesn't
-     *  keep showing a track from the account that was just signed out of. */
+    /** Stops playback and clears the queue - used when switching music sources so the mini
+     *  player doesn't keep showing a track from the library that was just left. Song ids are
+     *  only unique within one source, so what's known about songs by id goes too. */
     fun stopAndClearQueue() {
         controller?.stop()
         controller?.clearMediaItems()
         queue.clear()
         currentIndex = -1
         currentSong = null
+        songById = emptyMap()
+        likedOverrides = emptyMap()
     }
 
     fun isLiked(song: Song): Boolean = likedOverrides[song.id] ?: song.liked
@@ -261,7 +265,7 @@ class PlayerState(
         val newValue = !isLiked(song)
         likedOverrides = likedOverrides + (song.id to newValue)
         scope.launch {
-            runCatching { if (newValue) repository.star(song.id) else repository.unstar(song.id) }
+            runCatching { if (newValue) repository().star(song.id) else repository().unstar(song.id) }
         }
     }
 

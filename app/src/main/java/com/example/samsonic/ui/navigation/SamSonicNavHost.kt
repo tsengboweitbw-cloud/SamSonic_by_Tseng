@@ -27,7 +27,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
@@ -57,7 +56,7 @@ private val bottomDestinations = listOf(
     BottomDestination(Routes.SETTINGS, "Settings", Icons.Filled.Settings),
 )
 
-private val noChromeRoutes = setOf(Routes.LOGIN)
+private val noChromeRoutes = setOf(Routes.LOGIN, Routes.ADD_SERVER)
 
 @Composable
 fun SamSonicNavHost() {
@@ -66,10 +65,11 @@ fun SamSonicNavHost() {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
 
-    // Read once: EncryptedSharedPreferences loads synchronously, so this already reflects
-    // whether a server session is saved by the time the nav graph is first built.
+    // Read once: the host is rebuilt whenever the music source changes (see MainActivity),
+    // so signing in or picking the phone's music lands on Home, and leaving the last
+    // source lands back on sign in.
     val startDestination = remember {
-        if (container.sessionManager.credentials.value != null) Routes.HOME else Routes.LOGIN
+        if (container.sources.active.value != null) Routes.HOME else Routes.LOGIN
     }
 
     val showChrome = currentRoute == null || currentRoute !in noChromeRoutes
@@ -120,13 +120,10 @@ fun SamSonicNavHost() {
                 popExitTransition = navTransitions.popExit,
             ) {
                 screen(Routes.LOGIN) {
-                    LoginScreen(
-                        onConnected = {
-                            navController.navigate(Routes.HOME) {
-                                popUpTo(Routes.LOGIN) { inclusive = true }
-                            }
-                        },
-                    )
+                    LoginScreen()
+                }
+                screen(Routes.ADD_SERVER) {
+                    LoginScreen(onBack = { navController.popBackStack() })
                 }
                 screen(Routes.HOME) {
                     HomeScreen(
@@ -153,11 +150,7 @@ fun SamSonicNavHost() {
                 }
                 screen(Routes.SETTINGS) {
                     SettingsScreen(
-                        onSignedOut = {
-                            navController.navigate(Routes.LOGIN) {
-                                popUpTo(navController.graph.findStartDestination().id) { inclusive = true }
-                            }
-                        },
+                        onAddServer = { navController.navigate(Routes.ADD_SERVER) },
                         contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve,
                     )
                 }

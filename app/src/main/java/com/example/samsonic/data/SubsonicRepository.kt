@@ -35,61 +35,52 @@ private const val ALBUM_PAGE_SIZE = 500
 private const val MAX_ALBUMS = 20_000
 // How many songs a search for an artist's name looks through for their guest appearances.
 private const val ARTIST_SEARCH_SONGS = 500
-// getSongsByGenre returns at most 500 songs per call; a genre page lists up to this many.
+// getSongsByGenre returns at most 500 songs per call; a genre page lists up to MAX_GENRE_SONGS.
 private const val SONG_PAGE_SIZE = 500
-private const val MAX_GENRE_SONGS = 5_000
-
-/** Latest [year] first; items without one go last, and ties keep their order. */
-private fun <T> newestFirst(year: (T) -> Int?): Comparator<T> = compareByDescending { year(it) ?: Int.MIN_VALUE }
 
 /**
  * Talks to a Subsonic/OpenSubsonic server (Navidrome, etc.) and maps the wire DTOs onto the
  * app's domain models. There's no server-side pagination UI yet, so list calls just ask for
  * a generous page size in one shot - fine for typical home-library sizes.
+ *
+ * Works with one server at a time: the one [MusicSources] last [configure]d it with.
  */
 class SubsonicRepository(
-    private val sessionManager: SessionManager,
     private val okHttpClient: OkHttpClient,
-) {
+) : MusicLibrary {
     private val json = Json { ignoreUnknownKeys = true }
 
     private var api: SubsonicApi? = null
     private var credentials: ServerCredentials? = null
 
-    init {
-        sessionManager.credentials.value?.let { configure(it) }
+    /** Points every call at [creds]' server; null disconnects. */
+    fun configure(creds: ServerCredentials?) {
+        credentials = creds
+        api = creds?.let(::createApi)
     }
 
-    private fun configure(creds: ServerCredentials) {
-        credentials = creds
+    private fun createApi(creds: ServerCredentials): SubsonicApi {
         val baseUrl = if (creds.serverUrl.endsWith("/")) creds.serverUrl else "${creds.serverUrl}/"
         val retrofit = Retrofit.Builder()
             .baseUrl(baseUrl)
             .client(okHttpClient)
             .addConverterFactory(json.asConverterFactory("application/json".toMediaType()))
             .build()
-        api = retrofit.create(SubsonicApi::class.java)
+        return retrofit.create(SubsonicApi::class.java)
     }
 
-    val isConnected: Boolean get() = api != null
-
-    suspend fun connect(serverUrl: String, username: String, password: String): Result<Unit> = runCatching {
-        val normalizedUrl = normalizeUrl(serverUrl)
-        configure(ServerCredentials(normalizedUrl, username, password))
-        val body = requireApi().ping(SubsonicAuth.params(username, password)).response
+    /**
+     * Checks that the server answers and accepts the login, without switching to it,
+     * so the server in use keeps working. Returns the credentials with the address
+     * normalized, ready to save.
+     */
+    suspend fun ping(serverUrl: String, username: String, password: String): Result<ServerCredentials> = runCatching {
+        val creds = ServerCredentials(normalizeUrl(serverUrl), username, password)
+        val body = createApi(creds).ping(SubsonicAuth.params(username, password)).response
         if (body.status != "ok") {
             error(body.error?.message ?: "Could not connect to server")
         }
-        sessionManager.save(ServerCredentials(normalizedUrl, username, password))
-    }.onFailure {
-        api = null
-        credentials = null
-    }
-
-    fun signOut() {
-        sessionManager.clear()
-        api = null
-        credentials = null
+        creds
     }
 
     private fun normalizeUrl(rawUrl: String): String {
@@ -109,7 +100,7 @@ class SubsonicRepository(
         return SubsonicAuth.params(creds.username, creds.password)
     }
 
-    suspend fun getArtists(): List<Artist> {
+    override suspend fun getArtists(): List<Artist> {
         val body = requireApi().getArtists(authParams()).response
         return body.artists?.index.orEmpty()
             .flatMap { it.artist }
@@ -124,7 +115,7 @@ class SubsonicRepository(
      * `artist` is its album artist - paging through all of them, with each artist's
      * picture taken from getArtists where it has one.
      */
-    suspend fun getAlbumArtists(): List<Artist> = coroutineScope {
+    override suspend fun getAlbumArtists(): List<Artist> = coroutineScope {
         val covers = async { artistCovers() }
         albumArtistsOf(allAlbums(mapOf("type" to "alphabeticalByArtist")), covers.await())
     }
@@ -133,7 +124,7 @@ class SubsonicRepository(
      * A genre's albums (newest first), their album artists (as [getAlbumArtists]
      * builds them) and up to [songCount] of its songs (newest first).
      */
-    suspend fun getGenre(genre: String, songCount: Int = MAX_GENRE_SONGS): GenreContents = coroutineScope {
+    override suspend fun getGenre(genre: String, songCount: Int): GenreContents = coroutineScope {
         val songs = async { if (songCount > 0) getGenreSongs(genre, songCount) else emptyList() }
         val covers = async { artistCovers() }
         val albums = allAlbums(mapOf("type" to "byGenre", "genre" to genre))
@@ -145,7 +136,7 @@ class SubsonicRepository(
     }
 
     /** Up to [count] of [genre]'s songs, newest first; getSongsByGenre pages at 500. */
-    suspend fun getGenreSongs(genre: String, count: Int = MAX_GENRE_SONGS): List<Song> = buildList {
+    override suspend fun getGenreSongs(genre: String, count: Int): List<Song> = buildList {
         do {
             val size = minOf(SONG_PAGE_SIZE, count - this.size)
             val params = authParams() + mapOf("genre" to genre, "count" to "$size", "offset" to "${this.size}")
@@ -187,7 +178,7 @@ class SubsonicRepository(
             .sortedBy { it.name.lowercase() }
     }
 
-    suspend fun getArtist(id: String): Pair<Artist, List<Album>> {
+    override suspend fun getArtist(id: String): Pair<Artist, List<Album>> {
         val detail = requireApi().getArtist(authParams() + ("id" to id)).response.artist
             ?: error("Artist not found")
         // Newest first, as every list on an artist's pages is.
@@ -195,7 +186,7 @@ class SubsonicRepository(
         return detail.toDomain() to albums
     }
 
-    suspend fun getAlbum(id: String): Pair<Album, List<Song>> {
+    override suspend fun getAlbum(id: String): Pair<Album, List<Song>> {
         val detail = requireApi().getAlbum(authParams() + ("id" to id)).response.album
             ?: error("Album not found")
         val songs = detail.song.map { it.toDomain() }
@@ -206,7 +197,7 @@ class SubsonicRepository(
      * Every song of [albums], album after album in list order. Albums are fetched a few at
      * a time; one that fails to load is skipped rather than failing the whole list.
      */
-    suspend fun getAlbumsSongs(albums: List<Album>): List<Song> = coroutineScope {
+    override suspend fun getAlbumsSongs(albums: List<Album>): List<Song> = coroutineScope {
         val permits = Semaphore(ALBUM_FETCH_CONCURRENCY)
         albums.map { album ->
             async { permits.withPermit { runCatching { getAlbum(album.id).second }.getOrDefault(emptyList()) } }
@@ -218,11 +209,11 @@ class SubsonicRepository(
      * tracks they appear on elsewhere ([getSongsBy], or [songsBy] if already fetched).
      * With [limit], albums are fetched only until that many songs are in hand.
      */
-    suspend fun getArtistSongs(
+    override suspend fun getArtistSongs(
         artist: Artist,
         albums: List<Album>,
-        limit: Int? = null,
-        songsBy: List<Song>? = null,
+        limit: Int?,
+        songsBy: List<Song>?,
     ): List<Song> = coroutineScope {
         val elsewhere = async { songsBy ?: runCatching { getSongsBy(artist) }.getOrDefault(emptyList()) }
         val onAlbums = if (limit == null) {
@@ -239,7 +230,7 @@ class SubsonicRepository(
     }
 
     /** Songs whose artist is [artist], from a search for their name (which also matches titles). */
-    suspend fun getSongsBy(artist: Artist): List<Song> {
+    override suspend fun getSongsBy(artist: Artist): List<Song> {
         val params = authParams() + mapOf(
             "query" to artist.name,
             "artistCount" to "0",
@@ -256,7 +247,7 @@ class SubsonicRepository(
      * songs, from [getSongsBy]) that aren't among their own [albums], in first-seen order.
      * An album that fails to load is left out.
      */
-    suspend fun getAppearsOn(artist: Artist, albums: List<Album>, songsBy: List<Song>): List<Album> = coroutineScope {
+    override suspend fun getAppearsOn(artist: Artist, albums: List<Album>, songsBy: List<Song>): List<Album> = coroutineScope {
         val own = albums.mapTo(HashSet()) { it.id }
         val ids = songsBy.mapNotNull { it.albumId }.distinct().filter { it !in own }
         val permits = Semaphore(ALBUM_FETCH_CONCURRENCY)
@@ -267,34 +258,34 @@ class SubsonicRepository(
             .sortedWith(newestFirst { it.year })
     }
 
-    suspend fun getAlbumList(type: String = "newest", size: Int = 20): List<Album> {
+    override suspend fun getAlbumList(type: String, size: Int): List<Album> {
         val params = authParams() + mapOf("type" to type, "size" to size.toString())
         return requireApi().getAlbumList2(params).response.albumList2?.album.orEmpty().map { it.toDomain() }
     }
 
-    suspend fun getPlaylists(): List<Playlist> {
+    override suspend fun getPlaylists(): List<Playlist> {
         return requireApi().getPlaylists(authParams()).response.playlists?.playlist.orEmpty().map { it.toDomain() }
     }
 
-    suspend fun getPlaylist(id: String): Pair<Playlist, List<Song>> {
+    override suspend fun getPlaylist(id: String): Pair<Playlist, List<Song>> {
         val detail = requireApi().getPlaylist(authParams() + ("id" to id)).response.playlist
             ?: error("Playlist not found")
         val songs = detail.entry.map { it.toDomain() }
         return detail.toDomain() to songs
     }
 
-    suspend fun getTopSongs(artistName: String, count: Int = 5): List<Song> {
+    override suspend fun getTopSongs(artistName: String, count: Int): List<Song> {
         val params = authParams() + mapOf("artist" to artistName, "count" to count.toString())
         return requireApi().getTopSongs(params).response.topSongs?.song.orEmpty().map { it.toDomain() }
     }
 
-    suspend fun getGenres(): List<Genre> {
+    override suspend fun getGenres(): List<Genre> {
         return requireApi().getGenres(authParams()).response.genres?.genre.orEmpty()
             .map { Genre(it.value, it.songCount) }
             .sortedByDescending { it.songCount }
     }
 
-    suspend fun search(query: String): SearchResults {
+    override suspend fun search(query: String): SearchResults {
         val params = authParams() + mapOf(
             "query" to query,
             "artistCount" to "20",
@@ -318,11 +309,11 @@ class SubsonicRepository(
         return requireApi().getStarred2(authParams()).response.starred2?.song.orEmpty().map { it.toDomain() }
     }
 
-    suspend fun star(id: String) {
+    override suspend fun star(id: String) {
         requireApi().star(authParams() + ("id" to id))
     }
 
-    suspend fun unstar(id: String) {
+    override suspend fun unstar(id: String) {
         requireApi().unstar(authParams() + ("id" to id))
     }
 
@@ -330,7 +321,7 @@ class SubsonicRepository(
         requireApi().scrobble(authParams() + mapOf("id" to id, "submission" to submission.toString()))
     }
 
-    suspend fun getLyrics(songId: String): List<LyricLine> {
+    override suspend fun getLyrics(songId: String): List<LyricLine> {
         return runCatching {
             val lists = requireApi().getLyricsBySongId(authParams() + ("id" to songId)).response.lyricsList
             val synced = lists?.structuredLyrics.orEmpty().firstOrNull { it.synced } ?: lists?.structuredLyrics.orEmpty().firstOrNull()
@@ -338,9 +329,9 @@ class SubsonicRepository(
         }.getOrDefault(emptyList())
     }
 
-    fun streamUrl(songId: String): String = buildUrl("rest/stream.view", mapOf("id" to songId))
+    override fun streamUrl(songId: String): String = buildUrl("rest/stream.view", mapOf("id" to songId))
 
-    fun coverArtUrl(coverArt: String?, size: Int = 400): String? {
+    override fun coverArtUrl(coverArt: String?, size: Int): String? {
         if (coverArt.isNullOrBlank()) return null
         return buildUrl("rest/getCoverArt.view", mapOf("id" to coverArt, "size" to size.toString()))
     }

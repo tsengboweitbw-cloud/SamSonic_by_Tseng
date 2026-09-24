@@ -1,7 +1,6 @@
 package com.example.samsonic.ui.settings
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -13,11 +12,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DarkMode
-import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Palette
@@ -48,13 +44,12 @@ import kotlin.math.roundToInt
 
 @Composable
 fun SettingsScreen(
-    onSignedOut: () -> Unit,
+    onAddServer: () -> Unit,
     modifier: Modifier = Modifier,
     contentPaddingBottom: Dp = 0.dp,
 ) {
     val player = LocalPlayerState.current
     val container = LocalAppContainer.current
-    val credentials by container.sessionManager.credentials.collectAsStateWithLifecycle()
     val themeMode by container.themeManager.themeMode.collectAsStateWithLifecycle()
     val accentColor by container.themeManager.accentColor.collectAsStateWithLifecycle()
     val albumArtCornerRadius by container.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
@@ -91,31 +86,8 @@ fun SettingsScreen(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(top = topPadding, bottom = 24.dp + contentPaddingBottom),
         ) {
-            item { GroupLabel("Server") }
-            item {
-                SettingsCard {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(Icons.Filled.Dns, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(22.dp))
-                        Spacer(Modifier.width(14.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text(text = credentials?.serverUrl ?: "Not connected", style = MaterialTheme.typography.bodyLarge)
-                            Text(
-                                text = credentials?.username?.let { "Signed in as $it" } ?: "",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        if (credentials != null) {
-                            Icon(Icons.Filled.CheckCircle, contentDescription = "Connected", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
-                        }
-                    }
-                }
-            }
+            item { GroupLabel("Music source") }
+            item { SourcesCard(onAddServer = onAddServer) }
 
             item { GroupLabel("Playback") }
             item {
@@ -169,23 +141,6 @@ fun SettingsScreen(
                         onValueChange = { container.themeManager.setAlbumArtCornerRadius(it.dp) },
                     )
                     GlassSliderRows(container.themeManager)
-                }
-            }
-
-            item { GroupLabel("Account") }
-            item {
-                SettingsCard {
-                    NavRow(
-                        icon = Icons.AutoMirrored.Filled.Logout,
-                        title = "Sign out",
-                        value = "",
-                        tint = MaterialTheme.colorScheme.error,
-                        onClick = {
-                            player.stopAndClearQueue()
-                            container.repository.signOut()
-                            onSignedOut()
-                        },
-                    )
                 }
             }
 

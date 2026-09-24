@@ -14,6 +14,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.data.ThemeMode
@@ -36,6 +37,7 @@ class MainActivity : ComponentActivity() {
             val backdropBlur by container.themeManager.backdropBlur.collectAsStateWithLifecycle()
             val panelOpacity by container.themeManager.panelOpacity.collectAsStateWithLifecycle()
             val panelBlur by container.themeManager.panelBlur.collectAsStateWithLifecycle()
+            val activeSource by container.sources.active.collectAsStateWithLifecycle()
             val darkTheme = when (themeMode) {
                 ThemeMode.SYSTEM -> isSystemInDarkTheme()
                 ThemeMode.LIGHT -> false
@@ -57,7 +59,11 @@ class MainActivity : ComponentActivity() {
                     LocalGlassSettings provides GlassSettings(glassOpacity, glassBlur, backdropBlur, panelOpacity, panelBlur),
                 ) {
                     Surface(modifier = Modifier.fillMaxSize()) {
-                        SamSonicNavHost()
+                        // Switching music sources starts the app's screens over, so no
+                        // page, cache or back stack entry carries over the old library.
+                        key(activeSource?.key) {
+                            SamSonicNavHost()
+                        }
                     }
                 }
             }

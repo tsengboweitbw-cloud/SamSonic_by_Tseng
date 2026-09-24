@@ -12,7 +12,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.example.samsonic.LocalAppContainer
-import com.example.samsonic.data.SubsonicRepository
+import com.example.samsonic.data.MusicLibrary
 import com.example.samsonic.model.Album
 import com.example.samsonic.ui.common.UiState
 import kotlinx.coroutines.CancellationException
@@ -29,7 +29,7 @@ import kotlinx.coroutines.withContext
  * album or switching tabs and coming back shows the same albums - in particular
  * the same random "Picked For You" set. They reload only when asked ([refresh]).
  */
-class HomeViewModel(private val repository: SubsonicRepository) : ViewModel() {
+class HomeViewModel(private val repository: MusicLibrary) : ViewModel() {
     var state by mutableStateOf<UiState<Map<AlbumShelf, List<Album>>>>(UiState.Loading)
         private set
 
