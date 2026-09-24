@@ -93,10 +93,13 @@ fun SamSonicNavHost() {
             val systemBarInset = if (showChrome) chromeBottomInset else 0.dp
             val navBarReserve = if (showChrome && showBottomBar) navBarHeight + navBarBottomInset else 0.dp
             val miniPlayerReserve = if (showChrome) OneUiChrome.BarHeight + 8.dp else 0.dp
-            // Content melts into the background across the whole floating-chrome
-            // zone. Login skips it. Animated so route changes don't pop the mask.
+            // Content melts into the background near the bottom edge: 1.5 times the
+            // space below the nav bar (its bottom gap and the system bar), so the
+            // fade reaches a little way up behind the bar. Above that it stays
+            // solid behind the glass. Login skips it. Animated so route changes
+            // don't pop the mask.
             val bottomFadeHeight by animateDpAsState(
-                targetValue = if (showChrome) systemBarInset + navBarReserve + miniPlayerReserve else 0.dp,
+                targetValue = if (showChrome) (systemBarInset + navBarBottomInset) * 1.5f else 0.dp,
                 animationSpec = tween(260),
                 label = "bottomFade",
             )
