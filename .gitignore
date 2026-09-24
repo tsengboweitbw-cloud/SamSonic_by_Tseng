@@ -13,3 +13,9 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# Android KeyStore & Release Artifacts
+*.jks
+*.keystore
+*.apk
+*.aab
