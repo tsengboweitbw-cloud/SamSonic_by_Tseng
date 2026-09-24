@@ -1,10 +1,13 @@
 package com.example.samsonic.ui.library
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -30,6 +33,7 @@ internal data class LibraryPadding(val top: Dp, val bottom: Dp)
  *
  * Both views are one [LazyVerticalGrid] (a list is one column), so they share
  * [gridState]: switching view keeps roughly the same spot in the list.
+ * [header], if given, scrolls with the items above them, across the full width.
  */
 @Composable
 internal fun <T> LibraryCollection(
@@ -40,6 +44,8 @@ internal fun <T> LibraryCollection(
     key: (T) -> Any,
     card: @Composable (item: T, artSize: Dp) -> Unit,
     row: @Composable (item: T) -> Unit,
+    header: (@Composable () -> Unit)? = null,
+    modifier: Modifier = Modifier,
 ) {
     StateContent(state = state, modifier = Modifier.fillMaxSize()) { items ->
         val grid = layout.mode == LibraryViewMode.GRID
@@ -60,8 +66,14 @@ internal fun <T> LibraryCollection(
             },
             verticalArrangement = Arrangement.spacedBy(if (grid) gutter + 4.dp else 0.dp),
             horizontalArrangement = Arrangement.spacedBy(if (grid) gutter else 0.dp),
-            modifier = Modifier.fillMaxSize(),
+            modifier = modifier.fillMaxSize(),
         ) {
+            // Spans the grid; in grid view the content padding already insets it 20dp, as rows are.
+            if (header != null) {
+                item(span = { GridItemSpan(maxLineSpan) }) {
+                    Box(Modifier.padding(horizontal = if (grid) 0.dp else 20.dp)) { header() }
+                }
+            }
             items(items, key = key) { item ->
                 if (grid) {
                     BoxWithConstraints(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {

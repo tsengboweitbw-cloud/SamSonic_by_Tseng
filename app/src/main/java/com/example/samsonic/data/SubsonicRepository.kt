@@ -32,6 +32,8 @@ private const val ALBUM_FETCH_CONCURRENCY = 6
 // getAlbumList2 returns at most 500 albums per call; page through up to this many.
 private const val ALBUM_PAGE_SIZE = 500
 private const val MAX_ALBUMS = 20_000
+// How many songs a search for an artist's name looks through for their guest appearances.
+private const val ARTIST_SEARCH_SONGS = 500
 
 /**
  * Talks to a Subsonic/OpenSubsonic server (Navidrome, etc.) and maps the wire DTOs onto the
@@ -172,6 +174,38 @@ class SubsonicRepository(
         albums.map { album ->
             async { permits.withPermit { runCatching { getAlbum(album.id).second }.getOrDefault(emptyList()) } }
         }.awaitAll().flatten()
+    }
+
+    /**
+     * [artist]'s songs: every track of their [albums], album after album, then the
+     * tracks they appear on elsewhere (found by searching their name). With [limit],
+     * albums are fetched only until that many songs are in hand.
+     */
+    suspend fun getArtistSongs(artist: Artist, albums: List<Album>, limit: Int? = null): List<Song> = coroutineScope {
+        val elsewhere = async { runCatching { searchSongsBy(artist) }.getOrDefault(emptyList()) }
+        val onAlbums = if (limit == null) {
+            getAlbumsSongs(albums)
+        } else buildList {
+            for (chunk in albums.chunked(ALBUM_FETCH_CONCURRENCY)) {
+                addAll(getAlbumsSongs(chunk))
+                if (size >= limit) break
+            }
+        }
+        val songs = (onAlbums + elsewhere.await()).distinctBy { it.id }
+        if (limit == null) songs else songs.take(limit)
+    }
+
+    /** Songs whose artist is [artist], from a search for their name (which also matches titles). */
+    private suspend fun searchSongsBy(artist: Artist): List<Song> {
+        val params = authParams() + mapOf(
+            "query" to artist.name,
+            "artistCount" to "0",
+            "albumCount" to "0",
+            "songCount" to ARTIST_SEARCH_SONGS.toString(),
+        )
+        return requireApi().search3(params).response.searchResult3?.song.orEmpty()
+            .filter { it.artistId == artist.id }
+            .map { it.toDomain() }
     }
 
     suspend fun getAlbumList(type: String = "newest", size: Int = 20): List<Album> {

@@ -39,7 +39,9 @@ import com.example.samsonic.ui.home.AlbumShelfScreen
 import com.example.samsonic.ui.home.HomeScreen
 import com.example.samsonic.ui.home.rememberHomeViewModel
 import com.example.samsonic.ui.library.AlbumDetailScreen
+import com.example.samsonic.ui.library.ArtistAlbumsScreen
 import com.example.samsonic.ui.library.ArtistDetailScreen
+import com.example.samsonic.ui.library.ArtistSongsScreen
 import com.example.samsonic.ui.library.LibraryScreen
 import com.example.samsonic.ui.library.PlaylistDetailScreen
 import com.example.samsonic.ui.player.PlayerSheet
@@ -59,11 +61,15 @@ private object Routes {
     const val SEARCH = "search"
     const val SETTINGS = "settings"
     const val ARTIST = "artist/{artistId}"
+    const val ARTIST_ALBUMS = "artist/{artistId}/albums"
+    const val ARTIST_SONGS = "artist/{artistId}/songs"
     const val ALBUM = "album/{albumId}"
     const val PLAYLIST = "playlist/{playlistId}"
     const val SHELF = "shelf/{shelfType}"
 
     fun artist(id: String) = "artist/$id"
+    fun artistAlbums(id: String) = "artist/$id/albums"
+    fun artistSongs(id: String) = "artist/$id/songs"
     fun album(id: String) = "album/$id"
     fun playlist(id: String) = "playlist/$id"
     fun shelf(type: String) = "shelf/$type"
@@ -199,6 +205,25 @@ fun SamSonicNavHost() {
                         artistId = artistId,
                         onBack = { navController.popBackStack() },
                         onAlbumClick = { navController.navigate(Routes.album(it.id)) },
+                        onAllAlbumsClick = { navController.navigate(Routes.artistAlbums(artistId)) },
+                        onAllSongsClick = { navController.navigate(Routes.artistSongs(artistId)) },
+                        contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve,
+                    )
+                }
+                screen(Routes.ARTIST_ALBUMS) { entry ->
+                    val artistId = entry.arguments?.getString("artistId") ?: return@screen
+                    ArtistAlbumsScreen(
+                        artistId = artistId,
+                        onBack = { navController.popBackStack() },
+                        onAlbumClick = { navController.navigate(Routes.album(it.id)) },
+                        contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve,
+                    )
+                }
+                screen(Routes.ARTIST_SONGS) { entry ->
+                    val artistId = entry.arguments?.getString("artistId") ?: return@screen
+                    ArtistSongsScreen(
+                        artistId = artistId,
+                        onBack = { navController.popBackStack() },
                         contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve,
                     )
                 }
