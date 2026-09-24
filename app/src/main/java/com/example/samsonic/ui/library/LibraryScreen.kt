@@ -108,7 +108,7 @@ fun LibraryScreen(
     }
     val repository = LocalAppContainer.current.repository
     val artists = if (0 in visited) {
-        rememberScreenLoad(Unit, errorMessage = "Couldn't load artists") { repository.getArtists() }
+        rememberScreenLoad(Unit, errorMessage = "Couldn't load artists") { repository.getAlbumArtists() }
     } else UiState.Loading
     val albums = if (1 in visited) {
         rememberScreenLoad(Unit, errorMessage = "Couldn't load albums") {

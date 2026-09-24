@@ -29,6 +29,9 @@ import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import java.net.URLEncoder
 
 private const val ALBUM_FETCH_CONCURRENCY = 6
+// getAlbumList2 returns at most 500 albums per call; page through up to this many.
+private const val ALBUM_PAGE_SIZE = 500
+private const val MAX_ALBUMS = 20_000
 
 /**
  * Talks to a Subsonic/OpenSubsonic server (Navidrome, etc.) and maps the wire DTOs onto the
@@ -102,6 +105,47 @@ class SubsonicRepository(
         return body.artists?.index.orEmpty()
             .flatMap { it.artist }
             .map { it.toDomain() }
+            .sortedBy { it.name.lowercase() }
+    }
+
+    /**
+     * Album artists (the artist an album is filed under, e.g. "Various Artists" for
+     * a compilation) rather than every track artist, which is what getArtists lists
+     * on servers that index by track. Built from the albums themselves - an album's
+     * `artist` is its album artist - paging through all of them, with each artist's
+     * picture taken from getArtists where it has one.
+     */
+    suspend fun getAlbumArtists(): List<Artist> = coroutineScope {
+        val covers = async {
+            runCatching { getArtists() }.getOrDefault(emptyList()).associate { it.id to it.coverArt }
+        }
+        val albums = buildList {
+            var offset = 0
+            do {
+                val params = authParams() + mapOf(
+                    "type" to "alphabeticalByArtist",
+                    "size" to ALBUM_PAGE_SIZE.toString(),
+                    "offset" to offset.toString(),
+                )
+                val page = requireApi().getAlbumList2(params).response.albumList2?.album.orEmpty()
+                addAll(page)
+                offset += page.size
+            } while (page.size == ALBUM_PAGE_SIZE && offset < MAX_ALBUMS)
+        }
+        val coverById = covers.await()
+        albums
+            .filter { !it.artist.isNullOrBlank() }
+            // By id where the server gives one, else by name.
+            .groupBy { it.artistId ?: "name:${it.artist}" }
+            .map { (key, group) ->
+                val id = group.first().artistId
+                Artist(
+                    id = id ?: key,
+                    name = group.first().artist.orEmpty(),
+                    albumCount = group.size,
+                    coverArt = id?.let { coverById[it] },
+                )
+            }
             .sortedBy { it.name.lowercase() }
     }
 
