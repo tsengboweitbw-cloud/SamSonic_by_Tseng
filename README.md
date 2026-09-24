@@ -1,13 +1,13 @@
-# 🎵 Samsonic by Tseng
+# 🎵 Samsonic
 
 [![Android](https://img.shields.io/badge/Android-31%2B-green.svg)](https://developer.android.com)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.0-blue.svg)](https://kotlinlang.org)
 [![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-M3-purple.svg)](https://developer.android.com/jetpack/compose)
 [![Licence: GPL v3](https://img.shields.io/badge/Licence-GPLv3-blue.svg)](LICENSE)
 
-**Samsonic by Tseng** is a native Android music streaming player tailored for self-hosted Subsonic and Navidrome servers, featuring a **Samsung One UI 9.0 spatial visual style (Glassmorphism)**.
+**Samsonic** is a native Android music streaming player tailored for self-hosted Subsonic and Navidrome servers, featuring a **Samsung One UI 9.0 spatial visual style (Glassmorphism)**.
 
-**Samsonic by Tseng** 是一款專為 Android 打造、採用 **Samsung One UI 9.0 空間視覺風格 (Glassmorphism)** 的 Subsonic / Navidrome 自建音樂伺服器串流播放器。
+**Samsonic** 是一款專為 Android 打造、採用 **三星 One UI 9.0 空間視覺風格 (Glassmorphism)** 的 Subsonic / Navidrome 自建音樂伺服器串流播放器。
 
 ---
 
@@ -25,7 +25,7 @@ This project adheres to the **`Samsonic by <Author Name>`** naming convention:
 
 ## ✨ Features | 核心特色
 
-- 🎨 **Samsung One UI 9.0 Spatial Visual Design | Samsung One UI 9.0 空間視覺設計**  
+- 🎨 **Samsung One UI 9.0 Spatial Visual Design | 三星 One UI 9.0 空間視覺設計**  
   Personalised **Glassmorphism (frosted glass with dynamic sampling blur)** interface. Obsidian dark spatial colour palette with translucent floating panels featuring refined rim-stroke highlighting. **Bottom-heavy reachability**: Floating navigation bar, floating mini player, and large rounded card design optimised for effortless one-handed operation.  
   高度個人化的 **Glassmorphism (毛玻璃與動態採樣模糊)** 介面。Obsidian 深色空間調色盤與半透明懸浮面板，帶有細緻的邊緣高光。底部優化懸浮導航列與大圓角卡片設計，極致單手操作體驗。
 
