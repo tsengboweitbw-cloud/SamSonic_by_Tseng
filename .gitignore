@@ -19,3 +19,8 @@ local.properties
 *.keystore
 *.apk
 *.aab
+
+# Local rules
+Rule.md
+rule.md
+.kotlin/
