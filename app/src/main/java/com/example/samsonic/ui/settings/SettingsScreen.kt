@@ -1,6 +1,5 @@
 package com.example.samsonic.ui.settings
 
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Column
@@ -37,7 +36,6 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.text.style.TextAlign
@@ -303,24 +301,27 @@ internal fun NavRow(
     }
 }
 
-/** The About card's row: the app's name, and its version on a long press. */
+/**
+ * The About card's row: the app's name, with its version as a subtitle (the one
+ * settings row that has one). Nothing to open, so no tap or press ripple.
+ */
 @Composable
 private fun AboutRow() {
-    val hint = "v${BuildConfig.VERSION_NAME} • Navidrome/Subsonic"
-    val hintState = rememberRowHint()
-    val showHint = hintLongPress(hintState, hint)
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .hintHold(hintState)
-            // Nothing to open, so no tap (or press ripple): only the long press.
-            .pointerInput(showHint) { detectTapGestures(onLongPress = { showHint?.invoke() }) }
             .padding(horizontal = 8.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(Icons.Filled.Info, contentDescription = null, tint = rowIconTint(), modifier = Modifier.size(22.dp))
         Spacer(Modifier.width(14.dp))
-        Text(text = "SamSonic", style = MaterialTheme.typography.bodyLarge)
-        RowHint(hintState, hint)
+        Column {
+            Text(text = "SamSonic", style = MaterialTheme.typography.bodyLarge)
+            Text(
+                text = "v${BuildConfig.VERSION_NAME} • Navidrome/Subsonic",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }
