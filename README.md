@@ -31,8 +31,8 @@
   整合 Media3 SimpleCache 實現背景音樂快取與離線播放（依伺服器、帳號與曲目區分），智慧預先載入當前與隨後曲目，可設定僅在 Wi-Fi 載入、限制快取容量與手動清理快取。
 
 - **Multilingual Interface | 多語言介面**  
-  Complete Traditional Chinese (zh-TW) translation following Taiwan locale conventions. Switch languages in-app under Settings > Appearance > Language; on Android 13+ the change fades in place without restarting the activity.  
-  完整繁體中文（台灣慣用語）語系。可於「設定 > 外觀 > 語言」中切換，Android 13+ 無需重啟 Activity 即可即時切換。
+  Complete Chinese translation. Switch languages in-app under Settings > Appearance > Language; on Android 13+ the change fades in place without restarting the activity.  
+  完整漢語系。可於「設定 > 外觀 > 語言」中切換，Android 13+ 無需重啟 Activity 即可即時切換。
 
 - **AndroidX Media3 (ExoPlayer) Audio Engine | AndroidX Media3 (ExoPlayer) 播放引擎**  
   High-quality, low-latency streaming with background playback, lock screen controls, system media notifications, and MediaSession integration.  

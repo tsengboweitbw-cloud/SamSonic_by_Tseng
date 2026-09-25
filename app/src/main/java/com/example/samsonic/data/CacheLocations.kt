@@ -6,25 +6,27 @@ import android.os.storage.StorageManager
 import com.example.samsonic.R
 import java.io.File
 
-/** Somewhere the cover art cache can live: the phone's own storage, or a removable SD card. */
+/** Somewhere the caches (cover art and music) can live: the phone's own storage, or a removable SD card. */
 data class CacheLocation(
     /** [CacheLocations.InternalId], or the SD card's volume UUID (stable across remounts). */
     val id: String,
     val label: String,
-    /** The app's own folder on that storage; the cache sits in [cacheDir] inside it. */
+    /** The app's own folder on that storage; the caches sit in [coverArtDir] and [musicDir] inside it. */
     val root: File,
 ) {
     val isInternal: Boolean get() = id == CacheLocations.InternalId
-    val cacheDir: File get() = root.resolve(CacheLocations.DirName)
+    val coverArtDir: File get() = root.resolve(CacheLocations.CoverArtDirName)
+    val musicDir: File get() = root.resolve(CacheLocations.MusicDirName)
     val freeBytes: Long get() = root.usableSpace
 }
 
 object CacheLocations {
     const val InternalId = "internal"
-    const val DirName = "cover_art_cache"
+    const val CoverArtDirName = "cover_art_cache"
+    const val MusicDirName = "music_cache"
 
     /**
-     * The phone's storage, then each mounted SD card. On an SD card the cache goes in the
+     * The phone's storage, then each mounted SD card. On an SD card the caches go in the
      * app's own folder there, which needs no storage permission and is removed with the app.
      */
     fun available(context: Context): List<CacheLocation> {

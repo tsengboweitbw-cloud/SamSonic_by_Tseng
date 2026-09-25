@@ -10,7 +10,6 @@ import androidx.media3.datasource.cache.SimpleCache
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import java.io.File
 
 /**
  * The on-device cache of streamed music: every song played from a server is kept
@@ -19,13 +18,15 @@ import java.io.File
  * Music on the phone itself is never cached.
  *
  * Its size limit is one of [ImageCacheSettings.Steps]; past it, the songs played
- * longest ago make room. Media3's cache is built once with its limit, so a new one
- * applies from the next app start; [activeStep] is the one in use until then.
+ * longest ago make room. It lives where the cover art cache does ([locations]).
+ * Media3's cache is built once with its folder and limit, so a new one applies from
+ * the next app start; [activeStep] is the one in use until then.
  */
 @OptIn(UnstableApi::class)
-class MusicCache(context: Context) {
+class MusicCache(context: Context, private val locations: ImageCacheSettings) {
     private val appContext = context.applicationContext
     private val prefs = appContext.getSharedPreferences("samsonic_cache", Context.MODE_PRIVATE)
+    private val databaseProvider by lazy { StandaloneDatabaseProvider(appContext) }
 
     private val _maxSizeStep = MutableStateFlow(
         prefs.getInt(KEY_MAX_SIZE_STEP, DefaultStep).coerceIn(ImageCacheSettings.Steps.indices),
@@ -55,10 +56,22 @@ class MusicCache(context: Context) {
     val cache: Cache by lazy {
         SimpleCache(
             // Out of the system's cache folder, so it isn't emptied behind the index's back.
-            File(appContext.noBackupFilesDir, "music_cache"),
+            locations.activeLocation.musicDir,
             LeastRecentlyUsedCacheEvictor(ImageCacheSettings.Steps[activeStep]),
-            StandaloneDatabaseProvider(appContext),
+            databaseProvider,
         )
+    }
+
+    /**
+     * Deletes the music caches left at locations no longer in use (after a move), with
+     * their index. Not while standing in for a missing SD card, whose cache comes back
+     * with the card. Off the main thread.
+     */
+    fun deleteUnusedCaches() {
+        if (locations.usingFallback) return
+        locations.locations()
+            .filter { it.id != locations.activeLocation.id && it.musicDir.exists() }
+            .forEach { runCatching { SimpleCache.delete(it.musicDir, databaseProvider) } }
     }
 
     fun setMaxSizeStep(step: Int) {

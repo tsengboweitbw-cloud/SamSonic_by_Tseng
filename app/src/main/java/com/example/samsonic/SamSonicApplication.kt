@@ -39,7 +39,7 @@ class SamSonicApplication : Application(), SingletonImageLoader.Factory {
             }
             .diskCache {
                 DiskCache.Builder()
-                    .directory(container.imageCacheSettings.activeLocation.cacheDir.toOkioPath())
+                    .directory(container.imageCacheSettings.activeLocation.coverArtDir.toOkioPath())
                     .maxSizeBytes(container.imageCacheSettings.activeMaxSizeBytes)
                     .build()
             }

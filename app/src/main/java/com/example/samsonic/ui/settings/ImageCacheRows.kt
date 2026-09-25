@@ -36,16 +36,40 @@ import kotlin.math.roundToInt
 private const val USAGE_REFRESH_EVERY = 50
 
 /**
- * The cover art cache: its size limit (one of [ImageCacheSettings.Steps]), where it
- * lives ([locationMenu]), caching every cover up front ([cacheAllMenu] asks first;
- * only offered with [canCacheAll], i.e. for a server), and a row showing how much
- * it holds ([usage]) that empties it once [clearMenu] confirms.
+ * Where the music and cover art caches live; [menu] picks it. Says so when the chosen
+ * SD card is missing and the phone's storage is standing in.
+ */
+@Composable
+internal fun CacheLocationRow(settings: ImageCacheSettings, menu: PanelState) {
+    val locationId by settings.locationId.collectAsStateWithLifecycle()
+    val missingLabel = stringResource(R.string.settings_cache_location_missing)
+    val locationLabel = remember(locationId, missingLabel) {
+        settings.locations().firstOrNull { it.id == locationId }?.label ?: missingLabel
+    }
+    NavRow(
+        icon = Icons.Filled.Folder,
+        title = stringResource(R.string.settings_cache_location),
+        value = locationLabel,
+        hint = if (settings.usingFallback) {
+            stringResource(R.string.settings_cache_location_hint_fallback)
+        } else {
+            stringResource(R.string.settings_cache_location_hint)
+        },
+        onClick = { menu.open() },
+        modifier = Modifier.menuOrigin(menu),
+    )
+}
+
+/**
+ * The cover art cache: its size limit (one of [ImageCacheSettings.Steps]), caching
+ * every cover up front ([cacheAllMenu] asks first; only offered with [canCacheAll],
+ * i.e. for a server), and a row showing how much it holds ([usage]) that empties it
+ * once [clearMenu] confirms.
  */
 @Composable
 internal fun ImageCacheRows(
     settings: ImageCacheSettings,
     prefetcher: CoverArtPrefetcher,
-    locationMenu: PanelState,
     cacheAllMenu: PanelState,
     usage: CacheUsage,
     clearMenu: PanelState,
@@ -69,23 +93,7 @@ internal fun ImageCacheRows(
         onValueChangeFinished = {
             if (settings.changedSinceStart(settings.maxSizeStep.value, locationId)) showAppliesOnRestartToast(context)
         },
-        hint = if (settings.usingFallback) {
-            stringResource(R.string.settings_album_art_cache_hint_fallback)
-        } else {
-            stringResource(R.string.settings_album_art_cache_hint)
-        },
-    )
-    val missingLabel = stringResource(R.string.settings_cache_location_missing)
-    val locationLabel = remember(locationId, missingLabel) {
-        settings.locations().firstOrNull { it.id == locationId }?.label ?: missingLabel
-    }
-    NavRow(
-        icon = Icons.Filled.Folder,
-        title = stringResource(R.string.settings_cache_location),
-        value = locationLabel,
-        hint = stringResource(R.string.settings_cache_location_hint),
-        onClick = { locationMenu.open() },
-        modifier = Modifier.menuOrigin(locationMenu),
+        hint = stringResource(R.string.settings_album_art_cache_hint),
     )
     if (canCacheAll) {
         val running = prefetch is PrefetchState.Gathering || prefetch is PrefetchState.Running

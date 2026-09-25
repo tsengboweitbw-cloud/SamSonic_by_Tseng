@@ -111,13 +111,13 @@
     <!-- Storage: album art cache -->
     <string name="settings_album_art_cache">Album art cache</string>
     <string name="settings_album_art_cache_hint">Room for covers kept on the phone, so they show without loading</string>
-    <string name="settings_album_art_cache_hint_fallback">SD card not found, so the cache is on the phone for now</string>
     <string name="settings_cache_location">Cache location</string>
-    <string name="settings_cache_location_hint">Keep the album art cache on the phone or an SD card</string>
+    <string name="settings_cache_location_hint">Keep the music and album art caches on the phone or an SD card</string>
+    <string name="settings_cache_location_hint_fallback">SD card not found, so the caches are on the phone for now</string>
     <string name="settings_cache_location_missing">SD card (not found)</string>
     <string name="settings_cache_free">%1$s free</string>
-    <string name="settings_cache_no_sd">No SD card found. Put one in to keep the cache there.</string>
-    <string name="settings_cache_move_note">Moving the cache starts it empty; the old one is deleted the next time SamSonic starts.</string>
+    <string name="settings_cache_no_sd">No SD card found. Put one in to keep the caches there.</string>
+    <string name="settings_cache_move_note">Moving the caches starts them empty; the old ones are deleted the next time SamSonic starts.</string>
     <string name="settings_cache_all">Cache all album art</string>
     <string name="settings_cache_all_hint">Downloads every cover on the server ahead of time</string>
     <string name="settings_stop_caching">Stop caching</string>

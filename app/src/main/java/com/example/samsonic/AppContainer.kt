@@ -51,7 +51,7 @@ class AppContainer(context: Context) {
     val imageCacheSettings = ImageCacheSettings(appContext)
 
     /** Streamed songs kept on the phone, so a poor connection doesn't stop the music. */
-    val musicCache = MusicCache(appContext)
+    val musicCache = MusicCache(appContext, imageCacheSettings)
 
     /** What the player sends out and where; the playback service feeds it, Song info shows it. */
     val audioOutput = AudioOutputMonitor(appContext)
@@ -78,8 +78,11 @@ class AppContainer(context: Context) {
         applicationScope.launch { sources.active.drop(1).collect { playerState.stopAndClearQueue() } }
         // So are the covers being cached.
         applicationScope.launch { sources.active.drop(1).collect { coverArtPrefetcher.cancel() } }
-        // A cache left behind by moving it to or from an SD card.
-        applicationScope.launch(Dispatchers.IO) { imageCacheSettings.deleteUnusedCaches() }
+        // Caches left behind by moving them to or from an SD card.
+        applicationScope.launch(Dispatchers.IO) {
+            imageCacheSettings.deleteUnusedCaches()
+            musicCache.deleteUnusedCaches()
+        }
     }
 }
 

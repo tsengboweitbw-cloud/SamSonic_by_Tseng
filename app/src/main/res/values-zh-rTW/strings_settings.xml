@@ -110,9 +110,9 @@
     <!-- Storage: album art cache -->
     <string name="settings_album_art_cache">專輯封面快取</string>
     <string name="settings_album_art_cache_hint">在手機上保留封面，不必載入即可顯示</string>
-    <string name="settings_album_art_cache_hint_fallback">找不到 SD 卡，快取暫時存放在手機上</string>
     <string name="settings_cache_location">快取位置</string>
-    <string name="settings_cache_location_hint">將專輯封面快取存放在手機或 SD 卡</string>
+    <string name="settings_cache_location_hint">將音樂與專輯封面快取存放在手機或 SD 卡</string>
+    <string name="settings_cache_location_hint_fallback">找不到 SD 卡，快取暫時存放在手機上</string>
     <string name="settings_cache_location_missing">SD 卡（找不到）</string>
     <string name="settings_cache_free">可用 %1$s</string>
     <string name="settings_cache_no_sd">找不到 SD 卡。插入 SD 卡即可將快取存放在卡上。</string>

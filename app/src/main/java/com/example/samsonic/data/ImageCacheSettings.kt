@@ -8,7 +8,8 @@ import kotlin.math.roundToInt
 
 /**
  * The on-device cover art cache: how much room it may take (one of [Steps], doubling
- * from 128 MB up to 1 TB, stored as its index) and where it lives ([CacheLocation]).
+ * from 128 MB up to 1 TB, stored as its index), and where it and the music cache
+ * ([MusicCache]) live ([CacheLocation]).
  *
  * Coil's disk cache is built once, with its folder and size, so a new limit or
  * location applies from the next app start; [activeStep] and [activeLocation] are
@@ -61,13 +62,13 @@ class ImageCacheSettings(context: Context) {
     }
 
     /**
-     * Deletes the caches left at locations no longer in use (after a move). Not while
+     * Deletes the cover caches left at locations no longer in use (after a move). Not while
      * standing in for a missing SD card: the phone's cache is then the one in use, and
      * the card's comes back with the card. Does disk work, so call it off the main thread.
      */
     fun deleteUnusedCaches() {
         if (usingFallback) return
-        locations().filter { it.id != activeLocation.id }.forEach { it.cacheDir.deleteRecursively() }
+        locations().filter { it.id != activeLocation.id }.forEach { it.coverArtDir.deleteRecursively() }
     }
 
     companion object {

@@ -33,7 +33,7 @@ import com.example.samsonic.data.PrefetchState
 import com.example.samsonic.ui.player.PanelState
 import dev.chrisbanes.haze.HazeState
 
-/** Where the cover art cache lives: the phone's storage or an SD card, each with its free space. */
+/** Where the music and cover art caches live: the phone's storage or an SD card, each with its free space. */
 @Composable
 internal fun CacheLocationMenu(panel: PanelState, haze: HazeState, settings: ImageCacheSettings) {
     SettingsMenu(panel, haze, title = stringResource(R.string.settings_cache_location)) {

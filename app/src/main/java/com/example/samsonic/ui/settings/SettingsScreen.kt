@@ -211,6 +211,7 @@ fun SettingsScreen(
             item { GroupLabel(stringResource(R.string.settings_group_storage)) }
             item {
                 SettingsCard {
+                    CacheLocationRow(container.imageCacheSettings, cacheLocationMenu)
                     // Only a server's music streams; the phone's own is on hand already.
                     if (source is ActiveSource.Server) {
                         MusicCacheRows(container.musicCache, musicCacheUsage, clearMusicCacheMenu)
@@ -218,7 +219,6 @@ fun SettingsScreen(
                     ImageCacheRows(
                         settings = container.imageCacheSettings,
                         prefetcher = container.coverArtPrefetcher,
-                        locationMenu = cacheLocationMenu,
                         cacheAllMenu = cacheAllMenu,
                         usage = cacheUsage,
                         clearMenu = clearCacheMenu,
