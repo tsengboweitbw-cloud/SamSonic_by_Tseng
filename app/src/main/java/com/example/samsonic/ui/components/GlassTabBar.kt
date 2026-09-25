@@ -21,7 +21,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -39,6 +42,7 @@ import com.example.samsonic.ui.theme.OneUiChrome
 import com.example.samsonic.ui.theme.OneUiRadius
 import com.example.samsonic.ui.theme.glassSurface
 import dev.chrisbanes.haze.HazeState
+import kotlinx.coroutines.launch
 
 /**
  * How big a [GlassTabBar] is, and how it moves. [Chrome] matches the floating
@@ -54,7 +58,8 @@ enum class GlassTabBarSize(val height: Dp, internal val padding: Dp, internal va
 /**
  * A frosted-glass pill of tabs, styled after the floating nav bar: one shared
  * indicator pill glides between the tabs (see [GlassTabBarSize]), and taps
- * give a soft press-scale instead of a ripple. With [icons], each tab is the
+ * give a soft press-scale instead of a ripple; a finger sliding along the bar
+ * carries the indicator with it. With [icons], each tab is the
  * nav bar's own [IconLabelTab] (icon only, label sliding out when selected);
  * without, the tabs are text and the selected label takes the accent color.
  */
@@ -77,13 +82,24 @@ fun GlassTabBar(
     barSize: GlassTabBarSize = GlassTabBarSize.Compact,
     // One per label, in order.
     icons: List<ImageVector>? = null,
+    // Gets the finger's position (in tabs) as it slides along the bar, for a
+    // caller moving [position] with it (e.g. scrolling a pager along). Without
+    // it the bar carries its own indicator under the finger.
+    onSwipe: ((Float) -> Unit)? = null,
+    // The tab a swipe let go on. Without it, a new tab goes to [onSelect].
+    onSwipeEnd: ((Int) -> Unit)? = null,
 ) {
     val animated = remember { Animatable(selectedIndex.toFloat()) }
     LaunchedEffect(selectedIndex) {
         animated.animateTo(selectedIndex.toFloat(), TabIndicatorSpring)
     }
+    val scope = rememberCoroutineScope()
+    // Carrying the indicator itself (no [onSwipe]), which then outranks [position]
+    // until it settles, so handing back doesn't jump.
+    var swiping by remember { mutableStateOf(false) }
     val count = labels.size
-    val p = (position ?: animated.value).coerceIn(0f, (count - 1).coerceAtLeast(0).toFloat())
+    val p = (if (swiping) animated.value else position ?: animated.value)
+        .coerceIn(0f, (count - 1).coerceAtLeast(0).toFloat())
     val weights = tabWeights(count, p, barSize.selectedExtraWeight)
     val indicatorColors = tabIndicatorColors()
 
@@ -93,6 +109,40 @@ fun GlassTabBar(
             .height(barSize.height)
             .then(if (glass) Modifier.glassTabPill(hazeState) else Modifier)
             .drawBehind { drawTabIndicator(weights, p, barSize.padding.toPx(), indicatorColors) }
+            .tabBarSwipe(
+                count = count,
+                inset = barSize.padding,
+                extraWeight = barSize.selectedExtraWeight,
+                enabled = enabled,
+                onSwipe = { at ->
+                    if (onSwipe != null) {
+                        onSwipe(at)
+                    } else {
+                        // Picks up from wherever [position] had it.
+                        val from = if (!swiping && position != null) p else null
+                        swiping = true
+                        scope.launch {
+                            if (from != null) animated.snapTo(from)
+                            animated.animateTo(at, TabFollowSpring)
+                        }
+                    }
+                },
+                onSwipeEnd = { index ->
+                    when {
+                        onSwipeEnd != null -> onSwipeEnd(index)
+                        index != selectedIndex -> onSelect(index)
+                    }
+                    if (swiping) {
+                        scope.launch {
+                            try {
+                                animated.animateTo(index.toFloat(), TabIndicatorSpring)
+                            } finally {
+                                swiping = false
+                            }
+                        }
+                    }
+                },
+            )
             .padding(horizontal = barSize.padding),
         verticalAlignment = Alignment.CenterVertically,
     ) {

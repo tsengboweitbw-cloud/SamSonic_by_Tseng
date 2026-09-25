@@ -71,6 +71,7 @@ import com.example.samsonic.ui.theme.oneUiRowClickable
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 private val tabs = listOf(R.string.library_artists, R.string.library_albums, R.string.library_playlists, R.string.library_genres)
 private val tabIcons = listOf(
@@ -215,6 +216,16 @@ fun LibraryScreen(
                         barSize = GlassTabBarSize.Chrome,
                         // Icons like the nav bar: the label shows only on the selected tab.
                         icons = tabIcons,
+                        // Swiping along the bar scrolls the pages with the finger, so the
+                        // indicator (following the pager) stays under it too.
+                        onSwipe = { at ->
+                            val page = at.roundToInt()
+                            scope.launch { pagerState.scrollToPage(page, at - page) }
+                        },
+                        onSwipeEnd = { tab ->
+                            if (tab !in visited) visited += tab
+                            scope.launch { pagerState.animateScrollToPage(tab) }
+                        },
                     )
                 },
             )

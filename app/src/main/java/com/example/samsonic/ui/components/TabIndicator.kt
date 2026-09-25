@@ -2,17 +2,27 @@ package com.example.samsonic.ui.components
 
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.example.samsonic.ui.theme.accentPalette
 import kotlin.math.abs
+import kotlin.math.ceil
 import kotlin.math.floor
+import kotlin.math.roundToInt
 
 /*
  * The gliding tab indicator shared by the floating nav bar and the chrome-sized
@@ -28,6 +38,13 @@ const val SelectedTabExtraWeight = 0.8f
 // overshoot instead of stopping dead, like One UI's tab pill.
 val TabIndicatorSpring = spring<Float>(dampingRatio = 0.5f, stiffness = Spring.StiffnessMediumLow)
 
+// Keeps the indicator under a swiping finger: stiff and unbouncy, so it follows
+// closely, but not a snap, so its first move to the finger glides rather than jumps.
+val TabFollowSpring = spring<Float>(dampingRatio = 1f, stiffness = Spring.StiffnessHigh)
+
+// Letting go of a swipe this fast carries on to the next tab the way it was going.
+private val SwipeFlingVelocity = 500.dp
+
 /** 1 at the indicator's center, falling to 0 one tab away. */
 fun tabProximity(index: Int, position: Float): Float =
     (1f - abs(index - position)).coerceIn(0f, 1f)
@@ -36,6 +53,23 @@ fun tabProximity(index: Int, position: Float): Float =
 fun tabWeights(count: Int, position: Float, extraWeight: Float = SelectedTabExtraWeight): List<Float> =
     List(count) { i -> 1f + extraWeight * tabProximity(i, position) }
 
+/** Where the indicator sits across a bar [barWidth] px wide: [block] gets its left edge and width. */
+private inline fun <T> indicatorSpan(
+    weights: List<Float>,
+    position: Float,
+    inset: Float,
+    barWidth: Float,
+    block: (left: Float, width: Float) -> T,
+): T {
+    val count = weights.size
+    val unit = (barWidth - inset * 2) / weights.sum()
+    val k = floor(position).toInt().coerceIn(0, count - 1)
+    val t = position - k
+    val next = weights.getOrElse(k + 1) { weights[k] }
+    val left = inset + (weights.take(k).sum() + t * weights[k]) * unit
+    return block(left, (weights[k] * (1 - t) + next * t) * unit)
+}
+
 /**
  * Draws the indicator pill at [position] over tabs laid out by [weights],
  * inset by [inset] px from the bar's edges, growing and shrinking with the
@@ -43,22 +77,79 @@ fun tabWeights(count: Int, position: Float, extraWeight: Float = SelectedTabExtr
  * the pill shifts shade as it glides from one end of the bar to the other.
  */
 fun DrawScope.drawTabIndicator(weights: List<Float>, position: Float, inset: Float, colors: List<Color>, alpha: Float = 1f) {
-    val count = weights.size
-    if (count == 0 || alpha <= 0f) return
-    val unit = (size.width - inset * 2) / weights.sum()
-    val k = floor(position).toInt().coerceIn(0, count - 1)
-    val t = position - k
-    val next = weights.getOrElse(k + 1) { weights[k] }
-    val left = inset + (weights.take(k).sum() + t * weights[k]) * unit
-    val width = (weights[k] * (1 - t) + next * t) * unit
+    if (weights.isEmpty() || alpha <= 0f) return
     val height = size.height - inset * 2
-    drawRoundRect(
-        brush = Brush.horizontalGradient(colors, startX = inset, endX = size.width - inset),
-        topLeft = Offset(left, inset),
-        size = Size(width, height),
-        cornerRadius = CornerRadius(height / 2),
-        alpha = alpha,
-    )
+    indicatorSpan(weights, position, inset, size.width) { left, width ->
+        drawRoundRect(
+            brush = Brush.horizontalGradient(colors, startX = inset, endX = size.width - inset),
+            topLeft = Offset(left, inset),
+            size = Size(width, height),
+            cornerRadius = CornerRadius(height / 2),
+            alpha = alpha,
+        )
+    }
+}
+
+/**
+ * The indicator position (in tabs) that centres the indicator on [x] px across the
+ * bar, the ends holding it at the first and last tab. Tabs widen as the indicator
+ * passes, so this searches for it rather than dividing the width evenly.
+ */
+private fun tabPositionAt(x: Float, barWidth: Float, inset: Float, count: Int, extraWeight: Float): Float {
+    var low = 0f
+    var high = (count - 1).toFloat()
+    repeat(24) {
+        val mid = (low + high) / 2
+        val centre = indicatorSpan(tabWeights(count, mid, extraWeight), mid, inset, barWidth) { left, width -> left + width / 2 }
+        if (centre < x) low = mid else high = mid
+    }
+    return (low + high) / 2
+}
+
+/**
+ * Lets a tab bar of [count] tabs be swiped: as a finger slides along it, [onSwipe]
+ * gets the indicator position (in tabs) that keeps the indicator under the finger,
+ * and on letting go [onSwipeEnd] gets the tab to settle on: the nearest, or after a
+ * flick, the next one the way it was going. Goes before the bar's own padding, so it
+ * measures the width the indicator is drawn across; [inset] and [extraWeight] are
+ * the ones it is drawn with. Taps still reach the tabs: a swipe only starts past
+ * the touch slop.
+ */
+@Composable
+fun Modifier.tabBarSwipe(
+    count: Int,
+    inset: Dp,
+    extraWeight: Float,
+    enabled: Boolean,
+    onSwipe: (Float) -> Unit,
+    onSwipeEnd: (Int) -> Unit,
+): Modifier {
+    val swipe by rememberUpdatedState(onSwipe)
+    val swipeEnd by rememberUpdatedState(onSwipeEnd)
+    if (!enabled || count < 2) return this
+    return pointerInput(count, inset, extraWeight) {
+        val flingVelocity = SwipeFlingVelocity.toPx()
+        val tracker = VelocityTracker()
+        var last = 0f
+        fun settle(velocity: Float) {
+            val target = when {
+                velocity > flingVelocity -> ceil(last)
+                velocity < -flingVelocity -> floor(last)
+                else -> last
+            }
+            swipeEnd(target.roundToInt().coerceIn(0, count - 1))
+        }
+        detectHorizontalDragGestures(
+            onDragStart = { tracker.resetTracking() },
+            onDragEnd = { settle(tracker.calculateVelocity().x) },
+            onDragCancel = { settle(0f) },
+        ) { change, _ ->
+            change.consume()
+            tracker.addPosition(change.uptimeMillis, change.position)
+            last = tabPositionAt(change.position.x, size.width.toFloat(), inset.toPx(), count, extraWeight)
+            swipe(last)
+        }
+    }
 }
 
 /** The indicator's fill: a faint wash of the accent easing into its neighbour. */
