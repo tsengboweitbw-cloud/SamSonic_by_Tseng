@@ -44,10 +44,10 @@ import kotlin.math.roundToInt
 
 /**
  * One tab of the floating nav bar, and of a chrome-sized [GlassTabBar] with
- * icons: just the icon, until selected, when its label slides out beside it
- * (and folds back as the indicator leaves), fading in and out with a soft edge.
- * The icon's tint follows [emphasis] (1 under the indicator, 0 a tab away),
- * and taps give a soft shrink-and-glow instead of a ripple.
+ * icons: just the icon, until the indicator comes over it, when its label slides
+ * out beside it (and folds back as the indicator leaves), fading in and out with
+ * a soft edge. The label and the icon's tint follow [emphasis] (1 under the
+ * indicator, 0 a tab away), and taps give a soft shrink-and-glow instead of a ripple.
  */
 @Composable
 fun RowScope.IconLabelTab(
@@ -104,15 +104,11 @@ fun RowScope.IconLabelTab(
             contentDescription = label,
             tint = tint,
         )
-        // The label opens with selection and, beyond that, with how near the
-        // indicator is ([emphasis]), so it follows a swipe along the bar and
+        // The label opens with how near the indicator is ([emphasis]), as the tab
+        // widens with it, so it keeps pace with the indicator however fast it
+        // moves (a swipe racing along the bar shows each label as it passes) and
         // folds away as the tab narrows rather than being cut short to "…".
-        val shown by animateFloatAsState(
-            targetValue = if (selected) 1f else 0f,
-            animationSpec = spring(dampingRatio = 1f, stiffness = Spring.StiffnessMediumLow),
-            label = "tabLabelShown",
-        )
-        val reveal = shown * emphasis
+        val reveal = emphasis
         if (reveal > 0f) {
             Text(
                 text = label,
