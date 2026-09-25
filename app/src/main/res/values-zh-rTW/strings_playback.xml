@@ -21,7 +21,7 @@
 
     <string name="data_phone_storage">手機儲存空間</string>
     <string name="data_allow_device_music">允許 SamSonic 存取這支手機上的音樂，即可在此查看</string>
-    <string name="data_artist_not_found">找不到藝人</string>
+    <string name="data_artist_not_found">找不到歌手</string>
     <string name="data_album_not_found">找不到專輯</string>
     <string name="data_playlist_not_found">找不到播放清單</string>
     <string name="data_server_connect_failed">無法連線至伺服器</string>

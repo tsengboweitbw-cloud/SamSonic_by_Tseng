@@ -21,7 +21,7 @@
     <string name="search_title">搜尋</string>
     <string name="search_hint">搜尋你的音樂庫</string>
     <string name="search_no_results">找不到「%1$s」的結果</string>
-    <string name="search_placeholder">藝人、專輯、歌曲</string>
+    <string name="search_placeholder">歌手、專輯、歌曲</string>
     <string name="search_clear">清除搜尋</string>
 
     <!-- Sign in -->
@@ -43,7 +43,7 @@
 
     <!-- Library -->
     <string name="library_title">音樂庫</string>
-    <string name="library_artists">藝人</string>
+    <string name="library_artists">歌手</string>
     <string name="library_albums">專輯</string>
     <string name="library_songs">歌曲</string>
     <string name="library_playlists">播放清單</string>
@@ -57,11 +57,11 @@
         <item quantity="other">%d 張專輯</item>
     </plurals>
     <plurals name="library_artist_count">
-        <item quantity="other">%d 位藝人</item>
+        <item quantity="other">%d 位歌手</item>
     </plurals>
     <string name="library_genre_summary">%1$s · %2$s</string>
-    <string name="library_artists_load_error">無法載入藝人</string>
-    <string name="library_artist_load_error">無法載入藝人</string>
+    <string name="library_artists_load_error">無法載入歌手</string>
+    <string name="library_artist_load_error">無法載入歌手</string>
     <string name="library_albums_load_error">無法載入專輯</string>
     <string name="library_album_load_error">無法載入專輯</string>
     <string name="library_songs_load_error">無法載入歌曲</string>

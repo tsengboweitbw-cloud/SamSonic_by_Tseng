@@ -22,12 +22,12 @@
     <string name="settings_like_button_hint">用愛心按鈕標記喜愛的歌曲</string>
     <string name="settings_audio_format">音訊格式</string>
     <string name="settings_audio_format_hint">歌曲清單中每首歌曲格式的顯示方式</string>
-    <string name="settings_audio_format_under_artist">顯示在藝人下方</string>
+    <string name="settings_audio_format_under_artist">顯示在歌手下方</string>
     <string name="settings_audio_format_by_duration">顯示在長度旁</string>
     <string name="settings_audio_format_codec_badge">編碼格式標籤</string>
     <string name="settings_audio_format_hi_res_badge">Hi-Res 標籤</string>
     <string name="settings_audio_format_sample_title">歌曲名稱</string>
-    <string name="settings_audio_format_sample_artist">藝人</string>
+    <string name="settings_audio_format_sample_artist">歌手</string>
     <string name="settings_sleep_timer">睡眠定時器</string>
     <string name="settings_sleep_timer_hint">經過設定的分鐘數後暫停音樂</string>
     <string name="settings_sleep_timer_minutes">%1$d 分鐘</string>
@@ -57,8 +57,8 @@
     <string name="settings_dsd_dop_no">%1$s 不支援，改用 PCM</string>
 
     <!-- Library -->
-    <string name="settings_album_artists_only">僅顯示專輯藝人</string>
-    <string name="settings_album_artists_only_hint">「藝人」分頁只列出專輯藝人，而非歌曲上列名的所有人</string>
+    <string name="settings_album_artists_only">僅顯示專輯歌手</string>
+    <string name="settings_album_artists_only_hint">「歌手」分頁只列出專輯歌手，而非歌曲上列名的所有人</string>
     <string name="settings_favourites_playlist">「我的最愛」播放清單</string>
     <string name="settings_favourites_playlist_hint">你喜愛的歌曲，列在「播放清單」分頁的最前面</string>
 
@@ -126,7 +126,7 @@
     <string name="settings_prefetch_done_failed">完成，%1$d 個失敗</string>
     <string name="settings_prefetch_failed">無法連線至伺服器</string>
     <string name="settings_cache_all_title">要快取所有專輯封面嗎？</string>
-    <string name="settings_cache_all_body">這會以兩種尺寸下載伺服器上所有專輯、歌曲、藝人與播放清單的封面。音樂庫較大時，可能佔用數 GB 的儲存空間，以及同樣多的行動數據。</string>
+    <string name="settings_cache_all_body">這會以兩種尺寸下載伺服器上所有專輯、歌曲、歌手與播放清單的封面。音樂庫較大時，可能佔用數 GB 的儲存空間，以及同樣多的行動數據。</string>
     <string name="settings_cache_all_limit">快取上限為 %1$s；超過時，最久未使用的封面會被移除，以騰出空間給新封面。</string>
     <string name="settings_cache_all_metered">你目前正在使用行動數據。若數據方案有流量限制，請先連上 Wi-Fi。</string>
     <string name="settings_cache_all_confirm">全部快取</string>

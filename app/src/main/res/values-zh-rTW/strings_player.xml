@@ -49,9 +49,9 @@
     <string name="player_exclusive_off">關閉 · %1$s</string>
     <string name="player_not_exclusive">非獨佔 · %1$s</string>
     <string name="player_info_title">標題</string>
-    <string name="player_info_artist">藝人</string>
+    <string name="player_info_artist">歌手</string>
     <string name="player_info_album">專輯</string>
-    <string name="player_info_album_artist">專輯藝人</string>
+    <string name="player_info_album_artist">專輯歌手</string>
     <string name="player_info_track">曲目</string>
     <string name="player_info_disc_track">光碟 %1$d · 第 %2$d 首</string>
     <string name="player_info_year">年份</string>
