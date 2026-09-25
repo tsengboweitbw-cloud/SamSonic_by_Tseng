@@ -44,7 +44,7 @@ class PlaybackService : MediaSessionService() {
         // DSD (DSF/DFF) has no Android decoder; its extractor turns it into PCM itself.
         val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory, DsdExtractorsFactory())
 
-        val player = ExoPlayer.Builder(this)
+        val player = ExoPlayer.Builder(this, renderersFactory(this, container.bitPerfect))
             .setMediaSourceFactory(mediaSourceFactory)
             .setAudioAttributes(
                 AudioAttributes.Builder()
@@ -63,6 +63,7 @@ class PlaybackService : MediaSessionService() {
         // Application-scoped, so a scrobble sent just before the service stops still goes out.
         scrobbler = Scrobbler(player, { container.repository }, container.applicationScope)
         container.audioOutput.attach(player)
+        container.bitPerfect.attach(player)
 
         // One UI builds its status bar music chip and Now Bar card only for a media
         // notification that opens something when tapped, so the session needs an activity.
@@ -110,7 +111,10 @@ class PlaybackService : MediaSessionService() {
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = mediaSession
 
     override fun onDestroy() {
-        (application as SamSonicApplication).container.audioOutput.detach()
+        (application as SamSonicApplication).container.run {
+            audioOutput.detach()
+            bitPerfect.detach()
+        }
         scrobbler?.release()
         scrobbler = null
         mediaSession?.run {

@@ -20,6 +20,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.playback.AudioOutput
 import com.example.samsonic.playback.describeEncoding
+import com.example.samsonic.playback.formatKilohertz
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.model.Song
@@ -58,6 +59,7 @@ internal fun SongInfoPanel(panel: PanelState, haze: HazeState) {
                 // What's actually being played out, which can differ from the file (DSD
                 // decoded to PCM, high-res PCM cut to 16-bit), and where it goes.
                 val output by LocalAppContainer.current.audioOutput.output.collectAsStateWithLifecycle()
+                val bitPerfect by LocalAppContainer.current.bitPerfect.track.collectAsStateWithLifecycle()
                 output?.let { out ->
                     Spacer(Modifier.height(4.dp))
                     Text(
@@ -66,6 +68,7 @@ internal fun SongInfoPanel(panel: PanelState, haze: HazeState) {
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     outputDetails(out).forEach { DetailRow(it) }
+                    bitPerfect?.let { DetailRow(Detail("Bit-perfect", (if (it.on) "On · " else "Off · ") + it.detail)) }
                 }
             }
         }
@@ -127,9 +130,6 @@ private fun outputDetails(output: AudioOutput): List<Detail> = listOfNotNull(
     output.device?.let { Detail("Device", it) },
     output.mixerRate?.let { Detail("Device rate", formatKilohertz(it)) },
 )
-
-private fun formatKilohertz(hertz: Int): String =
-    if (hertz % 1000 == 0) "${hertz / 1000} kHz" else "%.1f kHz".format(hertz / 1000f)
 
 /** Each detail the server reported; the rest are left out. */
 private fun songDetails(song: Song, albumArtist: ArtistLink?, links: PlayerLinks): List<Detail> = listOfNotNull(

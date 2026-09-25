@@ -128,6 +128,7 @@ fun SettingsScreen(
                         onClick = { audioFormatMenu.open() },
                         modifier = Modifier.menuOrigin(audioFormatMenu),
                     )
+                    BitPerfectRow(container.bitPerfect)
                 }
             }
 

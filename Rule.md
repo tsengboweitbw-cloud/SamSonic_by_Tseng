@@ -19,7 +19,19 @@
 - **懸浮播放列 (Mini Player)**：不貼死底部邊緣，必須是一個帶有 Padding、大圓角、毛玻璃效果的懸浮 Box。當背後清單滑動時，必須透出底下的專輯封面顏色。
 - **全螢幕播放頁 (Now Playing)**：動態模糊的專輯封面作為背景，中央為大尺寸卡片封面，控制按鈕需符合 One UI 的大尺寸、高點擊容錯率設計。
 
-## 4. AI 開發規範
+## 4. 音訊進階規格 (Audio Features)
+- **DAC 獨佔模式 (DAC Exclusive Mode) & Bit-Perfect**：
+  - **Android 14 (API level 34) 以上**：優先使用 Android 14 原生 API（如 `AudioMixerAttributes` / Lossless Audio 特性）實現 Bit-Perfect 無損音訊與 USB DAC 獨佔輸出。
+  - **Android 14 以下**：由於系統混音器 (AudioFlinger) 會重採樣，若需在舊版 Android 實現 DAC 獨佔與 Bit-Perfect，需規劃使用自訂 USB 驅動（例如 libusb / AAudio / 自製 USB 音訊驅動）直通硬體。這個暫不執行。
+- **DSD 輸出 (DSD Output)**：待以 iFi hip-dac 實機檢查後再實作（暫不執行）。
+  - **先檢查**：接上 hip-dac 後確認 (1) Android 是否對該 DAC 提供 Bit-Perfect 及支援的取樣率；(2) `getSupportedMixerAttributes` 是否回報 `ENCODING_DSD`（原生 DSD）；(3) 現有 Bit-Perfect PCM 播放時，DAC 指示燈是否顯示歌曲原始取樣率（如 44.1 kHz）。
+  - **設定選項**（Settings → Playback「DSD output」）：
+    - **轉為 PCM (Convert to PCM)**：目前的行為，App 內將 DSD 轉為 PCM；無 DSD DAC 時唯一選項。
+    - **DoP**：將 DSD 封裝於 32-bit PCM（DSD64 → 176.4 kHz、DSD128 → 352.8 kHz、DSD256 → 705.6 kHz）。僅在 Bit-Perfect 生效時使用；DAC 不支援該取樣率時退回 PCM。
+    - **原生 DSD (Native)**：僅在 Android 回報該 DAC 支援 DSD 時才顯示。
+  - **注意**：Bit-Perfect / DoP 期間不得有任何 App 內 EQ、ReplayGain、音量或淡入淡出處理，否則會破壞資料。
+
+## 5. AI 開發規範
 1. **先假後真**：撰寫 Compose UI 期間，一律先使用 `MockData`（假資料）進行視覺驗證，確認無誤後再串接 Subsonic API。
 2. **模組化**：不要寫超過 300 行的巨型檔案。將 UI 切割為獨立的 Component 函數。
 3. **錯誤處理**：如果編譯失敗，我只會提供 Logcat 的關鍵錯誤片段，請直接針對錯誤修復，不要隨意重構無關的程式碼。

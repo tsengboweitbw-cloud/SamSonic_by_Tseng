@@ -12,6 +12,7 @@ import com.example.samsonic.data.LibraryLayoutManager
 import com.example.samsonic.data.ThemeManager
 import com.example.samsonic.data.device.DeviceLibrary
 import com.example.samsonic.playback.AudioOutputMonitor
+import com.example.samsonic.playback.BitPerfectOutput
 import com.example.samsonic.playback.PlayerState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -50,6 +51,9 @@ class AppContainer(context: Context) {
 
     /** What the player sends out and where; the playback service feeds it, Song info shows it. */
     val audioOutput = AudioOutputMonitor(appContext)
+
+    /** Bit-perfect output to a USB DAC (Android 14+); the playback service's tracks go through it. */
+    val bitPerfect = BitPerfectOutput(appContext)
 
     private val subsonic = SubsonicRepository(okHttpClient)
 
