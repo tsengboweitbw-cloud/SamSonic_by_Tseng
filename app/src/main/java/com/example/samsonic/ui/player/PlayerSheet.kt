@@ -54,8 +54,8 @@ private fun ramp(value: Float, start: Float, end: Float) = ((value - start) / (e
  * and playback stops. The pill widens and its corners square off as
  * it grows, the mini player's contents fade out as Now Playing's fade in, and
  * the cover and progress line travel between the two ([PlayerMorphState]).
- * Lyrics, queue and song info open inside the sheet, growing out of their buttons
- * over Now Playing; dragging up on an open Now Playing pulls the queue up with the finger.
+ * Lyrics, queue and song info open inside the sheet, growing out of the capsule
+ * stack at the foot of Now Playing.
  *
  * [collapsedBottom] is the gap between the pill and the bottom of the screen.
  * [onAlbumClick] and [onArtistClick] open those pages from Now Playing, after the sheet folds away.
@@ -73,9 +73,6 @@ fun PlayerSheet(
     SideEffect { if (song == null && sheet.isExpanded) sheet.collapse() }
     // Swiping the mini player away stops the music and empties the queue.
     SideEffect { sheet.onDismiss = player::stopAndClearQueue }
-    // Read here, not inside the SideEffect, so a change in Settings recomposes and reaches the sheet.
-    val swipeForQueue = LocalAppContainer.current.themeManager.swipeForQueue.collectAsStateWithLifecycle().value
-    SideEffect { sheet.swipeUpForQueue = swipeForQueue }
     val morph = remember(sheet) { PlayerMorphState(progress = { sheet.progress }, active = { sheet.isMoving }) }
     val links = remember(sheet, onAlbumClick, onArtistClick) {
         PlayerLinks(

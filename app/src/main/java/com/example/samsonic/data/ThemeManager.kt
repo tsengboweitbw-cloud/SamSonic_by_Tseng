@@ -81,18 +81,6 @@ class ThemeManager(context: Context) {
         return if (prefs.getBoolean(KEY_SHOW_AUDIO_FORMAT, false)) AudioFormatDisplay.UNDER_ARTIST else AudioFormatDisplay.OFF
     }
 
-    // Which Now Playing swipes open a panel: right for lyrics, left for song info, up for the queue.
-    // Only the queue's is on until the user turns the others on.
-    // Each panel still opens from its button either way.
-    private val _swipeForLyrics = MutableStateFlow(prefs.getBoolean(KEY_SWIPE_LYRICS, false))
-    val swipeForLyrics: StateFlow<Boolean> = _swipeForLyrics.asStateFlow()
-
-    private val _swipeForInfo = MutableStateFlow(prefs.getBoolean(KEY_SWIPE_INFO, false))
-    val swipeForInfo: StateFlow<Boolean> = _swipeForInfo.asStateFlow()
-
-    private val _swipeForQueue = MutableStateFlow(prefs.getBoolean(KEY_SWIPE_QUEUE, true))
-    val swipeForQueue: StateFlow<Boolean> = _swipeForQueue.asStateFlow()
-
     // Swiping the mini player sideways changes song: left for the next, right for the previous.
     private val _swipeMiniForSong = MutableStateFlow(prefs.getBoolean(KEY_SWIPE_MINI_SONG, true))
     val swipeMiniForSong: StateFlow<Boolean> = _swipeMiniForSong.asStateFlow()
@@ -144,21 +132,6 @@ class ThemeManager(context: Context) {
         _likesEnabled.value = enabled
     }
 
-    fun setSwipeForLyrics(enabled: Boolean) {
-        prefs.edit().putBoolean(KEY_SWIPE_LYRICS, enabled).apply()
-        _swipeForLyrics.value = enabled
-    }
-
-    fun setSwipeForInfo(enabled: Boolean) {
-        prefs.edit().putBoolean(KEY_SWIPE_INFO, enabled).apply()
-        _swipeForInfo.value = enabled
-    }
-
-    fun setSwipeForQueue(enabled: Boolean) {
-        prefs.edit().putBoolean(KEY_SWIPE_QUEUE, enabled).apply()
-        _swipeForQueue.value = enabled
-    }
-
     fun setSwipeMiniForSong(enabled: Boolean) {
         prefs.edit().putBoolean(KEY_SWIPE_MINI_SONG, enabled).apply()
         _swipeMiniForSong.value = enabled
@@ -185,9 +158,6 @@ class ThemeManager(context: Context) {
         private const val KEY_LIKES_ENABLED = "likes_enabled"
         private const val KEY_SHOW_AUDIO_FORMAT = "show_audio_format"
         private const val KEY_AUDIO_FORMAT_DISPLAY = "audio_format_display"
-        private const val KEY_SWIPE_LYRICS = "swipe_for_lyrics"
-        private const val KEY_SWIPE_INFO = "swipe_for_info"
-        private const val KEY_SWIPE_QUEUE = "swipe_for_queue"
         private const val KEY_SWIPE_MINI_SONG = "swipe_mini_for_song"
         val DefaultAccent = Color(0xFF8875FF)
         val DefaultAlbumArtCornerRadius = 2.dp

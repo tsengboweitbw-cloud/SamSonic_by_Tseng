@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.LibraryAdd
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -42,10 +41,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.boundsInRoot
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -54,7 +50,6 @@ import com.example.samsonic.R
 import com.example.samsonic.model.Song
 import com.example.samsonic.model.artSeed
 import com.example.samsonic.ui.library.AddToPlaylistState
-import com.example.samsonic.ui.library.toPlaylistItems
 import com.example.samsonic.ui.components.PressIconButton
 import com.example.samsonic.ui.theme.BlurredArtBackdrop
 import com.example.samsonic.ui.theme.GlassAlpha
@@ -77,17 +72,11 @@ fun NowPlayingScreen(
     val song = player.currentSong ?: return
     val cornerRadius by LocalAppContainer.current.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
     val likesEnabled by LocalAppContainer.current.themeManager.likesEnabled.collectAsStateWithLifecycle()
-    val swipeForLyrics by LocalAppContainer.current.themeManager.swipeForLyrics.collectAsStateWithLifecycle()
-    val swipeForInfo by LocalAppContainer.current.themeManager.swipeForInfo.collectAsStateWithLifecycle()
     val horizontalPadding = 24.dp
     Box(
         modifier = modifier
             .playerMorphRoot(PlayerSurface.Full)
-            .fillMaxSize()
-            .swipeOpensPanels(
-                swipeLeft = info.takeIf { swipeForInfo },
-                swipeRight = lyrics.takeIf { swipeForLyrics },
-            ),
+            .fillMaxSize(),
     ) {
         // Crossfade fades the old and new backdrops at the same time, so mid-change
         // neither is opaque and the screen behind the player shows through. An
@@ -108,15 +97,12 @@ fun NowPlayingScreen(
                 .navigationBarsPadding()
                 .padding(horizontal = horizontalPadding),
         ) {
-        // Floating glass buttons (One UI Gallery style) instead of a bar.
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
+        // A floating glass button (One UI Gallery style) instead of a bar; Add to
+        // playlist is in the capsule stack at the bottom.
+        Row(modifier = Modifier.fillMaxWidth().padding(top = 12.dp)) {
             GlassCircleButton(onClick = onCollapse) {
                 Icon(Icons.Filled.KeyboardArrowDown, contentDescription = stringResource(R.string.player_collapse))
             }
-            if (addToPlaylist != null) AddToPlaylistButton(addToPlaylist, song)
         }
 
         Spacer(Modifier.height(28.dp))
@@ -233,7 +219,9 @@ fun NowPlayingScreen(
             lyrics = lyrics,
             queue = queue,
             info = info,
-            modifier = Modifier.padding(bottom = 24.dp),
+            addToPlaylist = addToPlaylist,
+            song = song,
+            modifier = Modifier.padding(bottom = 20.dp),
         )
         }
     }
@@ -247,31 +235,6 @@ private fun GlassCircleButton(onClick: () -> Unit, modifier: Modifier = Modifier
         modifier = modifier.nowPlayingGlass(),
         content = content,
     )
-}
-
-// How much the button shrinks per unit of its card's close overshoot, as the panel buttons do.
-private const val AddButtonLandingSqueeze = 3f
-
-/**
- * Opens Add to playlist for [song], the card growing out of this button as Now Playing's
- * panels grow out of theirs: hidden while the card is out, then catching its landing.
- */
-@Composable
-private fun AddToPlaylistButton(state: AddToPlaylistState, song: Song) {
-    val bounds = remember { arrayOf(Rect.Zero) }
-    GlassCircleButton(
-        onClick = { state.open(song.toPlaylistItems(), bounds[0], originRadius = null) },
-        modifier = Modifier
-            .onGloballyPositioned { bounds[0] = it.boundsInRoot() }
-            .graphicsLayer {
-                alpha = if (state.panel.progress > 0f) 0f else 1f
-                val squeeze = 1f - state.panel.landing * AddButtonLandingSqueeze
-                scaleX = squeeze
-                scaleY = squeeze
-            },
-    ) {
-        Icon(Icons.Filled.LibraryAdd, contentDescription = stringResource(R.string.components_add_to_playlist))
-    }
 }
 
 /**

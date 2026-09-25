@@ -14,8 +14,7 @@ import kotlinx.coroutines.CoroutineScope
  * The player sheet: 0 = collapsed into the mini player pill, 1 = full-screen Now
  * Playing. Drags move [progress] with the finger; a release settles it to the
  * nearer end, or the end a fling heads for. Over Now Playing, [lyrics], the
- * [queue] and song [info] open as panels; dragging up once the sheet is open
- * pulls the queue up instead.
+ * [queue] and song [info] open as panels, from the capsule stack at its foot.
  */
 @Stable
 class PlayerSheetState internal constructor(scope: CoroutineScope) {
@@ -52,9 +51,6 @@ class PlayerSheetState internal constructor(scope: CoroutineScope) {
     val queue = PanelState(scope)
     val info = PanelState(scope)
 
-    /** Whether dragging up on an open Now Playing pulls the queue up (its switch in Settings). */
-    internal var swipeUpForQueue = true
-
     /** Whether a panel covers Now Playing, or is heading there. */
     val hasPanelOpen: Boolean get() = lyrics.isOpen || queue.isOpen || info.isOpen
 
@@ -81,7 +77,6 @@ class PlayerSheetState internal constructor(scope: CoroutineScope) {
 
     internal fun startDrag() {
         track.stop()
-        queue.stop()
         dismissTrack.stop()
         dragTarget = null
         dragFromMini = progress < 0.5f
@@ -94,14 +89,13 @@ class PlayerSheetState internal constructor(scope: CoroutineScope) {
             // Down from the resting mini player (or caught mid-swipe away): it follows the
             // finger down, to be swiped away.
             val downFromRest = progress < 0.001f && (deltaPx > 0f || dismissal > 0f)
-            // Up from a fully open Now Playing: the queue follows the finger up. Switched
-            // off, the whole drag does nothing, so Now Playing doesn't follow the finger
-            // back down either.
+            // Up from a fully open Now Playing: nothing (there's nowhere further to go),
+            // and for the whole drag, so Now Playing doesn't follow the finger back
+            // down either.
             when {
                 downFromRest -> DragTarget.Dismiss
-                !upFromOpen -> DragTarget.Sheet
-                swipeUpForQueue -> DragTarget.Queue
-                else -> DragTarget.None
+                upFromOpen -> DragTarget.None
+                else -> DragTarget.Sheet
             }.also { dragTarget = it }
         }
         when (target) {
@@ -117,7 +111,6 @@ class PlayerSheetState internal constructor(scope: CoroutineScope) {
                     track.dragBy(deltaPx)
                 }
             }
-            DragTarget.Queue -> queue.dragBy(deltaPx)
             DragTarget.Dismiss -> {
                 // Brought back up past rest: the rest of the way opens the sheet, likewise.
                 // (The track's 1 is down here, so the finger's direction flips.)
@@ -137,7 +130,6 @@ class PlayerSheetState internal constructor(scope: CoroutineScope) {
     /** Settles after a drag released with [velocityPx] (px/s, positive = downward). */
     internal fun settle(velocityPx: Float) {
         when (dragTarget) {
-            DragTarget.Queue -> queue.settle(velocityPx)
             DragTarget.Dismiss -> settleDismissal(velocityPx)
             DragTarget.None -> Unit
             // A drag that never moved (null) settles the sheet back where it was.
@@ -169,8 +161,8 @@ class PlayerSheetState internal constructor(scope: CoroutineScope) {
     }
 }
 
-/** What a drag on the sheet moves: the sheet, the queue up over it, the mini player away, or nothing. */
-private enum class DragTarget { Sheet, Queue, Dismiss, None }
+/** What a drag on the sheet moves: the sheet, the mini player away, or nothing. */
+private enum class DragTarget { Sheet, Dismiss, None }
 
 @Composable
 fun rememberPlayerSheetState(): PlayerSheetState {

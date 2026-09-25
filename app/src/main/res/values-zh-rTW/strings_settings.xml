@@ -63,12 +63,6 @@
     <string name="settings_favourites_playlist_hint">你喜愛的歌曲，列在「播放清單」分頁的最前面</string>
 
     <!-- Player gestures -->
-    <string name="settings_swipe_lyrics">向右滑動顯示歌詞</string>
-    <string name="settings_swipe_lyrics_hint">在「正在播放」畫面向右滑動即可開啟歌詞</string>
-    <string name="settings_swipe_info">向左滑動顯示歌曲資訊</string>
-    <string name="settings_swipe_info_hint">在「正在播放」畫面向左滑動即可開啟歌曲詳細資訊</string>
-    <string name="settings_swipe_queue">向上滑動顯示播放佇列</string>
-    <string name="settings_swipe_queue_hint">在「正在播放」畫面向上滑動即可查看接下來播放的歌曲</string>
     <string name="settings_swipe_mini_song">滑動迷你播放器切換歌曲</string>
     <string name="settings_swipe_mini_song_hint">向左滑動迷你播放器播放下一首，向右滑動則播放上一首，取代「下一首」按鈕</string>
 
