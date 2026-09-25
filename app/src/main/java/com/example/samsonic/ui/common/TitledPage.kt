@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -38,6 +39,10 @@ private val FadeHeight = 24.dp
 // padding is empty space, so only that space sits in the fade at rest.
 private val ContentTopPadding = 16.dp
 
+// Space between the title and a bar, where content scrolling up past the bar
+// fades out in plain sight rather than hidden under the glass.
+private val BarGap = 16.dp
+
 /**
  * A nav tab page (Home, Library, Search, Settings): the large [title] stays
  * fixed under the status bar, and the page's scrolling [content] melts away
@@ -45,7 +50,8 @@ private val ContentTopPadding = 16.dp
  *
  * An optional [bar] (the search pill, the Library tabs) floats fixed at the
  * top of the content, right under the title, as frosted glass: content scrolls
- * on beneath it and fades out as it slides up past the bar. The bar gets a
+ * on beneath it and fades out as it slides up past the bar, in a gap left
+ * between the bar and the title. The bar gets a
  * haze source of just that content, since the whole page already sits inside
  * the NavHost's own source.
  *
@@ -68,9 +74,12 @@ fun TitledPage(
     var barHeight by remember { mutableIntStateOf(0) }
     val barHeightDp = with(density) { barHeight.toDp() }
     val contentHaze = if (bar != null || overlay != null) rememberHazeState() else null
-    val fade = if (bar != null) barHeightDp else FadeHeight
+    // Under the bar the glass shows its own blur of the unfaded content, so the
+    // fade only needs the gap above it.
+    val barGap = if (bar != null) BarGap else 0.dp
+    val fade = if (bar != null) BarGap else FadeHeight
     var titleHeight by remember { mutableIntStateOf(0) }
-    val aboveContent = WindowInsets.statusBars.getTop(density) + titleHeight
+    val aboveContent = WindowInsets.statusBars.getTop(density) + titleHeight + with(density) { barGap.roundToPx() }
 
     Column(modifier = modifier.fillMaxSize().statusBarsPadding()) {
         Box(modifier = Modifier.onSizeChanged { titleHeight = it.height }) { title() }
@@ -82,19 +91,23 @@ fun TitledPage(
                     .topFade(fade)
                     .then(if (contentHaze != null) Modifier.graphicsLayer().hazeSource(contentHaze) else Modifier),
             ) {
-                content(if (bar != null) barHeightDp + 8.dp else ContentTopPadding)
+                content(if (bar != null) barGap + barHeightDp + 8.dp else ContentTopPadding)
             }
             if (contentHaze != null) {
-                if (bar != null) Box(modifier = Modifier.onSizeChanged { barHeight = it.height }) { bar(contentHaze) }
+                if (bar != null) {
+                    Box(modifier = Modifier.padding(top = barGap).onSizeChanged { barHeight = it.height }) { bar(contentHaze) }
+                }
                 if (overlay != null) {
-                    CompositionLocalProvider(LocalAboveContent provides aboveContent) { overlay(contentHaze) }
+                    Box(modifier = Modifier.padding(top = barGap)) {
+                        CompositionLocalProvider(LocalAboveContent provides aboveContent) { overlay(contentHaze) }
+                    }
                 }
             }
         }
     }
 }
 
-/** Pixels of the page above an [TitledPage] overlay: the status bar and the title. */
+/** Pixels of the page above an [TitledPage] overlay: the status bar, the title and the bar gap. */
 private val LocalAboveContent = compositionLocalOf { 0 }
 
 /**
