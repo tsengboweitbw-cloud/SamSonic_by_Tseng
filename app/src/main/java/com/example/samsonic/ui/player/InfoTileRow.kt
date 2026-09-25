@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.samsonic.ui.components.marqueeWhenLong
 
 // Every tile is this exact size, whether it holds an icon or a format name, so the
 // rows' text all starts at the same x and the tiles stack as one neat column.
@@ -63,7 +64,7 @@ internal fun InfoTileRow(tile: InfoTile, description: String, text: String, acti
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.marqueeWhenLong(),
         )
     }
 }

@@ -15,6 +15,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withLink
 import com.example.samsonic.model.ArtistCredit
 import com.example.samsonic.model.Song
+import com.example.samsonic.ui.components.marqueeWhenLong
 import com.example.samsonic.ui.components.pressClickable
 
 /**
@@ -37,8 +38,11 @@ internal fun ArtistNames(
     onOpen: (artistId: String) -> Unit,
     modifier: Modifier = Modifier,
     maxLines: Int = 1,
+    // On one line, scrolls a line too long to fit (see marqueeWhenLong) instead of cutting it short.
+    marquee: Boolean = false,
 ) {
     val credits = song.artistCredits
+    val scroll = if (marquee && maxLines == 1) Modifier.marqueeWhenLong() else Modifier
     if (credits.size == 1) {
         val id = credits.single().id
         Text(
@@ -47,7 +51,7 @@ internal fun ArtistNames(
             color = color,
             maxLines = maxLines,
             overflow = TextOverflow.Ellipsis,
-            modifier = modifier.then(if (id != null) Modifier.pressClickable({ onOpen(id) }, pressedScale = 0.95f) else Modifier),
+            modifier = modifier.then(if (id != null) Modifier.pressClickable({ onOpen(id) }, pressedScale = 0.95f) else Modifier).then(scroll),
         )
         return
     }
@@ -59,7 +63,7 @@ internal fun ArtistNames(
         color = color,
         maxLines = maxLines,
         overflow = TextOverflow.Ellipsis,
-        modifier = modifier,
+        modifier = modifier.then(scroll),
     )
 }
 

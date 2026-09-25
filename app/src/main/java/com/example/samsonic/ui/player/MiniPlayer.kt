@@ -33,6 +33,7 @@ import com.example.samsonic.R
 import com.example.samsonic.model.artSeed
 import com.example.samsonic.ui.components.MediaArt
 import com.example.samsonic.ui.components.PressIconButton
+import com.example.samsonic.ui.components.marqueeWhenLong
 import com.example.samsonic.ui.components.pressClickable
 import com.example.samsonic.model.Song
 import com.example.samsonic.ui.theme.OneUiChrome
@@ -110,11 +111,15 @@ fun MiniPlayer(
                     )
                     Spacer(Modifier.width(artTextSpacing))
                     Column {
+                        // Only the song playing scrolls a line too long to fit; the ones
+                        // either side, seen only mid-swipe, are cut short.
+                        val scroll = if (isCurrent) Modifier.marqueeWhenLong() else Modifier
                         Text(
                             text = shown.title,
                             style = MaterialTheme.typography.labelLarge,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
+                            modifier = scroll,
                         )
                         Text(
                             text = shown.artistName,
@@ -122,6 +127,7 @@ fun MiniPlayer(
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
+                            modifier = scroll,
                         )
                     }
                 }

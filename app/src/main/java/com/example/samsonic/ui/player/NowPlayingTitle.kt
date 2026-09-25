@@ -11,9 +11,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.model.Song
+import com.example.samsonic.ui.components.marqueeWhenLong
 import com.example.samsonic.ui.components.pressClickable
 
 /** The song's title, album, artist and audio info; the album and artist open their pages. */
@@ -25,7 +25,7 @@ internal fun NowPlayingTitle(song: Song, modifier: Modifier = Modifier) {
             text = song.title,
             style = MaterialTheme.typography.headlineMedium,
             maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.marqueeWhenLong(),
         )
         if (song.albumTitle.isNotBlank()) {
             Spacer(Modifier.height(6.dp))
@@ -43,6 +43,7 @@ internal fun NowPlayingTitle(song: Song, modifier: Modifier = Modifier) {
             style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
             color = MaterialTheme.colorScheme.primary,
             onOpen = links.openArtist,
+            marquee = true,
         )
         // Always laid out, and keeping the last details until the next song's arrive
         // (blank only before the first), so nothing blinks or shifts as a song loads.
@@ -64,7 +65,6 @@ private fun SubLine(
         style = style,
         color = color,
         maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-        modifier = if (onClick != null) Modifier.pressClickable(onClick, pressedScale = 0.95f) else Modifier,
+        modifier = (if (onClick != null) Modifier.pressClickable(onClick, pressedScale = 0.95f) else Modifier).marqueeWhenLong(),
     )
 }
