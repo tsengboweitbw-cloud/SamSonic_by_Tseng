@@ -55,8 +55,8 @@ private const val PressedThumbScale = 0.85f
  * - pressing shrinks the thumb (the app's One UI press shrink), and flipping
  *   gives a toggle haptic.
  *
- * Pass [onCheckedChange] to make the switch its own tap target. Inside a row
- * that takes the tap instead (see SwitchRow), leave it null and share the
+ * Pass [onCheckedChange] to make the switch its own tap target (as SwitchRow
+ * does). Inside a row that takes the tap instead, leave it null and share the
  * row's [interactionSource] so pressing anywhere on the row still presses the
  * thumb.
  */
