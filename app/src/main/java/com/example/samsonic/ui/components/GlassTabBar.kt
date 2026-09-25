@@ -42,6 +42,7 @@ import com.example.samsonic.ui.theme.OneUiChrome
 import com.example.samsonic.ui.theme.OneUiRadius
 import com.example.samsonic.ui.theme.glassSurface
 import dev.chrisbanes.haze.HazeState
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
 /**
@@ -97,6 +98,9 @@ fun GlassTabBar(
     // Carrying the indicator itself (no [onSwipe]), which then outranks [position]
     // until it settles, so handing back doesn't jump.
     var swiping by remember { mutableStateOf(false) }
+    // Where the finger has the indicator, in tabs; read every frame while it follows.
+    val finger = remember { FloatArray(1) }
+    var follow by remember { mutableStateOf<Job?>(null) }
     val count = labels.size
     val p = (if (swiping) animated.value else position ?: animated.value)
         .coerceIn(0f, (count - 1).coerceAtLeast(0).toFloat())
@@ -118,16 +122,20 @@ fun GlassTabBar(
                     if (onSwipe != null) {
                         onSwipe(at)
                     } else {
-                        // Picks up from wherever [position] had it.
-                        val from = if (!swiping && position != null) p else null
-                        swiping = true
-                        scope.launch {
-                            if (from != null) animated.snapTo(from)
-                            animated.animateTo(at, TabFollowSpring)
+                        finger[0] = at
+                        if (!swiping) {
+                            // Picks up from wherever [position] had it.
+                            val from = if (position != null) p else null
+                            swiping = true
+                            follow = scope.launch {
+                                if (from != null) animated.snapTo(from)
+                                animated.followSwipe(target = { finger[0] })
+                            }
                         }
                     }
                 },
                 onSwipeEnd = { index ->
+                    follow?.cancel()
                     when {
                         onSwipeEnd != null -> onSwipeEnd(index)
                         index != selectedIndex -> onSelect(index)

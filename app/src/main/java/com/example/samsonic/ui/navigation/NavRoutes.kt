@@ -4,8 +4,6 @@ import android.net.Uri
 import androidx.navigation.NavBackStackEntry
 
 internal object Routes {
-    const val LOGIN = "login"
-    const val ADD_SERVER = "add-server"
     const val HOME = "home"
     const val LIBRARY = "library"
     const val SEARCH = "search"

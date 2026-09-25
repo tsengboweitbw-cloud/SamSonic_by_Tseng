@@ -1,5 +1,7 @@
 package com.example.samsonic.ui.components
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
@@ -16,11 +18,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.ui.theme.accentPalette
 import kotlin.math.abs
 import kotlin.math.ceil
+import kotlin.math.exp
 import kotlin.math.floor
 import kotlin.math.roundToInt
 
@@ -38,9 +42,35 @@ const val SelectedTabExtraWeight = 0.8f
 // overshoot instead of stopping dead, like One UI's tab pill.
 val TabIndicatorSpring = spring<Float>(dampingRatio = 0.5f, stiffness = Spring.StiffnessMediumLow)
 
-// Keeps the indicator under a swiping finger: stiff and unbouncy, so it follows
-// closely, but not a snap, so its first move to the finger glides rather than jumps.
-val TabFollowSpring = spring<Float>(dampingRatio = 1f, stiffness = Spring.StiffnessHigh)
+// How long (time constant, seconds) the indicator takes to close the gap to a
+// finger that starts a swipe away from it.
+private const val SwipeCatchUpSeconds = 0.04f
+
+// The indicator's speed is averaged over about this long, so one quick frame doesn't read as a fast swipe.
+private const val SwipeSpeedSmoothingSeconds = 0.08f
+
+/**
+ * Keeps this indicator position with a swiping finger ([target], in tabs) every
+ * frame until cancelled: it moves exactly as the finger does, however fast, and
+ * any gap it started with (the finger landing away from it) closes smoothly within
+ * a few frames, so it neither jumps to the finger nor trails it. [onFrame] runs
+ * after each move with the indicator's speed, in tabs a second.
+ */
+suspend fun Animatable<Float, AnimationVector1D>.followSwipe(target: () -> Float, onFrame: (speed: Float) -> Unit = {}) {
+    var gap = target() - value
+    var speed = 0f
+    var lastNanos = withFrameNanos { it }
+    while (true) {
+        val now = withFrameNanos { it }
+        val seconds = ((now - lastNanos) / 1e9f).coerceAtLeast(1e-4f)
+        lastNanos = now
+        gap *= exp(-seconds / SwipeCatchUpSeconds)
+        val next = target() - gap
+        speed += (abs(next - value) / seconds - speed) * (1f - exp(-seconds / SwipeSpeedSmoothingSeconds))
+        snapTo(next)
+        onFrame(speed)
+    }
+}
 
 // Letting go of a swipe this fast carries on to the next tab the way it was going.
 private val SwipeFlingVelocity = 500.dp

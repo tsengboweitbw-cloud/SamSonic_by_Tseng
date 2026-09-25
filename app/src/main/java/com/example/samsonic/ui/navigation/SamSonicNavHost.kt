@@ -1,20 +1,26 @@
 package com.example.samsonic.ui.navigation
 
+import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
+import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LibraryMusic
@@ -26,14 +32,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.rememberNavController
+import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
+import androidx.navigationevent.compose.rememberNavigationEventDispatcherOwner
 import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.R
 import com.example.samsonic.ui.auth.LoginScreen
@@ -71,33 +83,28 @@ private val bottomDestinations = listOf(
     BottomDestination(Routes.SETTINGS, R.string.nav_settings, Icons.Filled.Settings),
 )
 
-private val noChromeRoutes = setOf(Routes.LOGIN, Routes.ADD_SERVER)
+// Adding a server slides in over the tabs as a detail page does.
+private val AddServerEasing = CubicBezierEasing(0.2f, 0f, 0f, 1f)
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
 fun SamSonicNavHost(lastTab: LastTab) {
     val container = LocalAppContainer.current
-    val navController = rememberNavController()
-    val backStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = backStackEntry?.destination?.route
 
     // Read once: the host is rebuilt whenever the music source changes (see MainActivity),
     // so it starts on the tab you were under (Settings, where sources are switched and
     // added), signing in for the first time lands on Home, and leaving the last source
     // lands back on sign in.
-    val startDestination = remember {
-        if (container.sources.active.value == null) Routes.LOGIN else lastTab.route ?: Routes.HOME
-    }
-
-    val showChrome = currentRoute == null || currentRoute !in noChromeRoutes
-    // The floating nav bar shows everywhere but login; it sinks away as the
-    // player sheet opens over it (see PlayerSheet below).
-    val showBottomBar = showChrome
-
+    val signingIn = remember { container.sources.active.value == null }
     val tabRoutes = remember { bottomDestinations.map { it.route } }
-    val currentTab = navController.currentTab(tabRoutes)
-    if (backStackEntry != null) SideEffect { lastTab.route = currentTab }
-    val navTransitions = remember { NavTransitions(tabRoutes) }
+    val tabs = rememberMainTabs(tabRoutes, initialRoute = lastTab.route)
+    // Adding a server (from Settings): sign in, over the tabs.
+    var addingServer by rememberSaveable { mutableStateOf(false) }
+
+    // The floating chrome (nav bar, mini player) shows everywhere but sign in.
+    val showChrome = !signingIn && !addingServer
+    if (!signingIn) SideEffect { lastTab.route = tabs.currentRoute }
+
     val hazeState = rememberHazeState()
     val playerSheet = rememberPlayerSheetState()
     val artTransitions = remember { ArtTransitions() }
@@ -120,21 +127,31 @@ fun SamSonicNavHost(lastTab: LastTab) {
             // The chrome keeps its resting spot while it animates out, so these ignore showChrome.
             val chromeBottomInset = innerPadding.calculateBottomPadding()
             val systemBarInset = if (showChrome) chromeBottomInset else 0.dp
-            val navBarReserve = if (showChrome && showBottomBar) navBarHeight + navBarBottomInset else 0.dp
+            val navBarReserve = if (showChrome) navBarHeight + navBarBottomInset else 0.dp
             val miniPlayerReserve = if (showChrome) OneUiChrome.BarHeight + 8.dp else 0.dp
+            val contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve
             // Content melts into the background near the bottom edge: 1.5 times the
             // space below the nav bar (its bottom gap and the system bar), so the
             // fade reaches a little way up behind the bar. Above that it stays
-            // solid behind the glass. Login skips it. Animated so route changes
-            // don't pop the mask.
+            // solid behind the glass. Sign in skips it. Animated so it doesn't pop
+            // as adding a server comes and goes.
             val bottomFadeHeight by animateDpAsState(
                 targetValue = if (showChrome) (systemBarInset + navBarBottomInset) * 1.5f else 0.dp,
                 animationSpec = tween(260),
                 label = "bottomFade",
             )
 
+            // Back from a tab's first page goes Home, as it did when tabs stacked on
+            // Home. Composed ahead of the tabs, so their own back (a page to pop, a
+            // panel to close) comes first.
+            val atTabRoot = tabs.controllers[tabs.pager.currentPage]
+                .currentBackStackEntryAsState().value?.destination?.route == tabs.routes[tabs.pager.currentPage]
+            BackHandler(enabled = showChrome && tabs.pager.currentPage != 0 && atTabRoot && !playerSheet.isExpanded) {
+                tabs.select(Routes.HOME)
+            }
+
             // graphicsLayer() forces this whole subtree (including any
-            // LazyColumn/LazyVerticalGrid screens inside NavHost) to
+            // LazyColumn/LazyVerticalGrid screens inside the tabs) to
             // composite into one flattened layer before hazeSource snapshots
             // it - LazyColumn content otherwise has known gaps in Haze's
             // capture (text and item edges stay sharp/unblurred).
@@ -144,100 +161,59 @@ fun SamSonicNavHost(lastTab: LastTab) {
             // Covers and pictures travel from the card tapped to the page it opens (see sharedArt).
             SharedTransitionLayout {
             CompositionLocalProvider(LocalSharedTransitionScope provides this, LocalArtTransitions provides artTransitions) {
-            NavHost(
-                navController = navController,
-                startDestination = startDestination,
-                modifier = Modifier.fillMaxSize(),
-                enterTransition = navTransitions.enter,
-                exitTransition = navTransitions.exit,
-                popEnterTransition = navTransitions.popEnter,
-                popExitTransition = navTransitions.popExit,
-            ) {
-                screen(Routes.LOGIN) {
+                if (signingIn) {
                     LoginScreen()
-                }
-                screen(Routes.ADD_SERVER) {
-                    LoginScreen(onBack = { navController.popBackStack() })
-                }
-                screen(Routes.HOME) {
-                    HomeScreen(
-                        onAlbumClick = { navController.navigate(Routes.album(it.id)) },
-                        onShelfClick = { navController.navigate(Routes.shelf(it.key)) },
-                        // A refresh starts Search over too: the query, and whatever was
-                        // opened from its results (Search's saved tab state).
-                        onRefresh = {
-                            searchSession.clear()
-                            navController.clearBackStack(Routes.SEARCH)
-                        },
-                        contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve,
-                    )
-                }
-                screen(Routes.LIBRARY) {
-                    LibraryScreen(
-                        onArtistClick = { navController.navigate(Routes.artist(it.id)) },
-                        onAlbumClick = { navController.navigate(Routes.album(it.id)) },
-                        onPlaylistClick = { navController.navigate(Routes.playlist(it.id)) },
-                        onGenreClick = { navController.navigate(Routes.genre(it.name)) },
-                        contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve,
-                    )
-                }
-                screen(Routes.SEARCH) {
-                    SearchScreen(
-                        session = searchSession,
-                        onArtistClick = { navController.navigate(Routes.artist(it.id)) },
-                        onAlbumClick = { navController.navigate(Routes.album(it.id)) },
-                        contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve,
-                    )
-                }
-                screen(Routes.SETTINGS) {
-                    SettingsScreen(
-                        onAddServer = { navController.navigate(Routes.ADD_SERVER) },
-                        contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve,
-                    )
-                }
-                screen(Routes.SHELF) { entry ->
-                    val shelf = entry.arguments?.getString("shelfType")?.let(HomeShelf::fromKey) ?: return@screen
-                    // A shelf page is only opened from Home, so Home's entry is below it in the stack.
-                    val home = if (shelf.sharesHomeList) {
-                        val homeEntry = remember(entry) { navController.getBackStackEntry(Routes.HOME) }
-                        rememberHomeViewModel(homeEntry)
-                    } else null
-                    if (shelf.kind == ShelfKind.Songs) {
-                        SongShelfScreen(
-                            shelf = shelf,
-                            homeSongs = home?.songShelfState(shelf),
-                            onBack = { navController.popBackStack() },
-                            contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve,
+                } else {
+                    // The tabs side by side, slid between by the nav bar as the Library slides
+                    // between its own tabs. Only the nav bar moves them: a swipe on the pages
+                    // is left to what's on them (Library's tabs, the rows' swipe actions).
+                    HorizontalPager(
+                        state = tabs.pager,
+                        modifier = Modifier.fillMaxSize(),
+                        userScrollEnabled = false,
+                        key = { tabRoutes[it] },
+                    ) { page ->
+                        // Back reaches only the tab on screen, and none while something
+                        // covers the tabs (Now Playing, adding a server) and handles it.
+                        val back = rememberNavigationEventDispatcherOwner(
+                            enabled = page == tabs.pager.currentPage && !playerSheet.isExpanded && !addingServer,
                         )
-                        return@screen
+                        CompositionLocalProvider(LocalNavigationEventDispatcherOwner provides back) {
+                            TabHost(
+                                route = tabRoutes[page],
+                                navController = tabs.controllers[page],
+                                tabs = tabs,
+                                searchSession = searchSession,
+                                onAddServer = { addingServer = true },
+                                contentPaddingBottom = contentPaddingBottom,
+                            )
+                        }
                     }
-                    val homeAlbums = home?.shelfState(shelf)
-                    AlbumShelfScreen(
-                        shelf = shelf,
-                        homeAlbums = homeAlbums,
-                        onBack = { navController.popBackStack() },
-                        onAlbumClick = { navController.navigate(Routes.album(it.id)) },
-                        contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve,
-                    )
                 }
-                detailScreens(navController, contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve)
             }
             }
+
+            AnimatedVisibility(
+                visible = addingServer,
+                enter = slideInHorizontally(tween(340, easing = AddServerEasing)) { it / 5 } +
+                    fadeIn(tween(260, delayMillis = 40, easing = AddServerEasing)),
+                exit = slideOutHorizontally(tween(340, easing = AddServerEasing)) { it / 5 } +
+                    fadeOut(tween(160, easing = AddServerEasing)),
+            ) {
+                Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+                    AmbientGlow()
+                    LoginScreen(onBack = { addingServer = false })
+                }
             }
             }
+            BackHandler(enabled = addingServer) { addingServer = false }
 
             // The player: the mini player's pill, which drags up into Now Playing.
             // Under the nav bar, so the bar can sink away over it as it grows.
             if (showChrome) {
-                // From Now Playing, always under the Library tab: switched to first (with
-                // whatever it had open), so the nav bar and back lead through Library. A
-                // page already on top there is just revealed, not stacked again.
-                val openFromPlayer = remember(navController, currentTab) {
-                    { route: String ->
-                        if (currentTab != Routes.LIBRARY) navController.selectTab(Routes.LIBRARY, currentTab)
-                        if (navController.currentBackStackEntry?.routeWithArgs() != route) navController.navigate(route)
-                    }
-                }
+                // From Now Playing, always under the Library tab: slid to first (with
+                // whatever it had open), so the nav bar and back lead through Library.
+                val openFromPlayer = remember(tabs) { { route: String -> tabs.open(Routes.LIBRARY, route); Unit } }
                 PlayerSheet(
                     sheet = playerSheet,
                     collapsedBottom = chromeBottomInset + navBarHeight + navBarBottomInset + 8.dp,
@@ -248,7 +224,7 @@ fun SamSonicNavHost(lastTab: LastTab) {
 
             // Sinks below the screen edge in step with the player sheet opening.
             AnimatedVisibility(
-                visible = showChrome && showBottomBar,
+                visible = showChrome,
                 enter = slideInVertically { it } + fadeIn(),
                 exit = slideOutVertically { it } + fadeOut(),
                 modifier = Modifier
@@ -265,8 +241,7 @@ fun SamSonicNavHost(lastTab: LastTab) {
             ) {
                 FloatingNavBar(
                     destinations = bottomDestinations,
-                    selectedRoutes = setOfNotNull(currentTab),
-                    onSelect = { navController.selectTab(it, currentTab) },
+                    tabs = tabs,
                     hazeState = hazeState,
                     modifier = Modifier.fillMaxSize(),
                 )
@@ -276,5 +251,96 @@ fun SamSonicNavHost(lastTab: LastTab) {
             if (canEditPlaylists) AddToPlaylistMenu(addToPlaylist, hazeState)
         }
         }
+    }
+}
+
+/**
+ * One tab's pages: its first page ([route]) and those opened from it, with their
+ * own back stack ([navController]), so each tab keeps what it had open.
+ */
+@Composable
+private fun TabHost(
+    route: String,
+    navController: NavHostController,
+    tabs: MainTabs,
+    searchSession: SearchSession,
+    onAddServer: () -> Unit,
+    contentPaddingBottom: Dp,
+) {
+    NavHost(
+        navController = navController,
+        startDestination = route,
+        modifier = Modifier.fillMaxSize(),
+        enterTransition = NavTransitions.enter,
+        exitTransition = NavTransitions.exit,
+        popEnterTransition = NavTransitions.popEnter,
+        popExitTransition = NavTransitions.popExit,
+    ) {
+        when (route) {
+            Routes.HOME -> {
+                screen(Routes.HOME) {
+                    HomeScreen(
+                        onAlbumClick = { navController.navigate(Routes.album(it.id)) },
+                        onShelfClick = { navController.navigate(Routes.shelf(it.key)) },
+                        // A refresh starts Search over too: the query, and whatever was
+                        // opened from its results.
+                        onRefresh = {
+                            searchSession.clear()
+                            tabs.reset(Routes.SEARCH)
+                        },
+                        contentPaddingBottom = contentPaddingBottom,
+                    )
+                }
+                screen(Routes.SHELF) { entry ->
+                    val shelf = entry.arguments?.getString("shelfType")?.let(HomeShelf::fromKey) ?: return@screen
+                    // A shelf page is only opened from Home, so Home's entry is below it in the stack.
+                    val home = if (shelf.sharesHomeList) {
+                        val homeEntry = remember(entry) { navController.getBackStackEntry(Routes.HOME) }
+                        rememberHomeViewModel(homeEntry)
+                    } else null
+                    if (shelf.kind == ShelfKind.Songs) {
+                        SongShelfScreen(
+                            shelf = shelf,
+                            homeSongs = home?.songShelfState(shelf),
+                            onBack = { navController.popBackStack() },
+                            contentPaddingBottom = contentPaddingBottom,
+                        )
+                        return@screen
+                    }
+                    val homeAlbums = home?.shelfState(shelf)
+                    AlbumShelfScreen(
+                        shelf = shelf,
+                        homeAlbums = homeAlbums,
+                        onBack = { navController.popBackStack() },
+                        onAlbumClick = { navController.navigate(Routes.album(it.id)) },
+                        contentPaddingBottom = contentPaddingBottom,
+                    )
+                }
+            }
+            Routes.LIBRARY -> screen(Routes.LIBRARY) {
+                LibraryScreen(
+                    onArtistClick = { navController.navigate(Routes.artist(it.id)) },
+                    onAlbumClick = { navController.navigate(Routes.album(it.id)) },
+                    onPlaylistClick = { navController.navigate(Routes.playlist(it.id)) },
+                    onGenreClick = { navController.navigate(Routes.genre(it.name)) },
+                    contentPaddingBottom = contentPaddingBottom,
+                )
+            }
+            Routes.SEARCH -> screen(Routes.SEARCH) {
+                SearchScreen(
+                    session = searchSession,
+                    onArtistClick = { navController.navigate(Routes.artist(it.id)) },
+                    onAlbumClick = { navController.navigate(Routes.album(it.id)) },
+                    contentPaddingBottom = contentPaddingBottom,
+                )
+            }
+            Routes.SETTINGS -> screen(Routes.SETTINGS) {
+                SettingsScreen(
+                    onAddServer = onAddServer,
+                    contentPaddingBottom = contentPaddingBottom,
+                )
+            }
+        }
+        detailScreens(navController, contentPaddingBottom = contentPaddingBottom)
     }
 }
