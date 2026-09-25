@@ -49,6 +49,7 @@ import com.example.samsonic.data.ActiveSource
 import com.example.samsonic.data.ThemeManager
 import com.example.samsonic.playback.LocalPlayerState
 import com.example.samsonic.ui.player.PanelState
+import com.example.samsonic.ui.theme.OneUiRow
 import com.example.samsonic.ui.theme.oneUiRowClickable
 import com.example.samsonic.ui.theme.toHexRgb
 import com.example.samsonic.ui.common.TitledPage
@@ -310,6 +311,8 @@ private fun AboutRow() {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            // The inset the other rows get from oneUiRowClickable, so its icon lines up with theirs.
+            .padding(OneUiRow.Inset)
             .padding(horizontal = 8.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
