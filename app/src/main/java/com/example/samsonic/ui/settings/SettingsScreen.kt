@@ -34,6 +34,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.input.pointer.pointerInput
@@ -45,6 +46,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.BuildConfig
 import com.example.samsonic.LocalAppContainer
+import com.example.samsonic.R
 import com.example.samsonic.data.ActiveSource
 import com.example.samsonic.data.ThemeManager
 import com.example.samsonic.playback.LocalPlayerState
@@ -77,6 +79,7 @@ fun SettingsScreen(
     val cacheAllMenu = remember { PanelState(scope) }
     val clearCacheMenu = remember { PanelState(scope) }
     val dsdMenu = remember { PanelState(scope) }
+    val languageMenu = remember { PanelState(scope) }
     val cacheUsage = rememberCacheUsage()
     val clearMusicCacheMenu = remember { PanelState(scope) }
     val musicCacheUsage = rememberMusicCacheUsage(container.musicCache)
@@ -87,7 +90,7 @@ fun SettingsScreen(
         modifier = modifier,
         title = {
             Text(
-                text = "Settings",
+                text = stringResource(R.string.settings_title),
                 style = MaterialTheme.typography.displaySmall,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -114,32 +117,33 @@ fun SettingsScreen(
             ClearCacheMenu(clearCacheMenu, haze, cacheUsage, container.coverArtPrefetcher)
             ClearMusicCacheMenu(clearMusicCacheMenu, haze, musicCacheUsage)
             DsdOutputMenu(dsdMenu, haze, container.bitPerfect)
+            LanguageMenu(languageMenu, haze)
         },
     ) { topPadding ->
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(top = topPadding, bottom = 24.dp + contentPaddingBottom),
         ) {
-            item { GroupLabel("Music source") }
+            item { GroupLabel(stringResource(R.string.settings_group_music_source)) }
             item { SourcesCard(onAddServer = onAddServer) }
 
-            item { GroupLabel("Playback") }
+            item { GroupLabel(stringResource(R.string.settings_group_playback)) }
             item {
                 SettingsCard {
                     SleepTimerRow(player)
                     SwitchRow(
                         icon = Icons.Filled.Favorite,
-                        title = "Like button",
+                        title = stringResource(R.string.settings_like_button),
                         checked = likesEnabled,
                         onCheckedChange = container.themeManager::setLikesEnabled,
-                        hint = "A heart button for liking songs",
+                        hint = stringResource(R.string.settings_like_button_hint),
                     )
                     // How every song list shows each song's format, or not at all.
                     NavRow(
                         icon = Icons.Filled.GraphicEq,
-                        title = "Audio format",
+                        title = stringResource(R.string.settings_audio_format),
                         value = audioFormatDisplay.label,
-                        hint = "How song lists show each song's format",
+                        hint = stringResource(R.string.settings_audio_format_hint),
                         onClick = { audioFormatMenu.open() },
                         modifier = Modifier.menuOrigin(audioFormatMenu),
                     )
@@ -148,54 +152,55 @@ fun SettingsScreen(
                 }
             }
 
-            item { GroupLabel("Now Playing gestures") }
+            item { GroupLabel(stringResource(R.string.settings_group_gestures)) }
             item { SettingsCard { SwipeGestureRows(container.themeManager) } }
 
-            item { GroupLabel("Library") }
+            item { GroupLabel(stringResource(R.string.settings_group_library)) }
             item {
                 SettingsCard {
                     // The Artists tab reloads with the other list the next time it shows.
                     SwitchRow(
                         icon = Icons.Filled.Person,
-                        title = "Album artists only",
+                        title = stringResource(R.string.settings_album_artists_only),
                         checked = albumArtistsOnly,
                         onCheckedChange = container.libraryLayoutManager::setAlbumArtistsOnly,
-                        hint = "The Artists tab lists album artists, not everyone credited on a song",
+                        hint = stringResource(R.string.settings_album_artists_only_hint),
                     )
                     // Your liked songs, first in the Playlists tab.
                     SwitchRow(
                         icon = Icons.AutoMirrored.Filled.QueueMusic,
-                        title = "Favourites playlist",
+                        title = stringResource(R.string.settings_favourites_playlist),
                         checked = showFavourites,
                         onCheckedChange = container.libraryLayoutManager::setShowFavourites,
-                        hint = "Your liked songs, first in the Playlists tab",
+                        hint = stringResource(R.string.settings_favourites_playlist_hint),
                     )
                 }
             }
 
-            item { GroupLabel("Appearance") }
+            item { GroupLabel(stringResource(R.string.settings_group_appearance)) }
             item {
                 SettingsCard {
+                    LanguageRow(languageMenu)
                     NavRow(
                         icon = Icons.Filled.DarkMode,
-                        title = "Theme",
+                        title = stringResource(R.string.settings_theme),
                         value = themeMode.label,
-                        hint = "Light, dark, or the same as the phone",
+                        hint = stringResource(R.string.settings_theme_hint),
                         onClick = { themeMenu.open() },
                         modifier = Modifier.menuOrigin(themeMenu),
                     )
                     NavRow(
                         icon = Icons.Filled.Palette,
-                        title = "Accent color",
+                        title = stringResource(R.string.settings_accent_color),
                         value = "#${accentColor.toHexRgb()}",
-                        hint = "The color the app is tinted with, and the ones picked to go with it",
+                        hint = stringResource(R.string.settings_accent_color_hint),
                         onClick = { accentMenu.open() },
                         modifier = Modifier.menuOrigin(accentMenu),
                     )
                     SliderRow(
                         icon = Icons.Filled.RoundedCorner,
-                        title = "Album art roundness",
-                        hint = "How round the corners of covers are",
+                        title = stringResource(R.string.settings_album_art_roundness),
+                        hint = stringResource(R.string.settings_album_art_roundness_hint),
                         valueLabel = "${albumArtCornerRadius.value.roundToInt()}dp",
                         value = albumArtCornerRadius.value,
                         valueRange = 0f..48f,
@@ -205,7 +210,7 @@ fun SettingsScreen(
                 }
             }
 
-            item { GroupLabel("Storage") }
+            item { GroupLabel(stringResource(R.string.settings_group_storage)) }
             item {
                 SettingsCard {
                     // Only a server's music streams; the phone's own is on hand already.
@@ -225,7 +230,7 @@ fun SettingsScreen(
                 }
             }
 
-            item { GroupLabel("About") }
+            item { GroupLabel(stringResource(R.string.settings_group_about)) }
             item {
                 SettingsCard {
                     AboutRow()

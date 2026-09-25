@@ -16,9 +16,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.LocalAppContainer
+import com.example.samsonic.R
 import com.example.samsonic.model.Song
 import com.example.samsonic.playback.LocalPlayerState
 import com.example.samsonic.ui.common.StateContent
@@ -48,7 +50,7 @@ fun SongShelfScreen(
 ) {
     val repository = LocalAppContainer.current.repository
     val player = LocalPlayerState.current
-    val state = homeSongs ?: rememberScreenLoad(shelf, errorMessage = "Couldn't load ${shelf.title.lowercase()}") {
+    val state = homeSongs ?: rememberScreenLoad(shelf, errorMessage = stringResource(R.string.home_shelf_load_error, stringResource(shelf.title).lowercase())) {
         repository.getSongList(shelf.type, SHELF_FULL_LIST_SIZE)
     }
 
@@ -64,7 +66,7 @@ fun SongShelfScreen(
                 item {
                     Column {
                         Text(
-                            text = shelf.title,
+                            text = stringResource(shelf.title),
                             style = MaterialTheme.typography.displaySmall,
                             modifier = Modifier
                                 .fillMaxWidth()

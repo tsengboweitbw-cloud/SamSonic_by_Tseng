@@ -7,6 +7,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.stringResource
+import com.example.samsonic.R
 import com.example.samsonic.ui.library.AddToPlaylistMenu
 import com.example.samsonic.ui.library.LocalAddToPlaylist
 import com.example.samsonic.ui.library.rememberAddToPlaylistState
@@ -41,10 +43,10 @@ internal fun PlayerPages(sheet: PlayerSheetState) {
             info = sheet.info,
             addToPlaylist = addToPlaylist.takeIf { canAddToPlaylist },
         )
-        PanelCard(sheet.lyrics, PanelIcons.Lyrics, title = "Lyrics", haze = haze) {
+        PanelCard(sheet.lyrics, PanelIcons.Lyrics, title = stringResource(R.string.player_lyrics), haze = haze) {
             LyricsScreen(onCollapse = { sheet.lyrics.close() })
         }
-        PanelCard(sheet.queue, PanelIcons.Queue, title = "Up Next", haze = haze) {
+        PanelCard(sheet.queue, PanelIcons.Queue, title = stringResource(R.string.player_up_next), haze = haze) {
             QueueScreen()
         }
         SongInfoPanel(sheet.info, haze)

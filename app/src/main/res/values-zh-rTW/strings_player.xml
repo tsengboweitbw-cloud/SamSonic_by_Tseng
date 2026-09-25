@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ui/common -->
+    <string name="common_retry">重試</string>
+
+    <!-- ui/components -->
+    <string name="components_back">返回</string>
+    <string name="components_like">加入我的最愛</string>
+    <string name="components_unlike">從我的最愛移除</string>
+    <string name="components_liked">已加入我的最愛</string>
+    <string name="components_more">更多</string>
+    <string name="components_play">播放</string>
+    <string name="components_shuffle">隨機播放</string>
+    <string name="components_play_next">下一首播放</string>
+    <string name="components_add_to_queue">加入播放佇列</string>
+    <string name="components_add_to_playlist">加入播放清單</string>
+    <plurals name="components_song_count">
+        <item quantity="other">%d 首歌曲</item>
+    </plurals>
+    <plurals name="components_album_count">
+        <item quantity="other">%d 張專輯</item>
+    </plurals>
+
+    <!-- ui/player -->
+    <string name="player_pause">暫停</string>
+    <string name="player_next">下一首</string>
+    <string name="player_previous">上一首</string>
+    <string name="player_repeat">重複播放</string>
+    <string name="player_collapse">收合</string>
+    <string name="player_close">關閉</string>
+    <string name="player_remove">移除</string>
+    <string name="player_now_playing">正在播放</string>
+    <string name="player_lyrics">歌詞</string>
+    <string name="player_queue">播放佇列</string>
+    <string name="player_up_next">接下來播放</string>
+    <string name="player_song_info">歌曲資訊</string>
+    <string name="player_no_lyrics">找不到這首歌曲的歌詞</string>
+    <string name="player_playback">播放</string>
+    <string name="player_format">格式</string>
+    <string name="player_output">輸出</string>
+    <string name="player_hardware_decoding">硬體解碼</string>
+    <string name="player_mono">單聲道</string>
+    <string name="player_stereo">立體聲</string>
+    <string name="player_channel_count">%1$d 聲道</string>
+    <string name="player_device">裝置</string>
+    <string name="player_device_rate">裝置取樣率</string>
+    <string name="player_device_at">裝置取樣率 %1$s</string>
+    <string name="player_exclusive">獨佔模式</string>
+    <string name="player_exclusive_off">關閉 · %1$s</string>
+    <string name="player_not_exclusive">非獨佔 · %1$s</string>
+    <string name="player_info_title">標題</string>
+    <string name="player_info_artist">藝人</string>
+    <string name="player_info_album">專輯</string>
+    <string name="player_info_album_artist">專輯藝人</string>
+    <string name="player_info_track">曲目</string>
+    <string name="player_info_disc_track">光碟 %1$d · 第 %2$d 首</string>
+    <string name="player_info_year">年份</string>
+    <string name="player_info_genre">類型</string>
+    <string name="player_info_duration">長度</string>
+    <string name="player_info_bit_rate">位元率</string>
+    <string name="player_info_sample_rate">取樣率</string>
+    <string name="player_info_bit_depth">位元深度</string>
+    <string name="player_info_channels">聲道</string>
+    <string name="player_info_file_size">檔案大小</string>
+    <string name="player_info_play_count">播放次數</string>
+    <string name="player_info_path">路徑</string>
+</resources>

@@ -1,5 +1,9 @@
 package com.example.samsonic.util
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.ui.res.stringResource
+import com.example.samsonic.R
 import com.example.samsonic.model.Song
 
 /**
@@ -45,10 +49,16 @@ fun formatDuration(totalSeconds: Int): String {
     return "%d:%02d".format(minutes, seconds)
 }
 
+@Composable
+@ReadOnlyComposable
 fun formatAlbumDuration(totalSeconds: Int): String {
     val hours = totalSeconds / 3600
     val minutes = (totalSeconds % 3600) / 60
-    return if (hours > 0) "$hours hr $minutes min" else "$minutes min"
+    return if (hours > 0) {
+        stringResource(R.string.app_duration_hours_minutes, hours, minutes)
+    } else {
+        stringResource(R.string.app_duration_minutes, minutes)
+    }
 }
 
 /** e.g. "8.4 MB"; binary units, one decimal place from MB up. */

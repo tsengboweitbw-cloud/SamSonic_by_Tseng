@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="playback_bit_perfect_native_dsd">Bit-perfect · 原生 DSD · DSD%1$d</string>
+    <string name="playback_resampled">重採樣 %1$s → %2$s</string>
+    <string name="playback_mono_to_stereo">單聲道轉立體聲</string>
+
+    <string name="playback_exclusive_off">獨佔模式已關閉</string>
+    <string name="playback_not_to_dac">未經由 USB DAC 播放</string>
+    <string name="playback_dsd_muted">%1$s。無法播放要送往 DAC 的 DSD，因此已靜音</string>
+    <string name="playback_dac_no_format">DAC 不支援此格式</string>
+    <string name="playback_dac_no_native_dsd">DAC 不支援原生 DSD%1$d</string>
+    <string name="playback_dac_no_dop">DAC 不支援以 DoP 傳送 DSD%1$d</string>
+    <string name="playback_dac_no_rate">DAC 不支援 %1$s</string>
+    <string name="playback_not_pcm">非 PCM 格式</string>
+    <string name="playback_android_declined">Android 拒絕了此設定</string>
+    <string name="playback_android_open_failed">Android 無法開啟此輸出</string>
+    <string name="playback_android_open_failed_reason">Android 無法開啟此輸出：%1$s</string>
+
+    <string name="playback_encoding_float">32-bit 浮點</string>
+    <string name="playback_encoding_compressed">壓縮格式</string>
+
+    <string name="data_phone_storage">手機儲存空間</string>
+    <string name="data_allow_device_music">允許 SamSonic 存取這支手機上的音樂，即可在此查看</string>
+    <string name="data_artist_not_found">找不到藝人</string>
+    <string name="data_album_not_found">找不到專輯</string>
+    <string name="data_playlist_not_found">找不到播放清單</string>
+    <string name="data_server_connect_failed">無法連線至伺服器</string>
+    <string name="data_not_connected">尚未連線至伺服器</string>
+    <string name="data_server_refused">伺服器拒絕了這項變更</string>
+    <string name="data_favourites">我的最愛</string>
+
+    <string name="app_duration_hours_minutes">%1$d 小時 %2$d 分鐘</string>
+    <string name="app_duration_minutes">%1$d 分鐘</string>
+</resources>

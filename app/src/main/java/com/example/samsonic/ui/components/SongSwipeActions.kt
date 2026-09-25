@@ -37,12 +37,14 @@ import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.LocalAppContainer
+import com.example.samsonic.R
 import com.example.samsonic.model.Album
 import com.example.samsonic.model.Song
 import com.example.samsonic.playback.LocalPlayerState
@@ -85,8 +87,8 @@ class SwipeAction(
 fun SongSwipeActions(song: Song, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     val player = LocalPlayerState.current
     SwipeActions(
-        swipeRight = SwipeAction("Play next", Icons.Filled.SkipNext) { player.playNext(song) },
-        swipeLeft = SwipeAction("Add to queue", Icons.AutoMirrored.Filled.PlaylistAdd) { player.addToQueue(listOf(song)) },
+        swipeRight = SwipeAction(stringResource(R.string.components_play_next), Icons.Filled.SkipNext) { player.playNext(song) },
+        swipeLeft = SwipeAction(stringResource(R.string.components_add_to_queue), Icons.AutoMirrored.Filled.PlaylistAdd) { player.addToQueue(listOf(song)) },
         modifier = modifier,
         content = content,
     )
@@ -102,8 +104,8 @@ fun AlbumSwipeActions(album: Album, modifier: Modifier = Modifier, content: @Com
     val container = LocalAppContainer.current
     val load: suspend () -> List<Song> = { container.repository.getAlbum(album.id).second }
     SwipeActions(
-        swipeRight = SwipeAction("Play next", Icons.Filled.SkipNext) { player.queueLater(next = true, load) },
-        swipeLeft = SwipeAction("Add to queue", Icons.AutoMirrored.Filled.PlaylistAdd) { player.queueLater(next = false, load) },
+        swipeRight = SwipeAction(stringResource(R.string.components_play_next), Icons.Filled.SkipNext) { player.queueLater(next = true, load) },
+        swipeLeft = SwipeAction(stringResource(R.string.components_add_to_queue), Icons.AutoMirrored.Filled.PlaylistAdd) { player.queueLater(next = false, load) },
         modifier = modifier,
         content = content,
     )

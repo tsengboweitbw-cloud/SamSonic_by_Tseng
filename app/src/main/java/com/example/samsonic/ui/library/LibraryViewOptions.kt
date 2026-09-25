@@ -12,7 +12,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.samsonic.R
 import com.example.samsonic.data.LibraryLayout
 import com.example.samsonic.data.LibraryViewMode
 import com.example.samsonic.ui.components.GlassTabBar
@@ -32,13 +34,13 @@ internal fun ViewOptionsPanel(
 ) {
     Column(modifier = Modifier.fillMaxWidth().then(modifier)) {
         if (sectionName != null) {
-            Text(text = "$sectionName view", style = MaterialTheme.typography.titleLarge)
+            Text(text = stringResource(R.string.library_section_view, sectionName), style = MaterialTheme.typography.titleLarge)
             Spacer(Modifier.height(20.dp))
         }
 
-        PanelLabel("Layout")
+        PanelLabel(stringResource(R.string.library_layout))
         GlassTabBar(
-            labels = listOf("List", "Grid"),
+            labels = listOf(stringResource(R.string.library_list), stringResource(R.string.library_grid)),
             selectedIndex = if (layout.mode == LibraryViewMode.GRID) 1 else 0,
             onSelect = { index ->
                 onLayoutChange(layout.copy(mode = if (index == 1) LibraryViewMode.GRID else LibraryViewMode.LIST))
@@ -51,7 +53,7 @@ internal fun ViewOptionsPanel(
         val grid = layout.mode == LibraryViewMode.GRID
         val frozenAlpha by animateFloatAsState(if (grid) 1f else 0.38f, label = "columnsAlpha")
         Column(Modifier.alpha(frozenAlpha)) {
-            PanelLabel("Grid columns")
+            PanelLabel(stringResource(R.string.library_grid_columns))
             GlassTabBar(
                 labels = columnChoices.map { it.toString() },
                 selectedIndex = columnChoices.indexOf(layout.columns).coerceAtLeast(0),

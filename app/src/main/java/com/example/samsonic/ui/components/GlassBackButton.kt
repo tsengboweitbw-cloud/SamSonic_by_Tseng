@@ -9,7 +9,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.samsonic.R
 import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.glassSurface
 import dev.chrisbanes.haze.HazeState
@@ -37,7 +39,7 @@ fun GlassBackButton(onClick: () -> Unit, hazeState: HazeState?, modifier: Modifi
                 alpha = GlassAlpha.Nav,
             ),
     ) {
-        Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Back", modifier = Modifier.size(32.dp))
+        Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = stringResource(R.string.components_back), modifier = Modifier.size(32.dp))
     }
 }
 

@@ -1,6 +1,7 @@
 package com.example.samsonic
 
 import android.app.Application
+import android.content.Context
 import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.SingletonImageLoader
@@ -8,10 +9,15 @@ import coil3.disk.DiskCache
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import coil3.request.crossfade
 import com.example.samsonic.data.CoverArtCacheKeys
+import com.example.samsonic.locale.AppLanguages
 import okio.Path.Companion.toOkioPath
 import kotlin.concurrent.thread
 
 class SamSonicApplication : Application(), SingletonImageLoader.Factory {
+    // The language picked in Settings, before Android 13, for text made outside a screen.
+    override fun attachBaseContext(base: Context) {
+        super.attachBaseContext(AppLanguages.wrap(base))
+    }
 
     val container: AppContainer by lazy { AppContainer(this) }
 

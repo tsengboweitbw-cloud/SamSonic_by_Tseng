@@ -14,7 +14,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.samsonic.R
 import com.example.samsonic.ui.components.IconLabelTab
 import com.example.samsonic.ui.components.TabIndicatorSpring
 import com.example.samsonic.ui.components.drawTabIndicator
@@ -80,7 +82,7 @@ fun FloatingNavBar(
         destinations.forEachIndexed { index, destination ->
             IconLabelTab(
                 icon = destination.icon,
-                label = destination.label,
+                label = stringResource(destination.label),
                 selected = index == selectedIndex,
                 emphasis = tabProximity(index, p) * indicatorAlpha,
                 weight = weights[index],

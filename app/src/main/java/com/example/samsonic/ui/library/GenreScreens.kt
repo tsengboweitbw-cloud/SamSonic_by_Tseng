@@ -12,10 +12,13 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.LocalAppContainer
+import com.example.samsonic.R
 import com.example.samsonic.model.Album
 import com.example.samsonic.model.Artist
 import com.example.samsonic.model.artSeed
@@ -56,7 +59,7 @@ fun GenreDetailScreen(
     val repository = container.repository
     val player = LocalPlayerState.current
     val cornerRadius by container.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
-    val state = rememberScreenLoad(genre, errorMessage = "Couldn't load genre") {
+    val state = rememberScreenLoad(genre, errorMessage = stringResource(R.string.library_genre_load_error)) {
         repository.getGenre(genre, songCount = PREVIEW_SONGS_FETCHED)
     }
 
@@ -72,7 +75,11 @@ fun GenreDetailScreen(
                 item(key = "header") {
                     DetailHeader(
                         title = genre,
-                        subtitle = "${artists.size} artists · ${albums.size} albums",
+                        subtitle = stringResource(
+                            R.string.library_genre_summary,
+                            pluralStringResource(R.plurals.library_artist_count, artists.size, artists.size),
+                            pluralStringResource(R.plurals.library_album_count, albums.size, albums.size),
+                        ),
                         // No picture of its own: the newest album's cover stands in.
                         art = {
                             MediaArt(
@@ -87,9 +94,9 @@ fun GenreDetailScreen(
                         PlayShuffleButtons(key = genre, loadSongs = { repository.getGenreSongs(genre) })
                     }
                 }
-                artistShelf("artists", "Artists", artists, onAllArtistsClick, onArtistClick)
-                albumShelf("albums", "Albums", albums, onAllAlbumsClick, onAlbumClick, rows = 2)
-                songSection("songs", "Songs", songs.take(SONGS_PREVIEW), player, onTitleClick = onAllSongsClick)
+                artistShelf("artists", R.string.library_artists, artists, onAllArtistsClick, onArtistClick)
+                albumShelf("albums", R.string.library_albums, albums, onAllAlbumsClick, onAlbumClick, rows = 2)
+                songSection("songs", R.string.library_songs, songs.take(SONGS_PREVIEW), player, onTitleClick = onAllSongsClick)
                 item(key = "end") { Spacer(Modifier.height(24.dp)) }
             }
         }
@@ -108,10 +115,10 @@ fun GenreArtistsScreen(
     contentPaddingBottom: Dp = 0.dp,
 ) {
     val repository = LocalAppContainer.current.repository
-    val state = rememberScreenLoad(genre, errorMessage = "Couldn't load artists") {
+    val state = rememberScreenLoad(genre, errorMessage = stringResource(R.string.library_artists_load_error)) {
         PageContent(genre, repository.getGenre(genre, songCount = 0).artists)
     }
-    ArtistsPage("Artists", state, onBack, onArtistClick, contentPaddingBottom, modifier)
+    ArtistsPage(stringResource(R.string.library_artists), state, onBack, onArtistClick, contentPaddingBottom, modifier)
 }
 
 /** All of a genre's albums, opened from the Albums section of its page. */
@@ -124,10 +131,10 @@ fun GenreAlbumsScreen(
     contentPaddingBottom: Dp = 0.dp,
 ) {
     val repository = LocalAppContainer.current.repository
-    val state = rememberScreenLoad(genre, errorMessage = "Couldn't load albums") {
+    val state = rememberScreenLoad(genre, errorMessage = stringResource(R.string.library_albums_load_error)) {
         PageContent(genre, repository.getGenre(genre, songCount = 0).albums)
     }
-    AlbumsPage("Albums", state, onBack, onAlbumClick, contentPaddingBottom, modifier)
+    AlbumsPage(stringResource(R.string.library_albums), state, onBack, onAlbumClick, contentPaddingBottom, modifier)
 }
 
 /** All of a genre's songs, opened from the Songs section of its page. */
@@ -139,8 +146,8 @@ fun GenreSongsScreen(
     contentPaddingBottom: Dp = 0.dp,
 ) {
     val repository = LocalAppContainer.current.repository
-    val state = rememberScreenLoad(genre, errorMessage = "Couldn't load songs") {
+    val state = rememberScreenLoad(genre, errorMessage = stringResource(R.string.library_songs_load_error)) {
         PageContent(genre, repository.getGenreSongs(genre))
     }
-    SongsPage("Songs", state, onBack, contentPaddingBottom, modifier)
+    SongsPage(stringResource(R.string.library_songs), state, onBack, contentPaddingBottom, modifier)
 }

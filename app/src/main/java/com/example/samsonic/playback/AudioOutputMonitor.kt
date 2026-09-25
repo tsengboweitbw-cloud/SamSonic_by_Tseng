@@ -14,6 +14,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.analytics.AnalyticsListener
 import androidx.media3.exoplayer.audio.AudioSink
+import com.example.samsonic.R
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -133,11 +134,11 @@ class AudioOutputMonitor(context: Context) {
 }
 
 /** "16-bit", "32-bit float"... for a PCM [encoding] as the player reports it. */
-fun describeEncoding(encoding: Int): String = when (encoding) {
+fun describeEncoding(context: Context, encoding: Int): String = when (encoding) {
     C.ENCODING_PCM_8BIT -> "8-bit"
     C.ENCODING_PCM_16BIT, C.ENCODING_PCM_16BIT_BIG_ENDIAN -> "16-bit"
     C.ENCODING_PCM_24BIT, C.ENCODING_PCM_24BIT_BIG_ENDIAN -> "24-bit"
     C.ENCODING_PCM_32BIT, C.ENCODING_PCM_32BIT_BIG_ENDIAN -> "32-bit"
-    C.ENCODING_PCM_FLOAT -> "32-bit float"
-    else -> "Compressed"
+    C.ENCODING_PCM_FLOAT -> context.getString(R.string.playback_encoding_float)
+    else -> context.getString(R.string.playback_encoding_compressed)
 }

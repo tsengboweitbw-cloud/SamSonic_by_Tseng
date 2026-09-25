@@ -24,8 +24,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.samsonic.R
 import com.example.samsonic.data.ThemeManager
 import com.example.samsonic.ui.theme.OneUiSlider
 import kotlin.math.roundToInt
@@ -50,8 +52,8 @@ fun GlassSliderRows(themeManager: ThemeManager) {
 
     SliderRow(
         icon = Icons.Filled.Opacity,
-        title = "Glass opacity",
-        hint = "How solid the frosted bars and cards are",
+        title = stringResource(R.string.settings_glass_opacity),
+        hint = stringResource(R.string.settings_glass_opacity_hint),
         valueLabel = "${(glassOpacity * 100).roundToInt()}%",
         value = glassOpacity,
         valueRange = 0.5f..1.3f,
@@ -59,8 +61,8 @@ fun GlassSliderRows(themeManager: ThemeManager) {
     )
     SliderRow(
         icon = Icons.Filled.BlurOn,
-        title = "Glass blur",
-        hint = "How much the frosted bars and cards blur what's behind them",
+        title = stringResource(R.string.settings_glass_blur),
+        hint = stringResource(R.string.settings_glass_blur_hint),
         valueLabel = "${glassBlur.value.roundToInt()}dp",
         value = glassBlur.value,
         valueRange = 0f..80f,
@@ -68,8 +70,8 @@ fun GlassSliderRows(themeManager: ThemeManager) {
     )
     SliderRow(
         icon = Icons.Filled.Wallpaper,
-        title = "Player background blur",
-        hint = "How much Now Playing blurs the cover behind it",
+        title = stringResource(R.string.settings_player_blur),
+        hint = stringResource(R.string.settings_player_blur_hint),
         valueLabel = "${backdropBlur.value.roundToInt()}dp",
         value = backdropBlur.value,
         valueRange = 0f..100f,
@@ -77,8 +79,8 @@ fun GlassSliderRows(themeManager: ThemeManager) {
     )
     SliderRow(
         icon = Icons.Filled.Opacity,
-        title = "Menu opacity",
-        hint = "How solid the menus that open from rows are",
+        title = stringResource(R.string.settings_menu_opacity),
+        hint = stringResource(R.string.settings_menu_opacity_hint),
         valueLabel = "${(panelOpacity * 100).roundToInt()}%",
         value = panelOpacity,
         valueRange = 0.5f..1.3f,
@@ -86,8 +88,8 @@ fun GlassSliderRows(themeManager: ThemeManager) {
     )
     SliderRow(
         icon = Icons.Filled.BlurOn,
-        title = "Menu blur",
-        hint = "How much those menus blur the page behind them",
+        title = stringResource(R.string.settings_menu_blur),
+        hint = stringResource(R.string.settings_menu_blur_hint),
         valueLabel = "${panelBlur.value.roundToInt()}dp",
         value = panelBlur.value,
         valueRange = 0f..80f,

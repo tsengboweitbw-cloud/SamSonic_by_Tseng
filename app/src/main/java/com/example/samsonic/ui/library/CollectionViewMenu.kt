@@ -28,11 +28,13 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.LocalAppContainer
+import com.example.samsonic.R
 import com.example.samsonic.data.LibrarySection
 import com.example.samsonic.data.LibraryViewMode
 import com.example.samsonic.ui.player.MorphPanel
@@ -146,8 +148,9 @@ private fun libraryTitleRowHeight(): Dp {
     val style = MaterialTheme.typography.displaySmall
     val measurer = rememberTextMeasurer()
     val density = LocalDensity.current
-    val titleHeight = remember(style, density) {
-        with(density) { measurer.measure("Library", style).size.height.toDp() }
+    val title = stringResource(R.string.library_title)
+    val titleHeight = remember(style, density, title) {
+        with(density) { measurer.measure(title, style).size.height.toDp() }
     }
     return maxOf(titleHeight, 48.dp) + 24.dp
 }

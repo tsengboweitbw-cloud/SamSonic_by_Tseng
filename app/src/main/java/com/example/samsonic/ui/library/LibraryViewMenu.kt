@@ -36,9 +36,11 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.util.lerp
 import androidx.compose.ui.unit.dp
+import com.example.samsonic.R
 import com.example.samsonic.data.LibraryLayout
 import com.example.samsonic.data.LibraryViewMode
 import com.example.samsonic.ui.common.pageScrim
@@ -84,7 +86,7 @@ internal fun LibraryViewButton(mode: LibraryViewMode, open: Boolean, onClick: ()
                     mode == LibraryViewMode.GRID -> Icons.Filled.GridView
                     else -> Icons.AutoMirrored.Filled.ViewList
                 },
-                contentDescription = if (isOpen) "Close view options" else "View options",
+                contentDescription = stringResource(if (isOpen) R.string.library_close_view_options else R.string.library_view_options),
             )
         }
     }

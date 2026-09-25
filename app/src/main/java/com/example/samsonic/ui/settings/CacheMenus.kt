@@ -22,9 +22,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.samsonic.R
 import com.example.samsonic.data.CoverArtPrefetcher
 import com.example.samsonic.data.ImageCacheSettings
 import com.example.samsonic.data.PrefetchState
@@ -34,7 +36,7 @@ import dev.chrisbanes.haze.HazeState
 /** Where the cover art cache lives: the phone's storage or an SD card, each with its free space. */
 @Composable
 internal fun CacheLocationMenu(panel: PanelState, haze: HazeState, settings: ImageCacheSettings) {
-    SettingsMenu(panel, haze, title = "Cache location") {
+    SettingsMenu(panel, haze, title = stringResource(R.string.settings_cache_location)) {
         val context = LocalContext.current
         val current by settings.locationId.collectAsStateWithLifecycle()
         // Composed afresh at every open, so a card put in since shows up.
@@ -43,7 +45,7 @@ internal fun CacheLocationMenu(panel: PanelState, haze: HazeState, settings: Ima
             MenuOption(
                 icon = if (location.isInternal) Icons.Filled.PhoneAndroid else Icons.Filled.SdCard,
                 label = location.label,
-                supporting = "${ImageCacheSettings.usageLabel(location.freeBytes)} free",
+                supporting = stringResource(R.string.settings_cache_free, ImageCacheSettings.usageLabel(location.freeBytes)),
                 selected = location.id == current,
                 onClick = {
                     settings.setLocation(location.id)
@@ -54,9 +56,9 @@ internal fun CacheLocationMenu(panel: PanelState, haze: HazeState, settings: Ima
         }
         MenuNote(
             if (locations.size == 1) {
-                "No SD card found. Put one in to keep the cache there."
+                stringResource(R.string.settings_cache_no_sd)
             } else {
-                "Moving the cache starts it empty; the old one is deleted the next time SamSonic starts."
+                stringResource(R.string.settings_cache_move_note)
             },
         )
     }
@@ -68,7 +70,7 @@ internal fun CacheLocationMenu(panel: PanelState, haze: HazeState, settings: Ima
  */
 @Composable
 internal fun CacheAllMenu(panel: PanelState, haze: HazeState, settings: ImageCacheSettings, onConfirm: () -> Unit) {
-    SettingsMenu(panel, haze, title = "Cache all album art?") {
+    SettingsMenu(panel, haze, title = stringResource(R.string.settings_cache_all_title)) {
         val context = LocalContext.current
         val metered = remember {
             context.getSystemService(ConnectivityManager::class.java)?.isActiveNetworkMetered ?: false
@@ -76,20 +78,19 @@ internal fun CacheAllMenu(panel: PanelState, haze: HazeState, settings: ImageCac
         val limit = ImageCacheSettings.label(settings.activeMaxSizeBytes)
         Column(Modifier.padding(horizontal = 24.dp)) {
             Text(
-                text = "This downloads the art of every album, song, artist and playlist on the server, " +
-                    "at two sizes. On a big library that can use several GB of storage and as much mobile data.",
+                text = stringResource(R.string.settings_cache_all_body),
                 style = MaterialTheme.typography.bodyMedium,
             )
             Spacer(Modifier.height(12.dp))
             Text(
-                text = "The cache holds up to $limit; past that, the covers used longest ago make room for new ones.",
+                text = stringResource(R.string.settings_cache_all_limit, limit),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             if (metered) {
                 Spacer(Modifier.height(12.dp))
                 Text(
-                    text = "You're on mobile data right now. Connect to Wi-Fi first if your data plan is limited.",
+                    text = stringResource(R.string.settings_cache_all_metered),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.error,
                     fontWeight = FontWeight.SemiBold,
@@ -97,14 +98,14 @@ internal fun CacheAllMenu(panel: PanelState, haze: HazeState, settings: ImageCac
             }
             Spacer(Modifier.height(20.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                TextButton(onClick = { panel.close() }) { Text("Cancel") }
+                TextButton(onClick = { panel.close() }) { Text(stringResource(R.string.settings_cancel)) }
                 Spacer(Modifier.width(8.dp))
                 Button(
                     onClick = {
                         onConfirm()
                         panel.close()
                     },
-                ) { Text("Cache all") }
+                ) { Text(stringResource(R.string.settings_cache_all_confirm)) }
             }
         }
     }
@@ -117,27 +118,30 @@ internal fun CacheAllMenu(panel: PanelState, haze: HazeState, settings: ImageCac
  */
 @Composable
 internal fun ClearCacheMenu(panel: PanelState, haze: HazeState, usage: CacheUsage, prefetcher: CoverArtPrefetcher) {
-    SettingsMenu(panel, haze, title = "Clear album art cache?") {
+    SettingsMenu(panel, haze, title = stringResource(R.string.settings_clear_art_cache_title)) {
         val prefetch by prefetcher.state.collectAsStateWithLifecycle()
         val caching = prefetch is PrefetchState.Gathering || prefetch is PrefetchState.Running
         val used = usage.usedBytes?.let(ImageCacheSettings::usageLabel)
         Column(Modifier.padding(horizontal = 24.dp)) {
             Text(
-                text = "This deletes ${used ?: "all"} of saved covers. They download again as you browse, " +
-                    "which uses data, and may load slower until they're back.",
+                text = if (used != null) {
+                    stringResource(R.string.settings_clear_art_cache_body_amount, used)
+                } else {
+                    stringResource(R.string.settings_clear_art_cache_body_all)
+                },
                 style = MaterialTheme.typography.bodyMedium,
             )
             if (caching) {
                 Spacer(Modifier.height(12.dp))
                 Text(
-                    text = "Caching all album art is still running and will stop.",
+                    text = stringResource(R.string.settings_clear_art_cache_running),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             Spacer(Modifier.height(20.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                TextButton(onClick = { panel.close() }) { Text("Cancel") }
+                TextButton(onClick = { panel.close() }) { Text(stringResource(R.string.settings_cancel)) }
                 Spacer(Modifier.width(8.dp))
                 Button(
                     onClick = {
@@ -149,7 +153,7 @@ internal fun ClearCacheMenu(panel: PanelState, haze: HazeState, usage: CacheUsag
                         containerColor = MaterialTheme.colorScheme.error,
                         contentColor = MaterialTheme.colorScheme.onError,
                     ),
-                ) { Text("Clear") }
+                ) { Text(stringResource(R.string.settings_clear)) }
             }
         }
     }

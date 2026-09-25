@@ -3,6 +3,7 @@ package com.example.samsonic.data
 import android.content.Context
 import android.os.Environment
 import android.os.storage.StorageManager
+import com.example.samsonic.R
 import java.io.File
 
 /** Somewhere the cover art cache can live: the phone's own storage, or a removable SD card. */
@@ -28,7 +29,7 @@ object CacheLocations {
      */
     fun available(context: Context): List<CacheLocation> {
         // Outside cacheDir, which the system clears when storage runs low: the user sets how big this gets.
-        val internal = CacheLocation(InternalId, "Phone storage", context.noBackupFilesDir)
+        val internal = CacheLocation(InternalId, context.getString(R.string.data_phone_storage), context.noBackupFilesDir)
         val storage = context.getSystemService(StorageManager::class.java)
         val cards = context.getExternalFilesDirs(null).filterNotNull().mapNotNull { dir ->
             val removable = runCatching { Environment.isExternalStorageRemovable(dir) }.getOrDefault(false)

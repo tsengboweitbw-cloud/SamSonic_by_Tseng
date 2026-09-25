@@ -66,6 +66,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
 import androidx.compose.ui.window.PopupProperties
+import com.example.samsonic.R
 import com.example.samsonic.ui.theme.accentPalette
 import kotlinx.coroutines.delay
 import kotlin.math.roundToInt
@@ -309,5 +310,5 @@ private class CalloutShape(
 
 /** The toast for a setting that only takes effect once the app starts again. */
 internal fun showAppliesOnRestartToast(context: Context) {
-    Toast.makeText(context, "Applies the next time SamSonic starts", Toast.LENGTH_SHORT).show()
+    Toast.makeText(context, context.getString(R.string.settings_applies_on_restart), Toast.LENGTH_SHORT).show()
 }

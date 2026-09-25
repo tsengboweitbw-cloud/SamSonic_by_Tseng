@@ -43,8 +43,10 @@ import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.example.samsonic.R
 import com.example.samsonic.model.Song
 import com.example.samsonic.playback.LocalPlayerState
 import com.example.samsonic.playback.PlayerState
@@ -185,9 +187,9 @@ private fun PlayShuffleRow(
             onClick = { onAction(ListAction.Play) },
             contentColor = MaterialTheme.colorScheme.onPrimary,
             surface = Modifier.accentGlass(MaterialTheme.accentPalette),
-        ) { color, pop -> ButtonIcon(Icons.Filled.PlayArrow, loading == ListAction.Play, color, "Play", pop, size = 30.dp) }
+        ) { color, pop -> ButtonIcon(Icons.Filled.PlayArrow, loading == ListAction.Play, color, stringResource(R.string.components_play), pop, size = 30.dp) }
         RoundButton(onClick = { onAction(ListAction.Shuffle) }, contentColor = MaterialTheme.colorScheme.onSurface, surface = glass) { color, pop ->
-            ButtonIcon(Icons.Filled.Shuffle, loading == ListAction.Shuffle, color, "Shuffle", pop)
+            ButtonIcon(Icons.Filled.Shuffle, loading == ListAction.Shuffle, color, stringResource(R.string.components_shuffle), pop)
         }
         RoundButton(
             onClick = { onAction(ListAction.Queue) },
@@ -198,7 +200,7 @@ private fun PlayShuffleRow(
                 icon = if (queued) Icons.Filled.Check else Icons.AutoMirrored.Filled.PlaylistAdd,
                 loading = loading == ListAction.Queue,
                 color = color,
-                contentDescription = "Add to queue",
+                contentDescription = stringResource(R.string.components_add_to_queue),
                 pop = pop,
             )
         }
@@ -210,7 +212,7 @@ private fun PlayShuffleRow(
                 surface = glass,
                 modifier = Modifier.onGloballyPositioned { playlistButton[0] = it.boundsInRoot() },
             ) { color, pop ->
-                ButtonIcon(Icons.Filled.LibraryAdd, loading = false, color = color, contentDescription = "Add to playlist", pop = pop)
+                ButtonIcon(Icons.Filled.LibraryAdd, loading = false, color = color, contentDescription = stringResource(R.string.components_add_to_playlist), pop = pop)
             }
         }
     }

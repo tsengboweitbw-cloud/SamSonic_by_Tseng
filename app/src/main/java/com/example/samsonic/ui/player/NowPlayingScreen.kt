@@ -46,9 +46,11 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.LocalAppContainer
+import com.example.samsonic.R
 import com.example.samsonic.model.Song
 import com.example.samsonic.model.artSeed
 import com.example.samsonic.ui.library.AddToPlaylistState
@@ -112,7 +114,7 @@ fun NowPlayingScreen(
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             GlassCircleButton(onClick = onCollapse) {
-                Icon(Icons.Filled.KeyboardArrowDown, contentDescription = "Collapse")
+                Icon(Icons.Filled.KeyboardArrowDown, contentDescription = stringResource(R.string.player_collapse))
             }
             if (addToPlaylist != null) AddToPlaylistButton(addToPlaylist, song)
         }
@@ -141,7 +143,7 @@ fun NowPlayingScreen(
                 PressIconButton(onClick = { player.toggleLike(song) }) {
                     Icon(
                         imageVector = if (liked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                        contentDescription = if (liked) "Unlike" else "Like",
+                        contentDescription = stringResource(if (liked) R.string.components_unlike else R.string.components_like),
                         tint = if (liked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.size(28.dp),
                     )
@@ -196,12 +198,12 @@ fun NowPlayingScreen(
             PressIconButton(onClick = { player.toggleShuffle() }) {
                 Icon(
                     Icons.Filled.Shuffle,
-                    contentDescription = "Shuffle",
+                    contentDescription = stringResource(R.string.components_shuffle),
                     tint = if (player.shuffle) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                 )
             }
             PressIconButton(onClick = { player.skipPrevious() }) {
-                Icon(Icons.Filled.SkipPrevious, contentDescription = "Previous", modifier = Modifier.size(36.dp))
+                Icon(Icons.Filled.SkipPrevious, contentDescription = stringResource(R.string.player_previous), modifier = Modifier.size(36.dp))
             }
             PressIconButton(
                 onClick = { player.togglePlayPause() },
@@ -209,17 +211,17 @@ fun NowPlayingScreen(
             ) {
                 Icon(
                     imageVector = if (player.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                    contentDescription = if (player.isPlaying) "Pause" else "Play",
+                    contentDescription = stringResource(if (player.isPlaying) R.string.player_pause else R.string.components_play),
                     modifier = Modifier.size(44.dp),
                 )
             }
             PressIconButton(onClick = { player.skipNext() }) {
-                Icon(Icons.Filled.SkipNext, contentDescription = "Next", modifier = Modifier.size(36.dp))
+                Icon(Icons.Filled.SkipNext, contentDescription = stringResource(R.string.player_next), modifier = Modifier.size(36.dp))
             }
             PressIconButton(onClick = { player.cycleRepeat() }) {
                 Icon(
                     imageVector = if (player.repeatMode == RepeatMode.ONE) Icons.Filled.RepeatOne else Icons.Filled.Repeat,
-                    contentDescription = "Repeat",
+                    contentDescription = stringResource(R.string.player_repeat),
                     tint = if (player.repeatMode == RepeatMode.OFF) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.primary,
                 )
             }
@@ -268,7 +270,7 @@ private fun AddToPlaylistButton(state: AddToPlaylistState, song: Song) {
                 scaleY = squeeze
             },
     ) {
-        Icon(Icons.Filled.LibraryAdd, contentDescription = "Add to playlist")
+        Icon(Icons.Filled.LibraryAdd, contentDescription = stringResource(R.string.components_add_to_playlist))
     }
 }
 

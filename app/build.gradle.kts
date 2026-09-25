@@ -45,6 +45,11 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
+    // Lists the app's languages (English, Traditional Chinese) for Android 13+'s per-app
+    // language setting, from the values-* folders and res/resources.properties.
+    androidResources {
+        generateLocaleConfig = true
+    }
     buildFeatures {
         compose = true
         // Settings' About row shows versionName from it.

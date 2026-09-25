@@ -14,12 +14,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.ui.common.ArtKeys
 import com.example.samsonic.ui.common.rememberSharedArt
 import com.example.samsonic.LocalAppContainer
+import com.example.samsonic.R
 import com.example.samsonic.model.Artist
 import com.example.samsonic.model.Playlist
 import com.example.samsonic.model.artSeed
@@ -33,7 +35,7 @@ fun ArtistRow(artist: Artist, onClick: () -> Unit, modifier: Modifier = Modifier
     val art = rememberSharedArt(ArtKeys.artist(artist.id), artist, onClick)
     LibraryRow(
         title = artist.name,
-        details = "${artist.albumCount} albums",
+        details = pluralStringResource(R.plurals.components_album_count, artist.albumCount, artist.albumCount),
         onClick = art.onClick,
         modifier = modifier,
     ) {
@@ -57,7 +59,7 @@ fun PlaylistRow(playlist: Playlist, onClick: () -> Unit, modifier: Modifier = Mo
     val art = rememberSharedArt(ArtKeys.playlist(playlist.id), playlist, onClick)
     LibraryRow(
         title = playlist.name,
-        details = "${playlist.songCount} songs",
+        details = pluralStringResource(R.plurals.components_song_count, playlist.songCount, playlist.songCount),
         onClick = art.onClick,
         modifier = modifier,
     ) {

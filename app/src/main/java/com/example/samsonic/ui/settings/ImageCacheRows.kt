@@ -21,8 +21,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.samsonic.R
 import com.example.samsonic.data.CoverArtPrefetcher
 import com.example.samsonic.data.ImageCacheSettings
 import com.example.samsonic.data.PrefetchState
@@ -57,7 +59,7 @@ internal fun ImageCacheRows(
 
     SliderRow(
         icon = Icons.Filled.Storage,
-        title = "Album art cache",
+        title = stringResource(R.string.settings_album_art_cache),
         valueLabel = ImageCacheSettings.label(ImageCacheSettings.Steps[step]),
         value = step.toFloat(),
         valueRange = 0f..lastStep.toFloat(),
@@ -68,19 +70,20 @@ internal fun ImageCacheRows(
             if (settings.changedSinceStart(settings.maxSizeStep.value, locationId)) showAppliesOnRestartToast(context)
         },
         hint = if (settings.usingFallback) {
-            "SD card not found, so the cache is on the phone for now"
+            stringResource(R.string.settings_album_art_cache_hint_fallback)
         } else {
-            "Room for covers kept on the phone, so they show without loading"
+            stringResource(R.string.settings_album_art_cache_hint)
         },
     )
-    val locationLabel = remember(locationId) {
-        settings.locations().firstOrNull { it.id == locationId }?.label ?: "SD card (not found)"
+    val missingLabel = stringResource(R.string.settings_cache_location_missing)
+    val locationLabel = remember(locationId, missingLabel) {
+        settings.locations().firstOrNull { it.id == locationId }?.label ?: missingLabel
     }
     NavRow(
         icon = Icons.Filled.Folder,
-        title = "Cache location",
+        title = stringResource(R.string.settings_cache_location),
         value = locationLabel,
-        hint = "Keep the album art cache on the phone or an SD card",
+        hint = stringResource(R.string.settings_cache_location_hint),
         onClick = { locationMenu.open() },
         modifier = Modifier.menuOrigin(locationMenu),
     )
@@ -88,9 +91,9 @@ internal fun ImageCacheRows(
         val running = prefetch is PrefetchState.Gathering || prefetch is PrefetchState.Running
         NavRow(
             icon = Icons.Filled.CloudDownload,
-            title = if (running) "Stop caching" else "Cache all album art",
+            title = if (running) stringResource(R.string.settings_stop_caching) else stringResource(R.string.settings_cache_all),
             value = prefetch.label,
-            hint = if (running) "Stops downloading covers" else "Downloads every cover on the server ahead of time",
+            hint = if (running) stringResource(R.string.settings_stop_caching_hint) else stringResource(R.string.settings_cache_all_hint),
             onClick = { if (running) prefetcher.cancel() else cacheAllMenu.open() },
             modifier = Modifier.menuOrigin(cacheAllMenu),
         )
@@ -99,12 +102,12 @@ internal fun ImageCacheRows(
 }
 
 private val PrefetchState.label: String
-    get() = when (this) {
+    @Composable get() = when (this) {
         PrefetchState.Idle -> ""
-        PrefetchState.Gathering -> "Finding covers…"
+        PrefetchState.Gathering -> stringResource(R.string.settings_prefetch_gathering)
         is PrefetchState.Running -> "$done / $total"
-        is PrefetchState.Finished -> if (failed > 0) "Done, $failed failed" else "Done"
-        PrefetchState.Failed -> "Couldn't reach the server"
+        is PrefetchState.Finished -> if (failed > 0) stringResource(R.string.settings_prefetch_done_failed, failed) else stringResource(R.string.settings_prefetch_done)
+        PrefetchState.Failed -> stringResource(R.string.settings_prefetch_failed)
     }
 
 private val PrefetchState.usageRefreshKey: Any
@@ -114,7 +117,7 @@ private val PrefetchState.usageRefreshKey: Any
 private fun ClearCacheRow(usage: CacheUsage, menu: PanelState, refreshKey: Any) {
     LaunchedEffect(usage, refreshKey) { usage.refresh() }
     val usedBytes = usage.usedBytes
-    val hint = "Deletes the saved covers; they download again as you browse"
+    val hint = stringResource(R.string.settings_clear_art_cache_hint)
     val hintState = rememberRowHint()
 
     Row(
@@ -128,9 +131,9 @@ private fun ClearCacheRow(usage: CacheUsage, menu: PanelState, refreshKey: Any) 
     ) {
         Icon(Icons.Filled.DeleteSweep, contentDescription = null, tint = rowIconTint(), modifier = Modifier.size(22.dp))
         Spacer(Modifier.width(14.dp))
-        Text(text = "Clear album art cache", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+        Text(text = stringResource(R.string.settings_clear_art_cache), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
         Text(
-            text = usedBytes?.let { "${ImageCacheSettings.usageLabel(it)} used" } ?: "…",
+            text = usedBytes?.let { stringResource(R.string.settings_cache_used, ImageCacheSettings.usageLabel(it)) } ?: "…",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

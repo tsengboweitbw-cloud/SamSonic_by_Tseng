@@ -19,9 +19,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.example.samsonic.R
 import com.example.samsonic.ui.common.rememberScreenLoad
 import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.model.FAVOURITES_PLAYLIST_ID
@@ -57,10 +60,11 @@ fun PlaylistDetailScreen(
     val repository = LocalAppContainer.current.repository
     val cornerRadius by LocalAppContainer.current.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
 
-    val state = rememberScreenLoad(playlistId, errorMessage = "Couldn't load playlist") {
+    val favouritesName = stringResource(R.string.data_favourites)
+    val state = rememberScreenLoad(playlistId, errorMessage = stringResource(R.string.library_playlist_load_error)) {
         if (playlistId == FAVOURITES_PLAYLIST_ID) {
             val liked = repository.getLikedSongs()
-            favouritesPlaylist(liked) to liked
+            favouritesPlaylist(liked, favouritesName) to liked
         } else {
             repository.getPlaylist(playlistId)
         }
@@ -146,7 +150,7 @@ private fun PlaylistHeader(playlist: Playlist, songCount: Int, cornerRadius: Dp,
         }
         Spacer(Modifier.height(4.dp))
         Text(
-            text = "$songCount songs",
+            text = pluralStringResource(R.plurals.library_song_count, songCount, songCount),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

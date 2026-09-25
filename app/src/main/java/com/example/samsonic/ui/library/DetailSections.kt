@@ -1,5 +1,6 @@
 package com.example.samsonic.ui.library
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -13,8 +14,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.example.samsonic.R
 import com.example.samsonic.model.Album
 import com.example.samsonic.model.Artist
 import com.example.samsonic.model.Song
@@ -59,7 +63,7 @@ internal fun DetailHeader(
 /** A titled run of song rows; tapping one plays it within them. */
 internal fun LazyListScope.songSection(
     key: String,
-    title: String,
+    @StringRes title: Int,
     songs: List<Song>,
     player: PlayerState,
     onTitleClick: (() -> Unit)?,
@@ -80,7 +84,7 @@ internal fun LazyListScope.songSection(
 /** A titled, sideways-scrolling shelf of album cards in [rows] rows, filled column by column. */
 internal fun LazyListScope.albumShelf(
     key: String,
-    title: String,
+    @StringRes title: Int,
     albums: List<Album>,
     onTitleClick: () -> Unit,
     onAlbumClick: (Album) -> Unit,
@@ -102,7 +106,7 @@ internal fun LazyListScope.albumShelf(
 /** A titled, sideways-scrolling shelf of artist cards. */
 internal fun LazyListScope.artistShelf(
     key: String,
-    title: String,
+    @StringRes title: Int,
     artists: List<Artist>,
     onTitleClick: () -> Unit,
     onArtistClick: (Artist) -> Unit,
@@ -120,9 +124,13 @@ internal fun LazyListScope.artistShelf(
 
 /** A section's title, spaced from the one above; with [onTitleClick] it opens the full list. */
 @Composable
-private fun SectionTitle(title: String, onTitleClick: (() -> Unit)?) {
+private fun SectionTitle(@StringRes title: Int, onTitleClick: (() -> Unit)?) {
     Column {
         Spacer(Modifier.height(16.dp))
-        SectionHeader(title = title, onTitleClick = onTitleClick)
+        SectionHeader(title = stringResource(title), onTitleClick = onTitleClick)
     }
 }
+
+/** "12 songs", in the app's language. */
+@Composable
+internal fun songCount(count: Int): String = pluralStringResource(R.plurals.library_song_count, count, count)

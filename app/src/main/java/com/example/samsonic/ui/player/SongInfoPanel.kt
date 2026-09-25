@@ -1,5 +1,6 @@
 package com.example.samsonic.ui.player
 
+import android.content.Context
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,7 +17,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.samsonic.R
 import com.example.samsonic.model.Song
 import com.example.samsonic.playback.LocalPlayerState
 import com.example.samsonic.ui.components.pressClickable
@@ -39,7 +43,7 @@ private data class Detail(
 @Composable
 internal fun SongInfoPanel(panel: PanelState, haze: HazeState) {
     val song = LocalPlayerState.current.currentSong ?: return
-    PanelCard(panel, PanelIcons.Info, title = "Song info", haze = haze) {
+    PanelCard(panel, PanelIcons.Info, title = stringResource(R.string.player_song_info), haze = haze) {
         val links = LocalPlayerLinks.current
         val albumArtist = rememberAlbumArtist(song)
         SelectionContainer(
@@ -49,12 +53,12 @@ internal fun SongInfoPanel(panel: PanelState, haze: HazeState) {
                 .padding(horizontal = 24.dp),
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                songDetails(song, albumArtist, links).forEach { DetailRow(it) }
+                LocalContext.current.songDetails(song, albumArtist, links).forEach { DetailRow(it) }
                 val playback = rememberPlaybackDetails()
                 if (playback.isNotEmpty()) {
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        text = "Playback",
+                        text = stringResource(R.string.player_playback),
                         style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -101,27 +105,30 @@ private fun DetailRow(detail: Detail) {
 }
 
 /** Each detail the server reported; the rest are left out. */
-private fun songDetails(song: Song, albumArtist: ArtistLink?, links: PlayerLinks): List<Detail> = listOfNotNull(
-    Detail("Title", song.title),
-    Detail("Artist", song.artistName, artistsOf = song),
+private fun Context.songDetails(song: Song, albumArtist: ArtistLink?, links: PlayerLinks): List<Detail> = listOfNotNull(
+    Detail(getString(R.string.player_info_title), song.title),
+    Detail(getString(R.string.player_info_artist), song.artistName, artistsOf = song),
     song.albumTitle.takeIf { it.isNotBlank() }?.let { title ->
-        Detail("Album", title, song.albumId?.let { id -> { links.openAlbum(id) } })
+        Detail(getString(R.string.player_info_album), title, song.albumId?.let { id -> { links.openAlbum(id) } })
     },
     albumArtist?.let { artist ->
-        Detail("Album artist", artist.name, artist.id?.let { id -> { links.openArtist(id) } })
+        Detail(getString(R.string.player_info_album_artist), artist.name, artist.id?.let { id -> { links.openArtist(id) } })
     },
     song.trackNumber.takeIf { it > 0 }?.let { track ->
-        Detail("Track", song.discNumber?.takeIf { it > 0 }?.let { "Disc $it · $track" } ?: "$track")
+        Detail(
+            getString(R.string.player_info_track),
+            song.discNumber?.takeIf { it > 0 }?.let { getString(R.string.player_info_disc_track, it, track) } ?: "$track",
+        )
     },
-    song.year?.takeIf { it > 0 }?.let { Detail("Year", "$it") },
-    song.genre?.takeIf { it.isNotBlank() }?.let { Detail("Genre", it) },
-    Detail("Duration", formatDuration(song.durationSeconds)),
-    (song.suffix?.uppercase() ?: song.contentType)?.let { Detail("Format", it) },
-    song.bitRate?.let { Detail("Bit rate", "$it kbps") },
-    song.samplingRate?.let { Detail("Sample rate", "%.1f kHz".format(it / 1000f)) },
-    song.bitDepth?.let { Detail("Bit depth", "$it-bit") },
-    song.channelCount?.let { Detail("Channels", if (it == 1) "Mono" else if (it == 2) "Stereo" else "$it") },
-    song.sizeBytes?.let { Detail("File size", formatFileSize(it)) },
-    song.playCount?.let { Detail("Play count", "$it") },
-    song.path?.takeIf { it.isNotBlank() }?.let { Detail("Path", it) },
+    song.year?.takeIf { it > 0 }?.let { Detail(getString(R.string.player_info_year), "$it") },
+    song.genre?.takeIf { it.isNotBlank() }?.let { Detail(getString(R.string.player_info_genre), it) },
+    Detail(getString(R.string.player_info_duration), formatDuration(song.durationSeconds)),
+    (song.suffix?.uppercase() ?: song.contentType)?.let { Detail(getString(R.string.player_format), it) },
+    song.bitRate?.let { Detail(getString(R.string.player_info_bit_rate), "$it kbps") },
+    song.samplingRate?.let { Detail(getString(R.string.player_info_sample_rate), "%.1f kHz".format(it / 1000f)) },
+    song.bitDepth?.let { Detail(getString(R.string.player_info_bit_depth), "$it-bit") },
+    song.channelCount?.let { Detail(getString(R.string.player_info_channels), channelsOf(it)) },
+    song.sizeBytes?.let { Detail(getString(R.string.player_info_file_size), formatFileSize(it)) },
+    song.playCount?.let { Detail(getString(R.string.player_info_play_count), "$it") },
+    song.path?.takeIf { it.isNotBlank() }?.let { Detail(getString(R.string.player_info_path), it) },
 )

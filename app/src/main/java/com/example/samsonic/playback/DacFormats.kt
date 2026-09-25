@@ -1,5 +1,6 @@
 package com.example.samsonic.playback
 
+import android.content.Context
 import android.media.AudioDeviceInfo
 import android.media.AudioFormat
 import android.media.AudioManager
@@ -10,7 +11,9 @@ import androidx.annotation.RequiresApi
 import androidx.media3.common.C
 import androidx.media3.common.Format
 import androidx.media3.common.util.UnstableApi
+import com.example.samsonic.R
 import com.example.samsonic.playback.dsd.DsdStream
+import java.util.Locale
 
 /**
  * What a USB DAC takes bit-perfect from this phone: the formats Android offers for it with
@@ -95,19 +98,19 @@ internal class DacFormats(private val offered: List<AudioMixerAttributes>) {
      * or null and why not: DSD as its [stream] says, 16-bit as it is or padded, float as 32-
      * or 24-bit integers.
      */
-    fun forTrack(sampleRate: Int, encoding: Int, channelMask: Int, stream: DsdStream?): Pair<AudioMixerAttributes?, String?> {
+    fun forTrack(context: Context, sampleRate: Int, encoding: Int, channelMask: Int, stream: DsdStream?): Pair<AudioMixerAttributes?, String?> {
         val format = when (stream) {
             is DsdStream.Native -> native(stream.dsdRate, channelMask)?.first
-                ?: return null to "The DAC doesn't take native DSD${stream.multiple}"
+                ?: return null to context.getString(R.string.playback_dac_no_native_dsd, stream.multiple)
             is DsdStream.Dop -> dop(stream.dsdRate, channelMask)
-                ?: return null to "The DAC doesn't take DSD${stream.multiple} as DoP"
+                ?: return null to context.getString(R.string.playback_dac_no_dop, stream.multiple)
             null -> {
                 val encodings = when (encoding) {
                     C.ENCODING_PCM_16BIT -> PCM_FOR_16_BIT
                     C.ENCODING_PCM_FLOAT -> INT_PCM
-                    else -> return null to "Not PCM"
+                    else -> return null to context.getString(R.string.playback_not_pcm)
                 }
-                pcm(sampleRate, channelMask, encodings) ?: return null to "The DAC doesn't take ${formatKilohertz(sampleRate)}"
+                pcm(sampleRate, channelMask, encodings) ?: return null to context.getString(R.string.playback_dac_no_rate, formatKilohertz(sampleRate))
             }
         }
         return format to null
@@ -139,4 +142,4 @@ internal class DacFormats(private val offered: List<AudioMixerAttributes>) {
 
 /** "44.1 kHz", "96 kHz". */
 fun formatKilohertz(hertz: Int): String =
-    if (hertz % 1000 == 0) "${hertz / 1000} kHz" else "%.1f kHz".format(hertz / 1000f)
+    if (hertz % 1000 == 0) "${hertz / 1000} kHz" else "%.1f kHz".format(Locale.ROOT, hertz / 1000f)

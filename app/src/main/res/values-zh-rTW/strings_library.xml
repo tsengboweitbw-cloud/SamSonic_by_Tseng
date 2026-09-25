@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Navigation -->
+    <string name="nav_home">首頁</string>
+    <string name="nav_library">音樂庫</string>
+    <string name="nav_search">搜尋</string>
+    <string name="nav_settings">設定</string>
+
+    <!-- Home -->
+    <string name="home_welcome_back">歡迎回來</string>
+    <string name="home_your_library">你的音樂庫</string>
+    <string name="home_shelf_picked_for_you">為你精選</string>
+    <string name="home_shelf_recently_added_albums">最近新增的專輯</string>
+    <string name="home_shelf_recently_added_songs">最近新增的歌曲</string>
+    <string name="home_shelf_recently_played_albums">最近播放的專輯</string>
+    <string name="home_shelf_recently_played_songs">最近播放的歌曲</string>
+    <string name="home_shelf_most_played_albums">最常播放的專輯</string>
+    <string name="home_shelf_most_played_songs">最常播放的歌曲</string>
+    <string name="home_shelf_load_error">無法載入%1$s</string>
+
+    <!-- Search -->
+    <string name="search_title">搜尋</string>
+    <string name="search_hint">搜尋你的音樂庫</string>
+    <string name="search_no_results">找不到「%1$s」的結果</string>
+    <string name="search_placeholder">藝人、專輯、歌曲</string>
+    <string name="search_clear">清除搜尋</string>
+
+    <!-- Sign in -->
+    <string name="auth_add_a_server">新增伺服器</string>
+    <string name="auth_subtitle">連線到你的 Navidrome / Subsonic 伺服器</string>
+    <string name="auth_server_address">伺服器位址</string>
+    <string name="auth_server_address_hint">music.example.com 或 http://192.168.1.10:4533</string>
+    <string name="auth_username">使用者名稱</string>
+    <string name="auth_password">密碼</string>
+    <string name="auth_show_password">顯示密碼</string>
+    <string name="auth_hide_password">隱藏密碼</string>
+    <string name="auth_connect">連線</string>
+    <string name="auth_add_server">新增伺服器</string>
+    <string name="auth_use_device">使用本機音樂</string>
+    <string name="auth_password_note">你的密碼只會用來登入你自己的伺服器，並以加密方式儲存在本機。</string>
+    <string name="auth_permission_denied">SamSonic 需要存取你的音樂，才能在本機播放</string>
+    <string name="auth_fields_missing">請填寫伺服器位址、使用者名稱和密碼</string>
+    <string name="auth_connect_failed">無法連線到該伺服器</string>
+
+    <!-- Library -->
+    <string name="library_title">音樂庫</string>
+    <string name="library_artists">藝人</string>
+    <string name="library_albums">專輯</string>
+    <string name="library_songs">歌曲</string>
+    <string name="library_playlists">播放清單</string>
+    <string name="library_genres">類型</string>
+    <string name="library_popular">熱門歌曲</string>
+    <string name="library_appears_on">參與演出</string>
+    <plurals name="library_song_count">
+        <item quantity="other">%d 首歌曲</item>
+    </plurals>
+    <plurals name="library_album_count">
+        <item quantity="other">%d 張專輯</item>
+    </plurals>
+    <plurals name="library_artist_count">
+        <item quantity="other">%d 位藝人</item>
+    </plurals>
+    <string name="library_genre_summary">%1$s · %2$s</string>
+    <string name="library_artists_load_error">無法載入藝人</string>
+    <string name="library_artist_load_error">無法載入藝人</string>
+    <string name="library_albums_load_error">無法載入專輯</string>
+    <string name="library_album_load_error">無法載入專輯</string>
+    <string name="library_songs_load_error">無法載入歌曲</string>
+    <string name="library_playlists_load_error">無法載入播放清單</string>
+    <string name="library_playlist_load_error">無法載入播放清單</string>
+    <string name="library_genres_load_error">無法載入類型</string>
+    <string name="library_genre_load_error">無法載入類型</string>
+
+    <!-- View options -->
+    <string name="library_view_options">檢視選項</string>
+    <string name="library_close_view_options">關閉檢視選項</string>
+    <string name="library_section_view">%1$s檢視方式</string>
+    <string name="library_layout">版面配置</string>
+    <string name="library_list">清單</string>
+    <string name="library_grid">格狀</string>
+    <string name="library_grid_columns">格狀欄數</string>
+
+    <!-- Add to playlist -->
+    <string name="library_add_to_playlist">加入播放清單</string>
+    <string name="library_new_playlist">新增播放清單</string>
+    <string name="library_adding">正在加入…</string>
+    <string name="library_playlist_name">名稱</string>
+    <string name="library_cancel">取消</string>
+    <string name="library_create">建立</string>
+    <string name="library_creating">正在建立…</string>
+    <string name="library_add_anyway">仍要加入</string>
+    <string name="library_skip">略過</string>
+    <string name="library_skip_duplicates">略過重複項目</string>
+    <string name="library_add_to_playlist_error">無法加入播放清單</string>
+    <string name="library_no_songs_to_add">沒有可加入的歌曲</string>
+    <string name="library_already_in_playlist">已在「%1$s」中</string>
+    <string name="library_added_to_playlist">已加入「%1$s」</string>
+    <string name="library_added_songs">已將 %1$s 加入「%2$s」</string>
+    <string name="library_added_songs_skipped">已將 %1$s 加入「%2$s」，並略過已存在的 %3$s</string>
+    <string name="library_duplicate_one">「%1$s」已在「%2$s」中。</string>
+    <string name="library_duplicate_all">全部 %1$d 首歌曲都已在「%2$s」中。</string>
+    <plurals name="library_duplicate_some">
+        <item quantity="other">%2$d 首中有 %1$d 首已在「%3$s」中。</item>
+    </plurals>
+</resources>

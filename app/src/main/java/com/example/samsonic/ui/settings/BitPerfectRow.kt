@@ -4,7 +4,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Usb
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.samsonic.R
 import com.example.samsonic.playback.BitPerfectOutput
 import com.example.samsonic.playback.formatKilohertz
 
@@ -20,15 +22,15 @@ internal fun BitPerfectRow(bitPerfect: BitPerfectOutput) {
     val enabled by bitPerfect.enabled.collectAsStateWithLifecycle()
     val usb = bitPerfect.dac.collectAsStateWithLifecycle().value
     val hint = when {
-        usb == null -> "Plug in a USB DAC to use it: music then plays through the DAC alone, bit-perfect where it takes the song as it is, resampled where not"
-        usb.rates.isEmpty() -> "${usb.name} doesn't offer exclusive mode on this phone"
+        usb == null -> stringResource(R.string.settings_exclusive_usb_hint_no_dac)
+        usb.rates.isEmpty() -> stringResource(R.string.settings_exclusive_usb_hint_unsupported, usb.name)
         // Android's volume stops applying, and other sounds don't play on the DAC.
-        enabled -> "${usb.name} · up to ${formatKilohertz(usb.rates.last())}. Phone volume may not apply: start with the DAC turned down"
-        else -> "${usb.name} · up to ${formatKilohertz(usb.rates.last())}"
+        enabled -> stringResource(R.string.settings_exclusive_usb_hint_on, usb.name, formatKilohertz(usb.rates.last()))
+        else -> stringResource(R.string.settings_exclusive_usb_hint_off, usb.name, formatKilohertz(usb.rates.last()))
     }
     SwitchRow(
         icon = Icons.Filled.Usb,
-        title = "Exclusive USB output",
+        title = stringResource(R.string.settings_exclusive_usb),
         checked = enabled,
         onCheckedChange = bitPerfect::setEnabled,
         hint = hint,

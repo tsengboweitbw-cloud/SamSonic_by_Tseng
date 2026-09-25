@@ -1,5 +1,6 @@
 package com.example.samsonic.ui.navigation
 
+import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExperimentalSharedTransitionApi
 import androidx.compose.animation.SharedTransitionLayout
@@ -33,6 +34,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.samsonic.LocalAppContainer
+import com.example.samsonic.R
 import com.example.samsonic.ui.auth.LoginScreen
 import com.example.samsonic.ui.common.ArtTransitions
 import com.example.samsonic.ui.common.LocalArtTransitions
@@ -59,13 +61,13 @@ import com.example.samsonic.ui.theme.bottomFade
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
 
-data class BottomDestination(val route: String, val label: String, val icon: androidx.compose.ui.graphics.vector.ImageVector)
+data class BottomDestination(val route: String, @StringRes val label: Int, val icon: androidx.compose.ui.graphics.vector.ImageVector)
 
 private val bottomDestinations = listOf(
-    BottomDestination(Routes.HOME, "Home", Icons.Filled.Home),
-    BottomDestination(Routes.LIBRARY, "Library", Icons.Filled.LibraryMusic),
-    BottomDestination(Routes.SEARCH, "Search", Icons.Filled.Search),
-    BottomDestination(Routes.SETTINGS, "Settings", Icons.Filled.Settings),
+    BottomDestination(Routes.HOME, R.string.nav_home, Icons.Filled.Home),
+    BottomDestination(Routes.LIBRARY, R.string.nav_library, Icons.Filled.LibraryMusic),
+    BottomDestination(Routes.SEARCH, R.string.nav_search, Icons.Filled.Search),
+    BottomDestination(Routes.SETTINGS, R.string.nav_settings, Icons.Filled.Settings),
 )
 
 private val noChromeRoutes = setOf(Routes.LOGIN, Routes.ADD_SERVER)

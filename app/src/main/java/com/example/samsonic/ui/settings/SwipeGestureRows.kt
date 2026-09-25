@@ -6,7 +6,9 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Lyrics
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.samsonic.R
 import com.example.samsonic.data.ThemeManager
 
 /**
@@ -22,23 +24,23 @@ internal fun SwipeGestureRows(themeManager: ThemeManager) {
 
     SwitchRow(
         icon = Icons.Filled.Lyrics,
-        title = "Swipe right for lyrics",
+        title = stringResource(R.string.settings_swipe_lyrics),
         checked = lyrics,
         onCheckedChange = themeManager::setSwipeForLyrics,
-        hint = "On Now Playing, swipe right to open the lyrics",
+        hint = stringResource(R.string.settings_swipe_lyrics_hint),
     )
     SwitchRow(
         icon = Icons.Filled.Info,
-        title = "Swipe left for song info",
+        title = stringResource(R.string.settings_swipe_info),
         checked = info,
         onCheckedChange = themeManager::setSwipeForInfo,
-        hint = "On Now Playing, swipe left to open the song's details",
+        hint = stringResource(R.string.settings_swipe_info_hint),
     )
     SwitchRow(
         icon = Icons.AutoMirrored.Filled.QueueMusic,
-        title = "Swipe up for the queue",
+        title = stringResource(R.string.settings_swipe_queue),
         checked = queue,
         onCheckedChange = themeManager::setSwipeForQueue,
-        hint = "On Now Playing, swipe up to open what plays next",
+        hint = stringResource(R.string.settings_swipe_queue_hint),
     )
 }

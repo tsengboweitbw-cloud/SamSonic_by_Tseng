@@ -59,7 +59,7 @@ class AppContainer(context: Context) {
     /** Bit-perfect output to a USB DAC (Android 14+); the playback service's tracks go through it. */
     val bitPerfect = BitPerfectOutput(appContext)
 
-    private val subsonic = SubsonicRepository(okHttpClient)
+    private val subsonic = SubsonicRepository(okHttpClient, appContext)
 
     val sources = MusicSources(sessionManager, subsonic, DeviceLibrary(appContext))
 

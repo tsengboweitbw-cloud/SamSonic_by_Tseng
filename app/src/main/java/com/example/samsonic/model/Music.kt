@@ -75,10 +75,10 @@ const val FAVOURITES_PLAYLIST_ID = "samsonic:favourites"
 
 val Playlist.isFavourites: Boolean get() = id == FAVOURITES_PLAYLIST_ID
 
-/** The Favourites playlist, holding [songs] liked songs. */
-fun favouritesPlaylist(songs: List<Song>) = Playlist(
+/** The Favourites playlist, holding [songs] liked songs, called [name] (the UI passes it in its language). */
+fun favouritesPlaylist(songs: List<Song>, name: String = "Favourites") = Playlist(
     id = FAVOURITES_PLAYLIST_ID,
-    name = "Favourites",
+    name = name,
     description = "",
     songCount = songs.size,
     durationSeconds = songs.sumOf { it.durationSeconds },

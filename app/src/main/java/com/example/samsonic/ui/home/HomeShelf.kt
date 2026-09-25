@@ -1,5 +1,7 @@
 package com.example.samsonic.ui.home
 
+import androidx.annotation.StringRes
+import com.example.samsonic.R
 import com.example.samsonic.model.Album
 import com.example.samsonic.model.Song
 
@@ -22,18 +24,18 @@ enum class ShelfKind { Albums, Songs }
 enum class HomeShelf(
     val type: String,
     val kind: ShelfKind,
-    val title: String,
+    @StringRes val title: Int,
     val previewSize: Int,
     val sharesHomeList: Boolean = false,
     val history: Boolean = false,
 ) {
-    PickedForYou("random", ShelfKind.Songs, "Picked For You", SHELF_FULL_LIST_SIZE, sharesHomeList = true),
-    RecentlyAddedAlbums("newest", ShelfKind.Albums, "Recently Added Albums", 20),
-    RecentlyAddedSongs("newest", ShelfKind.Songs, "Recently Added Songs", 20),
-    RecentlyPlayedAlbums("recent", ShelfKind.Albums, "Recently Played Albums", 12, history = true),
-    RecentlyPlayedSongs("recent", ShelfKind.Songs, "Recently Played Songs", 20, history = true),
-    MostPlayedAlbums("frequent", ShelfKind.Albums, "Most Played Albums", 12, history = true),
-    MostPlayedSongs("frequent", ShelfKind.Songs, "Most Played Songs", 20, history = true);
+    PickedForYou("random", ShelfKind.Songs, R.string.home_shelf_picked_for_you, SHELF_FULL_LIST_SIZE, sharesHomeList = true),
+    RecentlyAddedAlbums("newest", ShelfKind.Albums, R.string.home_shelf_recently_added_albums, 20),
+    RecentlyAddedSongs("newest", ShelfKind.Songs, R.string.home_shelf_recently_added_songs, 20),
+    RecentlyPlayedAlbums("recent", ShelfKind.Albums, R.string.home_shelf_recently_played_albums, 12, history = true),
+    RecentlyPlayedSongs("recent", ShelfKind.Songs, R.string.home_shelf_recently_played_songs, 20, history = true),
+    MostPlayedAlbums("frequent", ShelfKind.Albums, R.string.home_shelf_most_played_albums, 12, history = true),
+    MostPlayedSongs("frequent", ShelfKind.Songs, R.string.home_shelf_most_played_songs, 20, history = true);
 
     /** The shelf page's route argument. */
     val key: String get() = name

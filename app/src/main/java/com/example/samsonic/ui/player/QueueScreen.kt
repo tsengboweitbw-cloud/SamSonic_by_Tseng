@@ -28,9 +28,11 @@ import com.example.samsonic.LocalAppContainer
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.example.samsonic.R
 import com.example.samsonic.model.Song
 import com.example.samsonic.model.artSeed
 import com.example.samsonic.ui.components.ListItemFade
@@ -71,8 +73,8 @@ fun QueueScreen(modifier: Modifier = Modifier) {
                 val song = player.queue.getOrNull(index) ?: return@items
                 val isCurrent = index == player.currentIndex
                 SwipeActions(
-                    swipeRight = SwipeAction("Play next", Icons.Filled.SkipNext) { player.moveToNext(index) },
-                    swipeLeft = SwipeAction("Remove", Icons.Filled.Delete, destructive = true) { player.removeFromQueue(index) },
+                    swipeRight = SwipeAction(stringResource(R.string.components_play_next), Icons.Filled.SkipNext) { player.moveToNext(index) },
+                    swipeLeft = SwipeAction(stringResource(R.string.player_remove), Icons.Filled.Delete, destructive = true) { player.removeFromQueue(index) },
                     modifier = Modifier.animateItem(ListItemFade, ListItemMove, ListItemFade),
                 ) {
                     Row(
@@ -98,7 +100,7 @@ fun QueueScreen(modifier: Modifier = Modifier) {
                         if (isCurrent) {
                             Icon(
                                 Icons.Filled.Equalizer,
-                                contentDescription = "Now playing",
+                                contentDescription = stringResource(R.string.player_now_playing),
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier
                                     .padding(end = 10.dp)

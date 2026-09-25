@@ -13,9 +13,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.LocalAppContainer
+import com.example.samsonic.R
 import com.example.samsonic.model.Album
 import com.example.samsonic.model.Artist
 import com.example.samsonic.model.Song
@@ -69,7 +72,7 @@ fun ArtistDetailScreen(
     val player = LocalPlayerState.current
     val repository = LocalAppContainer.current.repository
 
-    val state = rememberScreenLoad(artistId, errorMessage = "Couldn't load artist") {
+    val state = rememberScreenLoad(artistId, errorMessage = stringResource(R.string.library_artist_load_error)) {
         val (artist, albums) = repository.getArtist(artistId)
         coroutineScope {
             val topSongs = async { runCatching { repository.getTopSongs(artist.name) }.getOrDefault(emptyList()) }
@@ -95,7 +98,7 @@ fun ArtistDetailScreen(
             Column(Modifier.fillMaxSize().padding(top = BackButtonClearance)) {
                 DetailHeader(
                     title = preview.name,
-                    subtitle = "${preview.albumCount} albums",
+                    subtitle = pluralStringResource(R.plurals.library_album_count, preview.albumCount, preview.albumCount),
                     art = { ArtistPicture(preview) },
                     actions = {},
                 )
@@ -119,7 +122,7 @@ fun ArtistDetailScreen(
                 item(key = "header") {
                     DetailHeader(
                         title = artist.name,
-                        subtitle = "${artist.albumCount} albums",
+                        subtitle = pluralStringResource(R.plurals.library_album_count, artist.albumCount, artist.albumCount),
                         art = { ArtistPicture(artist) },
                     ) {
                         // Plays everything, not just the songs listed here.
@@ -130,12 +133,12 @@ fun ArtistDetailScreen(
                         )
                     }
                 }
-                songSection("popular", "Popular", topSongs, player, onTitleClick = null)
+                songSection("popular", R.string.library_popular, topSongs, player, onTitleClick = null)
                 // Two rows only once there are enough albums to fill them; fewer sit in one.
                 val albumRows = if (albums.size < TWO_ROW_MIN_ALBUMS) 1 else 2
-                albumShelf("albums", "Albums", albums, onAllAlbumsClick, onAlbumClick, rows = albumRows)
-                songSection("songs", "Songs", songs, player, onTitleClick = onAllSongsClick)
-                albumShelf("appearsOn", "Appears on", appearsOn, onAppearsOnClick, onAlbumClick)
+                albumShelf("albums", R.string.library_albums, albums, onAllAlbumsClick, onAlbumClick, rows = albumRows)
+                songSection("songs", R.string.library_songs, songs, player, onTitleClick = onAllSongsClick)
+                albumShelf("appearsOn", R.string.library_appears_on, appearsOn, onAppearsOnClick, onAlbumClick)
                 item(key = "end") { Spacer(Modifier.height(24.dp)) }
             }
         }

@@ -24,6 +24,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -33,6 +35,7 @@ import com.example.samsonic.ui.common.ArtKeys
 import com.example.samsonic.ui.common.rememberSharedArt
 import com.example.samsonic.ui.library.rememberAddToPlaylistLongPress
 import com.example.samsonic.LocalAppContainer
+import com.example.samsonic.R
 import com.example.samsonic.model.Album
 import com.example.samsonic.model.Artist
 import com.example.samsonic.model.Playlist
@@ -155,7 +158,7 @@ fun ArtistCard(
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = "${artist.albumCount} albums",
+                text = pluralStringResource(R.plurals.components_album_count, artist.albumCount, artist.albumCount),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -190,7 +193,7 @@ fun PlaylistCard(
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = "${playlist.songCount} songs",
+                text = pluralStringResource(R.plurals.components_song_count, playlist.songCount, playlist.songCount),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -282,7 +285,7 @@ fun SongRow(
                         PressIconButton(onClick = onToggleLike) {
                             Icon(
                                 imageVector = if (liked) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                                contentDescription = if (liked) "Unlike" else "Like",
+                                contentDescription = stringResource(if (liked) R.string.components_unlike else R.string.components_like),
                                 tint = if (liked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                             )
                         }
@@ -293,7 +296,7 @@ fun SongRow(
             )
             if (onMoreClick != null) {
                 PressIconButton(onClick = onMoreClick) {
-                    Icon(Icons.Filled.MoreVert, contentDescription = "More", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.components_more), tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }

@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Screen and groups -->
+    <string name="settings_title">設定</string>
+    <string name="settings_group_music_source">音樂來源</string>
+    <string name="settings_group_playback">播放</string>
+    <string name="settings_group_gestures">「正在播放」手勢</string>
+    <string name="settings_group_library">音樂庫</string>
+    <string name="settings_group_appearance">外觀</string>
+    <string name="settings_group_storage">儲存空間</string>
+    <string name="settings_group_about">關於</string>
+
+    <!-- Shared -->
+    <string name="settings_off">關閉</string>
+    <string name="settings_cancel">取消</string>
+    <string name="settings_clear">清除</string>
+    <string name="settings_sentences">%1$s。%2$s</string>
+    <string name="settings_applies_on_restart">將在下次啟動 SamSonic 時生效</string>
+
+    <!-- Playback -->
+    <string name="settings_like_button">愛心按鈕</string>
+    <string name="settings_like_button_hint">用愛心按鈕標記喜愛的歌曲</string>
+    <string name="settings_audio_format">音訊格式</string>
+    <string name="settings_audio_format_hint">歌曲清單中每首歌曲格式的顯示方式</string>
+    <string name="settings_audio_format_under_artist">顯示在藝人下方</string>
+    <string name="settings_audio_format_by_duration">顯示在長度旁</string>
+    <string name="settings_audio_format_codec_badge">編碼格式標籤</string>
+    <string name="settings_audio_format_hi_res_badge">Hi-Res 標籤</string>
+    <string name="settings_audio_format_sample_title">歌曲名稱</string>
+    <string name="settings_audio_format_sample_artist">藝人</string>
+    <string name="settings_sleep_timer">睡眠定時器</string>
+    <string name="settings_sleep_timer_hint">經過設定的分鐘數後暫停音樂</string>
+    <string name="settings_sleep_timer_minutes">%1$d 分鐘</string>
+
+    <!-- Exclusive USB output -->
+    <string name="settings_exclusive_usb">獨佔 USB 輸出</string>
+    <string name="settings_exclusive_usb_hint_no_dac">接上 USB DAC 即可使用：音樂只會透過 DAC 播放，DAC 支援歌曲原始格式時為 Bit-perfect，不支援時則重採樣</string>
+    <string name="settings_exclusive_usb_hint_unsupported">%1$s 在這支手機上不支援獨佔模式</string>
+    <string name="settings_exclusive_usb_hint_on">%1$s · 最高 %2$s。手機音量可能無效：請先將 DAC 音量調低</string>
+    <string name="settings_exclusive_usb_hint_off">%1$s · 最高 %2$s</string>
+
+    <!-- DSD output -->
+    <string name="settings_dsd_output">DSD 輸出</string>
+    <string name="settings_dsd_pcm">轉為 PCM</string>
+    <string name="settings_dsd_native">原生 DSD</string>
+    <string name="settings_dsd_hint_no_dac">接上 USB DAC 即可選擇 DSD 檔案的輸出方式</string>
+    <string name="settings_dsd_hint_not_exclusive">開啟「獨佔 USB 輸出」後，即可選擇 DSD 檔案輸出至 DAC 的方式</string>
+    <string name="settings_dsd_hint">DSD 檔案輸出至 USB DAC 的方式。DoP 與原生 DSD 需要支援 DSD 解碼的 DAC</string>
+    <string name="settings_dsd_pcm_supporting">在應用程式內濾波轉為 88.2 kHz PCM，任何 DAC 皆可播放</string>
+    <string name="settings_dsd_dop_what">將 DSD 封裝在 PCM 中，由 DAC 解開</string>
+    <string name="settings_dsd_native_what">依 Android 提供的方式輸出原始 DSD</string>
+    <string name="settings_dsd_needs_exclusive">需開啟獨佔 USB 輸出</string>
+    <string name="settings_dsd_no_dac">接上 DAC 以確認是否支援</string>
+    <string name="settings_dsd_native_yes">%1$s 支援；不支援的檔案改用 DoP</string>
+    <string name="settings_dsd_native_no">%1$s 不支援，改用 DoP</string>
+    <string name="settings_dsd_dop_max">%1$s · 最高 DSD%2$d</string>
+    <string name="settings_dsd_dop_no">%1$s 不支援，改用 PCM</string>
+
+    <!-- Library -->
+    <string name="settings_album_artists_only">僅顯示專輯藝人</string>
+    <string name="settings_album_artists_only_hint">「藝人」分頁只列出專輯藝人，而非歌曲上列名的所有人</string>
+    <string name="settings_favourites_playlist">「我的最愛」播放清單</string>
+    <string name="settings_favourites_playlist_hint">你喜愛的歌曲，列在「播放清單」分頁的最前面</string>
+
+    <!-- Now Playing gestures -->
+    <string name="settings_swipe_lyrics">向右滑動顯示歌詞</string>
+    <string name="settings_swipe_lyrics_hint">在「正在播放」畫面向右滑動即可開啟歌詞</string>
+    <string name="settings_swipe_info">向左滑動顯示歌曲資訊</string>
+    <string name="settings_swipe_info_hint">在「正在播放」畫面向左滑動即可開啟歌曲詳細資訊</string>
+    <string name="settings_swipe_queue">向上滑動顯示播放佇列</string>
+    <string name="settings_swipe_queue_hint">在「正在播放」畫面向上滑動即可查看接下來播放的歌曲</string>
+
+    <!-- Appearance -->
+    <string name="settings_theme">主題</string>
+    <string name="settings_theme_hint">淺色、深色，或跟隨手機設定</string>
+    <string name="settings_theme_system">跟隨系統</string>
+    <string name="settings_theme_light">淺色</string>
+    <string name="settings_theme_dark">深色</string>
+    <string name="settings_accent_color">強調色</string>
+    <string name="settings_accent_color_hint">應用程式的主色調，以及搭配它挑選的顏色</string>
+    <string name="settings_accent_hex">色碼</string>
+    <string name="settings_accent_reset">重設</string>
+    <string name="settings_accent_apply">套用</string>
+    <string name="settings_album_art_roundness">專輯封面圓角</string>
+    <string name="settings_album_art_roundness_hint">封面邊角的圓潤程度</string>
+    <string name="settings_glass_opacity">玻璃不透明度</string>
+    <string name="settings_glass_opacity_hint">毛玻璃列與卡片的不透明程度</string>
+    <string name="settings_glass_blur">玻璃模糊</string>
+    <string name="settings_glass_blur_hint">毛玻璃列與卡片對後方內容的模糊程度</string>
+    <string name="settings_player_blur">播放器背景模糊</string>
+    <string name="settings_player_blur_hint">「正在播放」畫面對後方封面的模糊程度</string>
+    <string name="settings_menu_opacity">選單不透明度</string>
+    <string name="settings_menu_opacity_hint">從設定項目展開的選單的不透明程度</string>
+    <string name="settings_menu_blur">選單模糊</string>
+    <string name="settings_menu_blur_hint">這些選單對後方頁面的模糊程度</string>
+
+    <!-- Storage: music cache -->
+    <string name="settings_music_cache">音樂快取</string>
+    <string name="settings_music_cache_hint">保留你播放的歌曲與播放佇列中接下來的歌曲，以備連線不佳時使用</string>
+    <string name="settings_wifi_only">僅在 Wi-Fi 下預先儲存</string>
+    <string name="settings_wifi_only_hint_on">使用行動數據時，只保留正在播放的歌曲</string>
+    <string name="settings_wifi_only_hint_off">使用行動數據時也會下載接下來的歌曲</string>
+    <string name="settings_clear_music_cache">清除音樂快取</string>
+    <string name="settings_clear_music_cache_hint">刪除已儲存的音樂；播放時會重新串流</string>
+    <string name="settings_clear_music_cache_title">要清除音樂快取嗎？</string>
+    <string name="settings_clear_music_cache_body_amount">這會刪除 %1$s 已儲存的音樂。下次播放時歌曲會重新串流，需使用數據且必須連線。</string>
+    <string name="settings_clear_music_cache_body_all">這會刪除所有已儲存的音樂。下次播放時歌曲會重新串流，需使用數據且必須連線。</string>
+    <string name="settings_cache_used">已使用 %1$s</string>
+
+    <!-- Storage: album art cache -->
+    <string name="settings_album_art_cache">專輯封面快取</string>
+    <string name="settings_album_art_cache_hint">在手機上保留封面，不必載入即可顯示</string>
+    <string name="settings_album_art_cache_hint_fallback">找不到 SD 卡，快取暫時存放在手機上</string>
+    <string name="settings_cache_location">快取位置</string>
+    <string name="settings_cache_location_hint">將專輯封面快取存放在手機或 SD 卡</string>
+    <string name="settings_cache_location_missing">SD 卡（找不到）</string>
+    <string name="settings_cache_free">可用 %1$s</string>
+    <string name="settings_cache_no_sd">找不到 SD 卡。插入 SD 卡即可將快取存放在卡上。</string>
+    <string name="settings_cache_move_note">移動快取後會從空白開始；舊快取將在下次啟動 SamSonic 時刪除。</string>
+    <string name="settings_cache_all">快取所有專輯封面</string>
+    <string name="settings_cache_all_hint">預先下載伺服器上的所有封面</string>
+    <string name="settings_stop_caching">停止快取</string>
+    <string name="settings_stop_caching_hint">停止下載封面</string>
+    <string name="settings_prefetch_gathering">正在尋找封面…</string>
+    <string name="settings_prefetch_done">完成</string>
+    <string name="settings_prefetch_done_failed">完成，%1$d 個失敗</string>
+    <string name="settings_prefetch_failed">無法連線至伺服器</string>
+    <string name="settings_cache_all_title">要快取所有專輯封面嗎？</string>
+    <string name="settings_cache_all_body">這會以兩種尺寸下載伺服器上所有專輯、歌曲、藝人與播放清單的封面。音樂庫較大時，可能佔用數 GB 的儲存空間，以及同樣多的行動數據。</string>
+    <string name="settings_cache_all_limit">快取上限為 %1$s；超過時，最久未使用的封面會被移除，以騰出空間給新封面。</string>
+    <string name="settings_cache_all_metered">你目前正在使用行動數據。若數據方案有流量限制，請先連上 Wi-Fi。</string>
+    <string name="settings_cache_all_confirm">全部快取</string>
+    <string name="settings_clear_art_cache">清除專輯封面快取</string>
+    <string name="settings_clear_art_cache_hint">刪除已儲存的封面；瀏覽時會重新下載</string>
+    <string name="settings_clear_art_cache_title">要清除專輯封面快取嗎？</string>
+    <string name="settings_clear_art_cache_body_amount">這會刪除 %1$s 已儲存的封面。瀏覽時會重新下載並使用數據，下載完成前載入可能較慢。</string>
+    <string name="settings_clear_art_cache_body_all">這會刪除所有已儲存的封面。瀏覽時會重新下載並使用數據，下載完成前載入可能較慢。</string>
+    <string name="settings_clear_art_cache_running">「快取所有專輯封面」仍在進行中，將會停止。</string>
+
+    <!-- Music sources -->
+    <string name="settings_source_device">本機</string>
+    <string name="settings_source_device_hint">儲存在本機的音樂</string>
+    <string name="settings_source_device_hint_permission">輕觸以允許存取你的音樂</string>
+    <string name="settings_source_signed_in">登入帳號：%1$s</string>
+    <string name="settings_source_confirm_remove_hint">再按一次垃圾桶即可移除此伺服器</string>
+    <string name="settings_source_confirm_remove">確認移除伺服器</string>
+    <string name="settings_source_remove">移除伺服器</string>
+    <string name="settings_source_add">新增 Subsonic 伺服器</string>
+    <string name="settings_source_add_hint">連線至 Navidrome 或其他 Subsonic 伺服器</string>
+    <string name="settings_source_in_use">使用中</string>
+</resources>

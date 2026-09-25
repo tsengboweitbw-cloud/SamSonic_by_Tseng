@@ -12,7 +12,6 @@ import android.os.Handler
 import android.os.Looper
 import androidx.annotation.OptIn
 import androidx.annotation.RequiresApi
-import androidx.media3.common.C
 import androidx.media3.common.Format
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.Player
@@ -20,6 +19,7 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.audio.AudioSink
 import androidx.media3.exoplayer.audio.DefaultAudioSink
+import com.example.samsonic.R
 import com.example.samsonic.playback.dsd.DsdStream
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -49,7 +49,7 @@ enum class DsdOutputMode { PCM, DOP, NATIVE }
  * except DSD packed for the DAC ([dsdStreamFor]), which is noise to the mixer: it's silenced.
  */
 @OptIn(UnstableApi::class) // Media3's AudioTrackProvider.
-class BitPerfectOutput(context: Context) {
+class BitPerfectOutput(private val context: Context) {
     private val audioManager = context.getSystemService(AudioManager::class.java)
     private val prefs = context.getSharedPreferences("samsonic_audio", Context.MODE_PRIVATE)
     private val media = AudioAttributes.Builder()
@@ -181,10 +181,10 @@ class BitPerfectOutput(context: Context) {
         }
         if (track == null && stream != null) {
             val why = when {
-                !_enabled.value -> "Exclusive mode is off"
-                else -> _track.value?.detail ?: "Not playing to the USB DAC"
+                !_enabled.value -> context.getString(R.string.playback_exclusive_off)
+                else -> _track.value?.detail ?: context.getString(R.string.playback_not_to_dac)
             }
-            _track.value = BitPerfectTrack(on = false, detail = "$why. DSD for the DAC can't play, so it's muted")
+            _track.value = BitPerfectTrack(on = false, detail = context.getString(R.string.playback_dsd_muted, why))
             track = SilentAudioTrack(
                 attributes.audioAttributesV21.audioAttributes,
                 AudioFormat.Builder()
@@ -224,24 +224,24 @@ class BitPerfectOutput(context: Context) {
             _track.value = null
             return null
         }
-        val (mixer, whyNot) = DacFormats.of(audioManager, device).forTrack(config.sampleRate, config.encoding, config.channelConfig, stream)
-        if (mixer == null) return off(whyNot ?: "The DAC doesn't take it")
-        if (!audioManager.setPreferredMixerAttributes(media, device, mixer)) return off("Android declined it")
+        val (mixer, whyNot) = DacFormats.of(audioManager, device).forTrack(context, config.sampleRate, config.encoding, config.channelConfig, stream)
+        if (mixer == null) return off(whyNot ?: context.getString(R.string.playback_dac_no_format))
+        if (!audioManager.setPreferredMixerAttributes(media, device, mixer)) return off(context.getString(R.string.playback_android_declined))
         preferredOn = device
         val encoding = mixer.format.encoding
         val track = try {
             bitPerfectAudioTrack(media, config, encoding, stream, sessionId)
         } catch (e: RuntimeException) {
             // Android turned the format down after all (native DSD above all, never tried).
-            return off("Android couldn't open it: ${e.message}")
+            return off(context.getString(R.string.playback_android_open_failed_reason, e.message))
         }
         // The constructors the DSD and integer tracks use don't throw on a format Android turns
         // down: the track just never initializes, and the sink would fail on it.
         if (track.state != AudioTrack.STATE_INITIALIZED) {
             track.release()
-            return off("Android couldn't open it")
+            return off(context.getString(R.string.playback_android_open_failed))
         }
-        _track.value = BitPerfectTrack(on = true, detail = describeExclusive(encoding, config.sampleRate, stream, conversion))
+        _track.value = BitPerfectTrack(on = true, detail = describeExclusive(context, encoding, config.sampleRate, stream, conversion))
         return track
     }
 

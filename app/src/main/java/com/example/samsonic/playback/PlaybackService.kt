@@ -1,6 +1,7 @@
 package com.example.samsonic.playback
 
 import android.app.PendingIntent
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import androidx.annotation.OptIn
@@ -19,6 +20,7 @@ import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionResult
 import com.example.samsonic.MainActivity
 import com.example.samsonic.SamSonicApplication
+import com.example.samsonic.locale.AppLanguages
 import com.example.samsonic.playback.dsd.DsdExtractorsFactory
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
@@ -35,6 +37,11 @@ import kotlinx.coroutines.cancel
  * which [MusicPrefetcher] fills ahead of the player.
  */
 class PlaybackService : MediaSessionService() {
+    // The language picked in Settings, before Android 13, for the notification and output details.
+    override fun attachBaseContext(base: Context) {
+        super.attachBaseContext(AppLanguages.wrap(base))
+    }
+
     private var mediaSession: MediaSession? = null
     private var scrobbler: Scrobbler? = null
     private var prefetcher: MusicPrefetcher? = null

@@ -24,10 +24,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.LocalAppContainer
+import com.example.samsonic.R
 import com.example.samsonic.model.artSeed
 import com.example.samsonic.ui.components.MediaArt
 import com.example.samsonic.ui.components.PressIconButton
@@ -115,14 +117,14 @@ fun MiniPlayer(
             ) {
                 Icon(
                     imageVector = if (player.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                    contentDescription = if (player.isPlaying) "Pause" else "Play",
+                    contentDescription = stringResource(if (player.isPlaying) R.string.player_pause else R.string.components_play),
                 )
             }
             PressIconButton(
                 onClick = { player.skipNext() },
                 size = iconButtonSize,
             ) {
-                Icon(Icons.Filled.SkipNext, contentDescription = "Next")
+                Icon(Icons.Filled.SkipNext, contentDescription = stringResource(R.string.player_next))
             }
         }
 

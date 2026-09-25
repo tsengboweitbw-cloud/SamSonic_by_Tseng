@@ -11,8 +11,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.example.samsonic.R
 import com.example.samsonic.model.Album
 import com.example.samsonic.ui.common.StateContent
 import com.example.samsonic.ui.common.TitledPage
@@ -42,8 +44,8 @@ fun HomeScreen(
         modifier = modifier,
         title = {
             Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
-                Text(text = "Welcome back", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(text = "Your library", style = MaterialTheme.typography.displaySmall)
+                Text(text = stringResource(R.string.home_welcome_back), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(text = stringResource(R.string.home_your_library), style = MaterialTheme.typography.displaySmall)
             }
         },
     ) { topPadding ->
@@ -65,7 +67,7 @@ fun HomeScreen(
                     shown.entries.forEachIndexed { index, (shelf, items) ->
                         item(key = shelf.key) {
                             // The title opens the shelf's full list as its own page.
-                            SectionHeader(title = shelf.title, onTitleClick = { onShelfClick(shelf) })
+                            SectionHeader(title = stringResource(shelf.title), onTitleClick = { onShelfClick(shelf) })
                             when (items) {
                                 is ShelfItems.Albums -> HorizontalCarousel(items = items.albums, key = { it.id }) { album ->
                                     AlbumCard(album = album, onClick = { onAlbumClick(album) })

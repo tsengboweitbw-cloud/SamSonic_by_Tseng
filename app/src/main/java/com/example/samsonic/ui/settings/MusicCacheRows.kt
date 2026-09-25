@@ -30,8 +30,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.samsonic.R
 import com.example.samsonic.data.ImageCacheSettings
 import com.example.samsonic.data.MusicCache
 import com.example.samsonic.ui.player.PanelState
@@ -92,7 +94,7 @@ internal fun MusicCacheRows(cache: MusicCache, usage: MusicCacheUsage, clearMenu
     val context = LocalContext.current
     SliderRow(
         icon = Icons.Filled.LibraryMusic,
-        title = "Music cache",
+        title = stringResource(R.string.settings_music_cache),
         valueLabel = ImageCacheSettings.label(ImageCacheSettings.Steps[step]),
         value = step.toFloat(),
         valueRange = 0f..lastStep.toFloat(),
@@ -100,25 +102,25 @@ internal fun MusicCacheRows(cache: MusicCache, usage: MusicCacheUsage, clearMenu
         steps = lastStep - 1,
         onValueChange = { cache.setMaxSizeStep(it.roundToInt()) },
         onValueChangeFinished = { if (cache.maxSizeStep.value != cache.activeStep) showAppliesOnRestartToast(context) },
-        hint = "Songs you play, and the next ones in the queue, are kept for poor connections",
+        hint = stringResource(R.string.settings_music_cache_hint),
     )
 
     val wifiOnly by cache.prefetchWifiOnly.collectAsStateWithLifecycle()
     SwitchRow(
         icon = Icons.Filled.Wifi,
-        title = "Save ahead on Wi-Fi only",
+        title = stringResource(R.string.settings_wifi_only),
         checked = wifiOnly,
         onCheckedChange = cache::setPrefetchWifiOnly,
         hint = if (wifiOnly) {
-            "On mobile data, only the song playing is kept"
+            stringResource(R.string.settings_wifi_only_hint_on)
         } else {
-            "Upcoming songs download on mobile data too"
+            stringResource(R.string.settings_wifi_only_hint_off)
         },
     )
 
     LaunchedEffect(usage) { usage.refresh() }
     val usedBytes = usage.usedBytes
-    val hint = "Deletes the saved music; songs stream again when you play them"
+    val hint = stringResource(R.string.settings_clear_music_cache_hint)
     val hintState = rememberRowHint()
     Row(
         modifier = Modifier
@@ -131,9 +133,9 @@ internal fun MusicCacheRows(cache: MusicCache, usage: MusicCacheUsage, clearMenu
     ) {
         Icon(Icons.Filled.DeleteSweep, contentDescription = null, tint = rowIconTint(), modifier = Modifier.size(22.dp))
         Spacer(Modifier.width(14.dp))
-        Text(text = "Clear music cache", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+        Text(text = stringResource(R.string.settings_clear_music_cache), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
         Text(
-            text = usedBytes?.let { "${ImageCacheSettings.usageLabel(it)} used" } ?: "…",
+            text = usedBytes?.let { stringResource(R.string.settings_cache_used, ImageCacheSettings.usageLabel(it)) } ?: "…",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -144,17 +146,20 @@ internal fun MusicCacheRows(cache: MusicCache, usage: MusicCacheUsage, clearMenu
 /** Asks before emptying the music cache, saying how much it frees and what that costs. */
 @Composable
 internal fun ClearMusicCacheMenu(panel: PanelState, haze: HazeState, usage: MusicCacheUsage) {
-    SettingsMenu(panel, haze, title = "Clear music cache?") {
+    SettingsMenu(panel, haze, title = stringResource(R.string.settings_clear_music_cache_title)) {
         val used = usage.usedBytes?.let(ImageCacheSettings::usageLabel)
         Column(Modifier.padding(horizontal = 24.dp)) {
             Text(
-                text = "This deletes ${used ?: "all"} of saved music. Songs stream again the next time " +
-                    "you play them, which uses data and needs a connection.",
+                text = if (used != null) {
+                    stringResource(R.string.settings_clear_music_cache_body_amount, used)
+                } else {
+                    stringResource(R.string.settings_clear_music_cache_body_all)
+                },
                 style = MaterialTheme.typography.bodyMedium,
             )
             Spacer(Modifier.height(20.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                TextButton(onClick = { panel.close() }) { Text("Cancel") }
+                TextButton(onClick = { panel.close() }) { Text(stringResource(R.string.settings_cancel)) }
                 Spacer(Modifier.width(8.dp))
                 Button(
                     onClick = {
@@ -165,7 +170,7 @@ internal fun ClearMusicCacheMenu(panel: PanelState, haze: HazeState, usage: Musi
                         containerColor = MaterialTheme.colorScheme.error,
                         contentColor = MaterialTheme.colorScheme.onError,
                     ),
-                ) { Text("Clear") }
+                ) { Text(stringResource(R.string.settings_clear)) }
             }
         }
     }

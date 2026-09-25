@@ -1,5 +1,6 @@
 package com.example.samsonic.ui.library
 
+import android.content.Context
 import android.widget.Toast
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -54,13 +55,17 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.LocalAppContainer
+import com.example.samsonic.R
 import com.example.samsonic.data.MusicLibrary
 import com.example.samsonic.model.Album
 import com.example.samsonic.model.Playlist
@@ -144,7 +149,8 @@ private fun rememberAddToPlaylistLongPress(originRadius: Dp, items: () -> Playli
     val currentRadius by rememberUpdatedState(originRadius)
     // A plain holder, so scrolling doesn't recompose.
     val bounds = remember { arrayOf(Rect.Zero) }
-    return remember(state, haptics) {
+    val label = stringResource(R.string.library_add_to_playlist)
+    return remember(state, haptics, label) {
         if (state == null) return@remember AddToPlaylistLongPress(Modifier, null, null)
         AddToPlaylistLongPress(
             origin = Modifier.onGloballyPositioned { bounds[0] = it.boundsInRoot() },
@@ -152,7 +158,7 @@ private fun rememberAddToPlaylistLongPress(originRadius: Dp, items: () -> Playli
                 haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                 state.open(currentItems(), bounds[0], currentRadius)
             },
-            label = "Add to playlist",
+            label = label,
         )
     }
 }
@@ -176,10 +182,11 @@ private sealed interface Step {
  */
 @Composable
 fun AddToPlaylistMenu(state: AddToPlaylistState, haze: HazeState) {
-    SettingsMenu(state.panel, haze, title = "Add to playlist", originRadius = state.originRadius, resizable = true) {
+    SettingsMenu(state.panel, haze, title = stringResource(R.string.library_add_to_playlist), originRadius = state.originRadius, resizable = true) {
         val items = state.items ?: return@SettingsMenu
         val repository = LocalAppContainer.current.repository
         val context = LocalContext.current
+        val resources = LocalResources.current
         val scope = rememberCoroutineScope()
         // All composed afresh at every open, so the list has any playlist made since.
         var playlists by remember { mutableStateOf<UiState<List<Playlist>>>(UiState.Loading) }
@@ -191,12 +198,12 @@ fun AddToPlaylistMenu(state: AddToPlaylistState, haze: HazeState) {
         val songIds = remember { arrayOfNulls<List<String>>(1) }
         LaunchedEffect(Unit) {
             playlists = runCatching { repository.getOwnPlaylists() }
-                .fold({ UiState.Success(it) }, { UiState.Error("Couldn't load playlists") })
+                .fold({ UiState.Success(it) }, { UiState.Error(resources.getString(R.string.library_playlists_load_error)) })
         }
 
         suspend fun loadSongIds(): List<String> =
             songIds[0] ?: items.songIds(repository).also {
-                if (it.isEmpty()) throw IllegalStateException("There are no songs to add")
+                if (it.isEmpty()) throw IllegalStateException(resources.getString(R.string.library_no_songs_to_add))
                 songIds[0] = it
             }
 
@@ -205,7 +212,7 @@ fun AddToPlaylistMenu(state: AddToPlaylistState, haze: HazeState) {
             saving = key
             error = null
             scope.launch {
-                runCatching { block() }.onFailure { error = it.message ?: "Couldn't add to the playlist" }
+                runCatching { block() }.onFailure { error = it.message ?: resources.getString(R.string.library_add_to_playlist_error) }
                 saving = null
             }
         }
@@ -216,9 +223,9 @@ fun AddToPlaylistMenu(state: AddToPlaylistState, haze: HazeState) {
         }
 
         suspend fun add(playlist: Playlist, ids: List<String>, skipped: Int = 0) {
-            if (ids.isEmpty()) return done("Already in ${playlist.name}")
+            if (ids.isEmpty()) return done(resources.getString(R.string.library_already_in_playlist, playlist.name))
             repository.addToPlaylist(playlist.id, ids)
-            done(addedMessage(ids.size, skipped, playlist.name))
+            done(addedMessage(context, ids.size, skipped, playlist.name))
         }
 
         fun pick(playlist: Playlist) = work(playlist.id) {
@@ -258,7 +265,7 @@ fun AddToPlaylistMenu(state: AddToPlaylistState, haze: HazeState) {
                             work("") {
                                 val ids = loadSongIds()
                                 repository.createPlaylist(name, ids)
-                                done(addedMessage(ids.size, 0, name))
+                                done(addedMessage(context, ids.size, 0, name))
                             }
                         },
                     )
@@ -276,7 +283,7 @@ fun AddToPlaylistMenu(state: AddToPlaylistState, haze: HazeState) {
                     Step.Pick -> {
                         MenuOption(
                             icon = Icons.Filled.Add,
-                            label = "New playlist",
+                            label = stringResource(R.string.library_new_playlist),
                             selected = false,
                             onClick = { if (saving == null) step = Step.Naming },
                         )
@@ -292,7 +299,7 @@ fun AddToPlaylistMenu(state: AddToPlaylistState, haze: HazeState) {
                                     MenuOption(
                                         icon = Icons.AutoMirrored.Filled.QueueMusic,
                                         label = playlist.name,
-                                        supporting = if (saving == playlist.id) "Adding…" else "${playlist.songCount} songs",
+                                        supporting = if (saving == playlist.id) stringResource(R.string.library_adding) else songCount(playlist.songCount),
                                         selected = saving == playlist.id,
                                         onClick = { pick(playlist) },
                                     )
@@ -316,12 +323,13 @@ fun AddToPlaylistMenu(state: AddToPlaylistState, haze: HazeState) {
     }
 }
 
-private fun songs(count: Int) = if (count == 1) "1 song" else "$count songs"
-
-private fun addedMessage(added: Int, skipped: Int, playlistName: String): String {
-    val what = if (added == 1 && skipped == 0) "Added" else "Added ${songs(added)}"
-    val rest = if (skipped > 0) ", skipped ${songs(skipped)} already there" else ""
-    return "$what to $playlistName$rest"
+private fun addedMessage(context: Context, added: Int, skipped: Int, playlistName: String): String {
+    fun songs(count: Int) = context.resources.getQuantityString(R.plurals.library_song_count, count, count)
+    return when {
+        skipped > 0 -> context.getString(R.string.library_added_songs_skipped, songs(added), playlistName, songs(skipped))
+        added == 1 -> context.getString(R.string.library_added_to_playlist, playlistName)
+        else -> context.getString(R.string.library_added_songs, songs(added), playlistName)
+    }
 }
 
 /** Some of the songs are in the playlist already: add them again, or skip them. */
@@ -337,9 +345,9 @@ private fun DuplicatesPrompt(
     val count = step.duplicates.size
     val playlist = step.playlist.name
     val message = when {
-        total == 1 -> "“$itemTitle” is already in “$playlist”."
-        count == total -> "All $total songs are already in “$playlist”."
-        else -> "${songs(count).replaceFirstChar { it.uppercase() }} of $total ${if (count == 1) "is" else "are"} already in “$playlist”."
+        total == 1 -> stringResource(R.string.library_duplicate_one, itemTitle, playlist)
+        count == total -> stringResource(R.string.library_duplicate_all, total, playlist)
+        else -> pluralStringResource(R.plurals.library_duplicate_some, count, count, total, playlist)
     }
     Column(Modifier.padding(horizontal = 24.dp)) {
         Text(text = message, style = MaterialTheme.typography.bodyLarge)
@@ -349,10 +357,10 @@ private fun DuplicatesPrompt(
             horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            TextButton(onClick = onAddAnyway, enabled = !saving) { Text("Add anyway") }
+            TextButton(onClick = onAddAnyway, enabled = !saving) { Text(stringResource(R.string.library_add_anyway)) }
             Spacer(Modifier.width(8.dp))
             Button(onClick = onSkip, enabled = !saving) {
-                Text(if (total == 1 || count == total) "Skip" else "Skip duplicates")
+                Text(stringResource(if (total == 1 || count == total) R.string.library_skip else R.string.library_skip_duplicates))
             }
         }
     }
@@ -368,7 +376,7 @@ private fun NewPlaylistForm(saving: Boolean, onCancel: () -> Unit, onCreate: (St
         OutlinedTextField(
             value = name,
             onValueChange = { name = it },
-            label = { Text("Name") },
+            label = { Text(stringResource(R.string.library_playlist_name)) },
             singleLine = true,
             enabled = !saving,
             keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
@@ -385,9 +393,9 @@ private fun NewPlaylistForm(saving: Boolean, onCancel: () -> Unit, onCreate: (St
             horizontalArrangement = Arrangement.End,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            TextButton(onClick = onCancel, enabled = !saving) { Text("Cancel") }
+            TextButton(onClick = onCancel, enabled = !saving) { Text(stringResource(R.string.library_cancel)) }
             Spacer(Modifier.width(8.dp))
-            Button(onClick = { onCreate(name.trim()) }, enabled = canCreate) { Text(if (saving) "Creating…" else "Create") }
+            Button(onClick = { onCreate(name.trim()) }, enabled = canCreate) { Text(stringResource(if (saving) R.string.library_creating else R.string.library_create)) }
         }
     }
 }

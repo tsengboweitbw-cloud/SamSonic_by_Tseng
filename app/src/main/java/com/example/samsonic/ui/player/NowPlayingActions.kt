@@ -21,7 +21,9 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.samsonic.R
 import com.example.samsonic.ui.components.PressIconButton
 
 /** Each panel's button icon, which the panel also carries as it grows out of the button. */
@@ -44,9 +46,9 @@ internal fun NowPlayingActions(
         horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        PanelButton(lyrics, PanelIcons.Lyrics, "Lyrics")
-        PanelButton(queue, PanelIcons.Queue, "Queue")
-        PanelButton(info, PanelIcons.Info, "Song info")
+        PanelButton(lyrics, PanelIcons.Lyrics, stringResource(R.string.player_lyrics))
+        PanelButton(queue, PanelIcons.Queue, stringResource(R.string.player_queue))
+        PanelButton(info, PanelIcons.Info, stringResource(R.string.player_song_info))
     }
 }
 

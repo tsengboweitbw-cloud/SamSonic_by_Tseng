@@ -27,11 +27,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.LocalAppContainer
+import com.example.samsonic.R
 import com.example.samsonic.data.ActiveSource
 import com.example.samsonic.data.SavedServer
 import com.example.samsonic.data.device.hasAudioPermission
@@ -68,8 +70,8 @@ internal fun SourcesCard(onAddServer: () -> Unit) {
     SettingsCard {
         SourceRow(
             icon = Icons.Filled.PhoneAndroid,
-            title = "On this phone",
-            hint = if (hasPermission) "Music stored on this phone" else "Tap to allow access to your music",
+            title = stringResource(R.string.settings_source_device),
+            hint = if (hasPermission) stringResource(R.string.settings_source_device_hint) else stringResource(R.string.settings_source_device_hint_permission),
             selected = active is ActiveSource.Device,
             onClick = {
                 confirmingRemove = null
@@ -81,7 +83,7 @@ internal fun SourcesCard(onAddServer: () -> Unit) {
             SourceRow(
                 icon = Icons.Filled.Dns,
                 title = server.displayAddress,
-                hint = if (confirming) "Tap the bin again to remove this server" else "Signed in as ${server.username}",
+                hint = if (confirming) stringResource(R.string.settings_source_confirm_remove_hint) else stringResource(R.string.settings_source_signed_in, server.username),
                 hintAccent = if (confirming) MaterialTheme.colorScheme.error else null,
                 // It says what the next tap does, so it can't wait for a long press.
                 showHintNow = confirming,
@@ -99,7 +101,7 @@ internal fun SourcesCard(onAddServer: () -> Unit) {
                     ) {
                         Icon(
                             imageVector = if (confirming) Icons.Filled.DeleteForever else Icons.Outlined.Delete,
-                            contentDescription = if (confirming) "Confirm removing server" else "Remove server",
+                            contentDescription = if (confirming) stringResource(R.string.settings_source_confirm_remove) else stringResource(R.string.settings_source_remove),
                             tint = if (confirming) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(22.dp),
                         )
@@ -109,8 +111,8 @@ internal fun SourcesCard(onAddServer: () -> Unit) {
         }
         SourceRow(
             icon = Icons.Filled.Add,
-            title = "Add Subsonic server",
-            hint = "Connect to Navidrome or another Subsonic server",
+            title = stringResource(R.string.settings_source_add),
+            hint = stringResource(R.string.settings_source_add_hint),
             selected = false,
             onClick = {
                 confirmingRemove = null
@@ -158,7 +160,7 @@ private fun SourceRow(
         )
         if (selected) {
             Spacer(Modifier.width(8.dp))
-            Icon(Icons.Filled.CheckCircle, contentDescription = "In use", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+            Icon(Icons.Filled.CheckCircle, contentDescription = stringResource(R.string.settings_source_in_use), tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
         }
         trailing()
         RowHint(hintState, hint, hintAccent)

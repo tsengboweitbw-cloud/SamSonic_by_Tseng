@@ -15,12 +15,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.ui.common.ArtKeys
 import com.example.samsonic.ui.common.rememberSharedArt
 import com.example.samsonic.LocalAppContainer
+import com.example.samsonic.R
 import com.example.samsonic.model.Album
 import com.example.samsonic.model.artSeed
 import com.example.samsonic.ui.library.rememberAddToPlaylistLongPress
@@ -44,7 +46,7 @@ fun AlbumRow(
     val details = listOfNotNull(
         album.artistName,
         album.year?.toString(),
-        if (album.trackCount > 0) "${album.trackCount} songs" else null,
+        if (album.trackCount > 0) pluralStringResource(R.plurals.components_song_count, album.trackCount, album.trackCount) else null,
     ).joinToString(" · ")
 
     // The menu grows out of the whole row, as it does for a song row.

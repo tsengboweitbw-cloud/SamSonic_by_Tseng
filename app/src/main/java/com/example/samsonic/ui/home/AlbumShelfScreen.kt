@@ -16,9 +16,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.LocalAppContainer
+import com.example.samsonic.R
 import com.example.samsonic.model.Album
 import com.example.samsonic.ui.common.StateContent
 import com.example.samsonic.ui.common.UiState
@@ -47,7 +49,7 @@ fun AlbumShelfScreen(
 ) {
     val repository = LocalAppContainer.current.repository
 
-    val state = homeAlbums ?: rememberScreenLoad(shelf, errorMessage = "Couldn't load ${shelf.title.lowercase()}") {
+    val state = homeAlbums ?: rememberScreenLoad(shelf, errorMessage = stringResource(R.string.home_shelf_load_error, stringResource(shelf.title).lowercase())) {
         repository.getAlbumList(shelf.type, SHELF_FULL_LIST_SIZE)
     }
 
@@ -63,7 +65,7 @@ fun AlbumShelfScreen(
                 item {
                     Column {
                         Text(
-                            text = shelf.title,
+                            text = stringResource(shelf.title),
                             style = MaterialTheme.typography.displaySmall,
                             modifier = Modifier
                                 .fillMaxWidth()

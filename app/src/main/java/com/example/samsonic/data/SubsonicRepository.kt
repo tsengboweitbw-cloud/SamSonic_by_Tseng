@@ -1,5 +1,7 @@
 package com.example.samsonic.data
 
+import android.content.Context
+import com.example.samsonic.R
 import com.example.samsonic.data.remote.AlbumDetailDto
 import com.example.samsonic.data.remote.AlbumDto
 import com.example.samsonic.data.remote.ArtistDetailDto
@@ -52,6 +54,7 @@ private const val SONG_PAGE_SIZE = 500
  */
 class SubsonicRepository(
     private val okHttpClient: OkHttpClient,
+    private val context: Context,
 ) : MusicLibrary {
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -83,7 +86,7 @@ class SubsonicRepository(
         val creds = ServerCredentials(normalizeUrl(serverUrl), username, password)
         val body = createApi(creds).ping(SubsonicAuth.params(username, password)).response
         if (body.status != "ok") {
-            error(body.error?.message ?: "Could not connect to server")
+            error(body.error?.message ?: context.getString(R.string.data_server_connect_failed))
         }
         creds
     }
@@ -98,8 +101,8 @@ class SubsonicRepository(
         return "$withScheme/"
     }
 
-    private fun requireApi(): SubsonicApi = api ?: error("Not connected to a server")
-    private fun requireCreds(): ServerCredentials = credentials ?: error("Not connected to a server")
+    private fun requireApi(): SubsonicApi = api ?: error(context.getString(R.string.data_not_connected))
+    private fun requireCreds(): ServerCredentials = credentials ?: error(context.getString(R.string.data_not_connected))
     private fun authParams(): Map<String, String> {
         val creds = requireCreds()
         return SubsonicAuth.params(creds.username, creds.password)
@@ -185,7 +188,7 @@ class SubsonicRepository(
 
     override suspend fun getArtist(id: String): Pair<Artist, List<Album>> {
         val detail = requireApi().getArtist(authParams() + ("id" to id)).response.artist
-            ?: error("Artist not found")
+            ?: error(context.getString(R.string.data_artist_not_found))
         // Newest first, as every list on an artist's pages is.
         val albums = detail.album.map { it.toDomain() }.sortedWith(newestFirst { it.year })
         return detail.toDomain() to albums
@@ -193,7 +196,7 @@ class SubsonicRepository(
 
     override suspend fun getAlbum(id: String): Pair<Album, List<Song>> {
         val detail = requireApi().getAlbum(authParams() + ("id" to id)).response.album
-            ?: error("Album not found")
+            ?: error(context.getString(R.string.data_album_not_found))
         val songs = detail.song.map { it.toDomain() }
         return detail.toDomain() to songs
     }
@@ -304,7 +307,7 @@ class SubsonicRepository(
 
     override suspend fun getPlaylist(id: String): Pair<Playlist, List<Song>> {
         val detail = requireApi().getPlaylist(authParams() + ("id" to id)).response.playlist
-            ?: error("Playlist not found")
+            ?: error(context.getString(R.string.data_playlist_not_found))
         val songs = detail.entry.map { it.toDomain() }
         return detail.toDomain() to songs
     }
@@ -329,7 +332,7 @@ class SubsonicRepository(
 
     /** Subsonic reports a refused call in the body, still with HTTP 200. */
     private fun SubsonicResponseBody.requireOk() {
-        if (status != "ok") error(error?.message ?: "The server refused the change")
+        if (status != "ok") error(error?.message ?: context.getString(R.string.data_server_refused))
     }
 
     override suspend fun getTopSongs(artistName: String, count: Int): List<Song> {

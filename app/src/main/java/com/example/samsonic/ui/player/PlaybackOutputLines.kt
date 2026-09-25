@@ -1,5 +1,6 @@
 package com.example.samsonic.ui.player
 
+import android.content.Context
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AudioFile
 import androidx.compose.material.icons.rounded.Bluetooth
@@ -14,8 +15,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.LocalAppContainer
+import com.example.samsonic.R
 import com.example.samsonic.model.Song
 import com.example.samsonic.playback.AudioOutput
 import com.example.samsonic.playback.BitPerfectTrack
@@ -47,9 +51,10 @@ internal fun rememberPlaybackDetails(): List<PlaybackDetail> {
     val container = LocalAppContainer.current
     val output by container.audioOutput.output.collectAsStateWithLifecycle()
     val bitPerfect by container.bitPerfect.track.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     // Output and bit-perfect held together, so a stale bit-perfect line never sits
     // under a live output (bit-perfect switched off clears it with a new track).
-    return rememberLastNonNull(output?.let { playbackDetails(it, bitPerfect) }).orEmpty()
+    return rememberLastNonNull(output?.let { context.playbackDetails(it, bitPerfect) }).orEmpty()
 }
 
 /** [value], or while it's null the last non-null value it had (null if never). */
@@ -72,7 +77,7 @@ internal fun <T : Any> rememberLastNonNull(value: T?): T? {
 internal fun NowPlayingInfoRows(song: Song) {
     val format = rememberLastNonNull(songFormat(song))
     if (format != null) {
-        InfoTileRow(format.first, description = "Format", text = format.second)
+        InfoTileRow(format.first, description = stringResource(R.string.player_format), text = format.second)
     } else {
         InfoTileRowPlaceholder()
     }
@@ -116,32 +121,44 @@ private const val PlaybackDetailCount = 4
  * the rate Android's mixer runs at where it says (the phone's own outputs, not USB or
  * Bluetooth), and whether it goes out exclusive (bit-perfect or resampled).
  */
-private fun playbackDetails(output: AudioOutput, bitPerfect: BitPerfectTrack?): List<PlaybackDetail> = listOfNotNull(
+private fun Context.playbackDetails(output: AudioOutput, bitPerfect: BitPerfectTrack?): List<PlaybackDetail> = listOfNotNull(
     PlaybackDetail(
         PlaybackDetailKind.Output,
-        "Output",
+        getString(R.string.player_output),
         if (output.offload) {
-            "Hardware decoding"
+            getString(R.string.player_hardware_decoding)
         } else {
             listOf(
                 formatKilohertz(output.sampleRate),
-                describeEncoding(output.encoding),
-                if (output.channels == 1) "Mono" else if (output.channels == 2) "Stereo" else "${output.channels} channels",
+                describeEncoding(this, output.encoding),
+                channelsOf(output.channels),
             ).joinToString(" · ")
         },
     ),
-    output.device?.let { PlaybackDetail(PlaybackDetailKind.Device, "Device", it) },
+    output.device?.let { PlaybackDetail(PlaybackDetailKind.Device, getString(R.string.player_device), it) },
     output.mixerRate?.let {
-        PlaybackDetail(PlaybackDetailKind.DeviceRate, "Device rate", formatKilohertz(it), line = "Device at ${formatKilohertz(it)}")
+        PlaybackDetail(
+            PlaybackDetailKind.DeviceRate,
+            getString(R.string.player_device_rate),
+            formatKilohertz(it),
+            line = getString(R.string.player_device_at, formatKilohertz(it)),
+        )
     },
     // Exclusive mode's line: "Bit-perfect · 32-bit · 96 kHz" or "Resampled 32 → 64 kHz · 32-bit" when on.
     bitPerfect?.let {
         PlaybackDetail(
             PlaybackDetailKind.BitPerfect,
-            "Exclusive",
-            if (it.on) it.detail else "Off · ${it.detail}",
-            line = if (it.on) it.detail else "Not exclusive · ${it.detail}",
+            getString(R.string.player_exclusive),
+            if (it.on) it.detail else getString(R.string.player_exclusive_off, it.detail),
+            line = if (it.on) it.detail else getString(R.string.player_not_exclusive, it.detail),
             active = it.on,
         )
     },
 )
+
+/** A channel count as shown: mono, stereo, or the number of channels. */
+internal fun Context.channelsOf(channels: Int): String = when (channels) {
+    1 -> getString(R.string.player_mono)
+    2 -> getString(R.string.player_stereo)
+    else -> getString(R.string.player_channel_count, channels)
+}

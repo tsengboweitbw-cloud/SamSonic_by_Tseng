@@ -38,12 +38,15 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.LocalAppContainer
+import com.example.samsonic.R
 import com.example.samsonic.ui.common.rememberAudioPermissionRequest
 import com.example.samsonic.ui.components.GlassBackButton
 import com.example.samsonic.ui.components.PressIconButton
@@ -64,6 +67,7 @@ fun LoginScreen(
 ) {
     val sources = LocalAppContainer.current.sources
     val scope = rememberCoroutineScope()
+    val resources = LocalResources.current
 
     var serverUrl by remember { mutableStateOf("") }
     var username by remember { mutableStateOf("") }
@@ -74,12 +78,12 @@ fun LoginScreen(
 
     val useDevice = rememberAudioPermissionRequest(
         onGranted = sources::useDevice,
-        onDenied = { errorMessage = "SamSonic needs access to your music to play it from this phone" },
+        onDenied = { errorMessage = resources.getString(R.string.auth_permission_denied) },
     )
 
     fun connect() {
         if (serverUrl.isBlank() || username.isBlank() || password.isBlank()) {
-            errorMessage = "Fill in the server address, username, and password"
+            errorMessage = resources.getString(R.string.auth_fields_missing)
             return
         }
         isConnecting = true
@@ -87,7 +91,7 @@ fun LoginScreen(
         scope.launch {
             val result = sources.addServer(serverUrl, username, password)
             isConnecting = false
-            result.onFailure { errorMessage = it.message ?: "Couldn't connect to that server" }
+            result.onFailure { errorMessage = it.message ?: resources.getString(R.string.auth_connect_failed) }
         }
     }
 
@@ -117,10 +121,10 @@ fun LoginScreen(
                 )
             }
             Spacer(Modifier.height(16.dp))
-            Text(text = if (onBack == null) "SamSonic" else "Add a server", style = MaterialTheme.typography.headlineMedium)
+            Text(text = stringResource(if (onBack == null) R.string.app_name else R.string.auth_add_a_server), style = MaterialTheme.typography.headlineMedium)
             Spacer(Modifier.height(4.dp))
             Text(
-                text = "Connect to your Navidrome / Subsonic server",
+                text = stringResource(R.string.auth_subtitle),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -137,8 +141,8 @@ fun LoginScreen(
             OutlinedTextField(
                 value = serverUrl,
                 onValueChange = { serverUrl = it },
-                label = { Text("Server address") },
-                placeholder = { Text("music.example.com or http://192.168.1.10:4533") },
+                label = { Text(stringResource(R.string.auth_server_address)) },
+                placeholder = { Text(stringResource(R.string.auth_server_address_hint)) },
                 singleLine = true,
                 shape = MaterialTheme.shapes.medium,
                 colors = fieldColors,
@@ -149,7 +153,7 @@ fun LoginScreen(
             OutlinedTextField(
                 value = username,
                 onValueChange = { username = it },
-                label = { Text("Username") },
+                label = { Text(stringResource(R.string.auth_username)) },
                 singleLine = true,
                 shape = MaterialTheme.shapes.medium,
                 colors = fieldColors,
@@ -160,7 +164,7 @@ fun LoginScreen(
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
-                label = { Text("Password") },
+                label = { Text(stringResource(R.string.auth_password)) },
                 singleLine = true,
                 shape = MaterialTheme.shapes.medium,
                 colors = fieldColors,
@@ -170,7 +174,7 @@ fun LoginScreen(
                     PressIconButton(onClick = { showPassword = !showPassword }) {
                         Icon(
                             imageVector = if (showPassword) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
-                            contentDescription = if (showPassword) "Hide password" else "Show password",
+                            contentDescription = stringResource(if (showPassword) R.string.auth_hide_password else R.string.auth_show_password),
                         )
                     }
                 },
@@ -204,7 +208,7 @@ fun LoginScreen(
                         modifier = Modifier.size(20.dp),
                     )
                 } else {
-                    Text(if (onBack == null) "Connect" else "Add server")
+                    Text(stringResource(if (onBack == null) R.string.auth_connect else R.string.auth_add_server))
                 }
             }
 
@@ -225,13 +229,13 @@ fun LoginScreen(
                 ) {
                     Icon(Icons.Filled.PhoneAndroid, contentDescription = null, modifier = Modifier.size(20.dp))
                     Spacer(Modifier.width(8.dp))
-                    Text("Use music on this phone")
+                    Text(stringResource(R.string.auth_use_device))
                 }
             }
 
             Spacer(Modifier.height(16.dp))
             Text(
-                text = "Your password is only used to sign in to your own server and is stored encrypted on this device.",
+                text = stringResource(R.string.auth_password_note),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(bottom = 32.dp),

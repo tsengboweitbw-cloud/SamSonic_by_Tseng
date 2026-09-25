@@ -1,6 +1,7 @@
 package com.example.samsonic.playback
 
 import android.annotation.SuppressLint
+import android.content.Context
 import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioTrack
@@ -9,6 +10,7 @@ import androidx.annotation.OptIn
 import androidx.annotation.RequiresApi
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.audio.AudioSink
+import com.example.samsonic.R
 import com.example.samsonic.playback.dsd.DsdStream
 
 /**
@@ -51,10 +53,10 @@ internal fun bitPerfectAudioTrack(
  * How Song info puts an exclusive track: "Bit-perfect · 32-bit · 96 kHz",
  * "Resampled 32 → 64 kHz · 32-bit", "Bit-perfect · DoP · DSD128".
  */
-internal fun describeExclusive(encoding: Int, sampleRate: Int, stream: DsdStream?, conversion: ExclusiveConversion?): String {
+internal fun describeExclusive(context: Context, encoding: Int, sampleRate: Int, stream: DsdStream?, conversion: ExclusiveConversion?): String {
     when (stream) {
         is DsdStream.Dop -> return "Bit-perfect · DoP · DSD${stream.multiple}"
-        is DsdStream.Native -> return "Bit-perfect · Native DSD · DSD${stream.multiple}"
+        is DsdStream.Native -> return context.getString(R.string.playback_bit_perfect_native_dsd, stream.multiple)
         null -> Unit
     }
     val bits = when (encoding) {
@@ -65,11 +67,15 @@ internal fun describeExclusive(encoding: Int, sampleRate: Int, stream: DsdStream
     if (conversion == null) return "Bit-perfect · $bits · ${formatKilohertz(sampleRate)}"
     val changes = listOfNotNull(
         if (conversion.fromRate != conversion.sampleRate) {
-            "Resampled ${formatKilohertz(conversion.fromRate).removeSuffix(" kHz")} → ${formatKilohertz(conversion.sampleRate)}"
+            context.getString(
+                R.string.playback_resampled,
+                formatKilohertz(conversion.fromRate).removeSuffix(" kHz"),
+                formatKilohertz(conversion.sampleRate),
+            )
         } else {
             null
         },
-        if (conversion.fromChannels != conversion.channels) "mono to stereo" else null,
+        if (conversion.fromChannels != conversion.channels) context.getString(R.string.playback_mono_to_stereo) else null,
     ).joinToString(" · ").replaceFirstChar { it.uppercase() }
     val rate = if (conversion.fromRate == conversion.sampleRate) " · ${formatKilohertz(sampleRate)}" else ""
     return "$changes · $bits$rate"

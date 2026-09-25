@@ -1,6 +1,7 @@
 package com.example.samsonic
 
 import android.Manifest
+import android.content.Context
 import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
@@ -21,6 +22,7 @@ import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.data.ThemeMode
+import com.example.samsonic.locale.AppLanguages
 import com.example.samsonic.playback.LocalPlayerState
 import com.example.samsonic.ui.navigation.SamSonicNavHost
 import com.example.samsonic.ui.theme.GlassSettings
@@ -28,6 +30,11 @@ import com.example.samsonic.ui.theme.LocalGlassSettings
 import com.example.samsonic.ui.theme.SamSonicTheme
 
 class MainActivity : ComponentActivity() {
+    // The language picked in Settings, before Android 13 (from 13 Android applies it itself).
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(AppLanguages.wrap(newBase))
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()

@@ -9,7 +9,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.samsonic.R
 import com.example.samsonic.playback.BitPerfectOutput
 import com.example.samsonic.playback.DsdOutputMode
 import com.example.samsonic.playback.UsbDac
@@ -17,11 +19,13 @@ import com.example.samsonic.ui.player.PanelState
 import dev.chrisbanes.haze.HazeState
 
 internal val DsdOutputMode.label: String
-    get() = when (this) {
-        DsdOutputMode.PCM -> "Convert to PCM"
-        DsdOutputMode.DOP -> "DoP"
-        DsdOutputMode.NATIVE -> "Native DSD"
-    }
+    @Composable get() = stringResource(
+        when (this) {
+            DsdOutputMode.PCM -> R.string.settings_dsd_pcm
+            DsdOutputMode.DOP -> R.string.settings_dsd_dop
+            DsdOutputMode.NATIVE -> R.string.settings_dsd_native
+        },
+    )
 
 private val DsdOutputMode.icon: ImageVector
     get() = when (this) {
@@ -43,12 +47,12 @@ internal fun DsdOutputRow(bitPerfect: BitPerfectOutput, menu: PanelState) {
     val exclusive by bitPerfect.enabled.collectAsStateWithLifecycle()
     NavRow(
         icon = Icons.Filled.Waves,
-        title = "DSD output",
+        title = stringResource(R.string.settings_dsd_output),
         value = mode.label,
         hint = when {
-            !hasDac -> "Plug in a USB DAC to choose how DSD files go to it"
-            !exclusive -> "Turn on Exclusive USB output to choose how DSD files go to the DAC"
-            else -> "How DSD files go to the USB DAC. DoP and native DSD need a DAC that decodes DSD"
+            !hasDac -> stringResource(R.string.settings_dsd_hint_no_dac)
+            !exclusive -> stringResource(R.string.settings_dsd_hint_not_exclusive)
+            else -> stringResource(R.string.settings_dsd_hint)
         },
         enabled = hasDac && exclusive,
         onClick = { menu.open() },
@@ -66,7 +70,7 @@ internal fun DsdOutputMenu(panel: PanelState, haze: HazeState, bitPerfect: BitPe
     val current by bitPerfect.dsdMode.collectAsStateWithLifecycle()
     val enabled by bitPerfect.enabled.collectAsStateWithLifecycle()
     val dac by bitPerfect.dac.collectAsStateWithLifecycle()
-    SettingsMenu(panel, haze, title = "DSD output") {
+    SettingsMenu(panel, haze, title = stringResource(R.string.settings_dsd_output)) {
         DsdOutputMode.entries.forEach { mode ->
             MenuOption(
                 icon = mode.icon,
@@ -83,16 +87,17 @@ internal fun DsdOutputMenu(panel: PanelState, haze: HazeState, bitPerfect: BitPe
 }
 
 /** What [mode] does, and whether the plugged-in [dac] can take it now. */
+@Composable
 private fun supporting(mode: DsdOutputMode, exclusiveOn: Boolean, dac: UsbDac?): String {
-    if (mode == DsdOutputMode.PCM) return "Filtered to 88.2 kHz PCM in the app. Plays anywhere"
-    val what = if (mode == DsdOutputMode.DOP) "DSD packed in PCM, for the DAC to unpack" else "Raw DSD, as Android offers it"
+    if (mode == DsdOutputMode.PCM) return stringResource(R.string.settings_dsd_pcm_supporting)
+    val what = stringResource(if (mode == DsdOutputMode.DOP) R.string.settings_dsd_dop_what else R.string.settings_dsd_native_what)
     val now = when {
-        !exclusiveOn -> "Needs Exclusive USB output"
-        dac == null -> "Plug in a DAC to check it"
-        mode == DsdOutputMode.NATIVE && dac.nativeDsd -> "${dac.name} takes it; DoP where it doesn't"
-        mode == DsdOutputMode.NATIVE -> "${dac.name} doesn't take it; DoP instead"
-        dac.maxDop != null -> "${dac.name} · up to DSD${dac.maxDop}"
-        else -> "${dac.name} doesn't take it; PCM instead"
+        !exclusiveOn -> stringResource(R.string.settings_dsd_needs_exclusive)
+        dac == null -> stringResource(R.string.settings_dsd_no_dac)
+        mode == DsdOutputMode.NATIVE && dac.nativeDsd -> stringResource(R.string.settings_dsd_native_yes, dac.name)
+        mode == DsdOutputMode.NATIVE -> stringResource(R.string.settings_dsd_native_no, dac.name)
+        dac.maxDop != null -> stringResource(R.string.settings_dsd_dop_max, dac.name, dac.maxDop)
+        else -> stringResource(R.string.settings_dsd_dop_no, dac.name)
     }
-    return "$what. $now"
+    return stringResource(R.string.settings_sentences, what, now)
 }

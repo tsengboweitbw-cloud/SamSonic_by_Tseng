@@ -40,10 +40,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.LocalAppContainer
+import com.example.samsonic.R
 import com.example.samsonic.data.LibrarySection
 import com.example.samsonic.data.LibraryViewMode
 import com.example.samsonic.model.Album
@@ -70,7 +72,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 
-private val tabs = listOf("Artists", "Albums", "Playlists", "Genres")
+private val tabs = listOf(R.string.library_artists, R.string.library_albums, R.string.library_playlists, R.string.library_genres)
 private val tabIcons = listOf(
     Icons.Filled.Person,
     Icons.Filled.Album,
@@ -119,27 +121,28 @@ fun LibraryScreen(
     // A pull-to-refresh per tab, reloading just that tab while its list stays up.
     val refreshes = remember { List(tabs.size) { ScreenRefresh() } }
     val artists = if (0 in visited) {
-        rememberScreenLoad(albumArtistsOnly, errorMessage = "Couldn't load artists", refresh = refreshes[0]) {
+        rememberScreenLoad(albumArtistsOnly, errorMessage = stringResource(R.string.library_artists_load_error), refresh = refreshes[0]) {
             if (albumArtistsOnly) repository.getAlbumArtists() else repository.getArtists()
         }
     } else UiState.Loading
     val albums = if (1 in visited) {
-        rememberScreenLoad(Unit, errorMessage = "Couldn't load albums", refresh = refreshes[1]) {
+        rememberScreenLoad(Unit, errorMessage = stringResource(R.string.library_albums_load_error), refresh = refreshes[1]) {
             repository.getAlbumList("alphabeticalByArtist", 500)
         }
     } else UiState.Loading
+    val favouritesName = stringResource(R.string.data_favourites)
     val playlists = if (2 in visited) {
         // Favourites (the liked songs) first, when shown; the rest are the library's own.
-        rememberScreenLoad(showFavourites, errorMessage = "Couldn't load playlists", refresh = refreshes[2]) {
+        rememberScreenLoad(showFavourites, errorMessage = stringResource(R.string.library_playlists_load_error), refresh = refreshes[2]) {
             coroutineScope {
                 val liked = if (showFavourites) async { runCatching { repository.getLikedSongs() }.getOrNull() } else null
                 val own = repository.getPlaylists()
-                listOfNotNull(liked?.await()?.let(::favouritesPlaylist)) + own
+                listOfNotNull(liked?.await()?.let { favouritesPlaylist(it, favouritesName) }) + own
             }
         }
     } else UiState.Loading
     val genres = if (3 in visited) {
-        rememberScreenLoad(Unit, errorMessage = "Couldn't load genres", refresh = refreshes[3]) { repository.getGenres() }
+        rememberScreenLoad(Unit, errorMessage = stringResource(R.string.library_genres_load_error), refresh = refreshes[3]) { repository.getGenres() }
     } else UiState.Loading
 
     fun onTabSelected(tab: Int) {
@@ -171,7 +174,7 @@ fun LibraryScreen(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text(
-                    text = "Library",
+                    text = stringResource(R.string.library_title),
                     style = MaterialTheme.typography.displaySmall,
                     modifier = Modifier.weight(1f),
                 )
@@ -194,13 +197,13 @@ fun LibraryScreen(
             LibraryTabsPanel(
                 state = viewOptions,
                 hazeState = hazeState,
-                sectionName = tabs[viewSection.ordinal],
+                sectionName = stringResource(tabs[viewSection.ordinal]),
                 layout = layouts.getValue(viewSection),
                 onLayoutChange = { layoutManager.setLayout(viewSection, it) },
                 onDismiss = { viewOptions.targetState = false },
                 tabs = {
                     GlassTabBar(
-                        labels = tabs,
+                        labels = tabs.map { stringResource(it) },
                         selectedIndex = pagerState.targetPage,
                         onSelect = ::onTabSelected,
                         hazeState = null,
@@ -304,7 +307,7 @@ private fun GenreList(
                 ) {
                     Text(text = genre.name, style = MaterialTheme.typography.bodyLarge)
                     Text(
-                        text = "${genre.songCount} songs",
+                        text = songCount(genre.songCount),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

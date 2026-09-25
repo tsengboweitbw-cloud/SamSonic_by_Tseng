@@ -12,7 +12,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.example.samsonic.R
 
 sealed interface UiState<out T> {
     data object Loading : UiState<Nothing>
@@ -46,7 +48,7 @@ fun <T> StateContent(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 if (onRetry != null) {
-                    Button(onClick = onRetry) { Text("Retry") }
+                    Button(onClick = onRetry) { Text(stringResource(R.string.common_retry)) }
                 }
             }
         }

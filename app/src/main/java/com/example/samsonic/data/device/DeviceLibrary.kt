@@ -5,6 +5,7 @@ import android.content.Context
 import android.database.ContentObserver
 import android.provider.MediaStore
 import androidx.core.content.edit
+import com.example.samsonic.R
 import com.example.samsonic.data.MusicLibrary
 import com.example.samsonic.data.newestFirst
 import com.example.samsonic.model.Album
@@ -47,7 +48,7 @@ class DeviceLibrary(context: Context) : MusicLibrary {
     }
 
     private fun scan(): DeviceIndex {
-        check(appContext.hasAudioPermission()) { "Allow SamSonic to access music on this phone to see it here" }
+        check(appContext.hasAudioPermission()) { appContext.getString(R.string.data_allow_device_music) }
         val resolver = appContext.contentResolver
         if (!observing) {
             resolver.registerContentObserver(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, true, observer)
@@ -74,13 +75,13 @@ class DeviceLibrary(context: Context) : MusicLibrary {
 
     override suspend fun getArtist(id: String): Pair<Artist, List<Album>> {
         val index = index()
-        val artist = index.artist(id) ?: error("Artist not found")
+        val artist = index.artist(id) ?: error(appContext.getString(R.string.data_artist_not_found))
         return artist to index.albumsBy(id).sortedWith(newestFirst { it.year })
     }
 
     override suspend fun getAlbum(id: String): Pair<Album, List<Song>> {
         val index = index()
-        val album = index.albumsById[id] ?: error("Album not found")
+        val album = index.albumsById[id] ?: error(appContext.getString(R.string.data_album_not_found))
         return album to index.songsOf(id)
     }
 
@@ -114,7 +115,7 @@ class DeviceLibrary(context: Context) : MusicLibrary {
 
     override suspend fun getPlaylists(): List<Playlist> = emptyList()
 
-    override suspend fun getPlaylist(id: String): Pair<Playlist, List<Song>> = error("Playlist not found")
+    override suspend fun getPlaylist(id: String): Pair<Playlist, List<Song>> = error(appContext.getString(R.string.data_playlist_not_found))
 
     override suspend fun getTopSongs(artistName: String, count: Int): List<Song> = emptyList()
 

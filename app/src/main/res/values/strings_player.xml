@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ui/common -->
+    <string name="common_retry">Retry</string>
+
+    <!-- ui/components -->
+    <string name="components_back">Back</string>
+    <string name="components_like">Like</string>
+    <string name="components_unlike">Unlike</string>
+    <string name="components_liked">Liked</string>
+    <string name="components_more">More</string>
+    <string name="components_play">Play</string>
+    <string name="components_shuffle">Shuffle</string>
+    <string name="components_play_next">Play next</string>
+    <string name="components_add_to_queue">Add to queue</string>
+    <string name="components_add_to_playlist">Add to playlist</string>
+    <plurals name="components_song_count">
+        <item quantity="one">%d song</item>
+        <item quantity="other">%d songs</item>
+    </plurals>
+    <plurals name="components_album_count">
+        <item quantity="one">%d album</item>
+        <item quantity="other">%d albums</item>
+    </plurals>
+
+    <!-- ui/player -->
+    <string name="player_pause">Pause</string>
+    <string name="player_next">Next</string>
+    <string name="player_previous">Previous</string>
+    <string name="player_repeat">Repeat</string>
+    <string name="player_collapse">Collapse</string>
+    <string name="player_close">Close</string>
+    <string name="player_remove">Remove</string>
+    <string name="player_now_playing">Now playing</string>
+    <string name="player_lyrics">Lyrics</string>
+    <string name="player_queue">Queue</string>
+    <string name="player_up_next">Up next</string>
+    <string name="player_song_info">Song info</string>
+    <string name="player_no_lyrics">No lyrics found for this track</string>
+    <string name="player_playback">Playback</string>
+    <string name="player_format">Format</string>
+    <string name="player_output">Output</string>
+    <string name="player_hardware_decoding">Hardware decoding</string>
+    <string name="player_mono">Mono</string>
+    <string name="player_stereo">Stereo</string>
+    <string name="player_channel_count">%1$d channels</string>
+    <string name="player_device">Device</string>
+    <string name="player_device_rate">Device rate</string>
+    <string name="player_device_at">Device at %1$s</string>
+    <string name="player_exclusive">Exclusive</string>
+    <string name="player_exclusive_off">Off · %1$s</string>
+    <string name="player_not_exclusive">Not exclusive · %1$s</string>
+    <string name="player_info_title">Title</string>
+    <string name="player_info_artist">Artist</string>
+    <string name="player_info_album">Album</string>
+    <string name="player_info_album_artist">Album artist</string>
+    <string name="player_info_track">Track</string>
+    <string name="player_info_disc_track">Disc %1$d · %2$d</string>
+    <string name="player_info_year">Year</string>
+    <string name="player_info_genre">Genre</string>
+    <string name="player_info_duration">Duration</string>
+    <string name="player_info_bit_rate">Bit rate</string>
+    <string name="player_info_sample_rate">Sample rate</string>
+    <string name="player_info_bit_depth">Bit depth</string>
+    <string name="player_info_channels">Channels</string>
+    <string name="player_info_file_size">File size</string>
+    <string name="player_info_play_count">Play count</string>
+    <string name="player_info_path">Path</string>
+</resources>

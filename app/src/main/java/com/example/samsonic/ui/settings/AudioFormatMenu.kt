@@ -25,6 +25,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -34,6 +35,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.LocalAppContainer
+import com.example.samsonic.R
 import com.example.samsonic.data.AudioFormatDisplay
 import com.example.samsonic.model.Song
 import com.example.samsonic.ui.components.SongRowEnd
@@ -45,13 +47,15 @@ import dev.chrisbanes.haze.HazeState
 
 /** The choice's name: the Settings row's value, and what a screen reader says for its sample. */
 internal val AudioFormatDisplay.label: String
-    get() = when (this) {
-        AudioFormatDisplay.OFF -> "Off"
-        AudioFormatDisplay.UNDER_ARTIST -> "Under the artist"
-        AudioFormatDisplay.QUIET_HEART -> "By the duration"
-        AudioFormatDisplay.CODEC_BADGE -> "Codec badge"
-        AudioFormatDisplay.HI_RES_BADGE -> "Hi-Res badge"
-    }
+    @Composable get() = stringResource(
+        when (this) {
+            AudioFormatDisplay.OFF -> R.string.settings_off
+            AudioFormatDisplay.UNDER_ARTIST -> R.string.settings_audio_format_under_artist
+            AudioFormatDisplay.QUIET_HEART -> R.string.settings_audio_format_by_duration
+            AudioFormatDisplay.CODEC_BADGE -> R.string.settings_audio_format_codec_badge
+            AudioFormatDisplay.HI_RES_BADGE -> R.string.settings_audio_format_hi_res_badge
+        },
+    )
 
 /** The song every sample shows: liked and hi-res, so each choice has something to show. */
 private val SampleSong = Song(
@@ -85,7 +89,7 @@ internal fun AudioFormatMenu(
     current: AudioFormatDisplay,
     onSelect: (AudioFormatDisplay) -> Unit,
 ) {
-    SettingsMenu(panel, haze, title = "Audio format") {
+    SettingsMenu(panel, haze, title = stringResource(R.string.settings_audio_format)) {
         AudioFormatDisplay.entries.forEach { display ->
             SampleOption(
                 display = display,
@@ -108,7 +112,11 @@ internal fun AudioFormatMenu(
 private fun SampleOption(display: AudioFormatDisplay, selected: Boolean, onClick: () -> Unit) {
     val likesEnabled by LocalAppContainer.current.themeManager.likesEnabled.collectAsStateWithLifecycle()
     val cornerRadius by LocalAppContainer.current.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
-    val song = SampleSong
+    val song = SampleSong.copy(
+        title = stringResource(R.string.settings_audio_format_sample_title),
+        artistName = stringResource(R.string.settings_audio_format_sample_artist),
+    )
+    val label = display.label
     Box(
         modifier = Modifier
             .padding(OneUiRow.Inset)
@@ -123,7 +131,7 @@ private fun SampleOption(display: AudioFormatDisplay, selected: Boolean, onClick
                 },
             )
             .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
-            .semantics { contentDescription = display.label },
+            .semantics { contentDescription = label },
         contentAlignment = Alignment.CenterStart,
     ) {
         Row(

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="language_title">Language</string>
+    <string name="language_system">Follow system</string>
+    <string name="language_hint">English or Chinese, or the same as the phone</string>
+    <!-- Each language's own name, the same in every language. -->
+    <string name="language_english" translatable="false">English</string>
+    <string name="language_traditional_chinese" translatable="false">漢語</string>
+</resources>

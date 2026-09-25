@@ -19,12 +19,14 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.example.samsonic.R
 import com.example.samsonic.ui.common.rememberScreenLoad
 import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.model.Album
@@ -57,7 +59,7 @@ fun AlbumDetailScreen(
     val repository = LocalAppContainer.current.repository
     val cornerRadius by LocalAppContainer.current.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
 
-    val state = rememberScreenLoad(albumId, errorMessage = "Couldn't load album") {
+    val state = rememberScreenLoad(albumId, errorMessage = stringResource(R.string.library_album_load_error)) {
         repository.getAlbum(albumId)
     }
 

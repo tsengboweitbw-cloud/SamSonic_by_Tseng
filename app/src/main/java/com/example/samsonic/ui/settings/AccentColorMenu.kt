@@ -29,9 +29,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.example.samsonic.R
 import com.example.samsonic.ui.player.PanelState
 import com.example.samsonic.ui.theme.OneUiSlider
 import com.example.samsonic.ui.theme.accentPaletteOf
@@ -53,7 +55,7 @@ internal fun AccentColorMenu(
     defaultColor: Color,
     onConfirm: (Color) -> Unit,
 ) {
-    SettingsMenu(panel, haze, title = "Accent Color") {
+    SettingsMenu(panel, haze, title = stringResource(R.string.settings_accent_color)) {
         // Inside the menu's content, so every open starts again from the saved color.
         var workingColor by remember { mutableStateOf(initialColor) }
         var hexText by remember { mutableStateOf(initialColor.toHexRgb()) }
@@ -85,7 +87,7 @@ internal fun AccentColorMenu(
                     hexText = filtered
                     parseHexColor(filtered)?.let { workingColor = it }
                 },
-                label = { Text("Hex") },
+                label = { Text(stringResource(R.string.settings_accent_hex)) },
                 prefix = { Text("#") },
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
@@ -106,16 +108,16 @@ internal fun AccentColorMenu(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                TextButton(onClick = { applyColor(defaultColor) }) { Text("Reset") }
+                TextButton(onClick = { applyColor(defaultColor) }) { Text(stringResource(R.string.settings_accent_reset)) }
                 Row {
-                    TextButton(onClick = { panel.close() }) { Text("Cancel") }
+                    TextButton(onClick = { panel.close() }) { Text(stringResource(R.string.settings_cancel)) }
                     Spacer(Modifier.width(8.dp))
                     Button(
                         onClick = {
                             onConfirm(workingColor)
                             panel.close()
                         },
-                    ) { Text("Apply") }
+                    ) { Text(stringResource(R.string.settings_accent_apply)) }
                 }
             }
         }

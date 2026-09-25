@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Exclusive (bit-perfect) USB output status, shown in Song info / Now Playing -->
+    <string name="playback_bit_perfect_native_dsd">Bit-perfect · Native DSD · DSD%1$d</string>
+    <string name="playback_resampled">Resampled %1$s → %2$s</string>
+    <string name="playback_mono_to_stereo">mono to stereo</string>
+
+    <!-- Why a song doesn't go out bit-perfect -->
+    <string name="playback_exclusive_off">Exclusive mode is off</string>
+    <string name="playback_not_to_dac">Not playing to the USB DAC</string>
+    <string name="playback_dsd_muted">%1$s. DSD for the DAC can\'t play, so it\'s muted</string>
+    <string name="playback_dac_no_format">The DAC doesn\'t take it</string>
+    <string name="playback_dac_no_native_dsd">The DAC doesn\'t take native DSD%1$d</string>
+    <string name="playback_dac_no_dop">The DAC doesn\'t take DSD%1$d as DoP</string>
+    <string name="playback_dac_no_rate">The DAC doesn\'t take %1$s</string>
+    <string name="playback_not_pcm">Not PCM</string>
+    <string name="playback_android_declined">Android declined it</string>
+    <string name="playback_android_open_failed">Android couldn\'t open it</string>
+    <string name="playback_android_open_failed_reason">Android couldn\'t open it: %1$s</string>
+
+    <!-- Output encoding -->
+    <string name="playback_encoding_float">32-bit float</string>
+    <string name="playback_encoding_compressed">Compressed</string>
+
+    <!-- Library and server messages -->
+    <string name="data_phone_storage">Phone storage</string>
+    <string name="data_allow_device_music">Allow SamSonic to access music on this phone to see it here</string>
+    <string name="data_artist_not_found">Artist not found</string>
+    <string name="data_album_not_found">Album not found</string>
+    <string name="data_playlist_not_found">Playlist not found</string>
+    <string name="data_server_connect_failed">Could not connect to server</string>
+    <string name="data_not_connected">Not connected to a server</string>
+    <string name="data_server_refused">The server refused the change</string>
+    <string name="data_favourites">Favourites</string>
+
+    <!-- Album length -->
+    <string name="app_duration_hours_minutes">%1$d hr %2$d min</string>
+    <string name="app_duration_minutes">%1$d min</string>
+</resources>

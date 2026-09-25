@@ -30,9 +30,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.LocalAppContainer
+import com.example.samsonic.R
 import com.example.samsonic.model.Album
 import com.example.samsonic.model.Artist
 import com.example.samsonic.playback.LocalPlayerState
@@ -89,7 +91,7 @@ fun SearchScreen(
         modifier = modifier,
         title = {
             Text(
-                text = "Search",
+                text = stringResource(R.string.search_title),
                 style = MaterialTheme.typography.displaySmall,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -119,7 +121,7 @@ fun SearchScreen(
                 query.isBlank() -> item(key = "hint") {
                     Box(modifier = Modifier.animateItem(ListItemFade, ListItemMove, ListItemFade).fillMaxWidth().padding(top = 64.dp), contentAlignment = Alignment.Center) {
                         Text(
-                            text = "Search your library",
+                            text = stringResource(R.string.search_hint),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -133,7 +135,7 @@ fun SearchScreen(
                 !hasResults -> item(key = "empty") {
                     Box(modifier = Modifier.animateItem(ListItemFade, ListItemMove, ListItemFade).fillMaxWidth().padding(top = 64.dp), contentAlignment = Alignment.Center) {
                         Text(
-                            text = "No results for “$query”",
+                            text = stringResource(R.string.search_no_results, query),
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -144,7 +146,7 @@ fun SearchScreen(
                         // The section stays put; HorizontalCarousel fades its cards one by one.
                         item(key = "artists") {
                             Column(modifier = Modifier.animateItem(ListItemFade, ListItemMove, ListItemFade)) {
-                                SectionHeader(title = "Artists")
+                                SectionHeader(title = stringResource(R.string.library_artists))
                                 HorizontalCarousel(items = current.artists, key = { it.id }) { artist ->
                                     ArtistCard(artist = artist, onClick = { onArtistClick(artist) })
                                 }
@@ -154,7 +156,7 @@ fun SearchScreen(
                     if (current.albums.isNotEmpty()) {
                         item(key = "albums") {
                             Column(modifier = Modifier.animateItem(ListItemFade, ListItemMove, ListItemFade)) {
-                                SectionHeader(title = "Albums")
+                                SectionHeader(title = stringResource(R.string.library_albums))
                                 HorizontalCarousel(items = current.albums, key = { it.id }) { album ->
                                     AlbumCard(album = album, onClick = { onAlbumClick(album) })
                                 }
@@ -163,7 +165,7 @@ fun SearchScreen(
                     }
                     if (current.songs.isNotEmpty()) {
                         item(key = "songsHeader") {
-                            SectionHeader(title = "Songs", modifier = Modifier.animateItem(ListItemFade, ListItemMove, ListItemFade))
+                            SectionHeader(title = stringResource(R.string.library_songs), modifier = Modifier.animateItem(ListItemFade, ListItemMove, ListItemFade))
                         }
                         items(current.songs, key = { "song:" + it.id }) { song ->
                             SongRow(
@@ -199,7 +201,7 @@ private fun SearchField(
                 tint = MaterialTheme.colorScheme.surfaceContainerHigh,
                 alpha = GlassAlpha.Nav,
             ),
-        placeholder = { Text("Artists, albums, songs") },
+        placeholder = { Text(stringResource(R.string.search_placeholder)) },
         leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
         // Clears the field in one tap; only there while there's something to clear.
         trailingIcon = {
@@ -209,7 +211,7 @@ private fun SearchField(
                 exit = fadeOut() + scaleOut(targetScale = 0.6f),
             ) {
                 PressIconButton(onClick = { onQueryChange("") }) {
-                    Icon(Icons.Filled.Close, contentDescription = "Clear search")
+                    Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.search_clear))
                 }
             }
         },
