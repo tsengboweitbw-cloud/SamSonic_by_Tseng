@@ -35,11 +35,14 @@ private class BitPerfectRenderersFactory(
         context: Context,
         enableFloatOutput: Boolean,
         enableAudioTrackPlaybackParams: Boolean,
-    ): AudioSink = DefaultAudioSink.Builder(context)
-        .setEnableFloatOutput(enableFloatOutput)
-        .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
-        .setAudioTrackProvider(bitPerfect.audioTrackProvider)
-        .build()
+    ): AudioSink = ExclusiveSink(
+        DefaultAudioSink.Builder(context)
+            .setEnableFloatOutput(enableFloatOutput)
+            .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
+            .setAudioTrackProvider(bitPerfect.audioTrackProvider)
+            .build(),
+        bitPerfect,
+    )
 
     override fun buildAudioRenderers(
         context: Context,

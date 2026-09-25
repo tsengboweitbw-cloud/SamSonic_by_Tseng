@@ -22,14 +22,21 @@
 ## 4. 音訊進階規格 (Audio Features)
 - **DAC 獨佔模式 (DAC Exclusive Mode) & Bit-Perfect**：
   - **Android 14 (API level 34) 以上**：優先使用 Android 14 原生 API（如 `AudioMixerAttributes` / Lossless Audio 特性）實現 Bit-Perfect 無損音訊與 USB DAC 獨佔輸出。
+  - **獨佔模式 (Exclusive USB output)**：已實作。開啟後音樂只經由 USB DAC 播放，每首歌依格式決定：
+    - DAC 支援歌曲原始格式時 → **Bit-Perfect** 輸出（16-bit 不支援時補零為 32/24-bit，數值不變）。
+    - 不支援時 → 在 App 內**重採樣**至 DAC 支援的格式，仍維持獨佔：取樣率優先選原始取樣率的整數倍（32 → 64 kHz），否則選較高的下一個；單聲道複製為立體聲。
+    - Song info / Now Playing 標示「Bit-perfect · …」或「Resampled 32 → 64 kHz · …」。
+    - DAC 完全不提供 Bit-Perfect 時（如 Apple USB-C 轉 3.5mm）→ 一般輸出。
+    - 「Exclusive USB output」與「DSD output」兩列一律顯示；未接 USB DAC 時變淡且無法切換（DSD output 另需開啟獨佔模式），點擊顯示原因，設定值保留。未經 DAC 播放時不顯示 Exclusive 狀態列。
   - **Android 14 以下**：由於系統混音器 (AudioFlinger) 會重採樣，若需在舊版 Android 實現 DAC 獨佔與 Bit-Perfect，需規劃使用自訂 USB 驅動（例如 libusb / AAudio / 自製 USB 音訊驅動）直通硬體。這個暫不執行。
-- **DSD 輸出 (DSD Output)**：待以 iFi hip-dac 實機檢查後再實作（暫不執行）。
-  - **先檢查**：接上 hip-dac 後確認 (1) Android 是否對該 DAC 提供 Bit-Perfect 及支援的取樣率；(2) `getSupportedMixerAttributes` 是否回報 `ENCODING_DSD`（原生 DSD）；(3) 現有 Bit-Perfect PCM 播放時，DAC 指示燈是否顯示歌曲原始取樣率（如 44.1 kHz）。
+- **DSD 輸出 (DSD Output)**：已實作（Android 14 以上），尚待以 iFi hip-dac 實機驗證 DoP 與原生 DSD。
+  - **待驗證**：接上 hip-dac 後確認 (1) Android 是否對該 DAC 提供 Bit-Perfect 及支援的取樣率；(2) `getSupportedMixerAttributes` 是否回報 `ENCODING_DSD`（原生 DSD）；(3) 現有 Bit-Perfect PCM 播放時，DAC 指示燈是否顯示歌曲原始取樣率（如 44.1 kHz）。
   - **設定選項**（Settings → Playback「DSD output」）：
-    - **轉為 PCM (Convert to PCM)**：目前的行為，App 內將 DSD 轉為 PCM；無 DSD DAC 時唯一選項。
-    - **DoP**：將 DSD 封裝於 32-bit PCM（DSD64 → 176.4 kHz、DSD128 → 352.8 kHz、DSD256 → 705.6 kHz）。僅在 Bit-Perfect 生效時使用；DAC 不支援該取樣率時退回 PCM。
-    - **原生 DSD (Native)**：僅在 Android 回報該 DAC 支援 DSD 時才顯示。
+    - **轉為 PCM (Convert to PCM)**：預設，App 內將 DSD 轉為 88.2 kHz PCM；任何輸出皆可播放。
+    - **DoP**：將 DSD 封裝於 32-bit PCM（DSD64 → 176.4 kHz、DSD128 → 352.8 kHz、DSD256 → 705.6 kHz）。僅在獨佔模式下、DAC 以 Bit-Perfect 接受該取樣率時使用；否則退回 PCM。
+    - **原生 DSD (Native)**：以 `ENCODING_DSD` 輸出原始 DSD，僅在 Android 回報該 DAC 支援時生效；否則退回 DoP，再退回 PCM。選項一律顯示，說明文字標示目前 DAC 是否支援。
   - **注意**：Bit-Perfect / DoP 期間不得有任何 App 內 EQ、ReplayGain、音量或淡入淡出處理，否則會破壞資料。
+  - **安全機制**：封裝給 DAC 的 DSD（DoP / 原生）若無法以 Bit-Perfect 輸出，或播放中拔除 DAC，必須靜音，絕不可送入系統混音器（會變成大聲噪音）。
 
 ## 5. AI 開發規範
 1. **先假後真**：撰寫 Compose UI 期間，一律先使用 `MockData`（假資料）進行視覺驗證，確認無誤後再串接 Subsonic API。

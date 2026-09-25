@@ -51,8 +51,9 @@ class PlaybackService : MediaSessionService() {
             upstream = httpFactory,
             direct = DefaultDataSource.Factory(this, httpFactory),
         )
-        // DSD (DSF/DFF) has no Android decoder; its extractor turns it into PCM itself.
-        val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory, DsdExtractorsFactory())
+        // DSD (DSF/DFF) has no Android decoder; its extractor turns it into PCM itself, or packs
+        // it for a DAC that takes DSD (see BitPerfectOutput.dsdStreamFor).
+        val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory, DsdExtractorsFactory(container.bitPerfect::dsdStreamFor))
 
         val player = ExoPlayer.Builder(this, renderersFactory(this, container.bitPerfect))
             .setMediaSourceFactory(mediaSourceFactory)

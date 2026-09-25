@@ -10,14 +10,18 @@ import androidx.media3.extractor.text.SubtitleParser
 /**
  * The player's usual extractors with [DsdExtractor] in front: it only has to peek at a
  * file's first bytes to pass on everything that isn't DSD, and it goes first so nothing
- * else mistakes a DSD file for its own format.
+ * else mistakes a DSD file for its own format. [streamFor] picks how each DSD file goes out
+ * (see [DsdExtractor]).
  */
 @UnstableApi
-class DsdExtractorsFactory(private val base: ExtractorsFactory = DefaultExtractorsFactory()) : ExtractorsFactory {
-    override fun createExtractors(): Array<Extractor> = arrayOf<Extractor>(DsdExtractor()) + base.createExtractors()
+class DsdExtractorsFactory(
+    private val streamFor: (dsdRate: Int, channels: Int) -> DsdStream? = { _, _ -> null },
+    private val base: ExtractorsFactory = DefaultExtractorsFactory(),
+) : ExtractorsFactory {
+    override fun createExtractors(): Array<Extractor> = arrayOf<Extractor>(DsdExtractor(streamFor)) + base.createExtractors()
 
     override fun createExtractors(uri: Uri, responseHeaders: Map<String, List<String>>): Array<Extractor> =
-        arrayOf<Extractor>(DsdExtractor()) + base.createExtractors(uri, responseHeaders)
+        arrayOf<Extractor>(DsdExtractor(streamFor)) + base.createExtractors(uri, responseHeaders)
 
     override fun experimentalSetTextTrackTranscodingEnabled(textTrackTranscodingEnabled: Boolean): ExtractorsFactory {
         base.experimentalSetTextTrackTranscodingEnabled(textTrackTranscodingEnabled)

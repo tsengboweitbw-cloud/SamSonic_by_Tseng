@@ -23,9 +23,14 @@ private const val DFF_READ_FRAMES = 4096
  * Plays DSD files, which no Android decoder handles: DSF (Sony) and DSDIFF (.dff, Philips;
  * uncompressed only, not DST). The DSD is filtered down to float PCM here as it's read
  * ([DsdToPcm]), so the player takes it as plain PCM, with seeking and a duration.
+ *
+ * Or, when [streamFor] says the DAC takes it (bit-perfect, as DoP or native DSD), it's
+ * packed untouched instead ([DsdPacker]), with the [DsdStream] on the track's Format.
  */
 @UnstableApi
-class DsdExtractor : Extractor {
+class DsdExtractor(
+    private val streamFor: (dsdRate: Int, channels: Int) -> DsdStream? = { _, _ -> null },
+) : Extractor {
     private enum class Layout { DSF, DFF }
 
     private lateinit var output: ExtractorOutput
@@ -42,7 +47,7 @@ class DsdExtractor : Extractor {
     // DSF only: the size of a channel's block (the file interleaves whole blocks).
     private var blockSize = 0
 
-    private var converter: DsdToPcm? = null
+    private var converter: DsdEncoder? = null
     private var framesOut = 0L
 
     // Reused from read to read.
@@ -67,13 +72,19 @@ class DsdExtractor : Extractor {
         if (!headerRead) {
             readHeader(input)
             headerRead = true
-            val converter = DsdToPcm(channels, dsdRate, lsbFirst = layout == Layout.DSF).also { this.converter = it }
+            val lsbFirst = layout == Layout.DSF
+            val stream = streamFor(dsdRate, channels)
+            val converter = when (stream) {
+                null -> DsdToPcm(channels, dsdRate, lsbFirst)
+                else -> DsdPacker(channels, dsdRate, lsbFirst, dop = stream is DsdStream.Dop)
+            }.also { this.converter = it }
             track.format(
                 Format.Builder()
                     .setSampleMimeType(MimeTypes.AUDIO_RAW)
                     .setPcmEncoding(C.ENCODING_PCM_FLOAT)
                     .setChannelCount(channels)
                     .setSampleRate(converter.outputRate)
+                    .setCustomData(stream)
                     .build(),
             )
             output.seekMap(DsdSeekMap())

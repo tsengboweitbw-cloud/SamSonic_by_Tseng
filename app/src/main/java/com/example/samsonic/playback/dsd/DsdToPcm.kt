@@ -30,11 +30,11 @@ private const val SILENCE = 0x69
  * at a time: a windowed-sinc low-pass run as table lookups a byte (8 samples) at a time,
  * decimating as it goes. [lsbFirst] is for DSF, whose bytes hold their earliest bit last.
  */
-internal class DsdToPcm(private val channels: Int, dsdRate: Int, private val lsbFirst: Boolean) {
+internal class DsdToPcm(private val channels: Int, dsdRate: Int, private val lsbFirst: Boolean) : DsdEncoder {
     /** Bytes of each channel's DSD per output sample: the decimation, in bytes. */
-    val bytesPerOutput: Int = max(1, (dsdRate / 8.0 / TARGET_RATE).roundToInt())
+    override val bytesPerOutput: Int = max(1, (dsdRate / 8.0 / TARGET_RATE).roundToInt())
 
-    val outputRate: Int = dsdRate / 8 / bytesPerOutput
+    override val outputRate: Int = dsdRate / 8 / bytesPerOutput
 
     private val tapBytes = TAP_BYTES_PER_STEP * bytesPerOutput
     private val table = filterTable(dsdRate, tapBytes)
@@ -49,7 +49,7 @@ internal class DsdToPcm(private val channels: Int, dsdRate: Int, private val lsb
     }
 
     /** Forgets what came before, for a start or a seek. */
-    fun reset() {
+    override fun reset() {
         // The history holds bytes already put in MSB-first order, so silence as it reads there.
         for (h in history) h.fill(SILENCE)
         position = 0
@@ -61,13 +61,13 @@ internal class DsdToPcm(private val channels: Int, dsdRate: Int, private val lsb
      * into [out] as interleaved float frames, and returns how many it wrote: one for each
      * [bytesPerOutput] frames in.
      */
-    fun process(input: ByteArray, frames: Int, out: FloatArray): Int {
+    override fun process(input: ByteArray, frames: Int, out: FloatArray): Int {
         var written = 0
         var at = 0
         for (frame in 0 until frames) {
             for (channel in 0 until channels) {
                 var byte = input[at++].toInt() and 0xFF
-                if (lsbFirst) byte = REVERSED[byte]
+                if (lsbFirst) byte = ReversedBits[byte]
                 val h = history[channel]
                 h[position] = byte
                 h[position + tapBytes] = byte
@@ -96,13 +96,6 @@ internal class DsdToPcm(private val channels: Int, dsdRate: Int, private val lsb
     }
 
     companion object {
-        /** Each byte value's bits in reverse order. */
-        private val REVERSED = IntArray(256) { b ->
-            var r = 0
-            for (i in 0 until 8) if (b and (1 shl i) != 0) r = r or (0x80 ushr i)
-            r
-        }
-
         private val tables = HashMap<Pair<Int, Int>, FloatArray>()
 
         /**

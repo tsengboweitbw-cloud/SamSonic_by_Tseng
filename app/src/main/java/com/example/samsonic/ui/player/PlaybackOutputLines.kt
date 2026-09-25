@@ -107,14 +107,14 @@ private fun iconOf(detail: PlaybackDetail): ImageVector = when (detail.kind) {
     }
 }
 
-// The most lines [playbackDetails] gives: Output, Device, Device rate, Bit-perfect.
+// The most lines [playbackDetails] gives: Output, Device, Device rate, Exclusive.
 private const val PlaybackDetailCount = 4
 
 /**
  * What's actually being played out, which can differ from the file (DSD decoded to
  * PCM, high-res PCM cut to 16-bit): the PCM handed to Android, the device it plays on,
  * the rate Android's mixer runs at where it says (the phone's own outputs, not USB or
- * Bluetooth), and whether it's bit-perfect.
+ * Bluetooth), and whether it goes out exclusive (bit-perfect or resampled).
  */
 private fun playbackDetails(output: AudioOutput, bitPerfect: BitPerfectTrack?): List<PlaybackDetail> = listOfNotNull(
     PlaybackDetail(
@@ -134,12 +134,13 @@ private fun playbackDetails(output: AudioOutput, bitPerfect: BitPerfectTrack?): 
     output.mixerRate?.let {
         PlaybackDetail(PlaybackDetailKind.DeviceRate, "Device rate", formatKilohertz(it), line = "Device at ${formatKilohertz(it)}")
     },
+    // Exclusive mode's line: "Bit-perfect · 32-bit · 96 kHz" or "Resampled 32 → 64 kHz · 32-bit" when on.
     bitPerfect?.let {
         PlaybackDetail(
             PlaybackDetailKind.BitPerfect,
-            "Bit-perfect",
-            (if (it.on) "On · " else "Off · ") + it.detail,
-            line = (if (it.on) "Bit-perfect · " else "Not bit-perfect · ") + it.detail,
+            "Exclusive",
+            if (it.on) it.detail else "Off · ${it.detail}",
+            line = if (it.on) it.detail else "Not exclusive · ${it.detail}",
             active = it.on,
         )
     },

@@ -33,6 +33,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.semantics.disabled
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.Dp
@@ -73,6 +76,7 @@ fun SettingsScreen(
     val cacheLocationMenu = remember { PanelState(scope) }
     val cacheAllMenu = remember { PanelState(scope) }
     val clearCacheMenu = remember { PanelState(scope) }
+    val dsdMenu = remember { PanelState(scope) }
     val cacheUsage = rememberCacheUsage()
     val clearMusicCacheMenu = remember { PanelState(scope) }
     val musicCacheUsage = rememberMusicCacheUsage(container.musicCache)
@@ -109,6 +113,7 @@ fun SettingsScreen(
             CacheAllMenu(cacheAllMenu, haze, container.imageCacheSettings, onConfirm = container.coverArtPrefetcher::start)
             ClearCacheMenu(clearCacheMenu, haze, cacheUsage, container.coverArtPrefetcher)
             ClearMusicCacheMenu(clearMusicCacheMenu, haze, musicCacheUsage)
+            DsdOutputMenu(dsdMenu, haze, container.bitPerfect)
         },
     ) { topPadding ->
         LazyColumn(
@@ -139,6 +144,7 @@ fun SettingsScreen(
                         modifier = Modifier.menuOrigin(audioFormatMenu),
                     )
                     BitPerfectRow(container.bitPerfect)
+                    DsdOutputRow(container.bitPerfect, dsdMenu)
                 }
             }
 
@@ -255,23 +261,28 @@ internal fun NavRow(
     tint: androidx.compose.ui.graphics.Color? = null,
     // Shown on a long press (see RowHint).
     hint: String? = null,
+    // Not enabled: dimmed, and a tap shows the hint (which should say why) instead of [onClick].
+    enabled: Boolean = true,
 ) {
     val hintState = rememberRowHint()
     Row(
         modifier = modifier
             .fillMaxWidth()
             .hintHold(hintState)
-            .oneUiRowClickable(onClick, onLongClick = hintLongPress(hintState, hint))
+            .then(if (enabled) Modifier else Modifier.semantics { disabled() })
+            .oneUiRowClickable(if (enabled) onClick else hintState::show, onLongClick = hintLongPress(hintState, hint))
             .padding(horizontal = 8.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(icon, contentDescription = null, tint = tint ?: rowIconTint(), modifier = Modifier.size(22.dp))
+        val dim = if (enabled) Modifier else Modifier.alpha(DisabledAlpha)
+        Icon(icon, contentDescription = null, tint = tint ?: rowIconTint(), modifier = dim.size(22.dp))
         Spacer(Modifier.width(14.dp))
         Text(
             text = title,
             style = MaterialTheme.typography.bodyLarge,
             color = tint ?: MaterialTheme.colorScheme.onSurface,
             maxLines = 1,
+            modifier = dim,
         )
         Text(
             text = value,
@@ -280,9 +291,9 @@ internal fun NavRow(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             textAlign = TextAlign.End,
-            modifier = Modifier.weight(1f).padding(start = 12.dp),
+            modifier = dim.weight(1f).padding(start = 12.dp),
         )
-        Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = dim)
         RowHint(hintState, hint)
     }
 }
