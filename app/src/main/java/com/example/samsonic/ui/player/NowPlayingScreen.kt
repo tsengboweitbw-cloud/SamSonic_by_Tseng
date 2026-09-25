@@ -50,6 +50,8 @@ import com.example.samsonic.R
 import com.example.samsonic.model.Song
 import com.example.samsonic.model.artSeed
 import com.example.samsonic.ui.library.AddToPlaylistState
+import com.example.samsonic.ui.components.ChromeButtonIconSize
+import com.example.samsonic.ui.components.ChromeButtonSize
 import com.example.samsonic.ui.components.PressIconButton
 import com.example.samsonic.ui.theme.BlurredArtBackdrop
 import com.example.samsonic.ui.theme.GlassAlpha
@@ -101,7 +103,7 @@ fun NowPlayingScreen(
         // playlist is in the capsule stack at the bottom.
         Row(modifier = Modifier.fillMaxWidth().padding(top = 12.dp)) {
             GlassCircleButton(onClick = onCollapse) {
-                Icon(Icons.Filled.KeyboardArrowDown, contentDescription = stringResource(R.string.player_collapse))
+                Icon(Icons.Filled.KeyboardArrowDown, contentDescription = stringResource(R.string.player_collapse), modifier = Modifier.size(ChromeButtonIconSize))
             }
         }
 
@@ -231,7 +233,8 @@ fun NowPlayingScreen(
 private fun GlassCircleButton(onClick: () -> Unit, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
     PressIconButton(
         onClick = onClick,
-        size = 56.dp,
+        // Matches the back button on the other pages.
+        size = ChromeButtonSize,
         modifier = modifier.nowPlayingGlass(),
         content = content,
     )

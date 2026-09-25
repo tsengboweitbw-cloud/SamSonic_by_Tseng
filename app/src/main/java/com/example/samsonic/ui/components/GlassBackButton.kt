@@ -31,6 +31,7 @@ import dev.chrisbanes.haze.hazeSource
 fun GlassBackButton(onClick: () -> Unit, hazeState: HazeState?, modifier: Modifier = Modifier) {
     PressIconButton(
         onClick = onClick,
+        size = ChromeButtonSize,
         modifier = modifier
             .glassSurface(
                 shape = CircleShape,
@@ -39,7 +40,7 @@ fun GlassBackButton(onClick: () -> Unit, hazeState: HazeState?, modifier: Modifi
                 alpha = GlassAlpha.Nav,
             ),
     ) {
-        Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = stringResource(R.string.components_back), modifier = Modifier.size(32.dp))
+        Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = stringResource(R.string.components_back), modifier = Modifier.size(ChromeButtonIconSize))
     }
 }
 
@@ -49,5 +50,11 @@ fun GlassBackButton(onClick: () -> Unit, hazeState: HazeState?, modifier: Modifi
  */
 fun Modifier.backButtonHazeSource(state: HazeState): Modifier = graphicsLayer().hazeSource(state)
 
+/** The size of the round glass buttons at a page's top, back and collapse alike, so they match. */
+val ChromeButtonSize = 42.dp
+
+/** Their arrows' size, in proportion. */
+val ChromeButtonIconSize = 30.dp
+
 /** Room a list leaves at its top so its first row starts below a floating [GlassBackButton]. */
-val BackButtonClearance = 8.dp + 48.dp
+val BackButtonClearance = 8.dp + ChromeButtonSize
