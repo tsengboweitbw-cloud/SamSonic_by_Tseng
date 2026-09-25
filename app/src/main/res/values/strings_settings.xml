@@ -4,7 +4,7 @@
     <string name="settings_title">Settings</string>
     <string name="settings_group_music_source">Music source</string>
     <string name="settings_group_playback">Playback</string>
-    <string name="settings_group_gestures">Now Playing gestures</string>
+    <string name="settings_group_gestures">Player gestures</string>
     <string name="settings_group_library">Library</string>
     <string name="settings_group_appearance">Appearance</string>
     <string name="settings_group_storage">Storage</string>
@@ -63,13 +63,15 @@
     <string name="settings_favourites_playlist">Favourites playlist</string>
     <string name="settings_favourites_playlist_hint">Your liked songs, first in the Playlists tab</string>
 
-    <!-- Now Playing gestures -->
+    <!-- Player gestures -->
     <string name="settings_swipe_lyrics">Swipe right for lyrics</string>
     <string name="settings_swipe_lyrics_hint">On Now Playing, swipe right to open the lyrics</string>
     <string name="settings_swipe_info">Swipe left for song info</string>
     <string name="settings_swipe_info_hint">On Now Playing, swipe left to open the song\'s details</string>
     <string name="settings_swipe_queue">Swipe up for the queue</string>
     <string name="settings_swipe_queue_hint">On Now Playing, swipe up to open what plays next</string>
+    <string name="settings_swipe_mini_song">Swipe the mini player to change song</string>
+    <string name="settings_swipe_mini_song_hint">Swipe the mini player left for the next song, or right for the previous one, in place of its next button</string>
 
     <!-- Appearance -->
     <string name="settings_theme">Theme</string>

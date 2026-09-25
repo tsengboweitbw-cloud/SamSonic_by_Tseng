@@ -224,6 +224,18 @@ class PlayerState(
         if (c.currentPosition > 3000) c.seekTo(0) else c.seekToPrevious()
     }
 
+    /**
+     * The [queue] index [step] places from the song at [from] (the current one by
+     * default) in [playOrder] (1 the next song, -1 the previous), or null past either
+     * end, as the cover carousel pages.
+     */
+    fun playOrderNeighbor(step: Int, from: Int = currentIndex): Int? {
+        val order = playOrder.ifEmpty { listOf(from) }
+        val at = order.indexOf(from)
+        if (at < 0) return null
+        return order.getOrNull(at + step)?.takeIf { it in queue.indices }
+    }
+
     fun seekToFraction(fraction: Float) {
         val c = controller ?: return
         val song = currentSong ?: return

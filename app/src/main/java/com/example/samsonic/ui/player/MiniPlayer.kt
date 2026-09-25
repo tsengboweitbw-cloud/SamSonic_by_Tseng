@@ -42,7 +42,8 @@ import com.example.samsonic.ui.theme.progressBrush
 /**
  * The mini player's contents: art, title and quick controls over the progress
  * line. The glass pill around it is the collapsed player sheet ([PlayerSheet]),
- * which also handles the tap and the swipe up into Now Playing.
+ * which also handles the tap and the swipe up into Now Playing. Swiping the
+ * song sideways changes it, when that's switched on ([SongStrip]).
  */
 @Composable
 fun MiniPlayer(
@@ -54,16 +55,16 @@ fun MiniPlayer(
     val cornerRadius by LocalAppContainer.current.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
 
     // The progress track below starts only after the art, so the two never
-    // overlap horizontally. It ends at the horizontal middle of the "next"
-    // button, not the full width.
+    // overlap horizontally. It ends at the horizontal middle of the last button
+    // ("next", or play/pause when swiping changes song), not the full width.
     val rowHorizontalPadding = 12.dp
     val artSize = 44.dp
     val artTextSpacing = 10.dp
     val iconButtonSize = 48.dp
-    // The art is inset as far from the pill's left edge as the "next" glyph is
+    // The art is inset as far from the pill's left edge as the last button's glyph is
     // from its right edge: the row padding, the button's padding around its
     // 24dp icon, and the blank strip inside the icon right of the glyph (the
-    // SkipNext glyph spans x = 6..18 of its 24 viewport).
+    // SkipNext and Pause glyphs both span x = 6..18 of their 24 viewport).
     val artStartPadding = rowHorizontalPadding + (iconButtonSize - 24.dp) / 2 + 6.dp
     val progressStart = artStartPadding + artSize + artTextSpacing
     val progressEnd = rowHorizontalPadding + iconButtonSize / 2
@@ -78,38 +79,52 @@ fun MiniPlayer(
             .pressClickable(onExpand, pressedScale = 0.96f)
             .playerMorphRoot(PlayerSurface.Mini),
     ) {
+        val swipeForSong by LocalAppContainer.current.themeManager.swipeMiniForSong.collectAsStateWithLifecycle()
         // Centered on the pill's true vertical midpoint - independent of
         // the progress track below, so the art never skews off-center.
         Row(
             modifier = Modifier
                 .align(Alignment.Center)
                 .fillMaxWidth()
-                .padding(start = artStartPadding, end = rowHorizontalPadding),
+                .padding(end = rowHorizontalPadding),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            MediaArt(
-                coverArt = song.coverArt,
-                colorSeed = song.id.artSeed(),
-                modifier = Modifier.playerMorphAnchor(PlayerElement.Art, PlayerSurface.Mini),
-                size = artSize,
-                cornerRadius = cornerRadius,
-                shadowElevation = 0.dp,
-            )
-            Spacer(Modifier.width(artTextSpacing))
-            Column(Modifier.weight(1f)) {
-                Text(
-                    text = song.title,
-                    style = MaterialTheme.typography.labelLarge,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = song.artistName,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+            // From the pill's edge, so a song swiped aside slides out under the glass's rim.
+            SongStrip(
+                song = song,
+                swipeEnabled = swipeForSong,
+                modifier = Modifier.weight(1f),
+            ) { shown, isCurrent ->
+                Row(
+                    modifier = Modifier.padding(start = artStartPadding),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    MediaArt(
+                        coverArt = shown.coverArt,
+                        colorSeed = shown.id.artSeed(),
+                        // Only the song playing travels into Now Playing.
+                        modifier = if (isCurrent) Modifier.playerMorphAnchor(PlayerElement.Art, PlayerSurface.Mini) else Modifier,
+                        size = artSize,
+                        cornerRadius = cornerRadius,
+                        shadowElevation = 0.dp,
+                    )
+                    Spacer(Modifier.width(artTextSpacing))
+                    Column {
+                        Text(
+                            text = shown.title,
+                            style = MaterialTheme.typography.labelLarge,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Text(
+                            text = shown.artistName,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
             }
             PressIconButton(
                 onClick = { player.togglePlayPause() },
@@ -120,11 +135,14 @@ fun MiniPlayer(
                     contentDescription = stringResource(if (player.isPlaying) R.string.player_pause else R.string.components_play),
                 )
             }
-            PressIconButton(
-                onClick = { player.skipNext() },
-                size = iconButtonSize,
-            ) {
-                Icon(Icons.Filled.SkipNext, contentDescription = stringResource(R.string.player_next))
+            // Swiping takes the next button's place, leaving the song more room.
+            if (!swipeForSong) {
+                PressIconButton(
+                    onClick = { player.skipNext() },
+                    size = iconButtonSize,
+                ) {
+                    Icon(Icons.Filled.SkipNext, contentDescription = stringResource(R.string.player_next))
+                }
             }
         }
 
@@ -134,7 +152,7 @@ fun MiniPlayer(
         PlayerProgressLine(
             progress = progress,
             // Starts past the art (no horizontal overlap with it) and
-            // ends at the "next" button's midpoint, not the full width.
+            // ends at the last button's midpoint, not the full width.
             modifier = Modifier
                 .align(Alignment.BottomStart)
                 .padding(bottom = 10.dp)

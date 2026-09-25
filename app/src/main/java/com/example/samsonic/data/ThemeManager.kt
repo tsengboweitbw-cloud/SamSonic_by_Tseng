@@ -93,6 +93,10 @@ class ThemeManager(context: Context) {
     private val _swipeForQueue = MutableStateFlow(prefs.getBoolean(KEY_SWIPE_QUEUE, true))
     val swipeForQueue: StateFlow<Boolean> = _swipeForQueue.asStateFlow()
 
+    // Swiping the mini player sideways changes song: left for the next, right for the previous.
+    private val _swipeMiniForSong = MutableStateFlow(prefs.getBoolean(KEY_SWIPE_MINI_SONG, true))
+    val swipeMiniForSong: StateFlow<Boolean> = _swipeMiniForSong.asStateFlow()
+
     fun setThemeMode(mode: ThemeMode) {
         prefs.edit().putString(KEY_MODE, mode.name).apply()
         _themeMode.value = mode
@@ -155,6 +159,11 @@ class ThemeManager(context: Context) {
         _swipeForQueue.value = enabled
     }
 
+    fun setSwipeMiniForSong(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_SWIPE_MINI_SONG, enabled).apply()
+        _swipeMiniForSong.value = enabled
+    }
+
     private fun loadThemeMode(): ThemeMode =
         ThemeMode.entries.find { it.name == prefs.getString(KEY_MODE, null) } ?: ThemeMode.SYSTEM
 
@@ -179,6 +188,7 @@ class ThemeManager(context: Context) {
         private const val KEY_SWIPE_LYRICS = "swipe_for_lyrics"
         private const val KEY_SWIPE_INFO = "swipe_for_info"
         private const val KEY_SWIPE_QUEUE = "swipe_for_queue"
+        private const val KEY_SWIPE_MINI_SONG = "swipe_mini_for_song"
         val DefaultAccent = Color(0xFF8875FF)
         val DefaultAlbumArtCornerRadius = 2.dp
         const val DefaultGlassOpacity = 1f
