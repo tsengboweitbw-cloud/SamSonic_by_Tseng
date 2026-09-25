@@ -1,5 +1,6 @@
 package com.example.samsonic.ui.settings
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,9 +27,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -146,7 +149,7 @@ private fun SourceRow(
             .fillMaxWidth()
             .hintHold(hintState)
             .oneUiRowClickable(onClick, onLongClick = hintLongPress(hintState, hint))
-            .padding(horizontal = 8.dp, vertical = 10.dp),
+            .padding(horizontal = 8.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(icon, contentDescription = null, tint = rowIconTint(), modifier = Modifier.size(22.dp))
@@ -162,7 +165,15 @@ private fun SourceRow(
             Spacer(Modifier.width(8.dp))
             Icon(Icons.Filled.CheckCircle, contentDescription = stringResource(R.string.settings_source_in_use), tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
         }
-        trailing()
+        // Takes no height, so a server row's bin button (taller than the text)
+        // leaves the row as tall as every other settings row; it hangs over the
+        // row's padding instead.
+        Box(
+            modifier = Modifier.layout { measurable, constraints ->
+                val placeable = measurable.measure(constraints.copy(minHeight = 0, maxHeight = Constraints.Infinity))
+                layout(placeable.width, 0) { placeable.place(0, -placeable.height / 2) }
+            },
+        ) { trailing() }
         RowHint(hintState, hint, hintAccent)
     }
 }
