@@ -24,6 +24,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -40,7 +45,7 @@ import kotlin.math.roundToInt
 /**
  * One tab of the floating nav bar, and of a chrome-sized [GlassTabBar] with
  * icons: just the icon, until selected, when its label slides out beside it
- * (and folds back as the indicator leaves, fading rather than being cut short).
+ * (and folds back as the indicator leaves), fading in and out with a soft edge.
  * The icon's tint follows [emphasis] (1 under the indicator, 0 a tab away),
  * and taps give a soft shrink-and-glow instead of a ripple.
  */
@@ -112,9 +117,12 @@ fun RowScope.IconLabelTab(
             Text(
                 text = label,
                 modifier = Modifier
-                    .revealWidth(reveal)
-                    // Gone before the edge reaches the letters, so none are seen cut in half.
-                    .graphicsLayer { alpha = ((reveal - 0.35f) / 0.65f).coerceIn(0f, 1f) }
+                    .revealWidth(reveal, edgeFade = 20.dp)
+                    // Fades in and out as it opens and closes, easing at both ends.
+                    .graphicsLayer {
+                        val t = ((reveal - 0.1f) / 0.9f).coerceIn(0f, 1f)
+                        alpha = t * t * (3 - 2 * t)
+                    }
                     .padding(start = 8.dp),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
@@ -129,11 +137,30 @@ fun RowScope.IconLabelTab(
 
 /**
  * Lays the content out at its full width but takes up only [fraction] of it (and
- * never more than there is room for), clipped, so it opens and closes like a
- * sliding reveal without its content ever reflowing.
+ * never more than there is room for), so it opens and closes like a sliding reveal
+ * without its content ever reflowing. Where it's cut short, the last [edgeFade] of
+ * what shows fades out, so letters dissolve at the edge instead of being sliced.
  */
-private fun Modifier.revealWidth(fraction: Float): Modifier = clipToBounds().layout { measurable, constraints ->
-    val placeable = measurable.measure(constraints.copy(minWidth = 0, maxWidth = Constraints.Infinity))
-    val width = (placeable.width * fraction).roundToInt().coerceAtMost(constraints.maxWidth)
-    layout(width, placeable.height) { placeable.placeRelative(0, 0) }
+private fun Modifier.revealWidth(fraction: Float, edgeFade: Dp): Modifier {
+    // Whether the last layout cut the content short; drawing (after it) fades the edge then.
+    val cut = BooleanArray(1)
+    return clipToBounds()
+        // Offscreen, so the fade masks the text alone, not what's behind it.
+        .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+        .drawWithContent {
+            drawContent()
+            if (cut[0]) {
+                val fade = edgeFade.toPx().coerceAtMost(size.width)
+                drawRect(
+                    brush = Brush.horizontalGradient(listOf(Color.Black, Color.Transparent), startX = size.width - fade, endX = size.width),
+                    blendMode = BlendMode.DstIn,
+                )
+            }
+        }
+        .layout { measurable, constraints ->
+            val placeable = measurable.measure(constraints.copy(minWidth = 0, maxWidth = Constraints.Infinity))
+            val width = (placeable.width * fraction).roundToInt().coerceAtMost(constraints.maxWidth)
+            cut[0] = width < placeable.width
+            layout(width, placeable.height) { placeable.placeRelative(0, 0) }
+        }
 }
