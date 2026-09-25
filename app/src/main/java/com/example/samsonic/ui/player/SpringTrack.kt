@@ -56,10 +56,11 @@ internal class SpringTrack(private val scope: CoroutineScope) {
         }
     }
 
-    fun animateTo(target: Float, velocityPx: Float = 0f, spec: AnimationSpec<Float> = SettleSpring) {
+    /** Settles at [target]; the returned job completes when it gets there (or is cut short). */
+    fun animateTo(target: Float, velocityPx: Float = 0f, spec: AnimationSpec<Float> = SettleSpring): Job {
         stop()
-        settleJob = scope.launch {
+        return scope.launch {
             animate(position, target, -velocityPx / travelPx, spec) { current, _ -> position = current }
-        }
+        }.also { settleJob = it }
     }
 }

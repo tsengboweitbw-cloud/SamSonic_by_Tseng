@@ -41,13 +41,17 @@ import kotlin.math.roundToInt
 private val PillMargin = 12.dp
 private val PillRadius = OneUiChrome.BarHeight / 2
 
+// How far (in pill heights) a drag down takes the mini player to swipe it away.
+private const val DismissTravel = 1.5f
+
 /** Maps [value] from [start]..[end] onto 0..1, clamped. */
 private fun ramp(value: Float, start: Float, end: Float) = ((value - start) / (end - start)).coerceIn(0f, 1f)
 
 /**
  * The player as one sheet: collapsed it is the mini player's glass pill; dragged
  * up (or tapped) it grows, with the finger, into full-screen Now Playing, and
- * dragged down it shrinks back. The pill widens and its corners square off as
+ * dragged down it shrinks back; dragged down from rest, the pill is swiped away
+ * and playback stops. The pill widens and its corners square off as
  * it grows, the mini player's contents fade out as Now Playing's fade in, and
  * the cover and progress line travel between the two ([PlayerMorphState]).
  * Lyrics, queue and song info open inside the sheet, growing out of their buttons
@@ -64,8 +68,11 @@ fun PlayerSheet(
     onArtistClick: (artistId: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val song = LocalPlayerState.current.currentSong
+    val player = LocalPlayerState.current
+    val song = player.currentSong
     SideEffect { if (song == null && sheet.isExpanded) sheet.collapse() }
+    // Swiping the mini player away stops the music and empties the queue.
+    SideEffect { sheet.onDismiss = player::stopAndClearQueue }
     // Read here, not inside the SideEffect, so a change in Settings recomposes and reaches the sheet.
     val swipeForQueue = LocalAppContainer.current.themeManager.swipeForQueue.collectAsStateWithLifecycle().value
     SideEffect { sheet.swipeUpForQueue = swipeForQueue }
@@ -89,6 +96,7 @@ fun PlayerSheet(
                 }
                 SideEffect {
                     sheet.travelPx = collapsed.top
+                    sheet.dismissTravelPx = collapsed.height * DismissTravel
                     // Mini rides the frame's corner; Now Playing its top edge at full width.
                     morph.surfaceOrigin = { surface ->
                         val frame = lerp(collapsed, full, sheet.progress)
@@ -130,13 +138,23 @@ private fun SheetSurface(sheet: PlayerSheetState, song: Song, collapsed: Rect, f
                 val radius = lerp(radiusPx, 0f, ramp(sheet.progress, 0.75f, 1f))
                 shape = RoundedCornerShape(radius)
                 clip = true
+                // Swiped down, the pill goes with the finger, under the nav bar, and
+                // draws in a little (to 85%) as it fades, until it's gone.
+                val away = sheet.dismissal
+                if (away > 0f) {
+                    translationY = away * sheet.dismissTravelPx
+                    val scale = lerp(1f, 0.85f, away)
+                    scaleX = scale
+                    scaleY = scale
+                    alpha = 1f - ramp(away, 0.3f, 1f)
+                }
             }
             .draggable(
                 state = dragState,
                 orientation = Orientation.Vertical,
                 // Panels over Now Playing take their own drags.
                 enabled = !sheet.hasPanelOpen,
-                startDragImmediately = sheet.isMoving,
+                startDragImmediately = sheet.isMoving || sheet.isDismissing,
                 onDragStarted = { sheet.startDrag() },
                 onDragStopped = { velocity -> sheet.settle(velocity) },
             ),

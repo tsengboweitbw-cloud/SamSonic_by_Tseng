@@ -27,6 +27,23 @@ class PlayerSheetState internal constructor(scope: CoroutineScope) {
     /** 0 collapsed .. 1 expanded. */
     val progress: Float get() = track.position
 
+    // Dragging down on the resting mini player swipes it away (the track's 1 is gone).
+    private val dismissTrack = SpringTrack(scope)
+
+    /** 0 resting .. 1 swiped away: how far a drag down has taken the mini player. */
+    val dismissal: Float get() = dismissTrack.position
+
+    /** Pixels a drag down covers to swipe the mini player away; set by the layout. */
+    internal var dismissTravelPx: Float
+        get() = dismissTrack.travelPx
+        set(value) { dismissTrack.travelPx = value }
+
+    /** Run once the mini player has been swiped away: stops playback. Set by the sheet. */
+    internal var onDismiss: () -> Unit = {}
+
+    /** True while the mini player is part way to being swiped away, or back. */
+    val isDismissing by derivedStateOf { dismissal > 0.001f && dismissal < 0.999f }
+
     /** Whether the sheet is expanded or heading there (drives back handling). */
     var isExpanded by mutableStateOf(false)
         private set
@@ -60,6 +77,7 @@ class PlayerSheetState internal constructor(scope: CoroutineScope) {
     internal fun startDrag() {
         track.stop()
         queue.stop()
+        dismissTrack.stop()
         dragTarget = null
     }
 
@@ -67,10 +85,14 @@ class PlayerSheetState internal constructor(scope: CoroutineScope) {
         val target = dragTarget ?: run {
             if (deltaPx == 0f) return
             val upFromOpen = progress > 0.999f && deltaPx < 0f
+            // Down from the resting mini player (or caught mid-swipe away): it follows the
+            // finger down, to be swiped away.
+            val downFromRest = progress < 0.001f && (deltaPx > 0f || dismissal > 0f)
             // Up from a fully open Now Playing: the queue follows the finger up. Switched
             // off, the whole drag does nothing, so Now Playing doesn't follow the finger
             // back down either.
             when {
+                downFromRest -> DragTarget.Dismiss
                 !upFromOpen -> DragTarget.Sheet
                 swipeUpForQueue -> DragTarget.Queue
                 else -> DragTarget.None
@@ -79,6 +101,8 @@ class PlayerSheetState internal constructor(scope: CoroutineScope) {
         when (target) {
             DragTarget.Sheet -> track.dragBy(deltaPx)
             DragTarget.Queue -> queue.dragBy(deltaPx)
+            // The track's 1 is down here, so the finger's direction flips.
+            DragTarget.Dismiss -> dismissTrack.dragBy(-deltaPx)
             DragTarget.None -> Unit
         }
     }
@@ -87,6 +111,7 @@ class PlayerSheetState internal constructor(scope: CoroutineScope) {
     internal fun settle(velocityPx: Float) {
         when (dragTarget) {
             DragTarget.Queue -> queue.settle(velocityPx)
+            DragTarget.Dismiss -> settleDismissal(velocityPx)
             DragTarget.None -> Unit
             // A drag that never moved (null) settles the sheet back where it was.
             DragTarget.Sheet, null -> settleTo(track.targetFor(velocityPx), velocityPx)
@@ -99,10 +124,25 @@ class PlayerSheetState internal constructor(scope: CoroutineScope) {
         if (target == 0f) listOf(lyrics, queue, info).forEach { it.reset() }
         track.animateTo(target, velocityPx)
     }
+
+    /**
+     * Past halfway, or flung down, the mini player collapses away and playback stops
+     * once it's gone (the sheet then leaves with the song, and the next song brings the
+     * mini player back at rest); otherwise it springs back.
+     */
+    private fun settleDismissal(velocityPx: Float) {
+        val away = dismissTrack.targetFor(-velocityPx) == 1f
+        dismissTrack.animateTo(if (away) 1f else 0f, -velocityPx).invokeOnCompletion { cause ->
+            if (away && cause == null) {
+                onDismiss()
+                dismissTrack.snapTo(0f)
+            }
+        }
+    }
 }
 
-/** What a drag on the sheet moves: the sheet, the queue up over it, or nothing. */
-private enum class DragTarget { Sheet, Queue, None }
+/** What a drag on the sheet moves: the sheet, the queue up over it, the mini player away, or nothing. */
+private enum class DragTarget { Sheet, Queue, Dismiss, None }
 
 @Composable
 fun rememberPlayerSheetState(): PlayerSheetState {
