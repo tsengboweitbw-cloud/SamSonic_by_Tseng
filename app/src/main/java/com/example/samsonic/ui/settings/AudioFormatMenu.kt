@@ -39,9 +39,8 @@ import com.example.samsonic.model.Song
 import com.example.samsonic.ui.components.SongRowEnd
 import com.example.samsonic.ui.components.songSubtitle
 import com.example.samsonic.ui.player.PanelState
-import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.OneUiRow
-import com.example.samsonic.ui.theme.glassSurface
+import com.example.samsonic.ui.theme.accentWash
 import dev.chrisbanes.haze.HazeState
 
 /** The choice's name: the Settings row's value, and what a screen reader says for its sample. */
@@ -118,12 +117,7 @@ private fun SampleOption(display: AudioFormatDisplay, selected: Boolean, onClick
             .clip(OneUiRow.Shape)
             .then(
                 if (selected) {
-                    Modifier.glassSurface(
-                        shape = OneUiRow.Shape,
-                        hazeState = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        alpha = GlassAlpha.Highlight,
-                    )
+                    Modifier.accentWash(OneUiRow.Shape)
                 } else {
                     Modifier
                 },

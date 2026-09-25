@@ -1,25 +1,49 @@
 package com.example.samsonic.ui.player
 
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.AudioFile
+import androidx.compose.material.icons.rounded.Bluetooth
+import androidx.compose.material.icons.filled.GraphicEq
+import androidx.compose.material.icons.rounded.Headphones
+import androidx.compose.material.icons.rounded.Speaker
+import androidx.compose.material.icons.rounded.Memory
+import androidx.compose.material.icons.rounded.Tv
+import androidx.compose.material.icons.rounded.Usb
+import androidx.compose.material.icons.rounded.HighQuality
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.LocalAppContainer
+import com.example.samsonic.model.Song
 import com.example.samsonic.playback.AudioOutput
 import com.example.samsonic.playback.BitPerfectTrack
 import com.example.samsonic.playback.describeEncoding
 import com.example.samsonic.playback.formatKilohertz
 
+internal enum class PlaybackDetailKind { Output, Device, DeviceRate, BitPerfect }
+
 /**
- * The playback details as (label, value) pairs. The player drops its audio track
- * for a moment on every seek and track change, so between tracks this keeps
- * showing the last ones until the next track's arrive; none before the first.
+ * One playback detail: [label] and [value] for Song info's rows; [line] is the same
+ * without the label, for Now Playing, where the tile says what it is. [active] is
+ * false only for bit-perfect not in effect.
+ */
+internal data class PlaybackDetail(
+    val kind: PlaybackDetailKind,
+    val label: String,
+    val value: String,
+    val line: String = value,
+    val active: Boolean = true,
+)
+
+/**
+ * The playback details. The player drops its audio track for a moment on every
+ * seek and track change, so between tracks this keeps showing the last ones until
+ * the next track's arrive; none before the first.
  */
 @Composable
-internal fun rememberPlaybackDetails(): List<Pair<String, String>> {
+internal fun rememberPlaybackDetails(): List<PlaybackDetail> {
     val container = LocalAppContainer.current
     val output by container.audioOutput.output.collectAsStateWithLifecycle()
     val bitPerfect by container.bitPerfect.track.collectAsStateWithLifecycle()
@@ -39,21 +63,47 @@ internal fun <T : Any> rememberLastNonNull(value: T?): T? {
 }
 
 /**
- * The playback details as one small line each, under Now Playing's audio info.
- * Always takes room for all of them, blank lines at the end filling in for any
- * not there (yet), so the page doesn't jump as a song loads.
+ * Now Playing's five info lines, each behind a same-sized tile: the file's format
+ * (its codec in the tile, the rest beside it), then the playback details. Always
+ * takes room for all five, blank lines at the end standing in for any not there
+ * (yet), so the page doesn't jump as a song loads.
  */
 @Composable
-internal fun PlaybackOutputLines() {
-    val lines = rememberPlaybackDetails().map { (label, value) -> "$label: $value" }
-    (lines + List(PlaybackDetailCount - lines.size) { "" }).forEach {
-        Text(
-            text = it,
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
+internal fun NowPlayingInfoRows(song: Song) {
+    val format = rememberLastNonNull(songFormat(song))
+    if (format != null) {
+        InfoTileRow(format.first, description = "Format", text = format.second)
+    } else {
+        InfoTileRowPlaceholder()
+    }
+    val details = rememberPlaybackDetails()
+    details.forEach { InfoTileRow(InfoTile.Glyph(iconOf(it)), description = it.label, text = it.line, active = it.active) }
+    repeat(PlaybackDetailCount - details.size) { InfoTileRowPlaceholder() }
+}
+
+/** The format tile (the codec, or a file icon when unknown) and the quality beside it; null if nothing's known. */
+private fun songFormat(song: Song): Pair<InfoTile, String>? {
+    val codec = song.suffix?.uppercase()?.takeIf { it.isNotBlank() }
+    val quality = listOfNotNull(
+        song.bitDepth?.let { "${it}bit" },
+        song.samplingRate?.let { "${it / 1000}kHz" },
+        song.bitRate?.let { "${it}kbps" },
+    ).joinToString(" • ")
+    if (codec == null && quality.isEmpty()) return null
+    return (codec?.let { InfoTile.Label(it) } ?: InfoTile.Glyph(Icons.Rounded.AudioFile)) to quality
+}
+
+private fun iconOf(detail: PlaybackDetail): ImageVector = when (detail.kind) {
+    PlaybackDetailKind.Output -> Icons.Filled.GraphicEq
+    PlaybackDetailKind.DeviceRate -> Icons.Rounded.Memory
+    PlaybackDetailKind.BitPerfect -> Icons.Rounded.HighQuality
+    // Named by AudioOutputMonitor.describe: the kind of output comes first.
+    PlaybackDetailKind.Device -> when {
+        detail.value.startsWith("USB") -> Icons.Rounded.Usb
+        detail.value.startsWith("Bluetooth") -> Icons.Rounded.Bluetooth
+        detail.value.startsWith("Wired") -> Icons.Rounded.Headphones
+        detail.value.startsWith("HDMI") -> Icons.Rounded.Tv
+        else -> Icons.Rounded.Speaker
     }
 }
 
@@ -66,17 +116,31 @@ private const val PlaybackDetailCount = 4
  * the rate Android's mixer runs at where it says (the phone's own outputs, not USB or
  * Bluetooth), and whether it's bit-perfect.
  */
-private fun playbackDetails(output: AudioOutput, bitPerfect: BitPerfectTrack?): List<Pair<String, String>> = listOfNotNull(
-    "Output" to if (output.offload) {
-        "Hardware decoding"
-    } else {
-        listOf(
-            formatKilohertz(output.sampleRate),
-            describeEncoding(output.encoding),
-            if (output.channels == 1) "Mono" else if (output.channels == 2) "Stereo" else "${output.channels} channels",
-        ).joinToString(" · ")
+private fun playbackDetails(output: AudioOutput, bitPerfect: BitPerfectTrack?): List<PlaybackDetail> = listOfNotNull(
+    PlaybackDetail(
+        PlaybackDetailKind.Output,
+        "Output",
+        if (output.offload) {
+            "Hardware decoding"
+        } else {
+            listOf(
+                formatKilohertz(output.sampleRate),
+                describeEncoding(output.encoding),
+                if (output.channels == 1) "Mono" else if (output.channels == 2) "Stereo" else "${output.channels} channels",
+            ).joinToString(" · ")
+        },
+    ),
+    output.device?.let { PlaybackDetail(PlaybackDetailKind.Device, "Device", it) },
+    output.mixerRate?.let {
+        PlaybackDetail(PlaybackDetailKind.DeviceRate, "Device rate", formatKilohertz(it), line = "Device at ${formatKilohertz(it)}")
     },
-    output.device?.let { "Device" to it },
-    output.mixerRate?.let { "Device rate" to formatKilohertz(it) },
-    bitPerfect?.let { "Bit-perfect" to (if (it.on) "On · " else "Off · ") + it.detail },
+    bitPerfect?.let {
+        PlaybackDetail(
+            PlaybackDetailKind.BitPerfect,
+            "Bit-perfect",
+            (if (it.on) "On · " else "Off · ") + it.detail,
+            line = (if (it.on) "Bit-perfect · " else "Not bit-perfect · ") + it.detail,
+            active = it.on,
+        )
+    },
 )

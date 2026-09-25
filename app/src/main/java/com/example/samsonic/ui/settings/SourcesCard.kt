@@ -1,6 +1,5 @@
 package com.example.samsonic.ui.settings
 
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,6 +17,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -69,7 +69,7 @@ internal fun SourcesCard(onAddServer: () -> Unit) {
         SourceRow(
             icon = Icons.Filled.PhoneAndroid,
             title = "On this phone",
-            subtitle = if (hasPermission) "Music stored on this phone" else "Tap to allow access to your music",
+            hint = if (hasPermission) "Music stored on this phone" else "Tap to allow access to your music",
             selected = active is ActiveSource.Device,
             onClick = {
                 confirmingRemove = null
@@ -81,8 +81,10 @@ internal fun SourcesCard(onAddServer: () -> Unit) {
             SourceRow(
                 icon = Icons.Filled.Dns,
                 title = server.displayAddress,
-                subtitle = if (confirming) "Tap the bin again to remove this server" else "Signed in as ${server.username}",
-                subtitleColor = if (confirming) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                hint = if (confirming) "Tap the bin again to remove this server" else "Signed in as ${server.username}",
+                hintAccent = if (confirming) MaterialTheme.colorScheme.error else null,
+                // It says what the next tap does, so it can't wait for a long press.
+                showHintNow = confirming,
                 selected = (active as? ActiveSource.Server)?.server?.id == server.id,
                 onClick = {
                     confirmingRemove = null
@@ -108,7 +110,7 @@ internal fun SourcesCard(onAddServer: () -> Unit) {
         SourceRow(
             icon = Icons.Filled.Add,
             title = "Add Subsonic server",
-            subtitle = null,
+            hint = "Connect to Navidrome or another Subsonic server",
             selected = false,
             onClick = {
                 confirmingRemove = null
@@ -126,31 +128,39 @@ private val SavedServer.displayAddress: String
 private fun SourceRow(
     icon: ImageVector,
     title: String,
-    subtitle: String?,
     selected: Boolean,
     onClick: () -> Unit,
-    subtitleColor: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    // Shown on a long press (see RowHint), or at once while [showHintNow].
+    hint: String? = null,
+    // The bubble's tint; null for the app's accent.
+    hintAccent: Color? = null,
+    showHintNow: Boolean = false,
     trailing: @Composable () -> Unit = {},
 ) {
+    val hintState = rememberRowHint()
+    LaunchedEffect(showHintNow) { if (showHintNow) hintState.show() else hintState.hide() }
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .oneUiRowClickable(onClick)
+            .hintHold(hintState)
+            .oneUiRowClickable(onClick, onLongClick = hintLongPress(hintState, hint))
             .padding(horizontal = 8.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(icon, contentDescription = null, tint = rowIconTint(), modifier = Modifier.size(22.dp))
         Spacer(Modifier.width(14.dp))
-        Column(Modifier.weight(1f)) {
-            Text(text = title, style = MaterialTheme.typography.bodyLarge, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            if (subtitle != null) {
-                Text(text = subtitle, style = MaterialTheme.typography.bodyMedium, color = subtitleColor)
-            }
-        }
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyLarge,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
         if (selected) {
             Spacer(Modifier.width(8.dp))
             Icon(Icons.Filled.CheckCircle, contentDescription = "In use", tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
         }
         trailing()
+        RowHint(hintState, hint, hintAccent)
     }
 }

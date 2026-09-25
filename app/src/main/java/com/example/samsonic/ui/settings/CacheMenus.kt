@@ -35,6 +35,7 @@ import dev.chrisbanes.haze.HazeState
 @Composable
 internal fun CacheLocationMenu(panel: PanelState, haze: HazeState, settings: ImageCacheSettings) {
     SettingsMenu(panel, haze, title = "Cache location") {
+        val context = LocalContext.current
         val current by settings.locationId.collectAsStateWithLifecycle()
         // Composed afresh at every open, so a card put in since shows up.
         val locations = remember { settings.locations() }
@@ -46,6 +47,7 @@ internal fun CacheLocationMenu(panel: PanelState, haze: HazeState, settings: Ima
                 selected = location.id == current,
                 onClick = {
                     settings.setLocation(location.id)
+                    if (settings.changedSinceStart(settings.maxSizeStep.value, location.id)) showAppliesOnRestartToast(context)
                     panel.close()
                 },
             )

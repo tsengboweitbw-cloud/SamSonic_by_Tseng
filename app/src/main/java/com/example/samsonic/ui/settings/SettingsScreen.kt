@@ -1,7 +1,9 @@
 package com.example.samsonic.ui.settings
 
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -31,8 +33,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.BuildConfig
@@ -69,6 +74,8 @@ fun SettingsScreen(
     val cacheAllMenu = remember { PanelState(scope) }
     val clearCacheMenu = remember { PanelState(scope) }
     val cacheUsage = rememberCacheUsage()
+    val clearMusicCacheMenu = remember { PanelState(scope) }
+    val musicCacheUsage = rememberMusicCacheUsage(container.musicCache)
     val source by container.sources.active.collectAsStateWithLifecycle()
 
     // A nav bar tab like Search and Library, so the same fixed large title and no back button.
@@ -101,6 +108,7 @@ fun SettingsScreen(
             CacheLocationMenu(cacheLocationMenu, haze, container.imageCacheSettings)
             CacheAllMenu(cacheAllMenu, haze, container.imageCacheSettings, onConfirm = container.coverArtPrefetcher::start)
             ClearCacheMenu(clearCacheMenu, haze, cacheUsage, container.coverArtPrefetcher)
+            ClearMusicCacheMenu(clearMusicCacheMenu, haze, musicCacheUsage)
         },
     ) { topPadding ->
         LazyColumn(
@@ -119,12 +127,14 @@ fun SettingsScreen(
                         title = "Like button",
                         checked = likesEnabled,
                         onCheckedChange = container.themeManager::setLikesEnabled,
+                        hint = "A heart button for liking songs",
                     )
                     // How every song list shows each song's format, or not at all.
                     NavRow(
                         icon = Icons.Filled.GraphicEq,
                         title = "Audio format",
                         value = audioFormatDisplay.label,
+                        hint = "How song lists show each song's format",
                         onClick = { audioFormatMenu.open() },
                         modifier = Modifier.menuOrigin(audioFormatMenu),
                     )
@@ -144,6 +154,7 @@ fun SettingsScreen(
                         title = "Album artists only",
                         checked = albumArtistsOnly,
                         onCheckedChange = container.libraryLayoutManager::setAlbumArtistsOnly,
+                        hint = "The Artists tab lists album artists, not everyone credited on a song",
                     )
                     // Your liked songs, first in the Playlists tab.
                     SwitchRow(
@@ -151,6 +162,7 @@ fun SettingsScreen(
                         title = "Favourites playlist",
                         checked = showFavourites,
                         onCheckedChange = container.libraryLayoutManager::setShowFavourites,
+                        hint = "Your liked songs, first in the Playlists tab",
                     )
                 }
             }
@@ -162,6 +174,7 @@ fun SettingsScreen(
                         icon = Icons.Filled.DarkMode,
                         title = "Theme",
                         value = themeMode.label,
+                        hint = "Light, dark, or the same as the phone",
                         onClick = { themeMenu.open() },
                         modifier = Modifier.menuOrigin(themeMenu),
                     )
@@ -169,12 +182,14 @@ fun SettingsScreen(
                         icon = Icons.Filled.Palette,
                         title = "Accent color",
                         value = "#${accentColor.toHexRgb()}",
+                        hint = "The color the app is tinted with, and the ones picked to go with it",
                         onClick = { accentMenu.open() },
                         modifier = Modifier.menuOrigin(accentMenu),
                     )
                     SliderRow(
                         icon = Icons.Filled.RoundedCorner,
                         title = "Album art roundness",
+                        hint = "How round the corners of covers are",
                         valueLabel = "${albumArtCornerRadius.value.roundToInt()}dp",
                         value = albumArtCornerRadius.value,
                         valueRange = 0f..48f,
@@ -187,6 +202,10 @@ fun SettingsScreen(
             item { GroupLabel("Storage") }
             item {
                 SettingsCard {
+                    // Only a server's music streams; the phone's own is on hand already.
+                    if (source is ActiveSource.Server) {
+                        MusicCacheRows(container.musicCache, musicCacheUsage, clearMusicCacheMenu)
+                    }
                     ImageCacheRows(
                         settings = container.imageCacheSettings,
                         prefetcher = container.coverArtPrefetcher,
@@ -203,7 +222,7 @@ fun SettingsScreen(
             item { GroupLabel("About") }
             item {
                 SettingsCard {
-                    NavRow(icon = Icons.Filled.Info, title = "SamSonic", value = "v${BuildConfig.VERSION_NAME} • Navidrome/Subsonic", onClick = {})
+                    AboutRow()
                 }
                 Spacer(Modifier.height(8.dp))
             }
@@ -221,6 +240,10 @@ private fun GroupLabel(text: String) {
     )
 }
 
+/**
+ * A row that opens a menu, showing the current [value] before its chevron. The title
+ * always keeps its one line; a value too long for the space left ellipsizes instead.
+ */
 @Composable
 internal fun NavRow(
     icon: ImageVector,
@@ -228,23 +251,60 @@ internal fun NavRow(
     value: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    // Overrides both the icon's accent and the title's usual grey.
+    // Overrides both the icon's accent and the title's usual color.
     tint: androidx.compose.ui.graphics.Color? = null,
+    // Shown on a long press (see RowHint).
+    hint: String? = null,
 ) {
+    val hintState = rememberRowHint()
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .oneUiRowClickable(onClick)
+            .hintHold(hintState)
+            .oneUiRowClickable(onClick, onLongClick = hintLongPress(hintState, hint))
             .padding(horizontal = 8.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-            Icon(icon, contentDescription = null, tint = tint ?: rowIconTint(), modifier = Modifier.size(22.dp))
-            Spacer(Modifier.width(14.dp))
-            Text(text = title, style = MaterialTheme.typography.bodyLarge, color = tint ?: MaterialTheme.colorScheme.onSurfaceVariant)
-        }
-        Text(text = value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Icon(icon, contentDescription = null, tint = tint ?: rowIconTint(), modifier = Modifier.size(22.dp))
+        Spacer(Modifier.width(14.dp))
+        Text(
+            text = title,
+            style = MaterialTheme.typography.bodyLarge,
+            color = tint ?: MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+        )
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            textAlign = TextAlign.End,
+            modifier = Modifier.weight(1f).padding(start = 12.dp),
+        )
         Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        RowHint(hintState, hint)
+    }
+}
+
+/** The About card's row: the app's name, and its version on a long press. */
+@Composable
+private fun AboutRow() {
+    val hint = "v${BuildConfig.VERSION_NAME} • Navidrome/Subsonic"
+    val hintState = rememberRowHint()
+    val showHint = hintLongPress(hintState, hint)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .hintHold(hintState)
+            // Nothing to open, so no tap (or press ripple): only the long press.
+            .pointerInput(showHint) { detectTapGestures(onLongPress = { showHint?.invoke() }) }
+            .padding(horizontal = 8.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(Icons.Filled.Info, contentDescription = null, tint = rowIconTint(), modifier = Modifier.size(22.dp))
+        Spacer(Modifier.width(14.dp))
+        Text(text = "SamSonic", style = MaterialTheme.typography.bodyLarge)
+        RowHint(hintState, hint)
     }
 }

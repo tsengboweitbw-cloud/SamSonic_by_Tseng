@@ -20,6 +20,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.data.CoverArtPrefetcher
@@ -52,6 +53,7 @@ internal fun ImageCacheRows(
     val locationId by settings.locationId.collectAsStateWithLifecycle()
     val prefetch by prefetcher.state.collectAsStateWithLifecycle()
     val lastStep = ImageCacheSettings.Steps.lastIndex
+    val context = LocalContext.current
 
     SliderRow(
         icon = Icons.Filled.Storage,
@@ -62,10 +64,13 @@ internal fun ImageCacheRows(
         // The stops between the two ends.
         steps = lastStep - 1,
         onValueChange = { settings.setMaxSizeStep(it.roundToInt()) },
-        supportingText = when {
-            settings.changedSinceStart(step, locationId) -> "Applies the next time SamSonic starts"
-            settings.usingFallback -> "SD card not found, so the cache is on the phone for now"
-            else -> null
+        onValueChangeFinished = {
+            if (settings.changedSinceStart(settings.maxSizeStep.value, locationId)) showAppliesOnRestartToast(context)
+        },
+        hint = if (settings.usingFallback) {
+            "SD card not found, so the cache is on the phone for now"
+        } else {
+            "Room for covers kept on the phone, so they show without loading"
         },
     )
     val locationLabel = remember(locationId) {
@@ -75,6 +80,7 @@ internal fun ImageCacheRows(
         icon = Icons.Filled.Folder,
         title = "Cache location",
         value = locationLabel,
+        hint = "Keep the album art cache on the phone or an SD card",
         onClick = { locationMenu.open() },
         modifier = Modifier.menuOrigin(locationMenu),
     )
@@ -84,6 +90,7 @@ internal fun ImageCacheRows(
             icon = Icons.Filled.CloudDownload,
             title = if (running) "Stop caching" else "Cache all album art",
             value = prefetch.label,
+            hint = if (running) "Stops downloading covers" else "Downloads every cover on the server ahead of time",
             onClick = { if (running) prefetcher.cancel() else cacheAllMenu.open() },
             modifier = Modifier.menuOrigin(cacheAllMenu),
         )
@@ -107,12 +114,15 @@ private val PrefetchState.usageRefreshKey: Any
 private fun ClearCacheRow(usage: CacheUsage, menu: PanelState, refreshKey: Any) {
     LaunchedEffect(usage, refreshKey) { usage.refresh() }
     val usedBytes = usage.usedBytes
+    val hint = "Deletes the saved covers; they download again as you browse"
+    val hintState = rememberRowHint()
 
     Row(
         modifier = Modifier
             .menuOrigin(menu)
             .fillMaxWidth()
-            .oneUiRowClickable { if (usedBytes != null) menu.open() }
+            .hintHold(hintState)
+            .oneUiRowClickable(onClick = { if (usedBytes != null) menu.open() }, onLongClick = hintLongPress(hintState, hint))
             .padding(horizontal = 8.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -124,5 +134,6 @@ private fun ClearCacheRow(usage: CacheUsage, menu: PanelState, refreshKey: Any) 
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        RowHint(hintState, hint)
     }
 }

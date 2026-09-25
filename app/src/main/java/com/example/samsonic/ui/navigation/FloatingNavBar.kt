@@ -20,6 +20,7 @@ import com.example.samsonic.ui.components.TabIndicatorSpring
 import com.example.samsonic.ui.components.drawTabIndicator
 import com.example.samsonic.ui.components.tabProximity
 import com.example.samsonic.ui.components.tabWeights
+import com.example.samsonic.ui.components.tabIndicatorColors
 import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.OneUiRadius
 import com.example.samsonic.ui.theme.glassSurface
@@ -62,7 +63,7 @@ fun FloatingNavBar(
     val count = destinations.size
     val p = position.value.coerceIn(0f, (count - 1).toFloat())
     val weights = tabWeights(count, p)
-    val indicatorColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f)
+    val indicatorColors = tabIndicatorColors()
 
     Row(
         modifier = modifier
@@ -72,7 +73,7 @@ fun FloatingNavBar(
                 tint = MaterialTheme.colorScheme.surfaceContainerHigh,
                 alpha = GlassAlpha.Nav,
             )
-            .drawBehind { drawTabIndicator(weights, p, BarPadding.toPx(), indicatorColor, indicatorAlpha) }
+            .drawBehind { drawTabIndicator(weights, p, BarPadding.toPx(), indicatorColors, indicatorAlpha) }
             .padding(horizontal = BarPadding),
         verticalAlignment = Alignment.CenterVertically,
     ) {

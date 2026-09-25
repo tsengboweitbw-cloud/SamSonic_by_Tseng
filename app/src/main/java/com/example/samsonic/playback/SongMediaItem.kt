@@ -17,6 +17,7 @@ fun Song.toMediaItem(repository: MusicLibrary): MediaItem {
     return MediaItem.Builder()
         .setMediaId(id)
         .setUri(repository.streamUrl(id))
+        .setCustomCacheKey(repository.streamCacheKey(id))
         .setMediaMetadata(metadata)
         .build()
 }

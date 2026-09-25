@@ -58,7 +58,7 @@ internal fun SongInfoPanel(panel: PanelState, haze: HazeState) {
                         style = MaterialTheme.typography.titleSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    playback.forEach { (label, value) -> DetailRow(Detail(label, value)) }
+                    playback.forEach { DetailRow(Detail(it.label, it.value)) }
                 }
             }
         }

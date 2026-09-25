@@ -24,6 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -36,6 +37,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.glassSurface
+import com.example.samsonic.ui.theme.accentPalette
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
@@ -125,11 +127,11 @@ private fun RefreshIndicator(state: PullToRefreshState, isRefreshing: Boolean, m
 /** While pulling: the arc fills with the pull, turning a little as it grows. */
 @Composable
 private fun PullArc(fraction: () -> Float, modifier: Modifier) {
-    val color = MaterialTheme.colorScheme.primary
+    val brush = refreshArcBrush()
     Canvas(modifier = modifier) {
         val progress = fraction().coerceIn(0f, 1f)
         rotate(progress * 120f) {
-            drawArc(color, startAngle = -90f, sweepAngle = progress * 300f, useCenter = false, style = arcStroke())
+            drawArc(brush, startAngle = -90f, sweepAngle = progress * 300f, useCenter = false, style = arcStroke())
         }
     }
 }
@@ -137,7 +139,7 @@ private fun PullArc(fraction: () -> Float, modifier: Modifier) {
 /** While refreshing: the arc spins and breathes. Composed only then, so idle pages run no animation. */
 @Composable
 private fun SpinningArc(modifier: Modifier) {
-    val color = MaterialTheme.colorScheme.primary
+    val brush = refreshArcBrush()
     val spin = rememberInfiniteTransition(label = "refreshSpin")
     val rotation = spin.animateFloat(
         initialValue = 0f,
@@ -153,9 +155,16 @@ private fun SpinningArc(modifier: Modifier) {
     )
     Canvas(modifier = modifier) {
         rotate(rotation.value) {
-            drawArc(color, startAngle = -90f, sweepAngle = sweep.value, useCenter = false, style = arcStroke())
+            drawArc(brush, startAngle = -90f, sweepAngle = sweep.value, useCenter = false, style = arcStroke())
         }
     }
 }
 
 private fun DrawScope.arcStroke() = Stroke(width = 2.5.dp.toPx(), cap = StrokeCap.Round)
+
+/** The arc's stroke: the accent sweeping round into its neighbour and back, so it has no seam. */
+@Composable
+private fun refreshArcBrush(): Brush {
+    val palette = MaterialTheme.accentPalette
+    return Brush.sweepGradient(listOf(palette.primary, palette.secondary, palette.primary))
+}

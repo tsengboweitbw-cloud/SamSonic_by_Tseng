@@ -85,14 +85,14 @@ fun GlassTabBar(
     val count = labels.size
     val p = (position ?: animated.value).coerceIn(0f, (count - 1).coerceAtLeast(0).toFloat())
     val weights = tabWeights(count, p, barSize.selectedExtraWeight)
-    val indicatorColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.10f)
+    val indicatorColors = tabIndicatorColors()
 
     Row(
         modifier = modifier
             .fillMaxWidth()
             .height(barSize.height)
             .then(if (glass) Modifier.glassTabPill(hazeState) else Modifier)
-            .drawBehind { drawTabIndicator(weights, p, barSize.padding.toPx(), indicatorColor) }
+            .drawBehind { drawTabIndicator(weights, p, barSize.padding.toPx(), indicatorColors) }
             .padding(horizontal = barSize.padding),
         verticalAlignment = Alignment.CenterVertically,
     ) {

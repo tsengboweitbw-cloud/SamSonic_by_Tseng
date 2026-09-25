@@ -10,6 +10,7 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.okhttp.OkHttpDataSource
+import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.session.MediaSession
@@ -21,25 +22,34 @@ import com.example.samsonic.SamSonicApplication
 import com.example.samsonic.playback.dsd.DsdExtractorsFactory
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 
 /**
  * Hosts the real ExoPlayer + MediaSession so playback, the notification, and lock-screen
  * controls keep running when the app is backgrounded. Streaming goes through the same
  * OkHttpClient as the API calls, so it honors the same network security config (cleartext /
- * self-signed LAN servers).
+ * self-signed LAN servers), and through the music cache ([MusicCache][com.example.samsonic.data.MusicCache]),
+ * which [MusicPrefetcher] fills ahead of the player.
  */
 class PlaybackService : MediaSessionService() {
     private var mediaSession: MediaSession? = null
     private var scrobbler: Scrobbler? = null
+    private var prefetcher: MusicPrefetcher? = null
+    private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     @OptIn(UnstableApi::class) // Media3's extractor API, for DSD.
     override fun onCreate() {
         super.onCreate()
         val container = (application as SamSonicApplication).container
-        val okHttpClient = container.okHttpClient
-        val dataSourceFactory = DefaultDataSource.Factory(
-            this,
-            OkHttpDataSource.Factory(okHttpClient),
+        val httpFactory = OkHttpDataSource.Factory(container.okHttpClient)
+        // Server streams through the music cache; the phone's own music read directly.
+        val dataSourceFactory = CachingDataSourceFactory(
+            cache = container.musicCache.cache,
+            upstream = httpFactory,
+            direct = DefaultDataSource.Factory(this, httpFactory),
         )
         // DSD (DSF/DFF) has no Android decoder; its extractor turns it into PCM itself.
         val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory, DsdExtractorsFactory())
@@ -54,6 +64,7 @@ class PlaybackService : MediaSessionService() {
                 /* handleAudioFocus = */ true,
             )
             .setHandleAudioBecomingNoisy(true)
+            .setLoadControl(streamingLoadControl())
             .build()
         player.addListener(object : Player.Listener {
             override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
@@ -64,6 +75,14 @@ class PlaybackService : MediaSessionService() {
         scrobbler = Scrobbler(player, { container.repository }, container.applicationScope)
         container.audioOutput.attach(player)
         container.bitPerfect.attach(player)
+        prefetcher = MusicPrefetcher(
+            player = player,
+            cache = container.musicCache.cache,
+            context = this,
+            upstream = httpFactory,
+            wifiOnly = container.musicCache.prefetchWifiOnly,
+            scope = serviceScope,
+        )
 
         // One UI builds its status bar music chip and Now Bar card only for a media
         // notification that opens something when tapped, so the session needs an activity.
@@ -115,6 +134,9 @@ class PlaybackService : MediaSessionService() {
             audioOutput.detach()
             bitPerfect.detach()
         }
+        prefetcher?.release()
+        prefetcher = null
+        serviceScope.cancel()
         scrobbler?.release()
         scrobbler = null
         mediaSession?.run {
@@ -125,3 +147,22 @@ class PlaybackService : MediaSessionService() {
         super.onDestroy()
     }
 }
+
+/**
+ * A deeper buffer than Media3's default (which suits video), so a poor connection has
+ * minutes of music in hand rather than seconds: it loads up to three minutes ahead
+ * and tops up once under one. Capped by size too, as hi-res files run large. After a
+ * stall it waits for a few seconds' worth before playing on, so a weak signal gives
+ * one short pause instead of stopping and starting over and over.
+ */
+@OptIn(UnstableApi::class)
+private fun streamingLoadControl(): DefaultLoadControl = DefaultLoadControl.Builder()
+    .setBufferDurationsMs(
+        /* minBufferMs = */ 60_000,
+        /* maxBufferMs = */ 180_000,
+        /* bufferForPlaybackMs = */ 2_500,
+        /* bufferForPlaybackAfterRebufferMs = */ 8_000,
+    )
+    .setTargetBufferBytes(48 * 1024 * 1024)
+    .setPrioritizeTimeOverSizeThresholds(false)
+    .build()

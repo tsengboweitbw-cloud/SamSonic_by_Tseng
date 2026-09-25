@@ -391,6 +391,9 @@ class SubsonicRepository(
 
     override fun streamUrl(songId: String): String = buildUrl("rest/stream.view", mapOf("id" to songId))
 
+    // The server and account too, so two servers' song ids never share an entry.
+    override fun streamCacheKey(songId: String): String = requireCreds().let { "${it.serverUrl}|${it.username}|$songId" }
+
     override fun coverArtUrl(coverArt: String?, size: Int): String? {
         if (coverArt.isNullOrBlank()) return null
         val bucket = CoverArtSizes.bucket(size)

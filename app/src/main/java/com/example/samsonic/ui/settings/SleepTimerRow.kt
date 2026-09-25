@@ -25,6 +25,7 @@ internal fun SleepTimerRow(player: PlayerState) {
     SliderRow(
         icon = Icons.Filled.Bedtime,
         title = "Sleep timer",
+        hint = "Pauses the music after this many minutes",
         valueLabel = if (minutes == 0) "Off" else "$minutes min",
         value = minutes.toFloat(),
         valueRange = 0f..MaxSleepMinutes.toFloat(),

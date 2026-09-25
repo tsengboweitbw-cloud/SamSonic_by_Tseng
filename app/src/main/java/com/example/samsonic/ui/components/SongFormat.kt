@@ -25,6 +25,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.data.AudioFormatDisplay
 import com.example.samsonic.model.Song
+import com.example.samsonic.ui.theme.accentPalette
 import com.example.samsonic.util.formatCodecSampling
 import com.example.samsonic.util.formatDuration
 import com.example.samsonic.util.isHiRes
@@ -61,7 +62,7 @@ fun RowScope.SongRowEnd(
     heartButton: (@Composable () -> Unit)?,
 ) {
     if (display == AudioFormatDisplay.HI_RES_BADGE && isHiRes(song)) {
-        FormatBadge("Hi-Res", color = MaterialTheme.colorScheme.primary)
+        FormatBadge("Hi-Res", color = MaterialTheme.accentPalette.tertiary)
         Spacer(Modifier.width(if (heartButton != null) 4.dp else 8.dp))
     }
     if (display != AudioFormatDisplay.QUIET_HEART) heartButton?.invoke()

@@ -1,9 +1,11 @@
 package com.example.samsonic
 
 import android.Manifest
+import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.SystemBarStyle
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -12,6 +14,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
@@ -43,6 +46,16 @@ class MainActivity : ComponentActivity() {
                 ThemeMode.LIGHT -> false
                 ThemeMode.DARK -> true
             }
+            // The status and navigation bar icons follow the app's theme, not the
+            // system's: with Theme set against the system (dark app, light phone or
+            // the reverse), the system's choice left them unreadable on the app.
+            DisposableEffect(darkTheme) {
+                enableEdgeToEdge(
+                    statusBarStyle = SystemBarStyle.auto(Color.TRANSPARENT, Color.TRANSPARENT) { darkTheme },
+                    navigationBarStyle = SystemBarStyle.auto(NavBarLightScrim, NavBarDarkScrim) { darkTheme },
+                )
+                onDispose {}
+            }
             SamSonicTheme(darkTheme = darkTheme, accentColor = accentColor) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                     val requestNotifications = rememberLauncherForActivityResult(
@@ -70,3 +83,8 @@ class MainActivity : ComponentActivity() {
         }
     }
 }
+
+// The scrims enableEdgeToEdge puts behind three-button navigation by default, kept so
+// its buttons stay as legible as before.
+private val NavBarLightScrim = Color.argb(0xe6, 0xFF, 0xFF, 0xFF)
+private val NavBarDarkScrim = Color.argb(0x80, 0x1b, 0x1b, 0x1b)

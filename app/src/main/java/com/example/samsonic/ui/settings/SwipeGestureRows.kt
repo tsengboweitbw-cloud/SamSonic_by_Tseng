@@ -25,17 +25,20 @@ internal fun SwipeGestureRows(themeManager: ThemeManager) {
         title = "Swipe right for lyrics",
         checked = lyrics,
         onCheckedChange = themeManager::setSwipeForLyrics,
+        hint = "On Now Playing, swipe right to open the lyrics",
     )
     SwitchRow(
         icon = Icons.Filled.Info,
         title = "Swipe left for song info",
         checked = info,
         onCheckedChange = themeManager::setSwipeForInfo,
+        hint = "On Now Playing, swipe left to open the song's details",
     )
     SwitchRow(
         icon = Icons.AutoMirrored.Filled.QueueMusic,
         title = "Swipe up for the queue",
         checked = queue,
         onCheckedChange = themeManager::setSwipeForQueue,
+        hint = "On Now Playing, swipe up to open what plays next",
     )
 }

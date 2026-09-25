@@ -144,3 +144,17 @@ fun BlurredArtBackdrop(
     }
 }
 
+
+/**
+ * The faint wash behind a highlighted row (the song playing, the option chosen):
+ * the accent's [glassSurface] at [GlassAlpha.Highlight], easing into its
+ * neighbour color toward the row's end.
+ */
+@Composable
+fun Modifier.accentWash(shape: Shape): Modifier {
+    val palette = MaterialTheme.accentPalette
+    return glassSurface(shape = shape, hazeState = null, tint = palette.primary, alpha = GlassAlpha.Highlight, rim = false)
+        // Already clipped to [shape] by the glass.
+        .background(Brush.horizontalGradient(listOf(Color.Transparent, palette.secondary.copy(alpha = GlassAlpha.Highlight))))
+        .border(GlassRimWidth, glassRimBrush(), shape)
+}

@@ -1,5 +1,6 @@
 package com.example.samsonic.ui.player
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
@@ -14,7 +15,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.model.Song
 import com.example.samsonic.ui.components.pressClickable
-import com.example.samsonic.util.formatAudioInfo
 
 /** The song's title, album, artist and audio info; the album and artist open their pages. */
 @Composable
@@ -45,10 +45,8 @@ internal fun NowPlayingTitle(song: Song, modifier: Modifier = Modifier) {
         )
         // Always laid out, and keeping the last details until the next song's arrive
         // (blank only before the first), so nothing blinks or shifts as a song loads.
-        Spacer(Modifier.height(2.dp))
-        val audioInfo = rememberLastNonNull(formatAudioInfo(song))
-        SubLine(text = audioInfo.orEmpty(), style = MaterialTheme.typography.labelSmall, onClick = null)
-        PlaybackOutputLines()
+        Spacer(Modifier.height(6.dp))
+        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) { NowPlayingInfoRows(song) }
     }
 }
 

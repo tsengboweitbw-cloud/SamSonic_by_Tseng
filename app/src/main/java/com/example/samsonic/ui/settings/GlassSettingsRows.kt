@@ -1,5 +1,6 @@
 package com.example.samsonic.ui.settings
 
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -21,6 +22,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -49,6 +51,7 @@ fun GlassSliderRows(themeManager: ThemeManager) {
     SliderRow(
         icon = Icons.Filled.Opacity,
         title = "Glass opacity",
+        hint = "How solid the frosted bars and cards are",
         valueLabel = "${(glassOpacity * 100).roundToInt()}%",
         value = glassOpacity,
         valueRange = 0.5f..1.3f,
@@ -57,6 +60,7 @@ fun GlassSliderRows(themeManager: ThemeManager) {
     SliderRow(
         icon = Icons.Filled.BlurOn,
         title = "Glass blur",
+        hint = "How much the frosted bars and cards blur what's behind them",
         valueLabel = "${glassBlur.value.roundToInt()}dp",
         value = glassBlur.value,
         valueRange = 0f..80f,
@@ -65,6 +69,7 @@ fun GlassSliderRows(themeManager: ThemeManager) {
     SliderRow(
         icon = Icons.Filled.Wallpaper,
         title = "Player background blur",
+        hint = "How much Now Playing blurs the cover behind it",
         valueLabel = "${backdropBlur.value.roundToInt()}dp",
         value = backdropBlur.value,
         valueRange = 0f..100f,
@@ -73,6 +78,7 @@ fun GlassSliderRows(themeManager: ThemeManager) {
     SliderRow(
         icon = Icons.Filled.Opacity,
         title = "Menu opacity",
+        hint = "How solid the menus that open from rows are",
         valueLabel = "${(panelOpacity * 100).roundToInt()}%",
         value = panelOpacity,
         valueRange = 0.5f..1.3f,
@@ -81,6 +87,7 @@ fun GlassSliderRows(themeManager: ThemeManager) {
     SliderRow(
         icon = Icons.Filled.BlurOn,
         title = "Menu blur",
+        hint = "How much those menus blur the page behind them",
         valueLabel = "${panelBlur.value.roundToInt()}dp",
         value = panelBlur.value,
         valueRange = 0f..80f,
@@ -98,10 +105,12 @@ internal fun SliderRow(
     onValueChange: (Float) -> Unit,
     onValueChangeFinished: (() -> Unit)? = null,
     steps: Int = 0,
-    // A note under the slider, e.g. when the value only applies later.
-    supportingText: String? = null,
+    // Shown on a long press of the title line (see RowHint).
+    hint: String? = null,
     modifier: Modifier = Modifier,
 ) {
+    val hintState = rememberRowHint()
+    val showHint = hintLongPress(hintState, hint)
     Column(
         modifier = modifier
             // Against a card edge the title and the bare line sit closer than
@@ -113,7 +122,11 @@ internal fun SliderRow(
             .padding(start = 16.dp, end = 16.dp, top = 10.dp),
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .hintHold(hintState)
+                // The title line only, so it doesn't get in the slider's way.
+                .then(if (showHint != null) Modifier.pointerInput(showHint) { detectTapGestures(onLongPress = { showHint() }) } else Modifier),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
@@ -121,6 +134,8 @@ internal fun SliderRow(
                 Icon(icon, contentDescription = null, tint = rowIconTint(), modifier = Modifier.size(22.dp))
                 Spacer(Modifier.width(14.dp))
                 Text(text = title, style = MaterialTheme.typography.bodyLarge)
+                // In here, not the spaced-out row: a popup takes a (zero-width) place of its own.
+                RowHint(hintState, hint)
             }
             Text(text = valueLabel, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
@@ -135,14 +150,6 @@ internal fun SliderRow(
                 valueRange = valueRange,
                 steps = steps,
                 modifier = Modifier.fillMaxWidth(),
-            )
-        }
-        if (supportingText != null) {
-            Text(
-                text = supportingText,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(bottom = 10.dp),
             )
         }
     }

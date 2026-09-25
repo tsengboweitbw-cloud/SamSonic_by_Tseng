@@ -112,6 +112,13 @@ interface MusicLibrary {
     /** What the player opens to play song [songId]. */
     fun streamUrl(songId: String): String
 
+    /**
+     * The key the player keeps song [songId]'s stream under in the music cache, the
+     * same every time it's played (unlike its URL); null never caches it, as for music
+     * already on the phone.
+     */
+    fun streamCacheKey(songId: String): String? = null
+
     /** The image to show for [coverArt] in the app, about [size] pixels across; null if there's none. */
     fun coverArtUrl(coverArt: String?, size: Int = 400): String?
 

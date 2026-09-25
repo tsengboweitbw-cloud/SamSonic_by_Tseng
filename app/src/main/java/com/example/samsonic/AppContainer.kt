@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.compose.runtime.compositionLocalOf
 import com.example.samsonic.data.CoverArtPrefetcher
 import com.example.samsonic.data.ImageCacheSettings
+import com.example.samsonic.data.MusicCache
 import com.example.samsonic.data.MusicLibrary
 import com.example.samsonic.data.MusicSources
 import com.example.samsonic.data.SessionManager
@@ -48,6 +49,9 @@ class AppContainer(context: Context) {
     val libraryLayoutManager = LibraryLayoutManager(appContext)
 
     val imageCacheSettings = ImageCacheSettings(appContext)
+
+    /** Streamed songs kept on the phone, so a poor connection doesn't stop the music. */
+    val musicCache = MusicCache(appContext)
 
     /** What the player sends out and where; the playback service feeds it, Song info shows it. */
     val audioOutput = AudioOutputMonitor(appContext)

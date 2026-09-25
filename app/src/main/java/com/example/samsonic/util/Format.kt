@@ -2,17 +2,6 @@ package com.example.samsonic.util
 
 import com.example.samsonic.model.Song
 
-/** e.g. "FLAC • 24bit • 96kHz • 3587kbps"; omits whatever the server didn't report. */
-fun formatAudioInfo(song: Song): String? {
-    val parts = listOfNotNull(
-        song.suffix?.uppercase(),
-        song.bitDepth?.let { "${it}bit" },
-        song.samplingRate?.let { "${it / 1000}kHz" },
-        song.bitRate?.let { "${it}kbps" },
-    )
-    return parts.takeIf { it.isNotEmpty() }?.joinToString(" • ")
-}
-
 /**
  * The codec with the sampling rate (kHz) and bit depth, short enough for a song row:
  * e.g. "FLAC 96/24". With only one of the two reported it keeps its unit, as a bare

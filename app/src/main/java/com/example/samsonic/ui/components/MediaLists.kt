@@ -38,9 +38,8 @@ import com.example.samsonic.model.Artist
 import com.example.samsonic.model.Playlist
 import com.example.samsonic.model.Song
 import com.example.samsonic.model.artSeed
-import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.OneUiRow
-import com.example.samsonic.ui.theme.glassSurface
+import com.example.samsonic.ui.theme.accentWash
 
 @Composable
 fun SectionHeader(
@@ -228,12 +227,7 @@ fun SongRow(
                 .clip(OneUiRow.Shape)
                 .then(
                     if (isCurrent) {
-                        Modifier.glassSurface(
-                            shape = OneUiRow.Shape,
-                            hazeState = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            alpha = GlassAlpha.Highlight,
-                        )
+                        Modifier.accentWash(OneUiRow.Shape)
                     } else {
                         Modifier
                     }

@@ -5,15 +5,14 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
-import androidx.compose.ui.graphics.toArgb
 
 /**
- * The accent and three companions picked to go with it, all at the accent's own
- * brightness so none shouts over the others:
+ * The accent and three companions derived from it (see [accentPaletteOf]), all in
+ * its family so they read as one set:
  * - [primary]: the user's accent itself;
  * - [secondary], [tertiary]: its neighbours on the color wheel (one each side), so
  *   pairs of them blend into gradients that stay in the accent's family;
- * - [highlight]: a softened complement, the one contrasting spark, used sparingly.
+ * - [highlight]: a pale, soft tint of the accent itself, for the quietest touches.
  */
 @Immutable
 data class AccentPalette(
@@ -52,37 +51,30 @@ val LocalAccentPalette = staticCompositionLocalOf {
 fun progressBrush(palette: AccentPalette, startX: Float, endX: Float): Brush =
     Brush.horizontalGradient(listOf(palette.primary, palette.secondary), startX = startX, endX = endX)
 
-// How far round the color wheel the neighbours sit: close enough to read as one family.
-private const val NeighbourShift = 38f
+// How far round the (perceptual) color wheel the neighbours sit: near enough that
+// all three read as one family, far enough that a gradient between them shows.
+private const val NeighbourShift = 24f
 
 /**
- * Derives the [AccentPalette] for [accent] (already made readable for the theme).
- * The companions share its lightness, clamped to a band that reads over the theme's
- * background, and a saturation kept off the extremes, so a grey-ish accent still gets
- * some color and a neon one doesn't turn the app garish.
+ * Derives the [AccentPalette] for [accent] (already made readable for the theme),
+ * in OKLCH so every companion looks exactly as bright as the accent:
+ * - the neighbours keep its lightness and colorfulness, the cooler-leaning one a
+ *   little quieter, so the accent always leads;
+ * - the highlight is the accent's own hue, lifted and softened into a pale tint,
+ *   rather than a clashing complement.
+ * Colorfulness is kept off the extremes, so a grey-ish accent still gets a gentle
+ * palette and a neon one doesn't turn the app garish.
  */
 fun accentPaletteOf(accent: Color, darkTheme: Boolean): AccentPalette {
-    val (hue, saturation, lightness) = accent.toHsl()
-    val companionSaturation = saturation.coerceIn(0.45f, 0.8f)
-    val companionLightness = if (darkTheme) lightness.coerceIn(0.6f, 0.74f) else lightness.coerceIn(0.4f, 0.52f)
-    fun companion(shift: Float, saturationScale: Float = 1f) =
-        hslColor(hue + shift, companionSaturation * saturationScale, companionLightness)
+    val base = OkLch.of(accent)
+    val chroma = base.chroma.coerceIn(0.05f, 0.17f)
+    fun companion(shift: Float, chromaScale: Float) =
+        OkLch(base.lightness, chroma * chromaScale, (base.hue + shift + 360f) % 360f).toColor()
+    val tintLightness = (base.lightness + if (darkTheme) 0.12f else 0.1f).coerceAtMost(0.92f)
     return AccentPalette(
         primary = accent,
-        secondary = companion(NeighbourShift),
-        tertiary = companion(-NeighbourShift),
-        highlight = companion(180f, saturationScale = 0.85f),
+        secondary = companion(NeighbourShift, chromaScale = 1f),
+        tertiary = companion(-NeighbourShift, chromaScale = 0.85f),
+        highlight = OkLch(tintLightness, chroma * 0.55f, base.hue).toColor(),
     )
 }
-
-private fun Color.toHsl(): Triple<Float, Float, Float> {
-    val hsl = FloatArray(3)
-    androidx.core.graphics.ColorUtils.colorToHSL(toArgb(), hsl)
-    return Triple(hsl[0], hsl[1], hsl[2])
-}
-
-private fun hslColor(hue: Float, saturation: Float, lightness: Float): Color = Color.hsl(
-    hue = ((hue % 360f) + 360f) % 360f,
-    saturation = saturation.coerceIn(0f, 1f),
-    lightness = lightness.coerceIn(0f, 1f),
-)

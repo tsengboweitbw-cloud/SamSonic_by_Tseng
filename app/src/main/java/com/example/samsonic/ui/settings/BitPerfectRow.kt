@@ -17,7 +17,7 @@ internal fun BitPerfectRow(bitPerfect: BitPerfectOutput) {
     if (!bitPerfect.available) return
     val enabled by bitPerfect.enabled.collectAsStateWithLifecycle()
     val dac by bitPerfect.dac.collectAsStateWithLifecycle()
-    val summary = dac.let { usb ->
+    val hint = dac.let { usb ->
         when {
             usb == null -> "For USB DACs. Plug one in to check it"
             usb.rates.isEmpty() -> "${usb.name} doesn't offer it on this phone"
@@ -31,6 +31,8 @@ internal fun BitPerfectRow(bitPerfect: BitPerfectOutput) {
         title = "Bit-perfect USB output",
         checked = enabled,
         onCheckedChange = bitPerfect::setEnabled,
-        summary = summary,
+        hint = hint,
+        // It warns that the phone's volume may stop applying.
+        hintWhenTurnedOn = true,
     )
 }

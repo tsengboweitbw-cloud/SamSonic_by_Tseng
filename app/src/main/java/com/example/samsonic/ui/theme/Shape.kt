@@ -1,6 +1,6 @@
 package com.example.samsonic.ui.theme
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -33,8 +33,11 @@ object OneUiRow {
  * shape as the playing-row highlight rather than a full-width rectangle. Chain the
  * row's own inner padding after it, reduced by the inset.
  */
-fun Modifier.oneUiRowClickable(onClick: () -> Unit): Modifier =
-    padding(OneUiRow.Inset).clip(OneUiRow.Shape).clickable(onClick = onClick)
+fun Modifier.oneUiRowClickable(onClick: () -> Unit): Modifier = oneUiRowClickable(onClick, onLongClick = null)
+
+/** [oneUiRowClickable] that also answers a long press ([onLongClick], if any) without the tap. */
+fun Modifier.oneUiRowClickable(onClick: () -> Unit, onLongClick: (() -> Unit)?): Modifier =
+    padding(OneUiRow.Inset).clip(OneUiRow.Shape).combinedClickable(onLongClick = onLongClick, onClick = onClick)
 
 // Shared sizing for the floating chrome (bottom nav bar, mini player) so both
 // bars are literally the same thickness, not just visually similar pills.

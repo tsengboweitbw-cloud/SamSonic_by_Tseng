@@ -5,8 +5,12 @@ import androidx.compose.animation.core.spring
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.Composable
+import com.example.samsonic.ui.theme.accentPalette
 import kotlin.math.abs
 import kotlin.math.floor
 
@@ -35,9 +39,10 @@ fun tabWeights(count: Int, position: Float, extraWeight: Float = SelectedTabExtr
 /**
  * Draws the indicator pill at [position] over tabs laid out by [weights],
  * inset by [inset] px from the bar's edges, growing and shrinking with the
- * tab it passes over.
+ * tab it passes over. Filled with [colors] as a gradient across the whole bar, so
+ * the pill shifts shade as it glides from one end of the bar to the other.
  */
-fun DrawScope.drawTabIndicator(weights: List<Float>, position: Float, inset: Float, color: Color, alpha: Float = 1f) {
+fun DrawScope.drawTabIndicator(weights: List<Float>, position: Float, inset: Float, colors: List<Color>, alpha: Float = 1f) {
     val count = weights.size
     if (count == 0 || alpha <= 0f) return
     val unit = (size.width - inset * 2) / weights.sum()
@@ -48,10 +53,17 @@ fun DrawScope.drawTabIndicator(weights: List<Float>, position: Float, inset: Flo
     val width = (weights[k] * (1 - t) + next * t) * unit
     val height = size.height - inset * 2
     drawRoundRect(
-        color = color,
+        brush = Brush.horizontalGradient(colors, startX = inset, endX = size.width - inset),
         topLeft = Offset(left, inset),
         size = Size(width, height),
         cornerRadius = CornerRadius(height / 2),
         alpha = alpha,
     )
+}
+
+/** The indicator's fill: a faint wash of the accent easing into its neighbour. */
+@Composable
+fun tabIndicatorColors(): List<Color> {
+    val palette = MaterialTheme.accentPalette
+    return listOf(palette.primary, palette.secondary).map { it.copy(alpha = 0.2f) }
 }

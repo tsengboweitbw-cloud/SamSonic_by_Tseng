@@ -18,9 +18,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.OneUiRow
-import com.example.samsonic.ui.theme.glassSurface
+import com.example.samsonic.ui.theme.accentWash
 
 /**
  * One choice in a [SettingsMenu], highlighted when [selected] exactly as SongRow
@@ -42,12 +41,7 @@ internal fun MenuOption(
             .clip(OneUiRow.Shape)
             .then(
                 if (selected) {
-                    Modifier.glassSurface(
-                        shape = OneUiRow.Shape,
-                        hazeState = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        alpha = GlassAlpha.Highlight,
-                    )
+                    Modifier.accentWash(OneUiRow.Shape)
                 } else {
                     Modifier
                 },

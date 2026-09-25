@@ -5,6 +5,7 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Indication
 import androidx.compose.foundation.background
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
@@ -18,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
@@ -26,6 +28,9 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.toggleableState
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import kotlin.math.abs
@@ -78,7 +83,8 @@ fun OneUiSwitch(
     )
 
     val offColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.35f)
-    val onColor = MaterialTheme.colorScheme.primary
+    // On, the track takes the same accent-to-neighbour fill as the sliders.
+    val palette = MaterialTheme.accentPalette
     val travel = progress.coerceIn(0f, 1f)
     // 0 at either end, 1 halfway across.
     val midway = 1f - abs(2f * travel - 1f)
@@ -95,7 +101,10 @@ fun OneUiSwitch(
                 },
             )
             .size(TrackWidth, TrackHeight)
-            .background(lerp(offColor, onColor, travel), CircleShape),
+            .background(
+                Brush.horizontalGradient(listOf(lerp(offColor, palette.primary, travel), lerp(offColor, palette.secondary, travel))),
+                CircleShape,
+            ),
         contentAlignment = Alignment.CenterStart,
     ) {
         Box(
@@ -135,16 +144,24 @@ fun Modifier.switchToggleable(
     interactionSource: MutableInteractionSource,
     indication: Indication?,
     onCheckedChange: (Boolean) -> Unit,
+    // A long press that doesn't toggle, e.g. to show a settings row's hint.
+    onLongClick: (() -> Unit)? = null,
 ): Modifier {
     val haptics = LocalHapticFeedback.current
-    return toggleable(
-        value = checked,
-        interactionSource = interactionSource,
-        indication = indication,
-        role = Role.Switch,
-        onValueChange = {
-            haptics.performHapticFeedback(if (it) HapticFeedbackType.ToggleOn else HapticFeedbackType.ToggleOff)
-            onCheckedChange(it)
-        },
-    )
+    val toggle = { on: Boolean ->
+        haptics.performHapticFeedback(if (on) HapticFeedbackType.ToggleOn else HapticFeedbackType.ToggleOff)
+        onCheckedChange(on)
+    }
+    if (onLongClick == null) {
+        return toggleable(value = checked, interactionSource = interactionSource, indication = indication, role = Role.Switch, onValueChange = toggle)
+    }
+    // toggleable has no long press; this is the same tap, said to TalkBack as a switch.
+    return semantics { toggleableState = ToggleableState(checked) }
+        .combinedClickable(
+            interactionSource = interactionSource,
+            indication = indication,
+            role = Role.Switch,
+            onLongClick = onLongClick,
+            onClick = { toggle(!checked) },
+        )
 }

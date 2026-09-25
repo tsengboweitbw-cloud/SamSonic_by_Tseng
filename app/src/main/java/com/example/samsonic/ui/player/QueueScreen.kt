@@ -41,10 +41,9 @@ import com.example.samsonic.ui.components.audioFormatDisplay
 import com.example.samsonic.ui.components.songSubtitle
 import com.example.samsonic.ui.components.SwipeAction
 import com.example.samsonic.ui.components.SwipeActions
-import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.OneUiRadius
 import com.example.samsonic.ui.theme.OneUiRow
-import com.example.samsonic.ui.theme.glassSurface
+import com.example.samsonic.ui.theme.accentWash
 import com.example.samsonic.ui.theme.scrollTopFade
 
 /** The queue's rows in play order, swipeable to play next or remove; the body of the Up Next card. */
@@ -85,12 +84,7 @@ fun QueueScreen(modifier: Modifier = Modifier) {
                                 if (isCurrent) {
                                     // No hazeState: nested inside the NavHost's own hazeSource
                                     // subtree (see MediaLists.SongRow comment) - flat fill only.
-                                    Modifier.glassSurface(
-                                        shape = OneUiRow.Shape,
-                                        hazeState = null,
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        alpha = GlassAlpha.Highlight,
-                                    )
+                                    Modifier.accentWash(OneUiRow.Shape)
                                 } else {
                                     Modifier
                                 }

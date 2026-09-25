@@ -13,12 +13,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.model.Playlist
 import com.example.samsonic.model.artSeed
 import com.example.samsonic.model.isFavourites
+import com.example.samsonic.ui.theme.accentPalette
 
 /**
  * A playlist's cover as [MediaArt] draws it, except Favourites, which has no cover of
@@ -48,7 +50,7 @@ fun PlaylistArt(
     }
 }
 
-/** The Favourites playlist's cover: a black heart on the accent color, shaped like any cover. */
+/** The Favourites playlist's cover: a black heart on the accent easing into its neighbour, shaped like any cover. */
 @Composable
 fun FavouritesArt(size: Dp, cornerRadius: Dp, modifier: Modifier = Modifier, shadowElevation: Dp = 6.dp) {
     val shape = RoundedCornerShape(cornerRadius)
@@ -57,7 +59,7 @@ fun FavouritesArt(size: Dp, cornerRadius: Dp, modifier: Modifier = Modifier, sha
             .size(size)
             .shadow(shadowElevation, shape)
             .clip(shape)
-            .background(MaterialTheme.colorScheme.primary),
+            .background(Brush.linearGradient(listOf(MaterialTheme.accentPalette.primary, MaterialTheme.accentPalette.secondary))),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
