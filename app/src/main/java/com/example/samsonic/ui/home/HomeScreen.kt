@@ -1,6 +1,5 @@
 package com.example.samsonic.ui.home
 
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -43,10 +42,11 @@ fun HomeScreen(
     TitledPage(
         modifier = modifier,
         title = {
-            Column(modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)) {
-                Text(text = stringResource(R.string.home_welcome_back), style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                Text(text = stringResource(R.string.home_your_library), style = MaterialTheme.typography.displaySmall)
-            }
+            Text(
+                text = stringResource(R.string.home_your_library),
+                style = MaterialTheme.typography.displaySmall,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+            )
         },
     ) { topPadding ->
         StateContent(state = viewModel.state, modifier = Modifier.fillMaxSize(), onRetry = viewModel::retry) { sections ->

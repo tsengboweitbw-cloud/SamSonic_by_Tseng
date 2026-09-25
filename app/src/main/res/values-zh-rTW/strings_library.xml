@@ -7,7 +7,6 @@
     <string name="nav_settings">設定</string>
 
     <!-- Home -->
-    <string name="home_welcome_back">歡迎回來</string>
     <string name="home_your_library">你的音樂庫</string>
     <string name="home_shelf_picked_for_you">為你精選</string>
     <string name="home_shelf_recently_added_albums">最近新增的專輯</string>
