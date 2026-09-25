@@ -62,10 +62,16 @@ internal fun PlayerPages(sheet: PlayerSheetState) {
 @Composable
 internal fun PlayerSheetBackHandling(sheet: PlayerSheetState) {
     val panel = listOf(sheet.info, sheet.queue, sheet.lyrics).firstOrNull { it.isOpen }
+    // Each shrinks from wherever it is when the gesture starts (still opening, even),
+    // not from fully open, so backing out of an opening sheet or panel doesn't jump.
     PredictiveBackHandler(enabled = sheet.isExpanded && panel != null) { events ->
         val open = panel ?: return@PredictiveBackHandler
+        var from = Float.NaN
         try {
-            events.collect { event -> open.snapTo(1f - event.progress * BackPeek) }
+            events.collect { event ->
+                if (from.isNaN()) from = open.progress
+                open.snapTo(from * (1f - event.progress * BackPeek))
+            }
             open.close()
         } catch (e: CancellationException) {
             open.open()
@@ -73,8 +79,12 @@ internal fun PlayerSheetBackHandling(sheet: PlayerSheetState) {
         }
     }
     PredictiveBackHandler(enabled = sheet.isExpanded && panel == null) { events ->
+        var from = Float.NaN
         try {
-            events.collect { event -> sheet.snapTo(1f - event.progress * BackPeek) }
+            events.collect { event ->
+                if (from.isNaN()) from = sheet.progress
+                sheet.snapTo(from * (1f - event.progress * BackPeek))
+            }
             sheet.collapse()
         } catch (e: CancellationException) {
             sheet.expand()

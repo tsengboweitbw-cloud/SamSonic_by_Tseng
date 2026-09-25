@@ -74,11 +74,17 @@ class PlayerSheetState internal constructor(scope: CoroutineScope) {
 
     internal fun stop() = track.stop()
 
+    // Whether the current drag took hold nearer the mini player than Now Playing: only
+    // then does pulling it down past rest carry on into swiping it away, so a long
+    // swipe down on an open Now Playing only ever closes it.
+    private var dragFromMini = false
+
     internal fun startDrag() {
         track.stop()
         queue.stop()
         dismissTrack.stop()
         dragTarget = null
+        dragFromMini = progress < 0.5f
     }
 
     internal fun dragBy(deltaPx: Float) {
@@ -99,10 +105,31 @@ class PlayerSheetState internal constructor(scope: CoroutineScope) {
             }.also { dragTarget = it }
         }
         when (target) {
-            DragTarget.Sheet -> track.dragBy(deltaPx)
+            DragTarget.Sheet -> {
+                // Pulled back down past the mini player's rest: the rest of the way swipes
+                // it away, in the same gesture.
+                val toRest = progress * travelPx
+                if (dragFromMini && deltaPx > toRest) {
+                    track.snapTo(0f)
+                    dragTarget = DragTarget.Dismiss
+                    dismissTrack.dragBy(-(deltaPx - toRest))
+                } else {
+                    track.dragBy(deltaPx)
+                }
+            }
             DragTarget.Queue -> queue.dragBy(deltaPx)
-            // The track's 1 is down here, so the finger's direction flips.
-            DragTarget.Dismiss -> dismissTrack.dragBy(-deltaPx)
+            DragTarget.Dismiss -> {
+                // Brought back up past rest: the rest of the way opens the sheet, likewise.
+                // (The track's 1 is down here, so the finger's direction flips.)
+                val toRest = dismissal * dismissTravelPx
+                if (-deltaPx > toRest) {
+                    dismissTrack.snapTo(0f)
+                    dragTarget = DragTarget.Sheet
+                    track.dragBy(deltaPx + toRest)
+                } else {
+                    dismissTrack.dragBy(-deltaPx)
+                }
+            }
             DragTarget.None -> Unit
         }
     }
@@ -119,7 +146,8 @@ class PlayerSheetState internal constructor(scope: CoroutineScope) {
         dragTarget = null
     }
 
-    private fun settleTo(target: Float, velocityPx: Float = 0f) {
+    // Null [velocityPx]: carry on at the speed of any settle under way (see SpringTrack.animateTo).
+    private fun settleTo(target: Float, velocityPx: Float? = null) {
         isExpanded = target == 1f
         if (target == 0f) listOf(lyrics, queue, info).forEach { it.reset() }
         track.animateTo(target, velocityPx)

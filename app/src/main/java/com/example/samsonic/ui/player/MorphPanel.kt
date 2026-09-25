@@ -125,7 +125,8 @@ class PanelState internal constructor(scope: CoroutineScope) {
         isOpen = false
     }
 
-    private fun settleTo(target: Float, velocityPx: Float = 0f) {
+    // Null [velocityPx]: carry on at the speed of any settle under way (see SpringTrack.animateTo).
+    private fun settleTo(target: Float, velocityPx: Float? = null) {
         isOpen = target == 1f
         // Both overshoot and spring back: open grows a touch past the panel's bounds,
         // close dips past folded, which the button shows as [landing].

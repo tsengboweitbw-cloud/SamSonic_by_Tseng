@@ -29,6 +29,9 @@ internal class SpringTrack(private val scope: CoroutineScope) {
     var position by mutableFloatStateOf(0f)
         private set
     private var settleJob: Job? = null
+    // The settle's speed (per second, in 0..1 units) as of its last frame, so a new
+    // settle taking over mid-way carries it on instead of starting from a standstill.
+    private var velocity = 0f
 
     /** Pixels a full 0..1 trip covers; set by the layout. */
     var travelPx by mutableFloatStateOf(1f)
@@ -56,11 +59,25 @@ internal class SpringTrack(private val scope: CoroutineScope) {
         }
     }
 
-    /** Settles at [target]; the returned job completes when it gets there (or is cut short). */
-    fun animateTo(target: Float, velocityPx: Float = 0f, spec: AnimationSpec<Float> = SettleSpring): Job {
+    /**
+     * Settles at [target], setting off at [velocityPx] (px/s, positive = downward: a
+     * release's speed) or, left null, at the speed of any settle it takes over, so
+     * turning round mid-way (collapsing as it expands) is one continuous motion. The
+     * returned job completes when it gets there (or is cut short).
+     */
+    fun animateTo(target: Float, velocityPx: Float? = null, spec: AnimationSpec<Float> = SettleSpring): Job {
+        val startVelocity = when {
+            velocityPx != null -> -velocityPx / travelPx
+            settleJob?.isActive == true -> velocity
+            else -> 0f
+        }
         stop()
+        velocity = startVelocity
         return scope.launch {
-            animate(position, target, -velocityPx / travelPx, spec) { current, _ -> position = current }
+            animate(position, target, startVelocity, spec) { current, speed ->
+                position = current
+                velocity = speed
+            }
         }.also { settleJob = it }
     }
 }
