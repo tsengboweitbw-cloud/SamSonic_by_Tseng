@@ -34,7 +34,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -172,7 +171,7 @@ private fun PlayShuffleRow(
     // No hazeState on the glass buttons: the row sits inside the page list's own
     // haze source (see GlassBackButton), so they use the flat translucent glass fill.
     val glass = Modifier
-        .shadow(elevation = 6.dp, shape = CircleShape, ambientColor = Color.Black.copy(alpha = 0.25f), spotColor = Color.Black.copy(alpha = 0.25f))
+        .circleGlow(Color.Black.copy(alpha = 0.25f), width = 8.dp, offsetY = 2.dp)
         .glassSurface(
             shape = CircleShape,
             hazeState = null,
@@ -225,7 +224,8 @@ private fun PlayShuffleRow(
  */
 @Composable
 private fun Modifier.accentGlass(palette: AccentPalette): Modifier = this
-    .shadow(elevation = 8.dp, shape = CircleShape, ambientColor = palette.primary.copy(alpha = 0.45f), spotColor = palette.primary.copy(alpha = 0.45f))
+    // Not Modifier.shadow, whose polygon core shows through the see-through glass (see circleGlow).
+    .circleGlow(palette.primary.copy(alpha = 0.22f), width = 8.dp, offsetY = 2.dp)
     .glassSurface(
         shape = CircleShape,
         hazeState = null,
