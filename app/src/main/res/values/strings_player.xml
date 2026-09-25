@@ -50,6 +50,10 @@
     <string name="player_exclusive">Exclusive</string>
     <string name="player_exclusive_off">Off · %1$s</string>
     <string name="player_not_exclusive">Not exclusive · %1$s</string>
+    <!-- Why the exclusive line says not exclusive when nothing went to a DAC -->
+    <string name="player_exclusive_no_dac">No USB DAC</string>
+    <string name="player_exclusive_switched_off">Switched off in Settings</string>
+    <string name="player_exclusive_unavailable">Needs Android 14</string>
     <string name="player_info_title">Title</string>
     <string name="player_info_artist">Artist</string>
     <string name="player_info_album">Album</string>

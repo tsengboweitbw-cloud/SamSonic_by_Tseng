@@ -50,8 +50,23 @@ internal data class PlaybackDetail(
 internal fun rememberPlaybackDetails(): List<PlaybackDetail> {
     val container = LocalAppContainer.current
     val output by container.audioOutput.output.collectAsStateWithLifecycle()
-    val bitPerfect by container.bitPerfect.track.collectAsStateWithLifecycle()
+    val track by container.bitPerfect.track.collectAsStateWithLifecycle()
+    val enabled by container.bitPerfect.enabled.collectAsStateWithLifecycle()
+    val dac by container.bitPerfect.dac.collectAsStateWithLifecycle()
     val resources = LocalResources.current
+    // The exclusive line always shows: when nothing's going to a DAC exclusively, it
+    // says why not, dimmed, rather than disappearing.
+    val bitPerfect = track ?: BitPerfectTrack(
+        on = false,
+        detail = resources.getString(
+            when {
+                !container.bitPerfect.available -> R.string.player_exclusive_unavailable
+                !enabled -> R.string.player_exclusive_switched_off
+                dac == null -> R.string.player_exclusive_no_dac
+                else -> R.string.playback_not_to_dac
+            },
+        ),
+    )
     // Output and bit-perfect held together, so a stale bit-perfect line never sits
     // under a live output (bit-perfect switched off clears it with a new track).
     return rememberLastNonNull(output?.let { resources.playbackDetails(it, bitPerfect) }).orEmpty()
@@ -144,7 +159,8 @@ private fun Resources.playbackDetails(output: AudioOutput, bitPerfect: BitPerfec
             line = getString(R.string.player_device_at, formatKilohertz(it)),
         )
     },
-    // Exclusive mode's line: "Bit-perfect · 32-bit · 96 kHz" or "Resampled 32 → 64 kHz · 32-bit" when on.
+    // Exclusive mode's line: "Bit-perfect · 32-bit · 96 kHz" or "Resampled 32 → 64 kHz · 32-bit" when on,
+    // and why not ("Not exclusive · No USB DAC") when not.
     bitPerfect?.let {
         PlaybackDetail(
             PlaybackDetailKind.BitPerfect,

@@ -48,6 +48,9 @@
     <string name="player_exclusive">獨佔模式</string>
     <string name="player_exclusive_off">關閉 · %1$s</string>
     <string name="player_not_exclusive">非獨佔 · %1$s</string>
+    <string name="player_exclusive_no_dac">未連接 USB DAC</string>
+    <string name="player_exclusive_switched_off">已在設定中關閉</string>
+    <string name="player_exclusive_unavailable">需要 Android 14</string>
     <string name="player_info_title">標題</string>
     <string name="player_info_artist">歌手</string>
     <string name="player_info_album">專輯</string>
