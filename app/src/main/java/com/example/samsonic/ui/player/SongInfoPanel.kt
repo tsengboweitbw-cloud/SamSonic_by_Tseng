@@ -1,6 +1,6 @@
 package com.example.samsonic.ui.player
 
-import android.content.Context
+import android.content.res.Resources
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -17,7 +17,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.R
@@ -53,7 +53,7 @@ internal fun SongInfoPanel(panel: PanelState, haze: HazeState) {
                 .padding(horizontal = 24.dp),
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                LocalContext.current.songDetails(song, albumArtist, links).forEach { DetailRow(it) }
+                LocalResources.current.songDetails(song, albumArtist, links).forEach { DetailRow(it) }
                 val playback = rememberPlaybackDetails()
                 if (playback.isNotEmpty()) {
                     Spacer(Modifier.height(4.dp))
@@ -105,7 +105,7 @@ private fun DetailRow(detail: Detail) {
 }
 
 /** Each detail the server reported; the rest are left out. */
-private fun Context.songDetails(song: Song, albumArtist: ArtistLink?, links: PlayerLinks): List<Detail> = listOfNotNull(
+private fun Resources.songDetails(song: Song, albumArtist: ArtistLink?, links: PlayerLinks): List<Detail> = listOfNotNull(
     Detail(getString(R.string.player_info_title), song.title),
     Detail(getString(R.string.player_info_artist), song.artistName, artistsOf = song),
     song.albumTitle.takeIf { it.isNotBlank() }?.let { title ->

@@ -1,6 +1,7 @@
 package com.example.samsonic.playback
 
 import android.content.Context
+import android.content.res.Resources
 import android.media.AudioAttributes
 import android.media.AudioDeviceCallback
 import android.media.AudioDeviceInfo
@@ -134,11 +135,11 @@ class AudioOutputMonitor(context: Context) {
 }
 
 /** "16-bit", "32-bit float"... for a PCM [encoding] as the player reports it. */
-fun describeEncoding(context: Context, encoding: Int): String = when (encoding) {
+fun describeEncoding(resources: Resources, encoding: Int): String = when (encoding) {
     C.ENCODING_PCM_8BIT -> "8-bit"
     C.ENCODING_PCM_16BIT, C.ENCODING_PCM_16BIT_BIG_ENDIAN -> "16-bit"
     C.ENCODING_PCM_24BIT, C.ENCODING_PCM_24BIT_BIG_ENDIAN -> "24-bit"
     C.ENCODING_PCM_32BIT, C.ENCODING_PCM_32BIT_BIG_ENDIAN -> "32-bit"
-    C.ENCODING_PCM_FLOAT -> context.getString(R.string.playback_encoding_float)
-    else -> context.getString(R.string.playback_encoding_compressed)
+    C.ENCODING_PCM_FLOAT -> resources.getString(R.string.playback_encoding_float)
+    else -> resources.getString(R.string.playback_encoding_compressed)
 }

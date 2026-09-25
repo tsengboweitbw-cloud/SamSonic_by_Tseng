@@ -24,6 +24,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -74,17 +75,18 @@ private val noChromeRoutes = setOf(Routes.LOGIN, Routes.ADD_SERVER)
 
 @OptIn(ExperimentalSharedTransitionApi::class)
 @Composable
-fun SamSonicNavHost() {
+fun SamSonicNavHost(lastTab: LastTab) {
     val container = LocalAppContainer.current
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
 
     // Read once: the host is rebuilt whenever the music source changes (see MainActivity),
-    // so signing in or picking the phone's music lands on Home, and leaving the last
-    // source lands back on sign in.
+    // so it starts on the tab you were under (Settings, where sources are switched and
+    // added), signing in for the first time lands on Home, and leaving the last source
+    // lands back on sign in.
     val startDestination = remember {
-        if (container.sources.active.value != null) Routes.HOME else Routes.LOGIN
+        if (container.sources.active.value == null) Routes.LOGIN else lastTab.route ?: Routes.HOME
     }
 
     val showChrome = currentRoute == null || currentRoute !in noChromeRoutes
@@ -94,6 +96,7 @@ fun SamSonicNavHost() {
 
     val tabRoutes = remember { bottomDestinations.map { it.route } }
     val currentTab = navController.currentTab(tabRoutes)
+    if (backStackEntry != null) SideEffect { lastTab.route = currentTab }
     val navTransitions = remember { NavTransitions(tabRoutes) }
     val hazeState = rememberHazeState()
     val playerSheet = rememberPlayerSheetState()

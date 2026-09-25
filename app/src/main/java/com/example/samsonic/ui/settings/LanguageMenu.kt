@@ -9,11 +9,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import com.example.samsonic.R
 import com.example.samsonic.locale.AppLanguage
 import com.example.samsonic.locale.AppLanguages
+import com.example.samsonic.locale.LocalLanguageFade
 import com.example.samsonic.ui.player.PanelState
 import dev.chrisbanes.haze.HazeState
 
@@ -24,13 +26,13 @@ private val AppLanguage.icon: ImageVector
     }
 
 /**
- * The Language row. Picking a language restarts the screen in it, so the one read here on
- * composing is always the one showing.
+ * The Language row. The language is read again whenever the configuration changes, which a
+ * new language does (see LanguageFade), so it always names the one showing.
  */
 @Composable
 internal fun LanguageRow(menu: PanelState) {
     val context = LocalContext.current
-    val current = remember { AppLanguages.current(context) }
+    val current = remember(LocalConfiguration.current) { AppLanguages.current(context) }
     NavRow(
         icon = Icons.Filled.Language,
         title = stringResource(R.string.language_title),
@@ -45,12 +47,14 @@ internal fun LanguageRow(menu: PanelState) {
 @Composable
 internal fun LanguageMenu(panel: PanelState, haze: HazeState) {
     val activity = LocalActivity.current ?: return
-    val current = remember { AppLanguages.current(activity) }
+    val current = remember(LocalConfiguration.current) { AppLanguages.current(activity) }
+    val fade = LocalLanguageFade.current
     SettingsMenu(panel, haze, title = stringResource(R.string.language_title)) {
         AppLanguage.entries.forEach { language ->
             MenuOption(icon = language.icon, label = stringResource(language.label), selected = language == current, onClick = {
                 panel.close()
-                if (language != current) AppLanguages.set(activity, language)
+                if (language == current) return@MenuOption
+                fade?.switchTo(activity, language) ?: AppLanguages.set(activity, language)
             })
         }
     }

@@ -34,3 +34,12 @@ internal fun NavController.selectTab(route: String, currentTab: String?) {
         restoreState = true
     }
 }
+
+/**
+ * The tab last shown, kept above the nav host (in MainActivity): the host is rebuilt when
+ * the music source changes, and starts again on this tab, so switching sources in Settings
+ * stays in Settings. Null when no tab was showing (sign in), which starts on Home.
+ */
+class LastTab {
+    var route: String? = null
+}

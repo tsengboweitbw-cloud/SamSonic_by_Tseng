@@ -1,6 +1,6 @@
 package com.example.samsonic.ui.player
 
-import android.content.Context
+import android.content.res.Resources
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.AudioFile
 import androidx.compose.material.icons.rounded.Bluetooth
@@ -15,7 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.LocalAppContainer
@@ -51,10 +51,10 @@ internal fun rememberPlaybackDetails(): List<PlaybackDetail> {
     val container = LocalAppContainer.current
     val output by container.audioOutput.output.collectAsStateWithLifecycle()
     val bitPerfect by container.bitPerfect.track.collectAsStateWithLifecycle()
-    val context = LocalContext.current
+    val resources = LocalResources.current
     // Output and bit-perfect held together, so a stale bit-perfect line never sits
     // under a live output (bit-perfect switched off clears it with a new track).
-    return rememberLastNonNull(output?.let { context.playbackDetails(it, bitPerfect) }).orEmpty()
+    return rememberLastNonNull(output?.let { resources.playbackDetails(it, bitPerfect) }).orEmpty()
 }
 
 /** [value], or while it's null the last non-null value it had (null if never). */
@@ -121,7 +121,7 @@ private const val PlaybackDetailCount = 4
  * the rate Android's mixer runs at where it says (the phone's own outputs, not USB or
  * Bluetooth), and whether it goes out exclusive (bit-perfect or resampled).
  */
-private fun Context.playbackDetails(output: AudioOutput, bitPerfect: BitPerfectTrack?): List<PlaybackDetail> = listOfNotNull(
+private fun Resources.playbackDetails(output: AudioOutput, bitPerfect: BitPerfectTrack?): List<PlaybackDetail> = listOfNotNull(
     PlaybackDetail(
         PlaybackDetailKind.Output,
         getString(R.string.player_output),
@@ -157,7 +157,7 @@ private fun Context.playbackDetails(output: AudioOutput, bitPerfect: BitPerfectT
 )
 
 /** A channel count as shown: mono, stereo, or the number of channels. */
-internal fun Context.channelsOf(channels: Int): String = when (channels) {
+internal fun Resources.channelsOf(channels: Int): String = when (channels) {
     1 -> getString(R.string.player_mono)
     2 -> getString(R.string.player_stereo)
     else -> getString(R.string.player_channel_count, channels)
