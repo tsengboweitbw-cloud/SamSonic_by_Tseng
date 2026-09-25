@@ -7,7 +7,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.model.Song
@@ -28,32 +30,40 @@ internal fun NowPlayingTitle(song: Song, modifier: Modifier = Modifier) {
         if (song.albumTitle.isNotBlank()) {
             SubLine(
                 text = song.albumTitle,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
+                color = MaterialTheme.colorScheme.onSurface,
                 onClick = song.albumId?.let { id -> { links.openAlbum(id) } },
             )
         }
         Spacer(Modifier.height(4.dp))
         ArtistNames(
             song = song,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            // The artist takes the accent, so it stands out under the title and reads as tappable.
+            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+            color = MaterialTheme.colorScheme.primary,
             onOpen = links.openArtist,
         )
-        val audioInfo = formatAudioInfo(song)
-        if (audioInfo != null) {
-            Spacer(Modifier.height(2.dp))
-            SubLine(text = audioInfo, style = MaterialTheme.typography.labelSmall, onClick = null)
-        }
+        // Always laid out, and keeping the last details until the next song's arrive
+        // (blank only before the first), so nothing blinks or shifts as a song loads.
+        Spacer(Modifier.height(2.dp))
+        val audioInfo = rememberLastNonNull(formatAudioInfo(song))
+        SubLine(text = audioInfo.orEmpty(), style = MaterialTheme.typography.labelSmall, onClick = null)
+        PlaybackOutputLines()
     }
 }
 
 /** A secondary line under the title; tappable (with a press squeeze) when [onClick] is set. */
 @Composable
-private fun SubLine(text: String, style: TextStyle, onClick: (() -> Unit)?) {
+private fun SubLine(
+    text: String,
+    style: TextStyle,
+    onClick: (() -> Unit)?,
+    color: Color = MaterialTheme.colorScheme.onSurfaceVariant,
+) {
     Text(
         text = text,
         style = style,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        color = color,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis,
         modifier = if (onClick != null) Modifier.pressClickable(onClick, pressedScale = 0.95f) else Modifier,

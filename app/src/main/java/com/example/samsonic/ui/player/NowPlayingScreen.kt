@@ -155,27 +155,30 @@ fun NowPlayingScreen(
         val fraction = if (dragPosition >= 0f) dragPosition else {
             if (song.durationSeconds > 0) (player.positionSeconds / song.durationSeconds).coerceIn(0f, 1f) else 0f
         }
-        OneUiSlider(
-            value = fraction,
-            onValueChange = { dragPosition = it },
-            onValueChangeFinished = {
-                player.seekToFraction(dragPosition)
-                dragPosition = -1f
-            },
-            trackModifier = Modifier.playerMorphAnchor(PlayerElement.Progress, PlayerSurface.Full),
-        )
+        // Elapsed | seek bar | total on one row; tabular digits keep the bar from jittering as time ticks.
+        val timeStyle = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum")
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
                 text = formatDuration((fraction * song.durationSeconds).toInt()),
-                style = MaterialTheme.typography.bodyMedium,
+                style = timeStyle,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            OneUiSlider(
+                value = fraction,
+                onValueChange = { dragPosition = it },
+                onValueChangeFinished = {
+                    player.seekToFraction(dragPosition)
+                    dragPosition = -1f
+                },
+                modifier = Modifier.weight(1f).padding(horizontal = 12.dp),
+                trackModifier = Modifier.playerMorphAnchor(PlayerElement.Progress, PlayerSurface.Full),
             )
             Text(
                 text = formatDuration(song.durationSeconds),
-                style = MaterialTheme.typography.bodyMedium,
+                style = timeStyle,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }

@@ -5,6 +5,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ReadOnlyComposable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.luminance
@@ -105,10 +108,19 @@ fun SamSonicTheme(
     accentColor: Color,
     content: @Composable () -> Unit,
 ) {
-    MaterialTheme(
-        colorScheme = obsidianColorScheme(darkTheme, accentColor),
-        typography = Typography,
-        shapes = Shapes,
-        content = content,
-    )
+    val colorScheme = obsidianColorScheme(darkTheme, accentColor)
+    // Built on the readable accent (the scheme's primary), so its companions match what's on screen.
+    val palette = remember(colorScheme.primary, darkTheme) { accentPaletteOf(colorScheme.primary, darkTheme) }
+    CompositionLocalProvider(LocalAccentPalette provides palette) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = Typography,
+            shapes = Shapes,
+            content = content,
+        )
+    }
 }
+
+/** The accent and its three companions (see [AccentPalette]). */
+val MaterialTheme.accentPalette: AccentPalette
+    @Composable @ReadOnlyComposable get() = LocalAccentPalette.current

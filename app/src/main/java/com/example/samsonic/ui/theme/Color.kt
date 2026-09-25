@@ -47,15 +47,3 @@ object GlassAlpha {
     // accent too, so a dense fill would swallow it (a light accent went white-on-white).
     const val Highlight = 0.16f
 }
-
-// Deterministic gradient pairs used for generated "album art" placeholders.
-val ArtGradients = listOf(
-    Color(0xFF8875FF) to Color(0xFF3D2C7A),
-    Color(0xFFFF6FA5) to Color(0xFF5C1E4A),
-    Color(0xFF3EC6E0) to Color(0xFF13415B),
-    Color(0xFFFFB86B) to Color(0xFF6B3A12),
-    Color(0xFF6DE38F) to Color(0xFF15542E),
-    Color(0xFFB07CFF) to Color(0xFF33165C),
-    Color(0xFFFF8A65) to Color(0xFF5C2410),
-    Color(0xFF5B8DEF) to Color(0xFF16265C),
-)

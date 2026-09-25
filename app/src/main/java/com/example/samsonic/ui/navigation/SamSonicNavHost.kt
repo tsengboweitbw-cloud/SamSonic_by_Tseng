@@ -52,6 +52,7 @@ import com.example.samsonic.ui.player.rememberPlayerSheetState
 import com.example.samsonic.ui.search.SearchScreen
 import com.example.samsonic.ui.search.SearchSession
 import com.example.samsonic.ui.settings.SettingsScreen
+import com.example.samsonic.ui.theme.AmbientGlow
 import com.example.samsonic.ui.theme.LocalHazeState
 import com.example.samsonic.ui.theme.OneUiChrome
 import com.example.samsonic.ui.theme.bottomFade
@@ -133,6 +134,8 @@ fun SamSonicNavHost() {
             // it - LazyColumn content otherwise has known gaps in Haze's
             // capture (text and item edges stay sharp/unblurred).
             Box(modifier = Modifier.fillMaxSize().bottomFade(bottomFadeHeight).graphicsLayer().hazeSource(hazeState)) {
+            // Inside the haze source, so the frosted bars pick up its color as they blur it.
+            AmbientGlow()
             // Covers and pictures travel from the card tapped to the page it opens (see sharedArt).
             SharedTransitionLayout {
             CompositionLocalProvider(LocalSharedTransitionScope provides this, LocalArtTransitions provides artTransitions) {

@@ -28,10 +28,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.ui.player.PanelState
 import com.example.samsonic.ui.theme.OneUiSlider
+import com.example.samsonic.ui.theme.accentPaletteOf
 import com.example.samsonic.ui.theme.parseHexColor
 import com.example.samsonic.ui.theme.toHexRgb
 import dev.chrisbanes.haze.HazeState
@@ -62,14 +65,17 @@ internal fun AccentColorMenu(
 
         Column(Modifier.padding(horizontal = 24.dp)) {
             Spacer(Modifier.height(8.dp))
-            Box(
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .size(56.dp)
-                    .clip(CircleShape)
-                    .background(workingColor)
-                    .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape),
-            )
+            // The color being picked, and the three companions the app pairs with it.
+            val darkTheme = MaterialTheme.colorScheme.background.luminance() < 0.5f
+            val companions = accentPaletteOf(workingColor, darkTheme).all.drop(1)
+            Row(
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Swatch(workingColor, 56.dp)
+                companions.forEach { Swatch(it, 32.dp) }
+            }
             Spacer(Modifier.height(20.dp))
 
             OutlinedTextField(
@@ -114,6 +120,17 @@ internal fun AccentColorMenu(
             }
         }
     }
+}
+
+@Composable
+private fun Swatch(color: Color, size: Dp) {
+    Box(
+        modifier = Modifier
+            .size(size)
+            .clip(CircleShape)
+            .background(color)
+            .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape),
+    )
 }
 
 @Composable

@@ -10,6 +10,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -34,9 +35,8 @@ import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import com.example.samsonic.data.CoverArtSizes
 import com.example.samsonic.LocalAppContainer
-import com.example.samsonic.ui.theme.ArtGradients
 import com.example.samsonic.ui.theme.OneUiRadius
-import kotlin.math.abs
+import com.example.samsonic.ui.theme.accentPalette
 
 /**
  * Cover art tile. Resolves [coverArt] (a Subsonic coverArt id) to an authenticated image URL
@@ -201,7 +201,7 @@ fun fitAspect(bounds: Rect, aspectRatio: Float): Rect {
 
 @Composable
 private fun GradientPlaceholder(colorSeed: Int, icon: Boolean, iconSize: Dp) {
-    val pair = ArtGradients[abs(colorSeed) % ArtGradients.size]
+    val pair = MaterialTheme.accentPalette.artGradient(colorSeed)
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -225,5 +225,8 @@ private fun GradientPlaceholder(colorSeed: Int, icon: Boolean, iconSize: Dp) {
     }
 }
 
-fun artPrimaryColor(colorSeed: Int): Color = ArtGradients[abs(colorSeed) % ArtGradients.size].first
-fun artSecondaryColor(colorSeed: Int): Color = ArtGradients[abs(colorSeed) % ArtGradients.size].second
+@Composable
+fun artPrimaryColor(colorSeed: Int): Color = MaterialTheme.accentPalette.artGradient(colorSeed).first
+
+@Composable
+fun artSecondaryColor(colorSeed: Int): Color = MaterialTheme.accentPalette.artGradient(colorSeed).second

@@ -24,6 +24,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.unit.dp
 
 /**
@@ -53,6 +54,7 @@ fun OneUiSlider(
     val active = dragged || pressed
 
     val activeColor = MaterialTheme.colorScheme.primary
+    val palette = MaterialTheme.accentPalette
     val inactiveColor = MaterialTheme.colorScheme.surfaceContainerHighest
     // Shrinks all the way to nothing at rest, so no stray dot is left beside the line.
     val thumbDiameter by animateDpAsState(if (active) 18.dp else 0.dp, label = "OneUiSliderThumb")
@@ -71,7 +73,9 @@ fun OneUiSlider(
             activeTrackColor = activeColor,
             inactiveTrackColor = inactiveColor,
         ),
-        thumb = {
+        thumb = { sliderState ->
+            // Takes the fill's color where it sits, so it meets the gradient seamlessly.
+            val thumbColor = lerp(activeColor, palette.secondary, sliderState.coercedValueAsFraction)
             Box(
                 modifier = Modifier
                     .size(thumbDiameter)
@@ -80,15 +84,15 @@ fun OneUiSlider(
                             Modifier.shadow(
                                 elevation = 8.dp,
                                 shape = CircleShape,
-                                ambientColor = activeColor,
-                                spotColor = activeColor,
+                                ambientColor = thumbColor,
+                                spotColor = thumbColor,
                             )
                         } else {
                             Modifier
                         },
                     )
                     .then(
-                        if (thumbDiameter > 0.5.dp) Modifier.background(activeColor, CircleShape) else Modifier,
+                        if (thumbDiameter > 0.5.dp) Modifier.background(thumbColor, CircleShape) else Modifier,
                     ),
             )
         },
@@ -132,7 +136,7 @@ fun OneUiSlider(
                 }
 
                 drawLine(
-                    color = activeColor,
+                    brush = progressBrush(palette, 0f, size.width),
                     start = Offset(0f, y),
                     end = Offset(activeEndX, y),
                     strokeWidth = strokeWidthPx,

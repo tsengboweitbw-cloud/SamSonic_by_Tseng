@@ -6,6 +6,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.node.ModifierNodeElement
 import androidx.compose.ui.node.ParentDataModifierNode
@@ -75,3 +76,7 @@ private data class CardEdgeInsetElement(val top: Dp, val bottom: Dp) : ModifierN
 private class CardEdgeInsetNode(var top: Dp, var bottom: Dp) : Modifier.Node(), ParentDataModifierNode {
     override fun Density.modifyParentData(parentData: Any?): Any = this@CardEdgeInsetNode
 }
+
+/** The color of every settings row's leading icon: the accent, the same all down the page. */
+@Composable
+internal fun rowIconTint(): Color = MaterialTheme.colorScheme.primary

@@ -1,5 +1,8 @@
 package com.example.samsonic.ui.components
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
@@ -47,7 +50,11 @@ import com.example.samsonic.playback.LocalPlayerState
 import com.example.samsonic.playback.PlayerState
 import com.example.samsonic.ui.library.LocalAddToPlaylist
 import com.example.samsonic.ui.library.PlaylistItems
+import com.example.samsonic.ui.theme.AccentPalette
 import com.example.samsonic.ui.theme.GlassAlpha
+import com.example.samsonic.ui.theme.GlassRimWidth
+import com.example.samsonic.ui.theme.accentPalette
+import com.example.samsonic.ui.theme.glassRimBrush
 import com.example.samsonic.ui.theme.glassSurface
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -177,7 +184,7 @@ private fun PlayShuffleRow(
         RoundButton(
             onClick = { onAction(ListAction.Play) },
             contentColor = MaterialTheme.colorScheme.onPrimary,
-            surface = Modifier.accentGlass(accent),
+            surface = Modifier.accentGlass(MaterialTheme.accentPalette),
         ) { color, pop -> ButtonIcon(Icons.Filled.PlayArrow, loading == ListAction.Play, color, "Play", pop, size = 30.dp) }
         RoundButton(onClick = { onAction(ListAction.Shuffle) }, contentColor = MaterialTheme.colorScheme.onSurface, surface = glass) { color, pop ->
             ButtonIcon(Icons.Filled.Shuffle, loading == ListAction.Shuffle, color, "Shuffle", pop)
@@ -211,17 +218,22 @@ private fun PlayShuffleRow(
 
 /**
  * Play's surface: the same frosted glass as the buttons beside it, tinted with the
- * [accent] instead of the surface color, and lifted by a soft accent glow.
+ * accent instead of the surface color, sheened into its neighbour color toward the
+ * bottom-right, and lifted by a soft accent glow.
  */
 @Composable
-private fun Modifier.accentGlass(accent: Color): Modifier = this
-    .shadow(elevation = 8.dp, shape = CircleShape, ambientColor = accent.copy(alpha = 0.45f), spotColor = accent.copy(alpha = 0.45f))
+private fun Modifier.accentGlass(palette: AccentPalette): Modifier = this
+    .shadow(elevation = 8.dp, shape = CircleShape, ambientColor = palette.primary.copy(alpha = 0.45f), spotColor = palette.primary.copy(alpha = 0.45f))
     .glassSurface(
         shape = CircleShape,
         hazeState = null,
-        tint = accent,
+        tint = palette.primary,
         alpha = AccentGlassAlpha,
+        rim = false,
     )
+    // Already clipped to the circle by the glass.
+    .background(Brush.linearGradient(listOf(Color.Transparent, palette.secondary.copy(alpha = 0.6f))))
+    .border(GlassRimWidth, glassRimBrush(), CircleShape)
 
 // Thinner than the neutral buttons' glass: enough accent to mark Play out, still see-through.
 private const val AccentGlassAlpha = 0.72f

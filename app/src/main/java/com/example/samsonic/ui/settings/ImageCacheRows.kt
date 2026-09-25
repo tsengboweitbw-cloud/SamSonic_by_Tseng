@@ -116,7 +116,7 @@ private fun ClearCacheRow(usage: CacheUsage, menu: PanelState, refreshKey: Any) 
             .padding(horizontal = 8.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(Icons.Filled.DeleteSweep, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(22.dp))
+        Icon(Icons.Filled.DeleteSweep, contentDescription = null, tint = rowIconTint(), modifier = Modifier.size(22.dp))
         Spacer(Modifier.width(14.dp))
         Text(text = "Clear album art cache", style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
         Text(

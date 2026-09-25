@@ -35,6 +35,9 @@ import com.example.samsonic.ui.components.artPrimaryColor
 import com.example.samsonic.ui.components.artSecondaryColor
 import com.example.samsonic.ui.components.aspectRatioOrNull
 import com.example.samsonic.ui.components.fitAspect
+import com.example.samsonic.ui.theme.AccentPalette
+import com.example.samsonic.ui.theme.accentPalette
+import com.example.samsonic.ui.theme.progressBrush
 
 // Matches the Now Playing cover's shadow, so the hand-off at the end doesn't pop.
 private val FullArtShadow = 16.dp
@@ -64,7 +67,7 @@ fun PlayerMorphOverlay(morph: PlayerMorphState, modifier: Modifier = Modifier) {
     val painter = rememberAsyncImagePainter(request)
     val seed = song.id.artSeed()
     val gradient = listOf(artPrimaryColor(seed), artSecondaryColor(seed))
-    val activeColor = MaterialTheme.colorScheme.primary
+    val palette = MaterialTheme.accentPalette
     val trackColor = MaterialTheme.colorScheme.surfaceContainerHighest
     val shadowPaint = remember { android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG) }
 
@@ -89,7 +92,7 @@ fun PlayerMorphOverlay(morph: PlayerMorphState, modifier: Modifier = Modifier) {
                 // The mini line's stroke into the seek bar's resting track stroke.
                 stroke = lerp(2.dp.toPx(), 3.dp.toPx(), fraction),
                 progress = progress,
-                activeColor = activeColor,
+                palette = palette,
                 trackColor = trackColor,
             )
         }
@@ -136,13 +139,13 @@ private fun DrawScope.drawProgress(
     bounds: Rect,
     stroke: Float,
     progress: Float,
-    activeColor: Color,
+    palette: AccentPalette,
     trackColor: Color,
 ) {
     val y = bounds.center.y
     drawLine(trackColor, Offset(bounds.left, y), Offset(bounds.right, y), stroke, StrokeCap.Round)
     if (progress > 0f) {
         val end = Offset(bounds.left + bounds.width * progress, y)
-        drawLine(activeColor, Offset(bounds.left, y), end, stroke, StrokeCap.Round)
+        drawLine(progressBrush(palette, bounds.left, bounds.right), Offset(bounds.left, y), end, stroke, StrokeCap.Round)
     }
 }

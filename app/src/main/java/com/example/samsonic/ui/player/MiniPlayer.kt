@@ -34,6 +34,8 @@ import com.example.samsonic.ui.components.PressIconButton
 import com.example.samsonic.ui.components.pressClickable
 import com.example.samsonic.model.Song
 import com.example.samsonic.ui.theme.OneUiChrome
+import com.example.samsonic.ui.theme.accentPalette
+import com.example.samsonic.ui.theme.progressBrush
 
 /**
  * The mini player's contents: art, title and quick controls over the progress
@@ -148,7 +150,7 @@ fun MiniPlayer(
  */
 @Composable
 private fun PlayerProgressLine(progress: Float, modifier: Modifier = Modifier) {
-    val activeColor = MaterialTheme.colorScheme.primary
+    val palette = MaterialTheme.accentPalette
     val trackColor = MaterialTheme.colorScheme.surfaceContainerHighest
     Canvas(modifier = modifier) {
         // Fixed stroke: mid-morph the bounds are taller than the line itself.
@@ -156,7 +158,8 @@ private fun PlayerProgressLine(progress: Float, modifier: Modifier = Modifier) {
         val y = size.height / 2f
         drawLine(trackColor, Offset(0f, y), Offset(size.width, y), stroke, StrokeCap.Round)
         if (progress > 0f) {
-            drawLine(activeColor, Offset(0f, y), Offset(size.width * progress, y), stroke, StrokeCap.Round)
+            val active = progressBrush(palette, 0f, size.width)
+            drawLine(active, Offset(0f, y), Offset(size.width * progress, y), stroke, StrokeCap.Round)
         }
     }
 }

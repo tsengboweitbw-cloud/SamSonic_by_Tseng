@@ -228,7 +228,8 @@ internal fun NavRow(
     value: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    tint: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurfaceVariant,
+    // Overrides both the icon's accent and the title's usual grey.
+    tint: androidx.compose.ui.graphics.Color? = null,
 ) {
     Row(
         modifier = modifier
@@ -239,9 +240,9 @@ internal fun NavRow(
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
-            Icon(icon, contentDescription = null, tint = tint, modifier = Modifier.size(22.dp))
+            Icon(icon, contentDescription = null, tint = tint ?: rowIconTint(), modifier = Modifier.size(22.dp))
             Spacer(Modifier.width(14.dp))
-            Text(text = title, style = MaterialTheme.typography.bodyLarge, color = tint)
+            Text(text = title, style = MaterialTheme.typography.bodyLarge, color = tint ?: MaterialTheme.colorScheme.onSurfaceVariant)
         }
         Text(text = value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Icon(Icons.Filled.ChevronRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)

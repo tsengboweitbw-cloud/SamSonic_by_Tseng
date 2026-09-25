@@ -118,7 +118,7 @@ internal fun SliderRow(
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(22.dp))
+                Icon(icon, contentDescription = null, tint = rowIconTint(), modifier = Modifier.size(22.dp))
                 Spacer(Modifier.width(14.dp))
                 Text(text = title, style = MaterialTheme.typography.bodyLarge)
             }
