@@ -33,6 +33,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
@@ -358,11 +359,25 @@ internal fun MorphPanel(
                 }
                 .then(surface),
         )
-        // The content stays laid out at full size, revealed through the growing shape.
+        // The content stays laid out at full size, revealed through the growing shape. On
+        // the open's overshoot it stretches onto the grown bounds just as the glass does,
+        // so the panel bounces as one piece rather than its edge around still contents.
         Box(
             Modifier.graphicsLayer {
                 val (rect, corner) = bounds(size)
-                shape = MorphShape(rect, corner)
+                if (panel.progress > 1f && size.width > 0f && size.height > 0f) {
+                    val stretchX = rect.width / size.width
+                    val stretchY = rect.height / size.height
+                    transformOrigin = TransformOrigin(0f, 0f)
+                    scaleX = stretchX
+                    scaleY = stretchY
+                    translationX = rect.left
+                    translationY = rect.top
+                    // The clip is in the content's own (unstretched) frame.
+                    shape = MorphShape(Rect(Offset.Zero, size), corner / minOf(stretchX, stretchY))
+                } else {
+                    shape = MorphShape(rect, corner)
+                }
                 clip = true
                 alpha = ramp(panel.progress, 0.25f, 0.7f)
             },
