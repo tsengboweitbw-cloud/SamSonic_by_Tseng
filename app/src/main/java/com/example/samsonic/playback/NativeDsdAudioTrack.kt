@@ -75,6 +75,9 @@ internal class NativeDsdAudioTrack(
             words.position(base + inFrame)
         }
         scratch.flip()
+        // Moved off the DAC (DsdRouteGuard may not have heard yet), or cut off: DSD silence from here on.
+        if (!silenced && leftUsb()) silence()
+        if (silenced) for (i in 0 until scratch.limit()) scratch.put(i, DSD_SILENCE)
         val written = super.write(scratch, scratch.remaining(), writeMode)
         if (written < 0) return written
         // AudioTrack takes whole frames; count the player frames it has all of.
@@ -101,13 +104,23 @@ internal class NativeDsdAudioTrack(
     override fun flush() {
         halfDone = false
         super.flush()
+        head.reset()
     }
 
-    override fun getPlaybackHeadPosition(): Int = super.getPlaybackHeadPosition() / ratio
+    // The track's positions are unsigned 32-bit and wrap, and with a byte per frame it counts
+    // twice the player's frames, so they wrap twice as soon. Halving the raw count would leave
+    // the player seeing its position fall back halfway to its own wrap. So positions are
+    // unwrapped to 64 bits here, halved, and wrapped again at 32 bits, which the player
+    // unwraps itself as it would any track's.
+    private val head = Unwrapped()
+    private val stamp = Unwrapped()
+
+    override fun getPlaybackHeadPosition(): Int =
+        (head.of(super.getPlaybackHeadPosition().toLong()) / ratio).toInt()
 
     override fun getTimestamp(timestamp: AudioTimestamp): Boolean {
         val ok = super.getTimestamp(timestamp)
-        if (ok) timestamp.framePosition /= ratio
+        if (ok) timestamp.framePosition = stamp.of(timestamp.framePosition) / ratio and UINT_MASK
         return ok
     }
 
@@ -116,4 +129,31 @@ internal class NativeDsdAudioTrack(
     /** The 16 DSD bits in the float sample at [index]: its integer's top half. */
     private fun bitsAt(words: ByteBuffer, index: Int): Int =
         ((words.getFloat(index).toDouble() * 2_147_483_648.0).toLong().toInt() ushr 16) and 0xFFFF
+
+    /** A position that wraps at 32 bits, counted on past each wrap. */
+    private class Unwrapped {
+        private var last = 0L
+        private var wraps = 0L
+
+        fun of(raw: Long): Long {
+            val now = raw and UINT_MASK
+            // A wrap drops it by nearly 2^32; anything less is the track settling, not a wrap.
+            if (last - now > HALF_RANGE) wraps++
+            last = now
+            return (wraps shl 32) + now
+        }
+
+        fun reset() {
+            last = 0
+            wraps = 0
+        }
+    }
+
+    private companion object {
+        /** The DSD idle pattern: silence to a DAC, where zeros would be full-scale DC. */
+        const val DSD_SILENCE: Byte = 0x69
+
+        const val UINT_MASK = 0xFFFFFFFFL
+        const val HALF_RANGE = 0x80000000L
+    }
 }

@@ -43,7 +43,7 @@ internal fun bitPerfectAudioTrack(
         .build()
     else -> IntPcmAudioTrack(
         attributes, config.sampleRate, config.channelConfig, config.encoding, encoding, config.bufferSize, sessionId,
-        fixedVolume = stream != null,
+        dop = stream is DsdStream.Dop,
     )
 }
 

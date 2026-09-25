@@ -6,6 +6,7 @@ import androidx.media3.common.Format
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.audio.AudioSink
 import androidx.media3.exoplayer.audio.ForwardingAudioSink
+import com.example.samsonic.playback.dsd.DsdStream
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
@@ -34,8 +35,35 @@ internal class ExclusiveSink(sink: AudioSink, private val bitPerfect: BitPerfect
     private var framesOut = 0L
     private var floats = FloatArray(0)
 
+    // What the sink's setup, and so its track, is for; and the next song's setup, held back
+    // until that track has played out.
+    private var plan: TrackPlan? = null
+    private var held: Setup? = null
+
     override fun configure(inputFormat: Format, specifiedBufferSize: Int, outputChannels: IntArray?) {
-        val conversion = bitPerfect.conversionFor(inputFormat)
+        val setup = Setup(
+            inputFormat, specifiedBufferSize, outputChannels,
+            TrackPlan(inputFormat.customData as? DsdStream, bitPerfect.conversionFor(inputFormat)),
+        )
+        // The sink reuses the playing track for a song of the same PCM format, but a DSD file
+        // looks just like float PCM by now, and whether a track carries DSD, or plays
+        // resampled, is settled when it's made: DSD would go out through a PCM track as noise.
+        // So when that changes, the song waits for the last one to play out, on a new track.
+        val current = plan
+        if (current != null && setup.plan != current) {
+            held = setup
+            return
+        }
+        held = null
+        apply(setup)
+    }
+
+    private fun apply(setup: Setup) {
+        val inputFormat = setup.format
+        val specifiedBufferSize = setup.bufferSize
+        val outputChannels = setup.outputChannels
+        val conversion = setup.plan.conversion
+        plan = setup.plan
         bitPerfect.onSinkConfigured(inputFormat, conversion)
         restart()
         if (conversion == null) {
@@ -61,6 +89,15 @@ internal class ExclusiveSink(sink: AudioSink, private val bitPerfect: BitPerfect
     }
 
     override fun handleBuffer(buffer: ByteBuffer, presentationTimeUs: Long, encodedAccessUnitCount: Int): Boolean {
+        held?.let { setup ->
+            // The song after a change of plan: the last track plays out, then goes, as the sink
+            // itself does between formats, so the next buffer makes a new track.
+            super.playToEndOfStream()
+            if (super.hasPendingData()) return false
+            super.flush()
+            held = null
+            apply(setup)
+        }
         val resampler = resampler ?: return super.handleBuffer(buffer, presentationTimeUs, encodedAccessUnitCount)
         // Take the next buffer in only once the last one's output is all out: it's handed on
         // again and again until the sink has it, as the sink requires.
@@ -87,11 +124,20 @@ internal class ExclusiveSink(sink: AudioSink, private val bitPerfect: BitPerfect
     override fun flush() {
         restart()
         super.flush()
+        applyHeld()
     }
 
     override fun reset() {
         restart()
         super.reset()
+        applyHeld()
+    }
+
+    /** With the track gone, nothing is left to play out: a held setup can go ahead. */
+    private fun applyHeld() {
+        val setup = held ?: return
+        held = null
+        apply(setup)
     }
 
     private fun restart() {
@@ -129,6 +175,11 @@ internal class ExclusiveSink(sink: AudioSink, private val bitPerfect: BitPerfect
         for (i in 0 until count) outBytes.putFloat(samples[i])
         outBytes.flip()
     }
+
+    /** What a track is made for: the DSD it carries, if any, and how the song is resampled, if at all. */
+    private data class TrackPlan(val stream: DsdStream?, val conversion: ExclusiveConversion?)
+
+    private class Setup(val format: Format, val bufferSize: Int, val outputChannels: IntArray?, val plan: TrackPlan)
 
     companion object {
         /** The PCM encodings it can resample. */

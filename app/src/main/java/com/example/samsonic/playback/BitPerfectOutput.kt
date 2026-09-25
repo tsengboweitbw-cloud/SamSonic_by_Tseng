@@ -76,6 +76,7 @@ class BitPerfectOutput(context: Context) {
     val track: StateFlow<BitPerfectTrack?> = _track.asStateFlow()
 
     private var player: ExoPlayer? = null
+    private val main = Handler(Looper.getMainLooper())
 
     /** The DAC the preference is set on, to clear it again. */
     @Volatile private var preferredOn: AudioDeviceInfo? = null
@@ -98,14 +99,15 @@ class BitPerfectOutput(context: Context) {
 
         override fun onAudioDevicesRemoved(removedDevices: Array<out AudioDeviceInfo>) {
             refreshDac()
-            // Its DSD would move to the phone's speaker as noise: cut it, and re-plan as PCM.
+            // Its DSD would move to the phone's speaker as noise: cut it, and re-plan as PCM
+            // (DsdRouteGuard has usually cut it already).
             if (currentStream != null && removedDevices.any { it.type in USB_OUTPUTS }) replanDsd()
         }
     }
 
     init {
         if (available) {
-            audioManager.registerAudioDeviceCallback(deviceCallback, Handler(Looper.getMainLooper()))
+            audioManager.registerAudioDeviceCallback(deviceCallback, main)
             refreshDac()
         }
     }
@@ -197,6 +199,9 @@ class BitPerfectOutput(context: Context) {
         (track ?: DefaultAudioSink.AudioTrackProvider.DEFAULT.getAudioTrack(config, attributes, sessionId)).also {
             currentTrack = it
             currentStream = stream
+            if (stream != null && it !is SilentAudioTrack) {
+                DsdRouteGuard.watch(it) { main.post { if (currentTrack === it) replanDsd() } }
+            }
         }
     }
 
@@ -229,6 +234,12 @@ class BitPerfectOutput(context: Context) {
         } catch (e: RuntimeException) {
             // Android turned the format down after all (native DSD above all, never tried).
             return off("Android couldn't open it: ${e.message}")
+        }
+        // The constructors the DSD and integer tracks use don't throw on a format Android turns
+        // down: the track just never initializes, and the sink would fail on it.
+        if (track.state != AudioTrack.STATE_INITIALIZED) {
+            track.release()
+            return off("Android couldn't open it")
         }
         _track.value = BitPerfectTrack(on = true, detail = describeExclusive(encoding, config.sampleRate, stream, conversion))
         return track
@@ -285,11 +296,5 @@ class BitPerfectOutput(context: Context) {
     private companion object {
         const val KEY_ENABLED = "bit_perfect_usb"
         const val KEY_DSD_MODE = "dsd_output"
-
-        val USB_OUTPUTS = setOf(
-            AudioDeviceInfo.TYPE_USB_DEVICE,
-            AudioDeviceInfo.TYPE_USB_HEADSET,
-            AudioDeviceInfo.TYPE_USB_ACCESSORY,
-        )
     }
 }
