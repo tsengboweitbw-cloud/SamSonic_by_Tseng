@@ -28,6 +28,7 @@ internal fun NowPlayingTitle(song: Song, modifier: Modifier = Modifier) {
             overflow = TextOverflow.Ellipsis,
         )
         if (song.albumTitle.isNotBlank()) {
+            Spacer(Modifier.height(6.dp))
             SubLine(
                 text = song.albumTitle,
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
@@ -35,7 +36,7 @@ internal fun NowPlayingTitle(song: Song, modifier: Modifier = Modifier) {
                 onClick = song.albumId?.let { id -> { links.openAlbum(id) } },
             )
         }
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(8.dp))
         ArtistNames(
             song = song,
             // The artist takes the accent, so it stands out under the title and reads as tappable.
@@ -45,8 +46,8 @@ internal fun NowPlayingTitle(song: Song, modifier: Modifier = Modifier) {
         )
         // Always laid out, and keeping the last details until the next song's arrive
         // (blank only before the first), so nothing blinks or shifts as a song loads.
-        Spacer(Modifier.height(6.dp))
-        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) { NowPlayingInfoRows(song) }
+        Spacer(Modifier.height(12.dp))
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) { NowPlayingInfoRows(song) }
     }
 }
 

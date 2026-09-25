@@ -7,7 +7,6 @@
     <string name="nav_settings">Settings</string>
 
     <!-- Home -->
-    <string name="home_welcome_back">Welcome back</string>
     <string name="home_your_library">Your library</string>
     <string name="home_shelf_picked_for_you">Picked for you</string>
     <string name="home_shelf_recently_added_albums">Recently added albums</string>
