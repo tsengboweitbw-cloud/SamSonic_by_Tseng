@@ -116,7 +116,8 @@ private val AddServerEasing = CubicBezierEasing(0.2f, 0f, 0f, 1f)
 private const val TabWarmUpDelayMillis = 1500L
 
 // The mini player rising into the stacked pile: unhurried, settling without a bounce.
-private val StackEntranceSpring = spring<Float>(dampingRatio = 0.9f, stiffness = 260f)
+// No overshoot either: coming back under 1 would flash the nav bar whole behind it.
+private val StackEntranceSpring = spring<Float>(dampingRatio = 1f, stiffness = 260f)
 
 @Composable
 fun SamSonicNavHost(lastTab: LastTab) {
@@ -368,8 +369,12 @@ fun SamSonicNavHost(lastTab: LastTab) {
                                     ignoreTouchesBehind = true,
                                     // As the mini player in front is swiped away, the nav bar
                                     // comes forward out of its place behind, whole, in step,
-                                    // so it's already in place when the music stops.
-                                    weight = { stackAmount * (1f - playerSheet.dismissal.coerceIn(0f, 1f)) },
+                                    // so it's already in place when the music stops; and goes
+                                    // back as the mini player comes in over it, not all at once.
+                                    weight = {
+                                        stackAmount * (1f - playerSheet.dismissal.coerceIn(0f, 1f)) *
+                                            stackEntrance.value.coerceIn(0f, 1f)
+                                    },
                                     whole = { playerSheet.dismissal > 0f || stackEntrance.value < 1f },
                                     offsetFromFront = { -miniAboveNavPx() },
                                 )
