@@ -50,6 +50,9 @@ import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.R
 import com.example.samsonic.ui.auth.LoginScreen
 import com.example.samsonic.ui.common.ArtTransitions
+import com.example.samsonic.ui.common.ChromeGuard
+import com.example.samsonic.ui.common.ChromeGuardLayer
+import com.example.samsonic.ui.common.LocalChromeGuard
 import com.example.samsonic.ui.common.LocalArtTransitions
 import com.example.samsonic.ui.common.LocalSharedTransitionScope
 import com.example.samsonic.ui.home.HomeShelf
@@ -115,6 +118,7 @@ fun SamSonicNavHost(lastTab: LastTab) {
     // Offered only where there are playlists to add to; the host is rebuilt with the source.
     val addToPlaylist = rememberAddToPlaylistState()
     val canEditPlaylists = remember { container.repository.canEditPlaylists }
+    val chromeGuard = remember { ChromeGuard() }
     val navBarHeight = OneUiChrome.BarHeight
     val navBarBottomInset = 16.dp
 
@@ -122,6 +126,7 @@ fun SamSonicNavHost(lastTab: LastTab) {
         CompositionLocalProvider(
             LocalHazeState provides hazeState,
             LocalAddToPlaylist provides addToPlaylist.takeIf { canEditPlaylists },
+            LocalChromeGuard provides chromeGuard,
         ) {
         Box(modifier = Modifier.fillMaxSize()) {
             // The chrome keeps its resting spot while it animates out, so these ignore showChrome.
@@ -246,6 +251,9 @@ fun SamSonicNavHost(lastTab: LastTab) {
                     modifier = Modifier.fillMaxSize(),
                 )
             }
+
+            // While a menu is open over a page, the chrome can't be used: a tap on it closes the menu.
+            ChromeGuardLayer(chromeGuard, contentPaddingBottom, Modifier.align(Alignment.BottomCenter))
 
             // Over everything, the nav bar included; it grows out of the long-pressed song row.
             if (canEditPlaylists) AddToPlaylistMenu(addToPlaylist, hazeState)

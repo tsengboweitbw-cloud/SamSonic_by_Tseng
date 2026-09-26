@@ -80,7 +80,11 @@ fun TitledPage(
     val aboveContent = WindowInsets.statusBars.getTop(density) + titleHeight
 
     Column(modifier = modifier.fillMaxSize().statusBarsPadding()) {
-        Box(modifier = Modifier.onSizeChanged { titleHeight = it.height }) { title() }
+        Box(modifier = Modifier.onSizeChanged { titleHeight = it.height }) {
+            title()
+            // Dimmed with the page under an open menu: a tap on it closes the menu too.
+            GuardedArea(Modifier.matchParentSize())
+        }
         Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
             Box(
                 modifier = Modifier
@@ -132,16 +136,18 @@ private val LocalAboveContent = compositionLocalOf { 0 }
 /**
  * Dims the page behind a [TitledPage] overlay's menu by [alpha] (read at draw
  * time): its own area, and up past its top over the title and status bar, so
- * the whole page darkens together rather than leaving the title lit.
+ * the whole page darkens together rather than leaving the title lit. It stops
+ * [clearBottom] short of the bottom, for what dims the floating chrome there with
+ * the page under it ([com.example.samsonic.ui.common.ChromeGuardLayer]).
  */
 @Composable
-fun Modifier.pageScrim(alpha: () -> Float): Modifier {
+fun Modifier.pageScrim(clearBottom: Dp = 0.dp, alpha: () -> Float): Modifier {
     val above = LocalAboveContent.current.toFloat()
     return drawBehind {
         drawRect(
             color = Color.Black,
             topLeft = Offset(0f, -above),
-            size = Size(size.width, size.height + above),
+            size = Size(size.width, (size.height + above - clearBottom.toPx()).coerceAtLeast(0f)),
             alpha = alpha().coerceIn(0f, 1f),
         )
     }

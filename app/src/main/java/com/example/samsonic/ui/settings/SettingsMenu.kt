@@ -10,7 +10,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -19,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
@@ -26,6 +30,7 @@ import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.example.samsonic.ui.common.GuardChrome
 import com.example.samsonic.ui.common.pageScrim
 import com.example.samsonic.ui.player.MorphPanel
 import com.example.samsonic.ui.player.PanelState
@@ -36,6 +41,12 @@ import com.example.samsonic.ui.theme.LocalGlassSettings
 import com.example.samsonic.ui.theme.OneUiRadius
 import com.example.samsonic.ui.theme.glassSurface
 import dev.chrisbanes.haze.HazeState
+
+/**
+ * How far up from the page's bottom the floating chrome (mini player, nav bar) reaches,
+ * for a [SettingsMenu] to keep its card clear of: set by the page the menus are over.
+ */
+internal val LocalMenuBottomInset = staticCompositionLocalOf { 0.dp }
 
 // The same dim as the Library view options' scrim.
 private const val ScrimAlpha = 0.32f
@@ -66,19 +77,24 @@ internal fun SettingsMenu(
     val showing by remember(panel) { derivedStateOf { panel.progress > 0f } }
     if (!showing) return
     val glass = LocalGlassSettings.current
+    // Over a page with the floating chrome, that can't be used either: a tap on it closes the menu.
+    val bottomInset = LocalMenuBottomInset.current
+    GuardChrome(active = bottomInset > 0.dp, dim = { ScrimAlpha * panel.progress }, onDismiss = { if (panel.isOpen) panel.close() })
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .pageScrim { ScrimAlpha * panel.progress }
+            .pageScrim(clearBottom = bottomInset) { ScrimAlpha * panel.progress }
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
                 enabled = panel.isOpen,
                 onClick = { panel.close() },
             )
-            // A text field's keyboard pushes the card up rather than covering it.
-            .imePadding()
-            .padding(horizontal = 20.dp),
+            // Clear of the floating chrome below (see LocalMenuBottomInset), or of a text
+            // field's keyboard, whichever reaches higher, so the card is centred in the
+            // page between them and the title.
+            .windowInsetsPadding(WindowInsets.ime.union(WindowInsets(bottom = bottomInset)))
+            .padding(horizontal = 20.dp, vertical = 16.dp),
         contentAlignment = Alignment.Center,
     ) {
         MorphPanel(

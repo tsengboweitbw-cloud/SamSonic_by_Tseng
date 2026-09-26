@@ -43,6 +43,8 @@ import androidx.compose.ui.unit.dp
 import com.example.samsonic.R
 import com.example.samsonic.data.LibraryLayout
 import com.example.samsonic.data.LibraryViewMode
+import com.example.samsonic.ui.common.GuardChrome
+import com.example.samsonic.ui.common.LocalChromeGuard
 import com.example.samsonic.ui.common.pageScrim
 import com.example.samsonic.ui.components.PressIconButton
 import com.example.samsonic.ui.theme.GlassAlpha
@@ -148,6 +150,9 @@ internal fun LibraryTabsPanel(
     val cornerRadius = OneUiRadius.Card
     // The pill's measured height, handed from layout to draw (both per frame).
     val pillHeight = remember { IntArray(1) }
+    // The floating chrome can't be used while it's open either: a tap on it closes it.
+    GuardChrome(active = state.isShown, dim = { scrimAlpha }, onDismiss = onDismiss)
+    val chromeHeight = LocalChromeGuard.current?.height ?: 0.dp
     Box(modifier = Modifier.fillMaxSize()) {
         // Only while open or animating: otherwise the content under it must
         // keep getting its scrolls and taps.
@@ -155,7 +160,7 @@ internal fun LibraryTabsPanel(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .pageScrim { scrimAlpha }
+                    .pageScrim(clearBottom = chromeHeight) { scrimAlpha }
                     .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onDismiss),
             )
         }
