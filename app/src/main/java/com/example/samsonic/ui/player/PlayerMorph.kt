@@ -50,6 +50,12 @@ class PlayerMorphState(
      */
     var surfaceOrigin: (PlayerSurface) -> Offset by mutableStateOf({ _: PlayerSurface -> Offset.Zero })
 
+    /**
+     * How the sheet is scaled right now, on top of [surfaceOrigin]: about which point (in
+     * sheet host coordinates) and by how much. 1 but for a card lifted in the pile.
+     */
+    var surfaceScale: () -> Pair<Offset, Float> by mutableStateOf({ Offset.Zero to 1f })
+
     val fraction: Float get() = progress()
 
     /** Whether the overlay is currently drawing [element] (so the real ones should hide). */
@@ -68,7 +74,10 @@ class PlayerMorphState(
         val anchor = anchors[element to surface]?.coordinates ?: return null
         val root = roots[surface] ?: return null
         if (!anchor.isAttached || !root.isAttached) return null
-        return root.localBoundingBoxOf(anchor, clipBounds = false).translate(surfaceOrigin(surface))
+        val bounds = root.localBoundingBoxOf(anchor, clipBounds = false).translate(surfaceOrigin(surface))
+        val (pivot, scale) = surfaceScale()
+        if (scale == 1f) return bounds
+        return Rect(pivot + (bounds.topLeft - pivot) * scale, pivot + (bounds.bottomRight - pivot) * scale)
     }
 
     internal fun setRoot(surface: PlayerSurface, coordinates: LayoutCoordinates) {

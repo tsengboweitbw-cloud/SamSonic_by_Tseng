@@ -50,12 +50,12 @@ internal class SpringTrack(private val scope: CoroutineScope) {
     }
 
     /** The end a release with [velocityPx] (px/s, positive = downward) heads for. */
-    fun targetFor(velocityPx: Float): Float {
-        val flingThreshold = travelPx * 0.8f
+    fun targetFor(velocityPx: Float, commitAt: Float = 0.5f, flingPx: Float? = null): Float {
+        val flingThreshold = flingPx ?: (travelPx * 0.8f)
         return when {
             velocityPx < -flingThreshold -> 1f
             velocityPx > flingThreshold -> 0f
-            else -> if (position > 0.5f) 1f else 0f
+            else -> if (position > commitAt) 1f else 0f
         }
     }
 

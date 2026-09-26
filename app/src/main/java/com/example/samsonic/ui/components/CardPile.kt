@@ -1,6 +1,7 @@
 package com.example.samsonic.ui.components
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -11,6 +12,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -24,6 +26,8 @@ import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerInputScope
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.input.pointer.util.VelocityTracker
@@ -34,8 +38,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlin.math.floor
+import kotlin.math.max
 import kotlin.math.roundToInt
 
 // Each card further back in a pile sits this much higher and this much smaller,
@@ -52,6 +58,8 @@ private const val PickOverdrag = 0.35f
 private val ToBackSpring = spring<Float>(dampingRatio = 1f, stiffness = 380f)
 // Dropping back into place: a little bounce as it lands.
 private val DropSpring = spring<Float>(dampingRatio = 0.6f, stiffness = 600f)
+// Let go mid hand-off: the lift left eases away with the opening's settle, no overshoot.
+private val HandOffSpring = spring<Float>(dampingRatio = 1f, stiffness = 700f)
 
 // Held up off the pile, a card grows this much by the threshold, as a card picked
 // up does; on its way to the back it rises to this far (in its own heights) above the
@@ -98,12 +106,24 @@ class CardPileState(val count: Int, private val scope: CoroutineScope) {
 
     /** How it's drawn, for cards [heightPx] high and [stepPx] apart; [thresholdPx] is [PickThreshold]. */
     fun pose(index: Int, heightPx: Float, stepPx: Float, thresholdPx: Float): CardPose =
-        cardPose(depth(index), (count - 1).toFloat(), heightPx, stepPx, lift.value, liftFrom, thresholdPx)
+        cardPose(depth(index), (count - 1).toFloat(), heightPx, stepPx, max(lift.value, handOffLift), liftFrom, thresholdPx)
 
     /** How it stacks: in front highest, and one going to the back behind the pile from the top of its lift. */
     fun zIndex(index: Int): Float {
         val depth = depth(index)
         return if (depth < -ToTopShare) -count.toFloat() else -depth
+    }
+
+    /** Brings card [index] to the front, those before it going to the back one by one as a swipe sends them. */
+    fun bringToFront(index: Int) {
+        scope.launch {
+            position.snapTo(position.targetValue)
+            lift.snapTo(0f)
+            val steps = floorMod(index - front, count)
+            if (steps == 0) return@launch
+            liftFrom = 0f
+            position.animateTo(position.value + steps, ToBackSpring)
+        }
     }
 
     /** Puts card [index] in front at once. */
@@ -115,6 +135,8 @@ class CardPileState(val count: Int, private val scope: CoroutineScope) {
     }
 
     internal fun finishMove() {
+        handOffEase?.cancel()
+        handOffLift = 0f
         scope.launch {
             position.snapTo(position.targetValue)
             lift.snapTo(0f)
@@ -123,6 +145,32 @@ class CardPileState(val count: Int, private val scope: CoroutineScope) {
 
     internal fun hold(px: Float) {
         scope.launch { lift.snapTo(px) }
+    }
+
+    /**
+     * The lift of a card handed over to what it opens into (see [pileSwipe]'s liftDrag),
+     * px: set straight from the finger, frame by frame, as it converts into that opening,
+     * and eased away once let go. Plain state rather than [lift], whose writes suspend
+     * and would land a frame after the opening they have to keep step with.
+     */
+    internal var handOffLift by mutableFloatStateOf(0f)
+
+    private var handOffEase: Job? = null
+
+    /** Takes over from [lift] at [px]: the card stays where it's held. */
+    internal fun beginHandOff(px: Float) {
+        handOffEase?.cancel()
+        handOffLift = px
+        scope.launch { lift.snapTo(0f) }
+    }
+
+    /** Let go mid hand-off: what's left of the lift eases away as the opening settles. */
+    internal fun endHandOff() {
+        val from = handOffLift
+        if (from == 0f) return
+        handOffEase = scope.launch {
+            animate(from, 0f, animationSpec = HandOffSpring) { value, _ -> handOffLift = value }
+        }
     }
 
     internal fun release(px: Float, thresholdPx: Float) {
@@ -149,35 +197,58 @@ fun rememberCardPileState(count: Int): CardPileState {
     return remember(count) { CardPileState(count, scope) }
 }
 
-/** What a drag that sets off downward does instead, where one card of a pile has a use for it. */
-interface PileDownDrag {
+/** A drag a pile hands to something else: one setting off downward, or a lift carried on past [LiftHandOff]. */
+interface PileDrag {
     fun start()
     fun drag(deltaPx: Float)
     fun end(velocityPx: Float)
 }
 
+// Lifted this far (the finger's own travel: just clear of the pile, past where letting go
+// sends the card to the back), a card with somewhere to go on to hands the drag over to
+// it; over the next [LiftConversion] of travel, its lift turns into that opening.
+private val LiftHandOff = 128.dp
+private val LiftConversion = 120.dp
+
 /**
  * The swipe up that sends the front card of [pile] (cards [cardHeight] high) to the
  * back: the card follows the finger, past the pile's top more slowly. A drag that sets
  * off downward goes to [downDrag] if given, else is left alone, for what's around.
+ * Carried on up past [LiftHandOff], the rest of the drag goes to [liftDrag] if given,
+ * from where the card has been lifted to (the mini player opening into Now Playing).
+ * Only a gesture that starts while [enabled] says so is taken.
  */
 @Composable
-fun Modifier.pileSwipe(pile: CardPileState, cardHeight: Dp, downDrag: PileDownDrag? = null): Modifier {
+fun Modifier.pileSwipe(
+    pile: CardPileState,
+    cardHeight: Dp,
+    downDrag: PileDrag? = null,
+    liftDrag: PileDrag? = null,
+    enabled: () -> Boolean = { true },
+): Modifier {
     val haptics = LocalHapticFeedback.current
-    return pointerInput(pile, downDrag, cardHeight) { pileGesture(pile, cardHeight, downDrag, haptics) }
+    val canStart by rememberUpdatedState(enabled)
+    return pointerInput(pile, downDrag, liftDrag, cardHeight) {
+        pileGesture(pile, cardHeight, downDrag, liftDrag, { canStart() }, haptics)
+    }
 }
 
 private suspend fun PointerInputScope.pileGesture(
     pile: CardPileState,
     cardHeight: Dp,
-    downDrag: PileDownDrag?,
+    downDrag: PileDrag?,
+    liftDrag: PileDrag?,
+    enabled: () -> Boolean,
     haptics: HapticFeedback,
 ) {
     val thresholdPx = PickThreshold.toPx()
+    val handOffPx = LiftHandOff.toPx()
+    val conversionPx = LiftConversion.toPx()
     // Past the pile's top the finger drags the card on more slowly.
     val topPx = cardHeight.toPx() * PickLift - stackRise((pile.count - 1).toFloat(), PileStep.toPx())
     awaitEachGesture {
         val down = awaitFirstDown(requireUnconsumed = false)
+        if (!enabled()) return@awaitEachGesture
         var over = 0f
         var downward = false
         val drag = awaitVerticalTouchSlopOrCancellation(down.id) { change, amount ->
@@ -188,16 +259,17 @@ private suspend fun PointerInputScope.pileGesture(
             }
         } ?: return@awaitEachGesture
         if (downward && downDrag != null) {
-            val tracker = VelocityTracker()
-            tracker.addPosition(drag.uptimeMillis, drag.position)
+            // From the finger's own steps: the card moves with it, so where the finger is on
+            // the card barely changes, and a velocity from that came out near nothing.
+            val tracker = FingerVelocity(drag)
             downDrag.start()
             downDrag.drag(over)
             verticalDrag(drag.id) { change ->
-                tracker.addPosition(change.uptimeMillis, change.position)
+                tracker.add(change)
                 downDrag.drag(change.positionChange().y)
                 change.consume()
             }
-            downDrag.end(tracker.calculateVelocity().y)
+            downDrag.end(tracker.velocityY())
             return@awaitEachGesture
         }
         // One card at a time: one still on its way to the back gets there now.
@@ -214,13 +286,80 @@ private suspend fun PointerInputScope.pileGesture(
             pile.hold(held())
         }
         follow()
+        // From the finger's own steps, as above: what it opens rises with it.
+        val tracker = FingerVelocity(drag)
+        var handedOff = false
+        // Where the finger was, and how high the card, as it was handed over.
+        var handOffAt = 0f
+        var liftAtHandOff = 0f
+        // How far what it's handed to has been dragged open, px.
+        var opened = 0f
         verticalDrag(drag.id) { change ->
-            raised = (raised - change.positionChange().y).coerceAtLeast(0f)
+            tracker.add(change)
+            val dy = change.positionChange().y
             change.consume()
+            if (handedOff) {
+                // The card's lift turns into the opening as the finger carries on up (and
+                // back, as it comes down): what opens rises with the finger, and by as much
+                // again as the lift comes down, so the card's top stays under the finger
+                // while its bottom follows it down into the new shape. Brought back below
+                // where it was handed over, the opening is closed and the card follows the
+                // finger down as it did before, to drop back into place when let go.
+                raised = (raised - dy).coerceAtLeast(0f)
+                val beyond = raised - handOffAt
+                val lift = if (beyond >= 0f) {
+                    liftAtHandOff * (1f - (beyond / conversionPx).coerceIn(0f, 1f))
+                } else {
+                    held()
+                }
+                // How far the opening is dragged open: the finger's travel past the hand-off,
+                // and the lift turned into it.
+                val open = if (beyond >= 0f) beyond + (liftAtHandOff - lift) else 0f
+                pile.handOffLift = lift
+                liftDrag!!.drag(-(open - opened))
+                opened = open
+                return@verticalDrag
+            }
+            raised = (raised - dy).coerceAtLeast(0f)
+            if (liftDrag != null && raised >= handOffPx) {
+                handedOff = true
+                handOffAt = raised
+                liftAtHandOff = held()
+                haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
+                pile.beginHandOff(liftAtHandOff)
+                liftDrag.start()
+                return@verticalDrag
+            }
             follow()
         }
-        pile.release(held(), thresholdPx)
+        if (handedOff) {
+            pile.endHandOff()
+            liftDrag!!.end(tracker.velocityY())
+        } else {
+            pile.release(held(), thresholdPx)
+        }
     }
+}
+
+/**
+ * A finger's velocity from its own steps added up, not from where it is on the node it
+ * touches: that node (a card, and what it opens into) moves with the finger, so the
+ * finger's place on it barely changes, and a velocity from that came out near nothing.
+ */
+private class FingerVelocity(first: PointerInputChange) {
+    private val tracker = VelocityTracker()
+    private var at = Offset.Zero
+
+    init {
+        tracker.addPosition(first.uptimeMillis, at)
+    }
+
+    fun add(change: PointerInputChange) {
+        at += change.positionChange()
+        tracker.addPosition(change.uptimeMillis, at)
+    }
+
+    fun velocityY(): Float = tracker.calculateVelocity().y
 }
 
 /**

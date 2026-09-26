@@ -36,6 +36,10 @@ import com.example.samsonic.ui.theme.LocalChromeBlurScale
 import com.example.samsonic.ui.theme.ChromeBlurScale
 import androidx.compose.runtime.snapshotFlow
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.collectLatest
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.ui.platform.LocalDensity
@@ -111,6 +115,9 @@ private val AddServerEasing = CubicBezierEasing(0.2f, 0f, 0f, 1f)
 // After starting, how long before the tabs not yet shown are built, so it's out of the way of the first screen.
 private const val TabWarmUpDelayMillis = 1500L
 
+// The mini player rising into the stacked pile: unhurried, settling without a bounce.
+private val StackEntranceSpring = spring<Float>(dampingRatio = 0.9f, stiffness = 260f)
+
 @Composable
 fun SamSonicNavHost(lastTab: LastTab) {
     val container = LocalAppContainer.current
@@ -163,6 +170,29 @@ fun SamSonicNavHost(lastTab: LastTab) {
     // Piling up, the mini player goes behind; with it gone, or apart again, the nav bar is in front.
     LaunchedEffect(stackChrome) { if (stackChrome) chromePile.snapTo(0) }
     LaunchedEffect(pileShown) { if (!pileShown) chromePile.snapTo(0) }
+    // How far the mini player has come in, stacked, as something starts to play: it fades
+    // in from below into the front of the pile, over the nav bar. 1 at rest.
+    val stackEntrance = remember { Animatable(1f) }
+    // Something starting to play puts the mini player in front, fading in from the bottom
+    // (from nothing, or from behind the nav bar alike), not swapping places with it.
+    LaunchedEffect(player, chromePile) {
+        snapshotFlow { player.playStarts }.drop(1).collectLatest {
+            if (!stackChrome) return@collectLatest
+            // Already in front: it stays, with only its song changing.
+            if (hasSong && chromePile.front == MiniPlayerCard) return@collectLatest
+            stackEntrance.snapTo(0f)
+            snapshotFlow { pileShown }.first { it }
+            chromePile.snapTo(MiniPlayerCard)
+            stackEntrance.animateTo(1f, StackEntranceSpring)
+        }
+    }
+    // Opening, Now Playing grows out of the mini player, so it's the card in front (and
+    // takes touches) whichever way it was opened; it's what closing folds back into too.
+    LaunchedEffect(chromePile, playerSheet) {
+        snapshotFlow { playerSheet.progress > 0f }.collect { opening ->
+            if (opening && pileShown && chromePile.front != MiniPlayerCard) chromePile.snapTo(MiniPlayerCard)
+        }
+    }
     // How far above the nav bar the mini player's own place is: all the way apart, none piled.
     val apartPx = with(LocalDensity.current) { (navBarHeight + 8.dp).toPx() }
     val miniAboveNavPx = { apartPx * (1f - stackAmount) }
@@ -301,6 +331,7 @@ fun SamSonicNavHost(lastTab: LastTab) {
                     collapsedMargin = lerp(12.dp, 16.dp, stackAmount),
                     pile = chromePile.takeIf { pileShown },
                     pileWeight = { stackAmount },
+                    entrance = { stackEntrance.value },
                     pileOffset = miniAboveNavPx,
                     modifier = if (pileShown) Modifier.zIndex(if (sheetOpening) -0.5f else if (navBarOnTop) -2f else -1f) else Modifier,
                     onAlbumClick = remember(openFromPlayer) { { openFromPlayer(Routes.album(it)) } },
@@ -335,7 +366,11 @@ fun SamSonicNavHost(lastTab: LastTab) {
                                     0,
                                     navBarHeight,
                                     ignoreTouchesBehind = true,
-                                    weight = { stackAmount },
+                                    // As the mini player in front is swiped away, the nav bar
+                                    // comes forward out of its place behind, whole, in step,
+                                    // so it's already in place when the music stops.
+                                    weight = { stackAmount * (1f - playerSheet.dismissal.coerceIn(0f, 1f)) },
+                                    whole = { playerSheet.dismissal > 0f || stackEntrance.value < 1f },
                                     offsetFromFront = { -miniAboveNavPx() },
                                 )
                                 .then(if (piled) Modifier.pileSwipe(chromePile, navBarHeight) else Modifier)

@@ -2,6 +2,7 @@ package com.example.samsonic.playback
 
 import android.content.ComponentName
 import android.content.Context
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -139,8 +140,17 @@ class PlayerState(
         }, MoreExecutors.directExecutor())
     }
 
+    /**
+     * Counts each time playback starts afresh ([play]: a song, album or playlist tapped,
+     * Play or Shuffle, Auto DJ starting from nothing), not each new track of the queue:
+     * for the stacked chrome to bring the mini player forward.
+     */
+    var playStarts by mutableIntStateOf(0)
+        private set
+
     fun play(song: Song, playbackContext: List<Song>) {
         val c = controller ?: return
+        playStarts++
         songById = songById + playbackContext.associateBy { it.id }
         queue.clear()
         queue.addAll(playbackContext)

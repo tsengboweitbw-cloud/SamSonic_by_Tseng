@@ -29,6 +29,9 @@ class PlayerSheetState internal constructor(scope: CoroutineScope) {
     // Dragging down on the resting mini player swipes it away (the track's 1 is gone).
     private val dismissTrack = SpringTrack(scope)
 
+    /** How far along a slow swipe away has to go to be let go and still go (a fling goes anyway). */
+    internal var dismissCommitAt = 0.5f
+
     /** 0 resting .. 1 swiped away: how far a drag down has taken the mini player. */
     val dismissal: Float get() = dismissTrack.position
 
@@ -71,16 +74,10 @@ class PlayerSheetState internal constructor(scope: CoroutineScope) {
 
     internal fun stop() = track.stop()
 
-    // Whether the current drag took hold nearer the mini player than Now Playing: only
-    // then does pulling it down past rest carry on into swiping it away, so a long
-    // swipe down on an open Now Playing only ever closes it.
-    private var dragFromMini = false
-
     internal fun startDrag() {
         track.stop()
         dismissTrack.stop()
         dragTarget = null
-        dragFromMini = progress < 0.5f
     }
 
     internal fun dragBy(deltaPx: Float) {
@@ -101,16 +98,10 @@ class PlayerSheetState internal constructor(scope: CoroutineScope) {
         }
         when (target) {
             DragTarget.Sheet -> {
-                // Pulled back down past the mini player's rest: the rest of the way swipes
-                // it away, in the same gesture.
+                // Pulled back down past the mini player's rest, it stops there: swiping it
+                // away takes a swipe of its own, in either layout, not the rest of this one.
                 val toRest = progress * travelPx
-                if (dragFromMini && deltaPx > toRest) {
-                    track.snapTo(0f)
-                    dragTarget = DragTarget.Dismiss
-                    dismissTrack.dragBy(-(deltaPx - toRest))
-                } else {
-                    track.dragBy(deltaPx)
-                }
+                if (deltaPx > toRest) track.snapTo(0f) else track.dragBy(deltaPx)
             }
             DragTarget.Dismiss -> {
                 // Brought back up past rest: the rest of the way opens the sheet, likewise.
@@ -128,13 +119,22 @@ class PlayerSheetState internal constructor(scope: CoroutineScope) {
         }
     }
 
-    /** Settles after a drag released with [velocityPx] (px/s, positive = downward). */
-    internal fun settle(velocityPx: Float) {
+    /** Brings a swiped-away mini player back to rest, for the next song. */
+    internal fun clearDismissal() {
+        if (dismissal != 0f) dismissTrack.snapTo(0f)
+    }
+
+    /**
+     * Settles after a drag released with [velocityPx] (px/s, positive = downward): flung
+     * (faster than [flingPx], by default most of the travel a second) it goes the way it
+     * was flung, else open once past [openAt] of the way.
+     */
+    internal fun settle(velocityPx: Float, flingPx: Float? = null, openAt: Float = 0.5f) {
         when (dragTarget) {
             DragTarget.Dismiss -> settleDismissal(velocityPx)
             DragTarget.None -> Unit
             // A drag that never moved (null) settles the sheet back where it was.
-            DragTarget.Sheet, null -> settleTo(track.targetFor(velocityPx), velocityPx)
+            DragTarget.Sheet, null -> settleTo(track.targetFor(velocityPx, commitAt = openAt, flingPx = flingPx), velocityPx)
         }
         dragTarget = null
     }
@@ -152,12 +152,12 @@ class PlayerSheetState internal constructor(scope: CoroutineScope) {
      * mini player back at rest); otherwise it springs back.
      */
     private fun settleDismissal(velocityPx: Float) {
-        val away = dismissTrack.targetFor(-velocityPx) == 1f
+        val away = dismissTrack.targetFor(-velocityPx, commitAt = dismissCommitAt) == 1f
         dismissTrack.animateTo(if (away) 1f else 0f, -velocityPx).invokeOnCompletion { cause ->
-            if (away && cause == null) {
-                onDismiss()
-                dismissTrack.snapTo(0f)
-            }
+            // Left swiped away (not reset here) until the next song brings the mini player
+            // back ([clearDismissal]): reset now, it would show again for a frame before the
+            // music has quite stopped.
+            if (away && cause == null) onDismiss()
         }
     }
 }

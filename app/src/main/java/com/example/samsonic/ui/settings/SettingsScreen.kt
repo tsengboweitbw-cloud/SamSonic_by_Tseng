@@ -219,6 +219,8 @@ fun SettingsScreen(
                         checked = stackChrome,
                         onCheckedChange = container.themeManager::setStackChrome,
                         hint = stringResource(R.string.settings_stack_chrome_hint),
+                        // Shown as it's turned on: it warns of the clash with One-handed mode.
+                        hintWhenTurnedOn = true,
                     )
                     SliderRow(
                         icon = Icons.Filled.RoundedCorner,

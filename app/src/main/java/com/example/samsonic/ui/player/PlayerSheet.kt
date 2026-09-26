@@ -13,6 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -33,7 +34,8 @@ import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.model.Song
 import com.example.samsonic.playback.LocalPlayerState
 import com.example.samsonic.ui.components.CardPileState
-import com.example.samsonic.ui.components.PileDownDrag
+import com.example.samsonic.ui.components.PileDrag
+import com.example.samsonic.ui.components.PileStep
 import com.example.samsonic.ui.components.contentAlpha
 import com.example.samsonic.ui.components.pickThresholdPx
 import com.example.samsonic.ui.components.pileCard
@@ -52,8 +54,18 @@ private val PillRadius = OneUiChrome.BarHeight / 2
 /** The mini player's place in the pile it shares with the nav bar (card 0). */
 const val MiniPlayerCard = 1
 
-// How far (in pill heights) a drag down takes the mini player to swipe it away.
+// How far (in pill heights) a drag down takes the mini player to swipe it away. Piled
+// with the nav bar at the foot of the screen there's little room below it (and the
+// edge is the system's), so there a short swipe or a flick does.
 private const val DismissTravel = 1.5f
+private const val PiledDismissTravel = 0.45f
+// And there a slow swipe goes once past a third of that.
+private const val PiledDismissCommit = 0.35f
+// Let go of a lift handed over to Now Playing moving at least this fast (per second), and
+// its direction decides: on up opens it, back down closes it. Slower, it opens once this
+// far open, a quarter of the way rather than halfway: getting there was the lift's intent.
+private val LiftDirectionSpeed = 80.dp
+private const val LiftOpenAt = 0.25f
 
 /** Maps [value] from [start]..[end] onto 0..1, clamped. */
 private fun ramp(value: Float, start: Float, end: Float) = ((value - start) / (end - start)).coerceIn(0f, 1f)
@@ -85,12 +97,16 @@ fun PlayerSheet(
     pile: CardPileState? = null,
     pileWeight: () -> Float = { 1f },
     pileOffset: () -> Float = { 0f },
+    // How far the pill has come in (1 at rest), rising from below as it appears in the pile.
+    entrance: () -> Float = { 1f },
 ) {
     val player = LocalPlayerState.current
     val song = player.currentSong
     SideEffect { if (song == null && sheet.isExpanded) sheet.collapse() }
     // Swiping the mini player away stops the music and empties the queue.
     SideEffect { sheet.onDismiss = player::stopAndClearQueue }
+    // Swiped away, the pill stays gone until music comes back.
+    LaunchedEffect(song != null) { if (song != null) sheet.clearDismissal() }
     val morph = remember(sheet) { PlayerMorphState(progress = { sheet.progress }, active = { sheet.isMoving }) }
     val links = remember(sheet, onAlbumClick, onArtistClick) {
         PlayerLinks(
@@ -111,14 +127,33 @@ fun PlayerSheet(
                 }
                 SideEffect {
                     sheet.travelPx = collapsed.top
-                    sheet.dismissTravelPx = collapsed.height * DismissTravel
+                    sheet.dismissTravelPx = collapsed.height * (if (pile != null) PiledDismissTravel else DismissTravel)
+                    sheet.dismissCommitAt = if (pile != null) PiledDismissCommit else 0.5f
                     // Mini rides the frame's corner; Now Playing its top edge at full width.
+                    // Piled, both also ride the card's lift in the pile (its layer moves the
+                    // frame, but the cover and progress line in flight are drawn apart).
+                    fun cardPose() = pile?.pose(
+                        MiniPlayerCard,
+                        collapsed.height,
+                        with(density) { PileStep.toPx() },
+                        density.pickThresholdPx(),
+                    )?.weighted(pileWeight())
                     morph.surfaceOrigin = { surface ->
                         val frame = lerp(collapsed, full, sheet.progress)
-                        if (surface == PlayerSurface.Mini) frame.topLeft else Offset(0f, frame.top)
+                        val rise = cardPose()?.rise ?: 0f
+                        if (surface == PlayerSurface.Mini) frame.topLeft + Offset(0f, rise) else Offset(0f, frame.top + rise)
+                    }
+                    // A lifted card is a touch bigger too, about its frame's centre.
+                    morph.surfaceScale = {
+                        val pose = cardPose()
+                        if (pose == null || pose.scale == 1f) {
+                            Offset.Zero to 1f
+                        } else {
+                            lerp(collapsed, full, sheet.progress).center + Offset(0f, pose.rise) to pose.scale
+                        }
                     }
                 }
-                SheetSurface(sheet, song, collapsed, full, pile, pileWeight, pileOffset)
+                SheetSurface(sheet, song, collapsed, full, pile, pileWeight, pileOffset, entrance)
                 // Above the sheet: the cover and progress line in flight.
                 PlayerMorphOverlay(morph, Modifier.fillMaxSize())
             }
@@ -136,6 +171,7 @@ private fun SheetSurface(
     pile: CardPileState?,
     pileWeight: () -> Float,
     pileOffset: () -> Float,
+    entrance: () -> Float,
 ) {
     // Kept until fully open: its art and progress line are the morph's start points.
     // Gone once open, so its (invisible) pill can't catch Now Playing's taps.
@@ -144,13 +180,26 @@ private fun SheetSurface(
     val pillBlurs by remember(sheet) { derivedStateOf { sheet.progress < 0.15f } }
     val dragState = rememberDraggableState { sheet.dragBy(it) }
     val radiusPx = with(LocalDensity.current) { PillRadius.toPx() }
-    // Piled and at rest, a swipe up goes to the pile; one down still swipes the pill away.
-    // Drawn in the pile as it comes together, but swiped only once it has.
-    val posed = pile != null && atRest
+    // Piled and at rest, a swipe up goes to the pile, and carried on up opens Now Playing;
+    // one down still swipes the pill away. Drawn in the pile as it comes together, but
+    // swiped only once it has. The pile's gesture stays on through the opening it hands
+    // over to (it's only taken at rest), so the drag carries on under the finger.
+    val posed = pile != null
     val settled by remember(pileWeight) { derivedStateOf { pileWeight() >= 1f } }
-    val piled = posed && settled
-    val swipeAway = remember(sheet) {
-        object : PileDownDrag {
+    val swipes = posed && settled
+    val piled = swipes && atRest
+    // A lift carried on past the hand-off (see pileSwipe): let go, and the way the finger
+    // is going decides, however slowly (a slow, steady lift is never a fling).
+    val liftFlingPx = with(LocalDensity.current) { LiftDirectionSpeed.toPx() }
+    val liftIntoSheet = remember(sheet, liftFlingPx) {
+        object : PileDrag {
+            override fun start() = sheet.startDrag()
+            override fun drag(deltaPx: Float) = sheet.dragBy(deltaPx)
+            override fun end(velocityPx: Float) = sheet.settle(velocityPx, flingPx = liftFlingPx, openAt = LiftOpenAt)
+        }
+    }
+    val sheetDrag = remember(sheet) {
+        object : PileDrag {
             override fun start() = sheet.startDrag()
             override fun drag(deltaPx: Float) = sheet.dragBy(deltaPx)
             override fun end(velocityPx: Float) = sheet.settle(velocityPx)
@@ -176,6 +225,8 @@ private fun SheetSurface(
                         MiniPlayerCard,
                         OneUiChrome.BarHeight,
                         ignoreTouchesBehind = true,
+                        // Kept as the sheet opens out of it: a lift handed over to the
+                        // opening eases away with it (CardPileState.easeLiftInto).
                         weight = pileWeight,
                         offsetFromFront = pileOffset,
                     )
@@ -190,6 +241,15 @@ private fun SheetSurface(
                 clip = true
                 // Swiped down, the pill goes with the finger, under the nav bar, and
                 // draws in a little (to 85%) as it fades, until it's gone.
+                // Coming in: up from below its place, growing a touch, as it fades in.
+                val coming = 1f - entrance()
+                if (coming > 0f) {
+                    translationY = coming * size.height * 0.9f
+                    val scale = lerp(1f, 0.92f, coming)
+                    scaleX = scale
+                    scaleY = scale
+                    alpha = 1f - coming
+                }
                 val away = sheet.dismissal
                 if (away > 0f) {
                     translationY = away * sheet.dismissTravelPx
@@ -208,7 +268,19 @@ private fun SheetSurface(
                 onDragStarted = { sheet.startDrag() },
                 onDragStopped = { velocity -> sheet.settle(velocity) },
             )
-            .then(if (piled) Modifier.pileSwipe(pile!!, OneUiChrome.BarHeight, downDrag = swipeAway) else Modifier),
+            .then(
+                if (swipes) {
+                    Modifier.pileSwipe(
+                        pile!!,
+                        OneUiChrome.BarHeight,
+                        downDrag = sheetDrag,
+                        liftDrag = liftIntoSheet,
+                        enabled = { sheet.progress == 0f },
+                    )
+                } else {
+                    Modifier
+                },
+            ),
     ) {
         // The mini player's glass, fading once Now Playing's backdrop covers it.
         Box(
