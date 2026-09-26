@@ -53,6 +53,39 @@ fun Modifier.scrollTopFade(state: ScrollableState, height: Dp = 32.dp): Modifier
 }
 
 /**
+ * The bottom-edge partner of [scrollTopFade], for lists in a bounded panel:
+ * rows melt away at the bottom edge while more lie below it, and the fade
+ * clears once the list reaches its end, so the last row is never dimmed.
+ */
+@Composable
+fun Modifier.scrollBottomFade(state: ScrollableState, height: Dp = 32.dp): Modifier {
+    val fade by animateDpAsState(
+        targetValue = if (state.canScrollForward) height else 0.dp,
+        animationSpec = tween(200),
+        label = "scrollBottomFade",
+    )
+    return this
+        .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+        .drawWithContent {
+            drawContent()
+            val fadePx = fade.toPx()
+            if (fadePx <= 0f) return@drawWithContent
+            val top = size.height - fadePx
+            drawRect(
+                brush = Brush.verticalGradient(
+                    0f to Color.Black,
+                    1f to Color.Transparent,
+                    startY = top,
+                    endY = size.height,
+                ),
+                topLeft = Offset(0f, top),
+                size = Size(size.width, fadePx),
+                blendMode = BlendMode.DstIn,
+            )
+        }
+}
+
+/**
  * The sideways partner of [scrollTopFade], for horizontal rows: cards melt away
  * at the left edge once the row is scrolled, and at the right edge while more
  * cards lie beyond it. Each edge only shows while there is something past it,

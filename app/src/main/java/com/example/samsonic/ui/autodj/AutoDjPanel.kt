@@ -18,6 +18,7 @@ import com.example.samsonic.R
 import com.example.samsonic.data.AutoDjMode
 import com.example.samsonic.ui.components.ToggleChip
 import com.example.samsonic.ui.settings.GroupLabel
+import com.example.samsonic.ui.theme.scrollBottomFade
 import com.example.samsonic.ui.theme.scrollTopFade
 
 /**
@@ -32,7 +33,7 @@ fun AutoDjPanel(modifier: Modifier = Modifier) {
     val config by settings.config.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
     LazyColumn(
-        modifier = modifier.scrollTopFade(listState),
+        modifier = modifier.scrollTopFade(listState).scrollBottomFade(listState),
         state = listState,
         contentPadding = PaddingValues(bottom = 16.dp),
     ) {
