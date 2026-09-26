@@ -19,6 +19,7 @@ enum class LibrarySection(val defaultColumns: Int, val inheritsFrom: LibrarySect
     PLAYLISTS(2),
     ARTIST_ALBUMS(2, inheritsFrom = ALBUMS),
     APPEARS_ON(2, inheritsFrom = ALBUMS),
+    GENRE_ALBUMS(2, inheritsFrom = ALBUMS),
     ;
 
     companion object {

@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.R
+import com.example.samsonic.data.LibrarySection
 import com.example.samsonic.model.Album
 import com.example.samsonic.model.Artist
 import com.example.samsonic.model.artSeed
@@ -134,7 +135,17 @@ fun GenreAlbumsScreen(
     val state = rememberScreenLoad(genre, errorMessage = stringResource(R.string.library_albums_load_error)) {
         PageContent(genre, repository.getGenre(genre, songCount = 0).albums)
     }
-    AlbumsPage(stringResource(R.string.library_albums), state, onBack, onAlbumClick, contentPaddingBottom, modifier)
+    AlbumsPage(
+        title = stringResource(R.string.library_albums),
+        state = state,
+        onBack = onBack,
+        onAlbumClick = onAlbumClick,
+        contentPaddingBottom = contentPaddingBottom,
+        modifier = modifier,
+        // Its own view, list or grid from its view button, apart from the Library Albums tab's.
+        section = LibrarySection.GENRE_ALBUMS,
+        ownView = true,
+    )
 }
 
 /** All of a genre's songs, opened from the Songs section of its page. */

@@ -49,8 +49,8 @@ internal data class PageContent<T>(val owner: String, val items: List<T>)
 /**
  * Every album of an artist or genre, opened from a section title on its page.
  * Laid out like the Library's Albums tab, in the grid or list of [section]: with
- * [ownView], one the page sets for itself from its view button; otherwise the
- * Library Albums tab's own (a genre's albums).
+ * [ownView], one the page sets for itself from its view button (an artist's or a
+ * genre's albums); otherwise the Library Albums tab's own.
  */
 @Composable
 internal fun AlbumsPage(
