@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import com.example.samsonic.R
 import com.example.samsonic.model.Album
 import com.example.samsonic.ui.common.StateContent
+import com.example.samsonic.ui.common.PageTitle
 import com.example.samsonic.ui.common.TitledPage
 import com.example.samsonic.ui.components.AlbumCard
 import com.example.samsonic.ui.components.HorizontalCarousel
@@ -41,13 +42,7 @@ fun HomeScreen(
 
     TitledPage(
         modifier = modifier,
-        title = {
-            Text(
-                text = stringResource(R.string.home_your_library),
-                style = MaterialTheme.typography.displaySmall,
-                modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
-            )
-        },
+        title = { PageTitle(stringResource(R.string.home_your_library)) },
     ) { topPadding ->
         StateContent(state = viewModel.state, modifier = Modifier.fillMaxSize(), onRetry = viewModel::retry) { sections ->
             val shown = sections.filter { (shelf, items) -> !items.isEmpty || !shelf.hiddenWhenEmpty() }

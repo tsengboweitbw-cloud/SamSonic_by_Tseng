@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -38,6 +39,7 @@ import com.example.samsonic.R
 import com.example.samsonic.model.Album
 import com.example.samsonic.model.Artist
 import com.example.samsonic.playback.LocalPlayerState
+import com.example.samsonic.ui.common.PageTitle
 import com.example.samsonic.ui.common.TitledPage
 import com.example.samsonic.ui.components.AlbumCard
 import com.example.samsonic.ui.components.ArtistCard
@@ -48,6 +50,7 @@ import com.example.samsonic.ui.components.PressIconButton
 import com.example.samsonic.ui.components.SectionHeader
 import com.example.samsonic.ui.components.SongRow
 import com.example.samsonic.ui.theme.GlassAlpha
+import com.example.samsonic.ui.theme.OneUiChrome
 import com.example.samsonic.ui.theme.OneUiRadius
 import com.example.samsonic.ui.theme.glassSurface
 import dev.chrisbanes.haze.HazeState
@@ -89,21 +92,14 @@ fun SearchScreen(
     // Fixed title, with the search pill floating as glass right under it.
     TitledPage(
         modifier = modifier,
-        title = {
-            Text(
-                text = stringResource(R.string.search_title),
-                style = MaterialTheme.typography.displaySmall,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 8.dp),
-            )
-        },
+        title = { PageTitle(stringResource(R.string.search_title)) },
         bar = { hazeState ->
             SearchField(
                 query = query,
                 onQueryChange = { session.query = it },
                 hazeState = hazeState,
-                modifier = Modifier.padding(horizontal = 20.dp),
+                // Same side margins as Library's tab bar and the floating nav bar.
+                modifier = Modifier.padding(horizontal = 16.dp),
             )
         },
     ) { topPadding ->
@@ -195,6 +191,8 @@ private fun SearchField(
         onValueChange = onQueryChange,
         modifier = modifier
             .fillMaxWidth()
+            // As tall as Library's tab bar and the nav bar.
+            .height(OneUiChrome.BarHeight)
             .glassSurface(
                 shape = RoundedCornerShape(OneUiRadius.Pill),
                 hazeState = hazeState,

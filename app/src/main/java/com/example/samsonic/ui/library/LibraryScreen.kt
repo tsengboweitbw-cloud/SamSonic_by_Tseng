@@ -54,6 +54,7 @@ import com.example.samsonic.model.Genre
 import com.example.samsonic.model.Playlist
 import com.example.samsonic.model.favouritesPlaylist
 import com.example.samsonic.ui.common.StateContent
+import com.example.samsonic.ui.common.PageTitle
 import com.example.samsonic.ui.common.TitledPage
 import com.example.samsonic.ui.common.UiState
 import com.example.samsonic.ui.common.ScreenRefresh
@@ -168,17 +169,7 @@ fun LibraryScreen(
         modifier = modifier,
         title = {
             val currentSection = sectionOf(pagerState.targetPage)
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = 20.dp, end = 16.dp, top = 12.dp, bottom = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = stringResource(R.string.library_title),
-                    style = MaterialTheme.typography.displaySmall,
-                    modifier = Modifier.weight(1f),
-                )
+            PageTitle(stringResource(R.string.library_title)) {
                 ViewButtonSlot(
                     visible = currentSection != null,
                     mode = layouts.getValue(currentSection ?: LibrarySection.ALBUMS).mode,

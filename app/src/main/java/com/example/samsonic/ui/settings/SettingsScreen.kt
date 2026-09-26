@@ -52,6 +52,7 @@ import com.example.samsonic.ui.player.PanelState
 import com.example.samsonic.ui.theme.OneUiRow
 import com.example.samsonic.ui.theme.oneUiRowClickable
 import com.example.samsonic.ui.theme.toHexRgb
+import com.example.samsonic.ui.common.PageTitle
 import com.example.samsonic.ui.common.TitledPage
 import kotlin.math.roundToInt
 
@@ -87,15 +88,7 @@ fun SettingsScreen(
     // A nav bar tab like Search and Library, so the same fixed large title and no back button.
     TitledPage(
         modifier = modifier,
-        title = {
-            Text(
-                text = stringResource(R.string.settings_title),
-                style = MaterialTheme.typography.displaySmall,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 20.dp, vertical = 8.dp),
-            )
-        },
+        title = { PageTitle(stringResource(R.string.settings_title)) },
         overlay = { haze ->
             ThemeMenu(themeMenu, haze, current = themeMode, onSelect = container.themeManager::setThemeMode)
             AudioFormatMenu(
