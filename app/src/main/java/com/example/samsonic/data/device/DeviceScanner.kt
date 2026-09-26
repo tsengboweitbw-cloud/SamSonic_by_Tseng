@@ -21,6 +21,8 @@ internal data class DeviceTrack(
     val genre: String?,
     /** Seconds since the epoch. */
     val dateAdded: Long,
+    /** Seconds since the epoch. */
+    val dateModified: Long,
     val sizeBytes: Long?,
     val mimeType: String?,
     val path: String?,
@@ -47,6 +49,7 @@ internal fun ContentResolver.scanDeviceTracks(): List<DeviceTrack> {
         add(Media.DURATION)
         add(Media.YEAR)
         add(Media.DATE_ADDED)
+        add(Media.DATE_MODIFIED)
         add(Media.SIZE)
         add(Media.MIME_TYPE)
         add(DATA_COLUMN)
@@ -78,6 +81,7 @@ internal fun ContentResolver.scanDeviceTracks(): List<DeviceTrack> {
                         year = c.int(Media.YEAR)?.takeIf { it > 0 },
                         genre = c.tag(Media.GENRE),
                         dateAdded = c.long(Media.DATE_ADDED) ?: 0L,
+                        dateModified = c.long(Media.DATE_MODIFIED) ?: 0L,
                         sizeBytes = c.long(Media.SIZE),
                         mimeType = c.string(Media.MIME_TYPE),
                         path = c.string(DATA_COLUMN),

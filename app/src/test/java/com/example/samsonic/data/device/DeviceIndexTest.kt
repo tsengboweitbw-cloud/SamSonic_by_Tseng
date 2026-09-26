@@ -20,7 +20,7 @@ class DeviceIndexTest {
         dateAdded: Long = 0L,
     ) = DeviceTrack(
         id = id, title = title, artist = artist, albumArtist = albumArtist, album = album, albumId = albumId,
-        track = track, disc = disc, durationMs = 180_000, year = year, genre = genre, dateAdded = dateAdded,
+        track = track, disc = disc, durationMs = 180_000, year = year, genre = genre, dateAdded = dateAdded, dateModified = 0L,
         sizeBytes = null, mimeType = null, path = "/music/$title.flac", bitRate = null,
     )
 
@@ -33,7 +33,30 @@ class DeviceIndexTest {
         track(6, "Disc One", "Bob", "Double", albumId = 30, track = 5, disc = 1, year = 2022, dateAdded = 200),
     )
 
-    private val index = DeviceIndex(tracks, likedIds = setOf("4"))
+    private val index = DeviceIndex(
+        tracks,
+        likedIds = setOf("4"),
+        plays = mapOf("1" to DevicePlays(count = 2, lastPlayedMs = 1_000), "5" to DevicePlays(count = 5, lastPlayedMs = 500)),
+        formats = mapOf("3" to AudioStreamFormat(sampleRate = 96_000, bitDepth = 24, channels = 2)),
+    )
+
+    @Test
+    fun playHistoryOrdersRecentAndFrequent() {
+        assertEquals(listOf("B Side", "Disc Two"), index.songList("recent").map { it.title })
+        assertEquals(listOf("Disc Two", "B Side"), index.songList("frequent").map { it.title })
+        assertEquals(listOf("30", "10"), index.albumList("frequent").map { it.id })
+        assertEquals(listOf("Disc Two"), index.topSongs("bob").map { it.title })
+        assertEquals(2L, index.songsById.getValue("1").playCount)
+        assertEquals(null, index.songsById.getValue("2").played)
+    }
+
+    @Test
+    fun songsCarryTheirProbedFormat() {
+        val duet = index.songsById.getValue("3")
+        assertEquals(96_000, duet.samplingRate)
+        assertEquals(24, duet.bitDepth)
+        assertEquals(null, index.songsById.getValue("4").samplingRate)
+    }
 
     @Test
     fun songsPlayInDiscAndTrackOrder() {
@@ -66,7 +89,6 @@ class DeviceIndexTest {
     @Test
     fun newestShelfFollowsDateAdded() {
         assertEquals(listOf("20", "30", "10"), index.albumList("newest").map { it.id })
-        assertTrue(index.albumList("frequent").isEmpty())
     }
 
     @Test

@@ -5,6 +5,7 @@ import com.example.samsonic.model.Album
 import com.example.samsonic.model.Artist
 import com.example.samsonic.model.Genre
 import com.example.samsonic.model.Song
+import java.time.Instant
 
 private const val VARIOUS_ARTISTS = "Various Artists"
 
@@ -28,7 +29,12 @@ internal fun deviceArtistId(name: String): String {
  * Ids are MediaStore's for songs and albums (a song's cover art id is its album's id),
  * and [deviceArtistId] for artists.
  */
-internal class DeviceIndex(tracks: List<DeviceTrack>, likedIds: Set<String>) {
+internal class DeviceIndex(
+    tracks: List<DeviceTrack>,
+    likedIds: Set<String>,
+    plays: Map<String, DevicePlays>,
+    formats: Map<String, AudioStreamFormat>,
+) {
     /** Each album's songs, by disc and track. */
     private val songsByAlbum: Map<String, List<Song>>
     /** Newest file first, for "Recently Added". */
@@ -41,6 +47,11 @@ internal class DeviceIndex(tracks: List<DeviceTrack>, likedIds: Set<String>) {
     val albums: List<Album>
     val albumsById: Map<String, Album>
     val songs: List<Song>
+    val songsById: Map<String, Song>
+    /** Songs listened to, last played first. */
+    private val songsByLastPlayed: List<Song>
+    /** Songs listened to, most played first. */
+    private val songsByPlayCount: List<Song>
 
     init {
         val groups = tracks.groupBy { it.albumId.toString() }
@@ -50,9 +61,13 @@ internal class DeviceIndex(tracks: List<DeviceTrack>, likedIds: Set<String>) {
         songsByAlbum = albums.associate { album ->
             album.id to groups.getValue(album.id)
                 .sortedWith(compareBy({ it.disc ?: 0 }, { it.track }, { it.title.lowercase() }))
-                .map { it.toSong(album, liked = it.id.toString() in likedIds) }
+                .map { it.toSong(album, liked = it.id.toString() in likedIds, plays = plays[it.id.toString()], format = formats[it.id.toString()]) }
         }
         songs = albums.flatMap { songsByAlbum.getValue(it.id) }
+        songsById = songs.associateBy { it.id }
+        val played = songs.filter { it.id in plays }
+        songsByLastPlayed = played.sortedByDescending { plays.getValue(it.id).lastPlayedMs }
+        songsByPlayCount = played.sortedByDescending { plays.getValue(it.id).count }
         val added = groups.mapValues { (_, group) -> group.maxOf { it.dateAdded } }
         albumsByDateAdded = albums.sortedByDescending { added[it.id] ?: 0L }
         val songAdded = tracks.associate { it.id.toString() to it.dateAdded }
@@ -81,7 +96,7 @@ internal class DeviceIndex(tracks: List<DeviceTrack>, likedIds: Set<String>) {
         )
     }
 
-    private fun DeviceTrack.toSong(album: Album, liked: Boolean) = Song(
+    private fun DeviceTrack.toSong(album: Album, liked: Boolean, plays: DevicePlays?, format: AudioStreamFormat?) = Song(
         id = id.toString(),
         title = title,
         artistId = deviceArtistId(artist),
@@ -94,12 +109,17 @@ internal class DeviceIndex(tracks: List<DeviceTrack>, likedIds: Set<String>) {
         liked = liked,
         suffix = path?.substringAfterLast('.', "")?.lowercase()?.takeIf { it.isNotEmpty() },
         bitRate = bitRate?.let { it / 1000 },
+        samplingRate = format?.sampleRate,
+        bitDepth = format?.bitDepth,
+        channelCount = format?.channels,
         year = year,
         genre = genre,
         discNumber = disc,
         sizeBytes = sizeBytes,
         contentType = mimeType,
         path = path,
+        playCount = plays?.count,
+        played = plays?.let { Instant.ofEpochMilli(it.lastPlayedMs).toString() },
         albumArtistId = album.artistId,
         albumArtistName = album.artistName,
     )
@@ -137,16 +157,29 @@ internal class DeviceIndex(tracks: List<DeviceTrack>, likedIds: Set<String>) {
         "random" -> albums.shuffled()
         "alphabeticalByName" -> albums.sortedBy { it.title.lowercase() }
         "alphabeticalByArtist" -> albums
-        // "recent", "frequent" and the like need play history, which the phone doesn't keep.
+        "recent" -> albumsOf(songsByLastPlayed)
+        "frequent" -> songsByPlayCount.groupBy { it.albumId }
+            .entries.sortedByDescending { (_, songs) -> songs.sumOf { it.playCount ?: 0L } }
+            .mapNotNull { (id, _) -> albumsById[id] }
         else -> emptyList()
     }
 
-    /** "newest" by date added, or "random"; the phone keeps no play history for the rest. */
+    /** "newest" by date added, "recent" (last played first), "frequent" (most played first) or "random". */
     fun songList(type: String): List<Song> = when (type) {
         "newest" -> songsByDateAdded
+        "recent" -> songsByLastPlayed
+        "frequent" -> songsByPlayCount
         "random" -> songs.shuffled()
         else -> emptyList()
     }
+
+    /** [artistName]'s most played songs, most first. */
+    fun topSongs(artistName: String): List<Song> =
+        songsByPlayCount.filter { it.artistName.equals(artistName, ignoreCase = true) }
+
+    /** The albums of [songs], each once, in the order its first song comes. */
+    private fun albumsOf(songs: List<Song>): List<Album> =
+        songs.mapNotNull { it.albumId }.distinct().mapNotNull { albumsById[it] }
 
     val genres: List<Genre> by lazy {
         genresBySong.values.groupingBy { it }.eachCount()

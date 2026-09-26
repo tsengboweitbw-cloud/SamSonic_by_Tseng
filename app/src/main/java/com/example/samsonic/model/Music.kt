@@ -52,7 +52,7 @@ data class Song(
     val playCount: Long? = null,
     val channelCount: Int? = null,
     // ISO 8601 timestamps from the server: added to the library, and last played. They
-    // sort as text in time order. The music on this phone has neither.
+    // sort as text in time order. The music on this phone has only the last played, kept by the app.
     val created: String? = null,
     val played: String? = null,
     // OpenSubsonic only: each of the song's artists on its own, which [artistName]

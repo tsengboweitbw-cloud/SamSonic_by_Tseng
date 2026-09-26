@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.R
 import com.example.samsonic.model.LyricLine
+import com.example.samsonic.ui.theme.scrollBottomFade
 import com.example.samsonic.ui.theme.scrollTopFade
 
 /** Synced lyrics, the current line highlighted from the live playback position; the body of the Lyrics card. */
@@ -43,7 +44,9 @@ fun LyricsScreen(
         value = runCatching { repository.getLyrics(song.id) }.getOrDefault(emptyList())
     }
     val positionMs = (player.positionSeconds * 1000).toLong()
-    val currentIndex = lines.orEmpty().indexOfLast { it.timeMs <= positionMs }.coerceAtLeast(0)
+    // Plain lyrics (every line at 0) have no current line to pick out.
+    val synced = lines.orEmpty().any { it.timeMs > 0 }
+    val currentIndex = if (synced) lines.orEmpty().indexOfLast { it.timeMs <= positionMs }.coerceAtLeast(0) else -1
 
     Column(modifier = modifier.fillMaxSize()) {
         when {
@@ -63,7 +66,8 @@ fun LyricsScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = 24.dp)
-                        .scrollTopFade(listState),
+                        .scrollTopFade(listState)
+                        .scrollBottomFade(listState),
                     state = listState,
                     verticalArrangement = Arrangement.spacedBy(20.dp),
                 ) {

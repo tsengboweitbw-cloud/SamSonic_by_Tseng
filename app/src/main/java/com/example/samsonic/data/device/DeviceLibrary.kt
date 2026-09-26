@@ -16,7 +16,11 @@ import com.example.samsonic.model.Playlist
 import com.example.samsonic.model.SearchResults
 import com.example.samsonic.model.Song
 import com.example.samsonic.model.genreNames
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -26,13 +30,24 @@ import kotlinx.coroutines.withContext
  * and redone the next time it's needed after MediaStore reports a change (a song
  * downloaded or deleted).
  *
- * The phone keeps no playlists, play counts or lyrics for the app to read, so those
- * come back empty; likes are kept by the app itself.
+ * The phone keeps no playlists, likes or play counts for the app to read, so the app
+ * keeps those itself ([DeviceStore], and its own likes). MediaStore doesn't report
+ * sample rate, bit depth or lyrics either, so those are read from the files: the
+ * formats in the background after a scan ([DeviceFormatCache]), lyrics when asked for.
  */
 class DeviceLibrary(context: Context) : MusicLibrary {
     private val appContext = context.applicationContext
     private val likes = appContext.getSharedPreferences("samsonic_device_likes", Context.MODE_PRIVATE)
+    private val store = DeviceStore(appContext)
+    private val formats = DeviceFormatCache(appContext)
     private val mutex = Mutex()
+    private val probeScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
+    private var probing: Job? = null
+
+    // The scan, kept until MediaStore reports a change, and the index built from it,
+    // rebuilt (cheaply, without rescanning) when a like or a play changes too.
+    @Volatile
+    private var tracks: List<DeviceTrack>? = null
 
     @Volatile
     private var cached: DeviceIndex? = null
@@ -40,22 +55,50 @@ class DeviceLibrary(context: Context) : MusicLibrary {
 
     private val observer = object : ContentObserver(null) {
         override fun onChange(selfChange: Boolean) {
+            tracks = null
             cached = null
         }
     }
 
     private suspend fun index(): DeviceIndex = cached ?: mutex.withLock {
-        cached ?: withContext(Dispatchers.IO) { scan() }.also { cached = it }
+        cached ?: withContext(Dispatchers.IO) {
+            val scanned = tracks ?: scan().also { tracks = it }
+            probeFormats(scanned)
+            DeviceIndex(scanned, likes.getStringSet(KEY_LIKED, null).orEmpty(), store.plays(), formats.known(scanned))
+        }.also { cached = it }
     }
 
-    private fun scan(): DeviceIndex {
+    /**
+     * Reads the format of each of [scanned] not yet known, in the background, a batch at
+     * a time; after each the index is rebuilt, so hi-res badges and filters fill in as it goes.
+     */
+    @Synchronized
+    private fun probeFormats(scanned: List<DeviceTrack>) {
+        if (probing?.isActive == true) return
+        val todo = formats.missing(scanned)
+        if (todo.isEmpty()) return
+        probing = probeScope.launch {
+            val resolver = appContext.contentResolver
+            for (batch in todo.chunked(PROBE_BATCH)) {
+                for (track in batch) {
+                    formats.put(track, resolver.readAudioFile(track.uri) { it.probeFormat() })
+                }
+                formats.save(scanned)
+                cached = null
+            }
+        }
+    }
+
+    private val DeviceTrack.uri get() = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, id)
+
+    private fun scan(): List<DeviceTrack> {
         check(appContext.hasAudioPermission()) { appContext.getString(R.string.data_allow_device_music) }
         val resolver = appContext.contentResolver
         if (!observing) {
             resolver.registerContentObserver(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, true, observer)
             observing = true
         }
-        return DeviceIndex(resolver.scanDeviceTracks(), likes.getStringSet(KEY_LIKED, null).orEmpty())
+        return resolver.scanDeviceTracks()
     }
 
     override suspend fun getArtists(): List<Artist> = index().trackArtists
@@ -128,11 +171,42 @@ class DeviceLibrary(context: Context) : MusicLibrary {
         return (fromYear == null || y >= fromYear) && (toYear == null || y <= toYear)
     }
 
-    override suspend fun getPlaylists(): List<Playlist> = emptyList()
+    override suspend fun getPlaylists(): List<Playlist> {
+        val index = index()
+        return store.playlists().map { it.toPlaylist(index.songsIn(it)) }
+    }
 
-    override suspend fun getPlaylist(id: String): Pair<Playlist, List<Song>> = error(appContext.getString(R.string.data_playlist_not_found))
+    override suspend fun getPlaylist(id: String): Pair<Playlist, List<Song>> {
+        val index = index()
+        val playlist = store.playlist(id) ?: error(appContext.getString(R.string.data_playlist_not_found))
+        val songs = index.songsIn(playlist)
+        return playlist.toPlaylist(songs) to songs
+    }
 
-    override suspend fun getTopSongs(artistName: String, count: Int): List<Song> = emptyList()
+    /** Its songs still on the phone, in order; ones since deleted are skipped. */
+    private fun DeviceIndex.songsIn(playlist: DevicePlaylist): List<Song> = playlist.songIds.mapNotNull { songsById[it] }
+
+    private fun DevicePlaylist.toPlaylist(songs: List<Song>) = Playlist(
+        id = id,
+        name = name,
+        description = "",
+        songCount = songs.size,
+        durationSeconds = songs.sumOf { it.durationSeconds },
+        coverArt = songs.firstOrNull()?.coverArt,
+    )
+
+    override val canEditPlaylists: Boolean get() = true
+
+    // Every playlist here is the user's own.
+    override suspend fun getOwnPlaylists(): List<Playlist> = getPlaylists()
+
+    override suspend fun addToPlaylist(playlistId: String, songIds: List<String>) {
+        check(store.addToPlaylist(playlistId, songIds)) { appContext.getString(R.string.data_playlist_not_found) }
+    }
+
+    override suspend fun createPlaylist(name: String, songIds: List<String>) = store.createPlaylist(name, songIds)
+
+    override suspend fun getTopSongs(artistName: String, count: Int): List<Song> = index().topSongs(artistName).take(count)
 
     override suspend fun getGenres() = index().genres
 
@@ -159,9 +233,20 @@ class DeviceLibrary(context: Context) : MusicLibrary {
     private fun setLiked(id: String, liked: Boolean) {
         val current = likes.getStringSet(KEY_LIKED, null).orEmpty()
         likes.edit { putStringSet(KEY_LIKED, if (liked) current + id else current - id) }
+        cached = null
     }
 
-    override suspend fun getLyrics(songId: String): List<LyricLine> = emptyList()
+    /** With no server to tell, a finished listen is counted here, for play counts and history. */
+    override suspend fun scrobble(id: String, submission: Boolean) {
+        if (!submission) return
+        store.addPlay(id)
+        cached = null
+    }
+
+    override suspend fun getLyrics(songId: String): List<LyricLine> = withContext(Dispatchers.IO) {
+        val uri = ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, songId.toLong())
+        appContext.contentResolver.readAudioFile(uri) { it.readLyrics() }.orEmpty()
+    }
 
     override fun streamUrl(songId: String): String =
         ContentUris.withAppendedId(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI, songId.toLong()).toString()
@@ -180,5 +265,6 @@ class DeviceLibrary(context: Context) : MusicLibrary {
 
     private companion object {
         const val KEY_LIKED = "liked"
+        const val PROBE_BATCH = 200
     }
 }

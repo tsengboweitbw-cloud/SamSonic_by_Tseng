@@ -112,7 +112,7 @@ interface MusicLibrary {
     /**
      * Tells the server song [id] is playing: as "now playing" when [submission] is false,
      * or as a finished listen that counts towards its play count when true. The music
-     * on this phone has no server to tell, so by default it does nothing.
+     * on this phone has no server to tell, so it counts plays itself; by default it does nothing.
      */
     suspend fun scrobble(id: String, submission: Boolean) {}
 
