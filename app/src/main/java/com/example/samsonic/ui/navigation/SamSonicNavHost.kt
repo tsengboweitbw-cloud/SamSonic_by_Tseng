@@ -166,6 +166,10 @@ fun SamSonicNavHost(lastTab: LastTab) {
     )
     // Drawn in the pile while it comes together or apart; swiped only once it has.
     val pileShown by remember { derivedStateOf { hasSong && stackAmount > 0f } }
+    // The nav bar keeps its place in the pile (its layer, order and pose) for as long as
+    // the layout is stacked, with or without a song, posed as if alone when there's none:
+    // adding them as the first song came in rebuilt its glass, and it blinked.
+    val navInPile by remember { derivedStateOf { stackAmount > 0f } }
     val piled by remember { derivedStateOf { hasSong && stackChrome && stackAmount >= 1f } }
     val chromePile = rememberCardPileState(2)
     // Piling up, the mini player goes behind; with it gone, or apart again, the nav bar is in front.
@@ -346,7 +350,7 @@ fun SamSonicNavHost(lastTab: LastTab) {
                 enter = slideInVertically { it } + fadeIn(),
                 exit = slideOutVertically { it } + fadeOut(),
                 modifier = Modifier
-                    .then(if (pileShown) Modifier.zIndex(if (navBarOnTop) -1f else -2f) else Modifier)
+                    .then(if (navInPile) Modifier.zIndex(if (navBarOnTop) -1f else -2f) else Modifier)
                     .align(Alignment.BottomCenter)
                     .graphicsLayer {
                         val progress = playerSheet.progress
@@ -360,7 +364,7 @@ fun SamSonicNavHost(lastTab: LastTab) {
                     // Piled with the mini player: posed in the pile, and a swipe up sends it
                     // to the back; behind, it takes no touches.
                     .then(
-                        if (pileShown) {
+                        if (navInPile) {
                             Modifier
                                 .pileCard(
                                     chromePile,
@@ -372,8 +376,12 @@ fun SamSonicNavHost(lastTab: LastTab) {
                                     // so it's already in place when the music stops; and goes
                                     // back as the mini player comes in over it, not all at once.
                                     weight = {
-                                        stackAmount * (1f - playerSheet.dismissal.coerceIn(0f, 1f)) *
-                                            stackEntrance.value.coerceIn(0f, 1f)
+                                        if (!hasSong) {
+                                            0f
+                                        } else {
+                                            stackAmount * (1f - playerSheet.dismissal.coerceIn(0f, 1f)) *
+                                                stackEntrance.value.coerceIn(0f, 1f)
+                                        }
                                     },
                                     whole = { playerSheet.dismissal > 0f || stackEntrance.value < 1f },
                                     offsetFromFront = { -miniAboveNavPx() },
