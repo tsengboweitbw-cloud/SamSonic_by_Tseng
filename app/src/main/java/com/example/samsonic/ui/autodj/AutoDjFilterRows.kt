@@ -47,6 +47,7 @@ import com.example.samsonic.model.Artist
 import com.example.samsonic.ui.components.ToggleChip
 import com.example.samsonic.ui.settings.rowIconTint
 import com.example.samsonic.ui.theme.OneUiRadius
+import com.example.samsonic.ui.theme.OneUiRow
 import com.example.samsonic.ui.theme.oneUiRowClickable
 import kotlinx.coroutines.delay
 
@@ -79,7 +80,8 @@ private fun FilterTitle(icon: ImageVector, title: String, value: String, onClear
                 text = value,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 8.dp),
+                // The same room as Clear takes (its press inset and padding), so the row keeps its height.
+                modifier = Modifier.padding(OneUiRow.Inset).padding(horizontal = 8.dp, vertical = 4.dp),
             )
         }
     }
