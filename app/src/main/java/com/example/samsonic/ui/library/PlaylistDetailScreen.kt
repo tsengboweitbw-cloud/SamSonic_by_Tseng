@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -100,7 +101,8 @@ fun PlaylistDetailScreen(
                 item {
                     PlaylistHeader(playlist, songs.size, cornerRadius) { PlayShuffleButtons(songs = songs, playlistTitle = playlist.name) }
                 }
-                items(songs, key = { it.id }) { song ->
+                // By place as well as song: a playlist can hold the same song more than once.
+                itemsIndexed(songs, key = { i, s -> "${s.id}#$i" }) { _, song ->
                     SongRow(
                         song = song,
                         isCurrent = player.currentSong?.id == song.id,
