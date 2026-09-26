@@ -129,23 +129,16 @@ internal fun LibraryTabsPanel(
     // The default spring (StiffnessMedium, 1500) slowed to match the morph: 25% longer.
     // Critically damped, as a fade must not bounce.
     val scrimAlpha by transition.animateFloat(transitionSpec = { ScrimSpring }, label = "scrim") { if (it) 0.32f else 0f }
-    // The glass is the tab pill's (user opacity included); an extra wash of the
-    // same tint, faded with the morph, thickens it into a readable panel.
-    // Animating the glass's own alpha instead restyled the blur and recomposed
-    // the whole panel every frame, which stuttered.
+    // The glass is the tab pill's, the navigation bar's (its opacity and blur settings
+    // included), open or closed.
     val tint = MaterialTheme.colorScheme.surfaceContainerHigh
     val glass = LocalGlassSettings.current
     val pillAlpha = GlassAlpha.Nav * glass.opacityScale
     // The glass's tint runs thin at the top to dense at the bottom of the full
     // panel, so the pill (just its top strip) gets a little wash to match the
-    // standalone pill's average density; the open panel gets enough to reach
-    // GlassAlpha.Panel, scaled by the user's menu opacity.
-    val closedWash = 0.2f * pillAlpha / GlassAlpha.Nav
-    val panelAlpha = (GlassAlpha.Panel * glass.panelOpacity).coerceIn(0f, 1f)
-    val openWash = (1f - (1f - panelAlpha) / (1f - pillAlpha)).coerceIn(0f, 1f)
-    // The glass is the tab pill's too: the menu blur only while the panel is out,
-    // switched once as it starts to open and once it's home, never per frame.
-    val blurRadius = if (state.isShown) glass.panelBlur else glass.blurRadius
+    // standalone pill's average density; the open panel keeps it.
+    val wash = 0.2f * pillAlpha / GlassAlpha.Nav
+    val blurRadius = glass.blurRadius
     val rimBrush = glassRimBrush()
     val cornerRadius = OneUiRadius.Card
     // The pill's measured height, handed from layout to draw (both per frame).
@@ -218,8 +211,7 @@ internal fun LibraryTabsPanel(
                     scaleOpacity = false,
                     rim = false,
                 )
-                // Read at draw time, so the morph doesn't recompose.
-                .drawBehind { drawRect(tint, alpha = lerp(closedWash, openWash, progress.coerceIn(0f, 1f))) },
+                .drawBehind { drawRect(tint, alpha = wash) },
             // No pointer modifier on the glass: closed, taps below the pill
             // (where the glass is laid out but clipped away) reach the content.
         ) {

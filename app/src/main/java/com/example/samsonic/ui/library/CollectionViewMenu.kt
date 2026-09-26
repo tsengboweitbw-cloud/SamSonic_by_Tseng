@@ -37,10 +37,10 @@ import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.R
 import com.example.samsonic.data.LibrarySection
 import com.example.samsonic.data.LibraryViewMode
+import com.example.samsonic.ui.common.GuardChrome
+import com.example.samsonic.ui.common.LocalChromeGuard
 import com.example.samsonic.ui.player.MorphPanel
 import com.example.samsonic.ui.player.PanelState
-import com.example.samsonic.ui.player.MorphGlassBase
-import com.example.samsonic.ui.player.washToReach
 import com.example.samsonic.ui.settings.menuOrigin
 import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.LocalGlassSettings
@@ -86,6 +86,10 @@ internal fun BoxScope.CollectionViewMenu(section: LibrarySection, title: String,
     if (!showing) return
     val glass = LocalGlassSettings.current
     val statusBar = WindowInsets.statusBars.getTop(LocalDensity.current).toFloat()
+    // The floating chrome can't be used while it's out either: a tap on it closes it, and it
+    // dims the chrome with the page there, so this dim stops above it.
+    GuardChrome(active = true, dim = { ScrimAlpha * panel.progress }, onDismiss = { if (panel.isOpen) panel.close() })
+    val chromeHeight = LocalChromeGuard.current?.height ?: 0.dp
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -94,7 +98,7 @@ internal fun BoxScope.CollectionViewMenu(section: LibrarySection, title: String,
                 drawRect(
                     color = Color.Black,
                     topLeft = Offset(0f, -statusBar),
-                    size = Size(size.width, size.height + statusBar),
+                    size = Size(size.width, (size.height + statusBar - chromeHeight.toPx()).coerceAtLeast(0f)),
                     alpha = (ScrimAlpha * panel.progress).coerceIn(0f, 1f),
                 )
             }
@@ -108,18 +112,16 @@ internal fun BoxScope.CollectionViewMenu(section: LibrarySection, title: String,
         MorphPanel(
             panel = panel,
             icon = icon,
+            // The navigation bar's glass, its opacity and blur settings included, as its
+            // view button's is.
             surface = Modifier.glassSurface(
                 shape = RoundedCornerShape(OneUiRadius.Card),
                 hazeState = haze,
                 tint = MaterialTheme.colorScheme.surfaceContainerHigh,
-                // Starts thin; the wash thickens it to the panel's density.
-                alpha = MorphGlassBase,
-                blurRadius = glass.panelBlur,
-                scaleOpacity = false,
+                alpha = GlassAlpha.Nav,
+                blurRadius = glass.blurRadius,
                 rim = false,
             ),
-            wash = MaterialTheme.colorScheme.surfaceContainerHigh,
-            washAlpha = washToReach(MorphGlassBase, GlassAlpha.Panel * glass.panelOpacity),
             modifier = Modifier
                 .padding(top = libraryTitleRowHeight(), start = 16.dp, end = 16.dp)
                 .fillMaxWidth()
