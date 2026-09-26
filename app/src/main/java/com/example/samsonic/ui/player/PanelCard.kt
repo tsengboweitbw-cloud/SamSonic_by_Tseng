@@ -103,6 +103,7 @@ internal fun PanelCard(
                 // Starts thin, like its button's glass; the wash below thickens it.
                 alpha = MorphGlassBase,
                 blurRadius = glass.panelBlur,
+                downsample = true,
                 scaleOpacity = false,
                 rim = false,
             ),

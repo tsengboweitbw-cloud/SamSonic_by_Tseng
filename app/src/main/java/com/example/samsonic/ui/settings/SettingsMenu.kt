@@ -108,6 +108,7 @@ internal fun SettingsMenu(
                 // Starts thin; the wash thickens it to the panel's density.
                 alpha = MorphGlassBase,
                 blurRadius = glass.panelBlur,
+                downsample = true,
                 scaleOpacity = false,
                 rim = false,
             ),

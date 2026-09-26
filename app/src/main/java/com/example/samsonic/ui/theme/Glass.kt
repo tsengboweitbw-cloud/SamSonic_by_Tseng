@@ -17,6 +17,8 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.ui.components.MediaArtFill
+import dev.chrisbanes.haze.ExperimentalHazeApi
+import dev.chrisbanes.haze.HazeInputScale
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.HazeTint
@@ -36,6 +38,7 @@ val LocalHazeState = staticCompositionLocalOf<HazeState?> { null }
  * when no haze source is available (e.g. API < 31, where the underlying
  * RenderEffect blur silently no-ops).
  */
+@OptIn(ExperimentalHazeApi::class)
 @Composable
 fun Modifier.glassSurface(
     shape: Shape,
@@ -52,6 +55,9 @@ fun Modifier.glassSurface(
     // False for a caller that draws [glassRimBrush] along its own (e.g.
     // animated) outline instead of this surface's full bounds.
     rim: Boolean = true,
+    // True for a big panel that grows and shrinks (see the hazeEffect below); a small bar's
+    // lighter blur shows the smaller copy it blurs as blocks.
+    downsample: Boolean = false,
 ): Modifier {
     // Scale by the user's global opacity preference, keeping each surface's
     // base alpha as its relative density.
@@ -77,9 +83,16 @@ fun Modifier.glassSurface(
                 backgroundColor = MaterialTheme.colorScheme.background,
                 tint = HazeTint(tintBrush),
                 blurRadius = blurRadius,
-                noiseFactor = noiseFactor,
+                // The smaller copy a downsampled glass blurs would stretch the grain into blotches.
+                noiseFactor = if (downsample) 0f else noiseFactor,
             ),
-        )
+        ) {
+            // Blurs a smaller copy of what's behind (a third across, for all but a faint
+            // blur), which looks the same under a blur this strong at a fraction of the
+            // cost: at full size, a panel's glass redrawn every frame of its growing
+            // (by the morph's moving clip) blurred the whole card each frame, and stuttered.
+            if (downsample) inputScale = HazeInputScale.Auto
+        }
     } else {
         clipped.background(tint.copy(alpha = alpha))
     }
