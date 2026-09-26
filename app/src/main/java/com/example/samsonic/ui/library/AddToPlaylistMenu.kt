@@ -77,6 +77,8 @@ import com.example.samsonic.ui.player.PanelState
 import com.example.samsonic.ui.settings.MenuOption
 import com.example.samsonic.ui.settings.SettingsMenu
 import com.example.samsonic.ui.theme.OneUiRadius
+import com.example.samsonic.ui.theme.scrollBottomFade
+import com.example.samsonic.ui.theme.scrollTopFade
 import dev.chrisbanes.haze.HazeState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -125,7 +127,7 @@ class AddToPlaylistState internal constructor(scope: CoroutineScope) {
     }
 }
 
-/** Null where nothing can be added to playlists, such as the music on this phone. */
+/** Null where nothing can be added to playlists ([MusicLibrary.canEditPlaylists] is false). */
 val LocalAddToPlaylist = staticCompositionLocalOf<AddToPlaylistState?> { null }
 
 @Composable
@@ -317,17 +319,24 @@ fun AddToPlaylistMenu(state: AddToPlaylistState, haze: HazeState) {
                                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                             }
                             is UiState.Error -> MenuMessage(list.message)
-                            is UiState.Success -> Column(
-                                Modifier.heightIn(max = PlaylistListMaxHeight.dp).verticalScroll(rememberScrollState()),
-                            ) {
-                                list.data.forEach { playlist ->
-                                    MenuOption(
-                                        icon = Icons.AutoMirrored.Filled.QueueMusic,
-                                        label = playlist.name,
-                                        supporting = if (saving == playlist.id) stringResource(R.string.library_adding) else songCount(playlist.songCount),
-                                        selected = saving == playlist.id,
-                                        onClick = { pick(playlist) },
-                                    )
+                            is UiState.Success -> {
+                                val scroll = rememberScrollState()
+                                Column(
+                                    Modifier
+                                        .heightIn(max = PlaylistListMaxHeight.dp)
+                                        .scrollTopFade(scroll)
+                                        .scrollBottomFade(scroll)
+                                        .verticalScroll(scroll),
+                                ) {
+                                    list.data.forEach { playlist ->
+                                        MenuOption(
+                                            icon = Icons.AutoMirrored.Filled.QueueMusic,
+                                            label = playlist.name,
+                                            supporting = if (saving == playlist.id) stringResource(R.string.library_adding) else songCount(playlist.songCount),
+                                            selected = saving == playlist.id,
+                                            onClick = { pick(playlist) },
+                                        )
+                                    }
                                 }
                             }
                         }

@@ -24,6 +24,8 @@ import com.example.samsonic.R
 import com.example.samsonic.model.Song
 import com.example.samsonic.playback.LocalPlayerState
 import com.example.samsonic.ui.components.pressClickable
+import com.example.samsonic.ui.theme.scrollBottomFade
+import com.example.samsonic.ui.theme.scrollTopFade
 import com.example.samsonic.util.formatDuration
 import com.example.samsonic.util.formatFileSize
 import dev.chrisbanes.haze.HazeState
@@ -46,10 +48,13 @@ internal fun SongInfoPanel(panel: PanelState, haze: HazeState) {
     PanelCard(panel, PanelIcons.Info, title = stringResource(R.string.player_song_info), haze = haze) {
         val links = LocalPlayerLinks.current
         val albumArtist = rememberAlbumArtist(song)
+        val scroll = rememberScrollState()
         SelectionContainer(
             Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
+                .scrollTopFade(scroll)
+                .scrollBottomFade(scroll)
+                .verticalScroll(scroll)
                 .padding(horizontal = 24.dp),
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
