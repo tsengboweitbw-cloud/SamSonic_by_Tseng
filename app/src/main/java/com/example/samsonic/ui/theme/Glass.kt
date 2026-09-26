@@ -1,5 +1,10 @@
 package com.example.samsonic.ui.theme
 
+import androidx.compose.ui.res.imageResource
+import androidx.compose.ui.graphics.TileMode
+import androidx.compose.ui.graphics.ShaderBrush
+import androidx.compose.ui.graphics.ImageShader
+import androidx.compose.ui.graphics.ImageBitmap
 import com.example.samsonic.data.CoverArtSizes
 import androidx.compose.runtime.remember
 import androidx.compose.ui.unit.max
@@ -78,6 +83,9 @@ fun Modifier.glassSurface(
     val opacityScale = if (scaleOpacity) LocalGlassSettings.current.opacityScale else 1f
     val alpha = (alpha * opacityScale).coerceIn(0f, 1f)
     val clipped = clip(shape)
+    // Blurred from a smaller copy, Haze's grain would be drawn at that copy's size too and
+    // stretched into blotches; it's drawn over the glass at full size instead ([fullSizeGrain]).
+    val scaledCopy = hazeState != null && !downsample && inputScale != null && inputScale < 1f
     val filled = if (hazeState != null) {
         // Thinner tint up top so the blurred colors behind bloom through,
         // denser toward the bottom where content (text) must stay hidden.
@@ -98,7 +106,7 @@ fun Modifier.glassSurface(
                 tint = HazeTint(tintBrush),
                 blurRadius = blurRadius,
                 // The smaller copy a downsampled glass blurs would stretch the grain into blotches.
-                noiseFactor = if (downsample) 0f else noiseFactor,
+                noiseFactor = if (downsample || scaledCopy) 0f else noiseFactor,
             ),
         ) {
             // Blurs a smaller copy of what's behind (a third across, for all but a faint
@@ -114,8 +122,24 @@ fun Modifier.glassSurface(
     } else {
         clipped.background(tint.copy(alpha = alpha))
     }
-    val tinted = if (sheen > 0f) filled.accentSheen(sheen) else filled
+    // Over the tint, where Haze draws it under: thinned by about as much as the tint would.
+    val grained = if (scaledCopy && noiseFactor > 0f) {
+        filled.fullSizeGrain(noiseFactor * (1f - (alpha - 0.075f).coerceIn(0f, 1f)))
+    } else {
+        filled
+    }
+    val tinted = if (sheen > 0f) grained.accentSheen(sheen) else grained
     return if (rim) tinted.border(GlassRimWidth, glassRimBrush(), shape) else tinted
+}
+
+/** Haze's own grain texture, tiled over the glass at the screen's full size, at [alpha]. */
+@Composable
+private fun Modifier.fullSizeGrain(alpha: Float): Modifier {
+    val tile = ImageBitmap.imageResource(dev.chrisbanes.haze.R.drawable.haze_noise)
+    return drawWithCache {
+        val brush = ShaderBrush(ImageShader(tile, TileMode.Repeated, TileMode.Repeated))
+        onDrawBehind { drawRect(brush, alpha = alpha) }
+    }
 }
 
 /**
