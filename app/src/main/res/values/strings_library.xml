@@ -99,6 +99,7 @@
     <string name="library_add_to_playlist_error">Couldn\'t add to the playlist</string>
     <string name="library_no_songs_to_add">There are no songs to add</string>
     <string name="library_already_in_playlist">Already in %1$s</string>
+    <string name="library_added_to_queue">Added %1$s to the queue</string>
     <string name="library_added_to_playlist">Added to %1$s</string>
     <!-- %1$s: song count (e.g. 3 songs), %2$s: playlist name -->
     <string name="library_added_songs">Added %1$s to %2$s</string>

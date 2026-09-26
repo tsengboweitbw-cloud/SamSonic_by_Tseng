@@ -85,7 +85,7 @@ fun PlayShuffleButtons(songs: List<Song>, modifier: Modifier = Modifier, playlis
         },
         modifier = modifier,
         queued = queued.value,
-        addToPlaylist = playlistTitle?.let { title -> PlaylistItems(title) { songs.map { it.id } } },
+        addToPlaylist = playlistTitle?.let { title -> PlaylistItems(title) { songs } },
     )
 }
 
@@ -132,7 +132,7 @@ fun PlayShuffleButtons(
         queued = queued.value,
         // The songs load with the card's first pick, and stay for the other buttons.
         addToPlaylist = playlistTitle?.let { title ->
-            PlaylistItems(title) { (songs ?: loadSongs().also { songs = it }).map { it.id } }
+            PlaylistItems(title) { songs ?: loadSongs().also { songs = it } }
         },
     )
 }
@@ -206,7 +206,8 @@ private fun PlayShuffleRow(
         if (playlistMenu != null && addToPlaylist != null) {
             // The card grows out of this button, a circle, and folds back into it.
             RoundButton(
-                onClick = { playlistMenu.open(addToPlaylist, playlistButton[0], originRadius = ButtonSize / 2) },
+                // Its row has its own Add to queue button.
+                onClick = { playlistMenu.open(addToPlaylist, playlistButton[0], originRadius = ButtonSize / 2, offersQueue = false) },
                 contentColor = MaterialTheme.colorScheme.onSurface,
                 surface = glass,
                 modifier = Modifier.onGloballyPositioned { playlistButton[0] = it.boundsInRoot() },

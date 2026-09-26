@@ -93,6 +93,7 @@
     <string name="library_add_to_playlist_error">無法加入播放清單</string>
     <string name="library_no_songs_to_add">沒有可加入的歌曲</string>
     <string name="library_already_in_playlist">已在「%1$s」中</string>
+    <string name="library_added_to_queue">已將「%1$s」加入播放佇列</string>
     <string name="library_added_to_playlist">已加入「%1$s」</string>
     <string name="library_added_songs">已將 %1$s 加入「%2$s」</string>
     <string name="library_added_songs_skipped">已將 %1$s 加入「%2$s」，並略過已存在的 %3$s</string>

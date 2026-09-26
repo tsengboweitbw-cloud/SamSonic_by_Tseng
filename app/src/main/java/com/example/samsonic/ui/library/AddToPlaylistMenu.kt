@@ -28,6 +28,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Button
@@ -65,6 +66,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.LocalAppContainer
+import com.example.samsonic.playback.LocalPlayerState
 import com.example.samsonic.R
 import com.example.samsonic.data.MusicLibrary
 import com.example.samsonic.model.Album
@@ -79,15 +81,17 @@ import dev.chrisbanes.haze.HazeState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
-/** What the Add to playlist menu adds: one song, or every song of an album. */
+/** What the Add to playlist menu adds, to a playlist or the queue: one song, or every song of an album. */
 class PlaylistItems internal constructor(
     val title: String,
-    internal val songIds: suspend (MusicLibrary) -> List<String>,
-)
+    internal val songs: suspend (MusicLibrary) -> List<Song>,
+) {
+    internal suspend fun songIds(library: MusicLibrary): List<String> = songs(library).map { it.id }
+}
 
-internal fun Song.toPlaylistItems() = PlaylistItems(title) { listOf(id) }
+internal fun Song.toPlaylistItems() = PlaylistItems(title) { listOf(this) }
 
-internal fun Album.toPlaylistItems() = PlaylistItems(title) { library -> library.getAlbum(id).second.map { it.id } }
+internal fun Album.toPlaylistItems() = PlaylistItems(title) { library -> library.getAlbum(id).second }
 
 /** What the Add to playlist menu is open for, and the menu's panel. */
 class AddToPlaylistState internal constructor(scope: CoroutineScope) {
@@ -103,13 +107,19 @@ class AddToPlaylistState internal constructor(scope: CoroutineScope) {
     internal var originRadius by mutableStateOf<Dp?>(OneUiRadius.Art)
         private set
 
+    /** Whether the menu also offers to add to the queue: not for the song already playing. */
+    internal var offersQueue by mutableStateOf(true)
+        private set
+
     /**
      * Opens the menu for [items], growing out of [from] (bounds in the root): a row or
-     * cover with [originRadius] corners, or with null a round glass button.
+     * cover with [originRadius] corners, or with null a round glass button. With
+     * [offersQueue], it offers Add to queue above the playlists.
      */
-    fun open(items: PlaylistItems, from: Rect, originRadius: Dp?) {
+    fun open(items: PlaylistItems, from: Rect, originRadius: Dp?, offersQueue: Boolean = true) {
         this.items = items
         this.originRadius = originRadius
+        this.offersQueue = offersQueue
         panel.origin = from
         panel.open()
     }
@@ -185,6 +195,7 @@ fun AddToPlaylistMenu(state: AddToPlaylistState, haze: HazeState) {
     SettingsMenu(state.panel, haze, title = stringResource(R.string.library_add_to_playlist), originRadius = state.originRadius, resizable = true) {
         val items = state.items ?: return@SettingsMenu
         val repository = LocalAppContainer.current.repository
+        val player = LocalPlayerState.current
         val context = LocalContext.current
         val resources = LocalResources.current
         val scope = rememberCoroutineScope()
@@ -281,6 +292,20 @@ fun AddToPlaylistMenu(state: AddToPlaylistState, haze: HazeState) {
                         },
                     )
                     Step.Pick -> {
+                        if (state.offersQueue) {
+                            MenuOption(
+                                icon = Icons.AutoMirrored.Filled.PlaylistAdd,
+                                label = stringResource(R.string.components_add_to_queue),
+                                selected = false,
+                                onClick = {
+                                    if (saving == null) {
+                                        // Fetched and queued by the player, so it carries on after the menu closes.
+                                        player.queueLater(next = false) { items.songs(repository) }
+                                        done(resources.getString(R.string.library_added_to_queue, items.title))
+                                    }
+                                },
+                            )
+                        }
                         MenuOption(
                             icon = Icons.Filled.Add,
                             label = stringResource(R.string.library_new_playlist),

@@ -143,7 +143,7 @@ internal fun NowPlayingActions(
             autoDj.capsule(AutoDjIcon, autoDjLabel),
             addToPlaylist?.let { state ->
                 StackCapsule(Icons.Filled.LibraryAdd, addLabel, { state.panel.progress }, { state.panel.landing }) { from ->
-                    state.open(currentSong.toPlaylistItems(), from, originRadius = null)
+                    state.open(currentSong.toPlaylistItems(), from, originRadius = null, offersQueue = false)
                 }
             },
         )
