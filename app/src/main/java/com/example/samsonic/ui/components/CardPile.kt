@@ -102,7 +102,13 @@ class CardPileState(val count: Int, private val scope: CoroutineScope) {
      * Where card [index] is in the pile: 0 in front, 1, 2... further back, and between
      * -1 and 0 on its way from the front to the back (see [pose]).
      */
-    fun depth(index: Int): Float = floorModFloat(index - position.value + 1f, count.toFloat()) - 1f
+    fun depth(index: Int): Float {
+        val depth = floorModFloat(index - position.value + 1f, count.toFloat()) - 1f
+        // All the way to the back and at rest, it's in the back place: drawn just the same,
+        // but counted as that place, so a pile of two knows its back card is next in line
+        // (and shows its contents as the front one is lifted off it).
+        return if (depth == -1f) (count - 1).toFloat() else depth
+    }
 
     /** How it's drawn, for cards [heightPx] high and [stepPx] apart; [thresholdPx] is [PickThreshold]. */
     fun pose(index: Int, heightPx: Float, stepPx: Float, thresholdPx: Float): CardPose =
