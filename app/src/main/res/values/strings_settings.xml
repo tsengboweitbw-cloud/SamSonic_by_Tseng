@@ -86,6 +86,10 @@
     <string name="settings_glass_blur_hint">How much the frosted bars and cards blur what\'s behind them</string>
     <string name="settings_player_blur">Player background blur</string>
     <string name="settings_player_blur_hint">How much Now Playing blurs the cover behind it</string>
+    <string name="settings_player_glass_opacity">Player controls opacity</string>
+    <string name="settings_player_glass_opacity_hint">How solid Now Playing\'s buttons and controls are</string>
+    <string name="settings_player_glass_blur">Player controls blur</string>
+    <string name="settings_player_glass_blur_hint">How much Now Playing\'s buttons and controls blur what\'s behind them</string>
     <string name="settings_menu_opacity">Menu opacity</string>
     <string name="settings_menu_opacity_hint">How solid the menus that open from rows are</string>
     <string name="settings_menu_blur">Menu blur</string>

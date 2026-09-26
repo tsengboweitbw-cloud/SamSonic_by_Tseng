@@ -22,6 +22,10 @@ data class GlassSettings(
     val panelOpacity: Float = ThemeManager.DefaultPanelOpacity,
     /** Frosted-glass blur of the secondary menus (Library view options, Now Playing panels). */
     val panelBlur: Dp = ThemeManager.DefaultPanelBlur,
+    /** Alpha of Now Playing's capsules (the collapse button, the controls, the stack). */
+    val playerOpacity: Float = ThemeManager.DefaultPlayerGlassOpacity,
+    /** Frosted-glass blur of Now Playing's capsules. */
+    val playerBlur: Dp = ThemeManager.DefaultPlayerGlassBlur,
 )
 
 val LocalGlassSettings = staticCompositionLocalOf { GlassSettings() }

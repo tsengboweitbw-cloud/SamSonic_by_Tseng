@@ -25,6 +25,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
@@ -60,7 +61,9 @@ import com.example.samsonic.model.Song
 import com.example.samsonic.ui.components.pressClickable
 import com.example.samsonic.ui.library.AddToPlaylistState
 import com.example.samsonic.ui.library.toPlaylistItems
+import dev.chrisbanes.haze.HazeState
 import kotlinx.coroutines.launch
+import kotlin.math.floor
 import kotlin.math.roundToInt
 
 /** Each panel's button icon, which the panel also carries as it grows out of the button. */
@@ -99,7 +102,7 @@ private val ToBackSpring = spring<Float>(dampingRatio = 1f, stiffness = 380f)
 // Dropping back into place: a little bounce as it lands.
 private val DropSpring = spring<Float>(dampingRatio = 0.6f, stiffness = 600f)
 
-// How much the stack shrinks per unit of a panel's close overshoot (a few % at most).
+// How much a capsule shrinks per unit of its panel's close overshoot (a few % at most).
 private const val LandingSqueeze = 3f
 
 /**
@@ -110,7 +113,7 @@ private const val LandingSqueeze = 3f
  * pile and the next comes forward (see [capsulePose]), one capsule a swipe; lower, it
  * drops back. A drag down is left to Now Playing. A tap opens the front one: lyrics,
  * the queue, song info, or Add to playlist ([addToPlaylist], if there are playlists to
- * add to), each growing out of the stack.
+ * add to), each growing out of the front capsule as the rest of the pile stays.
  */
 @Composable
 internal fun NowPlayingActions(
@@ -119,6 +122,7 @@ internal fun NowPlayingActions(
     info: PanelState,
     addToPlaylist: AddToPlaylistState?,
     song: Song,
+    haze: HazeState?,
     modifier: Modifier = Modifier,
 ) {
     val lyricsLabel = stringResource(R.string.player_lyrics)
@@ -145,6 +149,10 @@ internal fun NowPlayingActions(
     // the back. Counts on past the ends, the stack going round and round.
     val position = remember { Animatable(0f) }
     val front = floorMod(position.value.roundToInt(), count)
+    // The one capsule that can be lifted over the controls, the front one or the one on its
+    // way from there to the back, is the only one whose glass blurs; the rest show only an
+    // edge, over art already blurred, where a blur of their own would cost without showing.
+    val liftable by remember(count) { derivedStateOf { floorMod(floor(position.value).toInt(), count) } }
     // How high the front capsule is held up by the finger, px; and how high it was let go,
     // which its trip to the back sets off from.
     val lift = remember { Animatable(0f) }
@@ -167,14 +175,6 @@ internal fun NowPlayingActions(
                     lyrics.origin = at
                     queue.origin = at
                     info.origin = at
-                }
-                // Hidden while a panel is out (the panel starts as a copy of the front
-                // capsule), then catching its close bounce with a small squeeze.
-                .graphicsLayer {
-                    alpha = if (capsules.any { it.progress() > 0f }) 0f else 1f
-                    val squeeze = 1f - (capsules.maxOfOrNull { it.landing() } ?: 0f) * LandingSqueeze
-                    scaleX = squeeze
-                    scaleY = squeeze
                 }
                 // A swipe up picks the front capsule up. Only up: a drag that sets off
                 // downward is left alone, for Now Playing to close.
@@ -216,10 +216,15 @@ internal fun NowPlayingActions(
                         val height = held()
                         scope.launch {
                             if (height >= thresholdPx) {
-                                // Off to the back, setting off from where it was let go.
+                                // Off to the back, setting off from where it was let go. Nudged
+                                // onto its way there before the lift is dropped: each snap can
+                                // take a frame, and one drawn in front with no lift flashes it
+                                // back into place.
                                 liftFrom = height
+                                val target = position.value + 1f
+                                position.snapTo(position.value + 0.001f)
                                 lift.snapTo(0f)
-                                position.animateTo(position.value + 1f, ToBackSpring)
+                                position.animateTo(target, ToBackSpring)
                             } else {
                                 lift.animateTo(0f, DropSpring)
                             }
@@ -228,6 +233,10 @@ internal fun NowPlayingActions(
                 }
                 .pressClickable(onClick = { capsules[front].open(bounds[0]) }, pressedScale = 0.96f),
         ) {
+            // Whether each capsule's panel is out, changing only as it sets out and as it's
+            // back: read instead of how far open it is, so the stack doesn't redraw every
+            // frame of the panel growing, which, blurring Now Playing, would redo its blur.
+            val open = remember(capsules) { capsules.map { derivedStateOf { it.progress() > 0f } } }
             capsules.forEachIndexed { index, capsule ->
                 // Where this capsule is in the stack: 0 in front, 1, 2... further back, and
                 // between -1 and 0 on its way from the front to the back (see capsulePose).
@@ -239,10 +248,13 @@ internal fun NowPlayingActions(
                     depth = { floorModFloat(index - position.value + 1f, count.toFloat()) - 1f },
                     // The one just in front of it, which it hides behind.
                     depthInFront = { floorModFloat(index - 1 - position.value + 1f, count.toFloat()) - 1f },
+                    isOpen = { open[index].value },
+                    inFrontOpen = { open[floorMod(index - 1, count)].value },
                     backDepth = (count - 1).toFloat(),
                     lift = { lift.value },
                     liftFrom = { liftFrom },
                     thresholdPx = thresholdPx,
+                    haze = haze.takeIf { index == liftable },
                     modifier = Modifier.zIndex(z),
                 )
             }
@@ -261,10 +273,15 @@ private fun StackedCapsule(
     capsule: StackCapsule,
     depth: () -> Float,
     depthInFront: () -> Float,
+    // Whether its own panel is out, and that of the one in front: while that one's is
+    // (and so that one hidden), this one shows whole, with its contents.
+    isOpen: () -> Boolean,
+    inFrontOpen: () -> Boolean,
     backDepth: Float,
     lift: () -> Float,
     liftFrom: () -> Float,
     thresholdPx: Float,
+    haze: HazeState?,
     modifier: Modifier = Modifier,
 ) {
     val cutout = remember { Path() }
@@ -273,17 +290,27 @@ private fun StackedCapsule(
             .fillMaxSize()
             .graphicsLayer {
                 val pose = capsulePose(depth(), backDepth, size.height, StackStep.toPx(), lift(), liftFrom(), thresholdPx)
-                scaleX = pose.scale
-                scaleY = pose.scale
+                // Catching its panel's close bounce with a small squeeze; the rest of the
+                // pile stays still.
+                val squeeze = 1f - capsule.landing() * LandingSqueeze
+                scaleX = pose.scale * squeeze
+                scaleY = pose.scale * squeeze
                 translationY = pose.rise
-                alpha = pose.alpha
+                // Hidden while its panel is out, which starts as a copy of it; the rest of
+                // the pile stays in place behind, the next one, left in front, as clear as
+                // a front one. Each switch is made under the panel's copy of the capsule.
+                alpha = when {
+                    isOpen() -> 0f
+                    depth() == 1f && inFrontOpen() -> 1f
+                    else -> pose.alpha
+                }
             }
             .drawWithContent {
                 val d = depth()
                 val inFront = depthInFront()
                 // Cut away only where the one in front is drawn over this one: not the front
                 // one itself, nor one on its way up over the top, nor by one gone behind.
-                val underIt = (d > 0f || d < -ToTopShare) && inFront >= -ToTopShare
+                val underIt = (d > 0f || d < -ToTopShare) && inFront >= -ToTopShare && !inFrontOpen()
                 if (!underIt) {
                     drawContent()
                     return@drawWithContent
@@ -308,14 +335,23 @@ private fun StackedCapsule(
                 )
                 clipPath(cutout, ClipOp.Difference) { this@drawWithContent.drawContent() }
             }
-            .nowPlayingGlass(),
+            .nowPlayingGlass(haze),
         contentAlignment = Alignment.Center,
     ) {
         Row(
             modifier = Modifier.graphicsLayer {
                 val d = depth()
-                // In front, and on its way up; gone as it passes behind the pile.
-                alpha = if (d >= 0f) (1f - d).coerceIn(0f, 1f) else 1f - ramp(-d, ToTopShare, ToTopShare + 0.2f)
+                alpha = when {
+                    // On its way up; gone as it passes behind the pile.
+                    d < 0f -> 1f - ramp(-d, ToTopShare, ToTopShare + 0.2f)
+                    // Next in line: showing as the front one is lifted off it, and staying
+                    // shown as it comes forward once that one is let go high enough.
+                    // ...or as the front one's panel opens out of it.
+                    d == 1f -> if (inFrontOpen()) 1f else ramp(lift(), 0f, thresholdPx)
+                    d > 0f && d < 1f -> maxOf(1f - d, ramp(liftFrom(), 0f, thresholdPx))
+                    // In front; the rest of the pile shows none.
+                    else -> (1f - d).coerceIn(0f, 1f)
+                }
             },
             verticalAlignment = Alignment.CenterVertically,
         ) {

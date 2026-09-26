@@ -60,6 +60,14 @@ class ThemeManager(context: Context) {
     private val _panelBlur = MutableStateFlow(prefs.getFloat(KEY_PANEL_BLUR, DefaultPanelBlur.value).dp)
     val panelBlur: StateFlow<Dp> = _panelBlur.asStateFlow()
 
+    // Now Playing's capsules' own pair (the collapse button, the controls, the stack
+    // at the bottom). The opacity is their alpha itself, not a multiplier.
+    private val _playerGlassOpacity = MutableStateFlow(prefs.getFloat(KEY_PLAYER_GLASS_OPACITY, DefaultPlayerGlassOpacity))
+    val playerGlassOpacity: StateFlow<Float> = _playerGlassOpacity.asStateFlow()
+
+    private val _playerGlassBlur = MutableStateFlow(prefs.getFloat(KEY_PLAYER_GLASS_BLUR, DefaultPlayerGlassBlur.value).dp)
+    val playerGlassBlur: StateFlow<Dp> = _playerGlassBlur.asStateFlow()
+
     // Whether the heart (like/unlike) buttons are shown at all.
     private val _likesEnabled = MutableStateFlow(prefs.getBoolean(KEY_LIKES_ENABLED, true))
     val likesEnabled: StateFlow<Boolean> = _likesEnabled.asStateFlow()
@@ -127,6 +135,16 @@ class ThemeManager(context: Context) {
         _panelBlur.value = radius
     }
 
+    fun setPlayerGlassOpacity(alpha: Float) {
+        prefs.edit().putFloat(KEY_PLAYER_GLASS_OPACITY, alpha).apply()
+        _playerGlassOpacity.value = alpha
+    }
+
+    fun setPlayerGlassBlur(radius: Dp) {
+        prefs.edit().putFloat(KEY_PLAYER_GLASS_BLUR, radius.value).apply()
+        _playerGlassBlur.value = radius
+    }
+
     fun setLikesEnabled(enabled: Boolean) {
         prefs.edit().putBoolean(KEY_LIKES_ENABLED, enabled).apply()
         _likesEnabled.value = enabled
@@ -155,6 +173,8 @@ class ThemeManager(context: Context) {
         private const val KEY_BACKDROP_BLUR = "backdrop_blur"
         private const val KEY_PANEL_OPACITY = "panel_opacity"
         private const val KEY_PANEL_BLUR = "panel_blur"
+        private const val KEY_PLAYER_GLASS_OPACITY = "player_glass_opacity"
+        private const val KEY_PLAYER_GLASS_BLUR = "player_glass_blur"
         private const val KEY_LIKES_ENABLED = "likes_enabled"
         private const val KEY_SHOW_AUDIO_FORMAT = "show_audio_format"
         private const val KEY_AUDIO_FORMAT_DISPLAY = "audio_format_display"
@@ -166,5 +186,7 @@ class ThemeManager(context: Context) {
         val DefaultBackdropBlur = 40.dp
         const val DefaultPanelOpacity = 1f
         val DefaultPanelBlur = 28.dp
+        const val DefaultPlayerGlassOpacity = 0.7f
+        val DefaultPlayerGlassBlur = 48.dp
     }
 }

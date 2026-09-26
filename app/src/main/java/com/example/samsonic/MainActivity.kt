@@ -63,6 +63,8 @@ class MainActivity : ComponentActivity() {
             val backdropBlur by container.themeManager.backdropBlur.collectAsStateWithLifecycle()
             val panelOpacity by container.themeManager.panelOpacity.collectAsStateWithLifecycle()
             val panelBlur by container.themeManager.panelBlur.collectAsStateWithLifecycle()
+            val playerGlassOpacity by container.themeManager.playerGlassOpacity.collectAsStateWithLifecycle()
+            val playerGlassBlur by container.themeManager.playerGlassBlur.collectAsStateWithLifecycle()
             val activeSource by container.sources.active.collectAsStateWithLifecycle()
             val darkTheme = when (themeMode) {
                 ThemeMode.SYSTEM -> isSystemInDarkTheme()
@@ -95,7 +97,7 @@ class MainActivity : ComponentActivity() {
                 CompositionLocalProvider(
                     LocalAppContainer provides container,
                     LocalPlayerState provides container.playerState,
-                    LocalGlassSettings provides GlassSettings(glassOpacity, glassBlur, backdropBlur, panelOpacity, panelBlur),
+                    LocalGlassSettings provides GlassSettings(glassOpacity, glassBlur, backdropBlur, panelOpacity, panelBlur, playerGlassOpacity, playerGlassBlur),
                     LocalLanguageFade provides languageFade,
                 ) {
                     Surface(modifier = Modifier.fillMaxSize()) {

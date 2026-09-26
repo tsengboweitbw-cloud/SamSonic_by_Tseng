@@ -39,8 +39,8 @@ private val SliderEdgeInsetBottom = 6.dp
 
 /**
  * Sliders for the global glass look: opacity of every glass surface, blur of
- * the floating frosted chrome, blur of the Now Playing album-art backdrop, and
- * the opacity and blur of the secondary menus.
+ * the floating frosted chrome, blur of the Now Playing album-art backdrop, the
+ * opacity and blur of Now Playing's capsules, and those of the secondary menus.
  */
 @Composable
 fun GlassSliderRows(themeManager: ThemeManager) {
@@ -49,6 +49,8 @@ fun GlassSliderRows(themeManager: ThemeManager) {
     val backdropBlur by themeManager.backdropBlur.collectAsStateWithLifecycle()
     val panelOpacity by themeManager.panelOpacity.collectAsStateWithLifecycle()
     val panelBlur by themeManager.panelBlur.collectAsStateWithLifecycle()
+    val playerGlassOpacity by themeManager.playerGlassOpacity.collectAsStateWithLifecycle()
+    val playerGlassBlur by themeManager.playerGlassBlur.collectAsStateWithLifecycle()
 
     SliderRow(
         icon = Icons.Filled.Opacity,
@@ -76,6 +78,24 @@ fun GlassSliderRows(themeManager: ThemeManager) {
         value = backdropBlur.value,
         valueRange = 0f..100f,
         onValueChange = { themeManager.setBackdropBlur(it.dp) },
+    )
+    SliderRow(
+        icon = Icons.Filled.Opacity,
+        title = stringResource(R.string.settings_player_glass_opacity),
+        hint = stringResource(R.string.settings_player_glass_opacity_hint),
+        valueLabel = "${(playerGlassOpacity * 100).roundToInt()}%",
+        value = playerGlassOpacity,
+        valueRange = 0.3f..1f,
+        onValueChange = themeManager::setPlayerGlassOpacity,
+    )
+    SliderRow(
+        icon = Icons.Filled.BlurOn,
+        title = stringResource(R.string.settings_player_glass_blur),
+        hint = stringResource(R.string.settings_player_glass_blur_hint),
+        valueLabel = "${playerGlassBlur.value.roundToInt()}dp",
+        value = playerGlassBlur.value,
+        valueRange = 0f..80f,
+        onValueChange = { themeManager.setPlayerGlassBlur(it.dp) },
     )
     SliderRow(
         icon = Icons.Filled.Opacity,

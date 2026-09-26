@@ -85,6 +85,10 @@
     <string name="settings_glass_blur_hint">毛玻璃列與卡片對後方內容的模糊程度</string>
     <string name="settings_player_blur">播放器背景模糊</string>
     <string name="settings_player_blur_hint">「正在播放」畫面對後方封面的模糊程度</string>
+    <string name="settings_player_glass_opacity">播放器控制項不透明度</string>
+    <string name="settings_player_glass_opacity_hint">「正在播放」畫面按鈕與控制列的不透明程度</string>
+    <string name="settings_player_glass_blur">播放器控制項模糊</string>
+    <string name="settings_player_glass_blur_hint">這些按鈕與控制列對後方內容的模糊程度</string>
     <string name="settings_menu_opacity">選單不透明度</string>
     <string name="settings_menu_opacity_hint">從設定項目展開的選單的不透明程度</string>
     <string name="settings_menu_blur">選單模糊</string>

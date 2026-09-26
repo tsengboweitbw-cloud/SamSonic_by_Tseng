@@ -35,6 +35,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
@@ -54,11 +55,14 @@ import com.example.samsonic.ui.components.ChromeButtonIconSize
 import com.example.samsonic.ui.components.ChromeButtonSize
 import com.example.samsonic.ui.components.PressIconButton
 import com.example.samsonic.ui.theme.BlurredArtBackdrop
-import com.example.samsonic.ui.theme.GlassAlpha
+import com.example.samsonic.ui.theme.LocalGlassSettings
 import com.example.samsonic.ui.theme.OneUiRadius
 import com.example.samsonic.ui.theme.OneUiSlider
 import com.example.samsonic.ui.theme.glassSurface
 import com.example.samsonic.util.formatDuration
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.rememberHazeState
 
 @Composable
 fun NowPlayingScreen(
@@ -75,6 +79,19 @@ fun NowPlayingScreen(
     val cornerRadius by LocalAppContainer.current.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
     val likesEnabled by LocalAppContainer.current.themeManager.likesEnabled.collectAsStateWithLifecycle()
     val horizontalPadding = 24.dp
+    // What the capsule stack's glass blurs: the backdrop and everything above the
+    // stack, sources beside the stack rather than around it (a glass inside its own
+    // source draws recursively, so Now Playing's source, for the panels, won't do).
+    val stackHaze = rememberHazeState()
+    // While a panel is out, Now Playing's glass goes flat: dimmed under the panel, over
+    // art already blurred, its blur doesn't show, but the panel's own blur of Now
+    // Playing would redo it every frame of the panel's growing.
+    val panelOut by remember(lyrics, queue, info, addToPlaylist) {
+        derivedStateOf {
+            listOfNotNull(lyrics, queue, info, addToPlaylist?.panel).any { it.progress > 0f }
+        }
+    }
+    val glassHaze = stackHaze.takeUnless { panelOut }
     Box(
         modifier = modifier
             .playerMorphRoot(PlayerSurface.Full)
@@ -83,13 +100,15 @@ fun NowPlayingScreen(
         // Crossfade fades the old and new backdrops at the same time, so mid-change
         // neither is opaque and the screen behind the player shows through. An
         // opaque base keeps the page solid while the art swaps.
-        Box(
-            Modifier
-                .fillMaxSize()
-                .background(MaterialTheme.colorScheme.background),
-        )
-        Crossfade(targetState = song, animationSpec = tween(500), label = "backdrop") { s ->
-            BlurredArtBackdrop(coverArt = s.coverArt, colorSeed = s.id.artSeed())
+        Box(Modifier.fillMaxSize().graphicsLayer().hazeSource(stackHaze, zIndex = 0f)) {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background),
+            )
+            Crossfade(targetState = song, animationSpec = tween(500), label = "backdrop") { s ->
+                BlurredArtBackdrop(coverArt = s.coverArt, colorSeed = s.id.artSeed())
+            }
         }
 
         Column(
@@ -99,10 +118,11 @@ fun NowPlayingScreen(
                 .navigationBarsPadding()
                 .padding(horizontal = horizontalPadding),
         ) {
+        Column(Modifier.weight(1f).graphicsLayer().hazeSource(stackHaze, zIndex = 1f)) {
         // A floating glass button (One UI Gallery style) instead of a bar; Add to
         // playlist is in the capsule stack at the bottom.
         Row(modifier = Modifier.fillMaxWidth().padding(top = 12.dp)) {
-            GlassCircleButton(onClick = onCollapse) {
+            GlassCircleButton(onClick = onCollapse, haze = glassHaze) {
                 Icon(Icons.Filled.KeyboardArrowDown, contentDescription = stringResource(R.string.player_collapse), modifier = Modifier.size(ChromeButtonIconSize))
             }
         }
@@ -178,7 +198,7 @@ fun NowPlayingScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .nowPlayingGlass()
+                .nowPlayingGlass(glassHaze)
                 .padding(horizontal = 8.dp, vertical = 2.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
@@ -215,6 +235,8 @@ fun NowPlayingScreen(
             }
         }
 
+        }
+
         Spacer(Modifier.height(16.dp))
 
         NowPlayingActions(
@@ -223,6 +245,7 @@ fun NowPlayingScreen(
             info = info,
             addToPlaylist = addToPlaylist,
             song = song,
+            haze = glassHaze,
             modifier = Modifier.padding(bottom = 20.dp),
         )
         }
@@ -230,26 +253,40 @@ fun NowPlayingScreen(
 }
 
 @Composable
-private fun GlassCircleButton(onClick: () -> Unit, modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+private fun GlassCircleButton(
+    onClick: () -> Unit,
+    haze: HazeState?,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
     PressIconButton(
         onClick = onClick,
         // Matches the back button on the other pages.
         size = ChromeButtonSize,
-        modifier = modifier.nowPlayingGlass(),
+        modifier = modifier.nowPlayingGlass(haze),
         content = content,
     )
 }
 
 /**
- * Frosted pill for Now Playing. No hazeState: nested inside the NavHost's own
- * hazeSource subtree (see MediaLists.SongRow comment), so this is a flat veil -
- * but the backdrop is already blurred art, so a thin onSurface wash (light in
- * dark theme) lets its colors glow through instead of a dense grey slab.
+ * Now Playing's glass, on the collapse button, the controls and the capsule stack
+ * alike: dense and heavily blurred, so a capsule lifted over the controls doesn't
+ * show them, only a hint of their colour. [haze] is what it blurs (see
+ * [NowPlayingScreen]); the button and the controls, inside its source above the
+ * backdrop, blur only the backdrop. Null draws the same glass flat, for where the
+ * blur can't be seen, each live blur costing every frame. Its opacity and blur are
+ * the player's own settings, not scaled by the app's glass opacity.
  */
 @Composable
-internal fun Modifier.nowPlayingGlass(): Modifier = glassSurface(
-    shape = RoundedCornerShape(OneUiRadius.Pill),
-    hazeState = null,
-    tint = MaterialTheme.colorScheme.onSurface,
-    alpha = GlassAlpha.NowPlaying,
-)
+internal fun Modifier.nowPlayingGlass(haze: HazeState?): Modifier {
+    val glass = LocalGlassSettings.current
+    return glassSurface(
+        shape = RoundedCornerShape(OneUiRadius.Pill),
+        hazeState = haze,
+        tint = MaterialTheme.colorScheme.surfaceContainerHigh,
+        alpha = glass.playerOpacity,
+        blurRadius = glass.playerBlur,
+        noiseFactor = 0.18f,
+        scaleOpacity = false,
+    )
+}
