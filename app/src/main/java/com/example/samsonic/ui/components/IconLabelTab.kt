@@ -8,15 +8,16 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -28,12 +29,16 @@ import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
@@ -48,14 +53,15 @@ import kotlin.math.roundToInt
  * out beside it (and folds back as the indicator leaves), fading in and out with
  * a soft edge. The label and the icon's tint follow [emphasis] (1 under the
  * indicator, 0 a tab away), and taps give a soft shrink-and-glow instead of a ripple.
+ * [emphasis] is read as the tab is laid out and drawn, so the indicator sliding
+ * past only recomposes it as its label comes and goes.
  */
 @Composable
-fun RowScope.IconLabelTab(
+fun IconLabelTab(
     icon: ImageVector,
     label: String,
     selected: Boolean,
-    emphasis: Float,
-    weight: Float,
+    emphasis: () -> Float,
     verticalPadding: Dp,
     onClick: () -> Unit,
     enabled: Boolean = true,
@@ -73,12 +79,14 @@ fun RowScope.IconLabelTab(
         label = "tabPressGlow",
     )
     val glowColor = MaterialTheme.colorScheme.onSurface
-    val tint = lerp(MaterialTheme.colorScheme.onSurfaceVariant, MaterialTheme.colorScheme.primary, emphasis)
+    val restTint = MaterialTheme.colorScheme.onSurfaceVariant
+    val onTint = MaterialTheme.colorScheme.primary
+    val painter = rememberVectorPainter(icon)
+    val showLabel by remember(emphasis) { derivedStateOf { emphasis() > 0f } }
 
     Row(
         modifier = Modifier
-            .weight(weight)
-            .fillMaxHeight()
+            .fillMaxSize()
             .padding(vertical = verticalPadding)
             .clip(RoundedCornerShape(OneUiRadius.Pill))
             .drawBehind { if (pressGlow > 0f) drawRect(glowColor, alpha = pressGlow) }
@@ -99,24 +107,27 @@ fun RowScope.IconLabelTab(
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = label,
-            tint = tint,
+        // Tinted as it's drawn, following the indicator without recomposing.
+        Box(
+            Modifier
+                .size(24.dp)
+                .semantics { contentDescription = label }
+                .drawBehind {
+                    with(painter) { draw(size, colorFilter = ColorFilter.tint(lerp(restTint, onTint, emphasis()))) }
+                },
         )
         // The label opens with how near the indicator is ([emphasis]), as the tab
         // widens with it, so it keeps pace with the indicator however fast it
         // moves (a swipe racing along the bar shows each label as it passes) and
         // folds away as the tab narrows rather than being cut short to "…".
-        val reveal = emphasis
-        if (reveal > 0f) {
+        if (showLabel) {
             Text(
                 text = label,
                 modifier = Modifier
-                    .revealWidth(reveal, edgeFade = 20.dp)
+                    .revealWidth(emphasis, edgeFade = 20.dp)
                     // Fades in and out as it opens and closes, easing at both ends.
                     .graphicsLayer {
-                        val t = ((reveal - 0.1f) / 0.9f).coerceIn(0f, 1f)
+                        val t = ((emphasis() - 0.1f) / 0.9f).coerceIn(0f, 1f)
                         alpha = t * t * (3 - 2 * t)
                     }
                     .padding(start = 8.dp),
@@ -137,7 +148,7 @@ fun RowScope.IconLabelTab(
  * without its content ever reflowing. Where it's cut short, the last [edgeFade] of
  * what shows fades out, so letters dissolve at the edge instead of being sliced.
  */
-private fun Modifier.revealWidth(fraction: Float, edgeFade: Dp): Modifier {
+private fun Modifier.revealWidth(fraction: () -> Float, edgeFade: Dp): Modifier {
     // Whether the last layout cut the content short; drawing (after it) fades the edge then.
     val cut = BooleanArray(1)
     return clipToBounds()
@@ -155,7 +166,7 @@ private fun Modifier.revealWidth(fraction: Float, edgeFade: Dp): Modifier {
         }
         .layout { measurable, constraints ->
             val placeable = measurable.measure(constraints.copy(minWidth = 0, maxWidth = Constraints.Infinity))
-            val width = (placeable.width * fraction).roundToInt().coerceAtMost(constraints.maxWidth)
+            val width = (placeable.width * fraction()).roundToInt().coerceAtMost(constraints.maxWidth)
             cut[0] = width < placeable.width
             layout(width, placeable.height) { placeable.placeRelative(0, 0) }
         }

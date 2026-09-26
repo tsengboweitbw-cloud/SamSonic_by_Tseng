@@ -32,7 +32,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.layout.positionInRoot
 import androidx.compose.ui.platform.LocalDensity
@@ -135,6 +136,11 @@ fun SwipeActions(
     // its on-screen center and height in plain holders, so scrolling doesn't recompose.
     val rowToken = remember { Any() }
     val center = remember { floatArrayOf(Float.NaN, 0f) }
+    val rowCoordinates = remember { arrayOfNulls<LayoutCoordinates>(1) }
+    // Where the row's center is on screen now, from its coordinates as last placed.
+    val rowCenterY = remember {
+        { rowCoordinates[0]?.takeIf { it.isAttached }?.let { it.positionInRoot().y + it.size.height / 2f } ?: Float.NaN }
+    }
     // Set when a release fires an action: the neighbors stay let go through the spring-back.
     val releasedArmed = remember { booleanArrayOf(false) }
     DisposableEffect(rowToken) { onDispose { SwipeNeighbors.end(rowToken) } }
@@ -171,10 +177,9 @@ fun SwipeActions(
     Box(
         modifier = modifier
             .onSizeChanged { widthPx = it.width }
-            .onGloballyPositioned {
-                center[0] = it.positionInRoot().y + it.size.height / 2f
-                center[1] = it.size.height.toFloat()
-            }
+            // Only kept as it's placed; where the row is gets worked out when a swipe starts,
+            // not on every frame the list scrolls.
+            .onPlaced { rowCoordinates[0] = it }
             .semantics {
                 customActions = listOf(
                     CustomAccessibilityAction(left.label) { left.onSwipe(); true },
@@ -189,6 +194,8 @@ fun SwipeActions(
                     follow.snapTo(if (abs(dragX) >= thresholdPx) 1f else AttachedFollow)
                     returned = false
                     releasedArmed[0] = false
+                    center[0] = rowCenterY()
+                    center[1] = rowCoordinates[0]?.takeIf { it.isAttached }?.size?.height?.toFloat() ?: 0f
                     SwipeNeighbors.begin(rowToken, centerY = center[0], height = center[1])
                 },
                 onDragStopped = {
@@ -249,7 +256,7 @@ fun SwipeActions(
                 modifier = Modifier.matchParentSize().graphicsLayer { alpha = lift }.hazeSource(panelHaze),
             )
         }
-        val pull = rememberNeighborPull(rowToken, center)
+        val pull = rememberNeighborPull(rowToken, rowCenterY)
         Box(
             Modifier
                 // Its own swipe, plus any magnetic pull while a neighboring row is swiped.

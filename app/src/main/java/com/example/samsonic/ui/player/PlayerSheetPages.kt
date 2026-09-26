@@ -4,7 +4,11 @@ import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import com.example.samsonic.ui.components.LocalMarqueeRunning
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
@@ -36,7 +40,13 @@ internal fun PlayerPages(sheet: PlayerSheetState) {
     // app's one blurs the page under the sheet. Only where there are playlists to add to.
     val canAddToPlaylist = LocalAddToPlaylist.current != null
     val addToPlaylist = rememberAddToPlaylistState()
+    // Folded away, Now Playing is still laid out (the morph needs its anchors), but its
+    // titles don't scroll: a marquee draws every frame, seen or not. (Its glass stays: a
+    // blur not shown does no work, and switching it off and on at each open and close
+    // rebuilt it right as the sheet started and stopped moving.)
+    val live by remember(sheet) { derivedStateOf { sheet.progress > 0f } }
     Box(Modifier.fillMaxSize()) {
+        CompositionLocalProvider(LocalMarqueeRunning provides live) {
         NowPlayingScreen(
             modifier = Modifier.graphicsLayer().hazeSource(haze),
             onCollapse = { sheet.collapse() },
@@ -46,6 +56,7 @@ internal fun PlayerPages(sheet: PlayerSheetState) {
             autoDj = sheet.autoDj,
             addToPlaylist = addToPlaylist.takeIf { canAddToPlaylist },
         )
+        }
         PanelCard(sheet.lyrics, PanelIcons.Lyrics, title = stringResource(R.string.player_lyrics), haze = haze) {
             LyricsScreen(onCollapse = { sheet.lyrics.close() })
         }

@@ -41,7 +41,7 @@ fun AlbumRow(
     modifier: Modifier = Modifier,
     swipeActions: Boolean = true,
 ) {
-    val cornerRadius by LocalAppContainer.current.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
+    val cornerRadius = LocalRowPrefs.current.artCornerRadius
     val art = rememberSharedArt(ArtKeys.album(album.id), album, onClick)
     val details = listOfNotNull(
         album.artistName,

@@ -1,5 +1,7 @@
 package com.example.samsonic
 
+import com.example.samsonic.ui.components.LocalRowPrefs
+import com.example.samsonic.ui.components.RowPrefs
 import android.Manifest
 import android.content.Context
 import android.content.res.Configuration
@@ -66,6 +68,10 @@ class MainActivity : ComponentActivity() {
             val playerGlassOpacity by container.themeManager.playerGlassOpacity.collectAsStateWithLifecycle()
             val playerGlassBlur by container.themeManager.playerGlassBlur.collectAsStateWithLifecycle()
             val activeSource by container.sources.active.collectAsStateWithLifecycle()
+            val artCornerRadius by container.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
+            val likesEnabled by container.themeManager.likesEnabled.collectAsStateWithLifecycle()
+            val audioFormat by container.themeManager.audioFormatDisplay.collectAsStateWithLifecycle()
+            val rowPrefs = remember(artCornerRadius, likesEnabled, audioFormat) { RowPrefs(artCornerRadius, likesEnabled, audioFormat) }
             val darkTheme = when (themeMode) {
                 ThemeMode.SYSTEM -> isSystemInDarkTheme()
                 ThemeMode.LIGHT -> false
@@ -99,6 +105,7 @@ class MainActivity : ComponentActivity() {
                     LocalPlayerState provides container.playerState,
                     LocalGlassSettings provides GlassSettings(glassOpacity, glassBlur, backdropBlur, panelOpacity, panelBlur, playerGlassOpacity, playerGlassBlur),
                     LocalLanguageFade provides languageFade,
+                    LocalRowPrefs provides rowPrefs,
                 ) {
                     Surface(modifier = Modifier.fillMaxSize()) {
                         // Switching music sources starts the app's screens over, so no

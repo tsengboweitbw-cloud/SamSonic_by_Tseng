@@ -1,6 +1,7 @@
 package com.example.samsonic.ui.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import com.example.samsonic.ui.components.GlassTabBar
@@ -22,15 +23,18 @@ internal fun FloatingNavBar(
     hazeState: HazeState?,
     modifier: Modifier = Modifier,
 ) {
+    val labels = destinations.map { stringResource(it.label) }
+    val icons = remember(destinations) { destinations.map { it.icon } }
+    val pager = tabs.pager
     GlassTabBar(
-        labels = destinations.map { stringResource(it.label) },
+        labels = remember(labels) { labels },
         selectedIndex = tabs.current,
         onSelect = tabs::select,
         hazeState = hazeState,
         modifier = modifier,
-        position = tabs.pager.currentPage + tabs.pager.currentPageOffsetFraction,
+        position = remember(pager) { { pager.currentPage + pager.currentPageOffsetFraction } },
         barSize = GlassTabBarSize.Chrome,
-        icons = destinations.map { it.icon },
+        icons = icons,
         onSwipe = tabs::swipeTo,
         onSwipeEnd = tabs::settle,
     )

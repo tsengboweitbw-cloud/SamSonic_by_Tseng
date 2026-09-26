@@ -32,6 +32,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import com.example.samsonic.ui.theme.LocalChromeBlurScale
+import com.example.samsonic.ui.theme.ChromeBlurScale
+import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.delay
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.ui.platform.LocalDensity
@@ -104,6 +108,9 @@ private val bottomDestinations = listOf(
 private val AddServerEasing = CubicBezierEasing(0.2f, 0f, 0f, 1f)
 
 @OptIn(ExperimentalSharedTransitionApi::class)
+// After starting, how long before the tabs not yet shown are built, so it's out of the way of the first screen.
+private const val TabWarmUpDelayMillis = 1500L
+
 @Composable
 fun SamSonicNavHost(lastTab: LastTab) {
     val container = LocalAppContainer.current
@@ -138,7 +145,9 @@ fun SamSonicNavHost(lastTab: LastTab) {
     // Stacked, the nav bar (card 0) and the mini player share one place, piled; only
     // while there's a song, else the nav bar is on its own.
     val stackChrome by container.themeManager.stackChrome.collectAsStateWithLifecycle()
-    val hasSong = LocalPlayerState.current.currentSong != null
+    // Changing only as music starts or stops, not with each new song.
+    val player = LocalPlayerState.current
+    val hasSong by remember(player) { derivedStateOf { player.currentSong != null } }
     // Switched between the two, the mini player glides down behind the nav bar into the
     // pile, or rises out of it back to its place above: 0 apart, 1 piled.
     val stackAmount by animateFloatAsState(
@@ -148,8 +157,8 @@ fun SamSonicNavHost(lastTab: LastTab) {
         label = "stackChrome",
     )
     // Drawn in the pile while it comes together or apart; swiped only once it has.
-    val pileShown = hasSong && stackAmount > 0f
-    val piled = hasSong && stackChrome && stackAmount >= 1f
+    val pileShown by remember { derivedStateOf { hasSong && stackAmount > 0f } }
+    val piled by remember { derivedStateOf { hasSong && stackChrome && stackAmount >= 1f } }
     val chromePile = rememberCardPileState(2)
     // Piling up, the mini player goes behind; with it gone, or apart again, the nav bar is in front.
     LaunchedEffect(stackChrome) { if (stackChrome) chromePile.snapTo(0) }
@@ -161,12 +170,15 @@ fun SamSonicNavHost(lastTab: LastTab) {
     // the player sheet goes over both as it opens.
     val navBarOnTop by remember(chromePile) { derivedStateOf { chromePile.zIndex(0) > chromePile.zIndex(MiniPlayerCard) } }
     val sheetOpening by remember(playerSheet) { derivedStateOf { playerSheet.progress > 0f } }
+    // The chrome's glass blurs a smaller copy while it sits still, full size while it moves.
+    val chromeBlurScale = if (sheetOpening) null else ChromeBlurScale
 
     Scaffold(containerColor = MaterialTheme.colorScheme.background) { innerPadding ->
         CompositionLocalProvider(
             LocalHazeState provides hazeState,
             LocalAddToPlaylist provides addToPlaylist.takeIf { canEditPlaylists },
             LocalChromeGuard provides chromeGuard,
+            LocalChromeBlurScale provides chromeBlurScale,
         ) {
         Box(modifier = Modifier.fillMaxSize()) {
             // The chrome keeps its resting spot while it animates out, so these ignore showChrome.
@@ -174,7 +186,13 @@ fun SamSonicNavHost(lastTab: LastTab) {
             val systemBarInset = if (showChrome) chromeBottomInset else 0.dp
             val navBarReserve = if (showChrome) navBarHeight + navBarBottomInset else 0.dp
             // Stacked, only the peeking edge of the card behind rises above the nav bar.
-            val miniPlayerReserve = if (showChrome) lerp(OneUiChrome.BarHeight + 8.dp, PileStep, stackAmount) else 0.dp
+            // Straight to the new layout's, not animated with it: the padding reaches every
+            // tab's pages, and changing it each frame would rebuild them all.
+            val miniPlayerReserve = when {
+                !showChrome -> 0.dp
+                stackChrome -> PileStep
+                else -> OneUiChrome.BarHeight + 8.dp
+            }
             val contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve
             // Content melts into the background near the bottom edge: 1.5 times the
             // space below the nav bar (its bottom gap and the system bar), so the
@@ -202,7 +220,7 @@ fun SamSonicNavHost(lastTab: LastTab) {
             // it - LazyColumn content otherwise has known gaps in Haze's
             // capture (text and item edges stay sharp/unblurred).
             // Beneath the piled chrome, which is ordered by zIndex (see below).
-            Box(modifier = Modifier.zIndex(-3f).fillMaxSize().bottomFade(bottomFadeHeight).graphicsLayer().hazeSource(hazeState)) {
+            Box(modifier = Modifier.zIndex(-3f).fillMaxSize().bottomFade(bottomFadeHeight, MaterialTheme.colorScheme.background).graphicsLayer().hazeSource(hazeState)) {
             // Inside the haze source, so the frosted bars pick up its color as they blur it.
             AmbientGlow()
             // Covers and pictures travel from the card tapped to the page it opens (see sharedArt).
@@ -214,12 +232,27 @@ fun SamSonicNavHost(lastTab: LastTab) {
                     // The tabs side by side, slid between by the nav bar as the Library slides
                     // between its own tabs. Only the nav bar moves them: a swipe on the pages
                     // is left to what's on them (Library's tabs, the rows' swipe actions).
+                    // A tab is up once shown, and every tab soon after the app starts (see
+                    // MainTabs.visited), so a switch slides past pages already built.
+                    LaunchedEffect(tabs) {
+                        snapshotFlow { tabs.pager.targetPage }.collect { tabs.visited[it] = true }
+                    }
+                    LaunchedEffect(tabs) {
+                        delay(TabWarmUpDelayMillis)
+                        tabs.warmUp(gapMillis = 400)
+                    }
                     HorizontalPager(
                         state = tabs.pager,
                         modifier = Modifier.fillMaxSize(),
                         userScrollEnabled = false,
+                        // Every tab stays composed; only what's on screen is drawn.
+                        beyondViewportPageCount = tabRoutes.size - 1,
                         key = { tabRoutes[it] },
                     ) { page ->
+                        if (!tabs.visited[page]) {
+                            Box(Modifier.fillMaxSize())
+                            return@HorizontalPager
+                        }
                         // Back reaches only the tab on screen, and none while something
                         // covers the tabs (Now Playing, adding a server) and handles it.
                         val back = rememberNavigationEventDispatcherOwner(

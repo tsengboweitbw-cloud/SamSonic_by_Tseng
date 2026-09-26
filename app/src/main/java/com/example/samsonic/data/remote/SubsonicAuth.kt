@@ -24,14 +24,27 @@ object SubsonicAuth {
         )
     }
 
+    private val random = SecureRandom()
+
     private fun randomSalt(): String {
         val bytes = ByteArray(12)
-        SecureRandom().nextBytes(bytes)
-        return bytes.joinToString("") { "%02x".format(it) }
+        random.nextBytes(bytes)
+        return bytes.toHex()
     }
 
-    private fun md5Hex(input: String): String {
-        val digest = MessageDigest.getInstance("MD5").digest(input.toByteArray(Charsets.UTF_8))
-        return digest.joinToString("") { "%02x".format(it) }
+    private fun md5Hex(input: String): String =
+        MessageDigest.getInstance("MD5").digest(input.toByteArray(Charsets.UTF_8)).toHex()
+
+    private const val HEX = "0123456789abcdef"
+
+    // Straight to characters: String.format per byte is slow for something done per request.
+    private fun ByteArray.toHex(): String {
+        val chars = CharArray(size * 2)
+        forEachIndexed { i, b ->
+            val v = b.toInt() and 0xff
+            chars[i * 2] = HEX[v ushr 4]
+            chars[i * 2 + 1] = HEX[v and 0x0f]
+        }
+        return String(chars)
     }
 }

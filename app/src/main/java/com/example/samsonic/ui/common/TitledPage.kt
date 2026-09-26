@@ -1,5 +1,6 @@
 package com.example.samsonic.ui.common
 
+import com.example.samsonic.ui.theme.drawWithVerticalFades
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -153,16 +154,5 @@ fun Modifier.pageScrim(clearBottom: Dp = 0.dp, alpha: () -> Float): Modifier {
     }
 }
 
-/** Fades the top [height] of the content from transparent up to opaque. */
-private fun Modifier.topFade(height: Dp): Modifier = this
-    .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
-    .drawWithContent {
-        drawContent()
-        val heightPx = height.toPx()
-        if (heightPx <= 0f) return@drawWithContent
-        drawRect(
-            brush = Brush.verticalGradient(0f to Color.Transparent, 1f to Color.Black, startY = 0f, endY = heightPx),
-            size = Size(size.width, heightPx),
-            blendMode = BlendMode.DstIn,
-        )
-    }
+/** Fades the top [height] of the content from transparent up to opaque, only that strip drawn offscreen. */
+private fun Modifier.topFade(height: Dp): Modifier = drawWithContent { drawWithVerticalFades(top = height.toPx(), bottom = 0f) }

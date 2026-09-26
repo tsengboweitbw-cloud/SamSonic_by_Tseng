@@ -1,5 +1,9 @@
 package com.example.samsonic.ui.components
 
+import coil3.transform.Transformation
+import coil3.request.transformations
+import coil3.request.ImageRequest
+import coil3.compose.LocalPlatformContext
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -81,6 +85,7 @@ fun MediaArt(
             shape = RoundedCornerShape(cornerRadius),
             shadowElevation = shadowElevation,
             fit = fit,
+            sizePx = pixelSize,
         )
     }
 }
@@ -97,9 +102,13 @@ fun MediaArtFill(
     fit: Boolean = false,
     shape: Shape = RectangleShape,
     shadowElevation: Dp = 0.dp,
+    // Applied to the loaded art, with it loaded at [sourceSize] px (the server's size
+    // for it too): the Now Playing backdrop's blur, done once as it loads.
+    transformation: Transformation? = null,
+    sourceSize: Int = 1000,
 ) {
     val repository = LocalAppContainer.current.repository
-    val url = remember(coverArt) { repository.coverArtUrl(coverArt, 1000) }
+    val url = remember(coverArt, sourceSize) { repository.coverArtUrl(coverArt, sourceSize) }
 
     Box(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         ArtSurface(
@@ -110,6 +119,8 @@ fun MediaArtFill(
             shape = shape,
             shadowElevation = shadowElevation,
             fit = fit,
+            sizePx = if (transformation != null) sourceSize else null,
+            transformation = transformation,
         )
     }
 }
@@ -124,8 +135,24 @@ private fun ArtSurface(
     shadowElevation: Dp,
     fit: Boolean,
     fallbackUrl: String? = null,
+    // The art's size where known up front: then the image cache is checked as the art
+    // composes, rather than only once it's first drawn, which showed the placeholder
+    // for a frame on art already loaded (a row scrolled back into view).
+    sizePx: Int? = null,
+    transformation: Transformation? = null,
 ) {
-    val painter = rememberAsyncImagePainter(url)
+    val context = LocalPlatformContext.current
+    val request = remember(url, sizePx, transformation, context) {
+        if (sizePx == null && transformation == null) {
+            url
+        } else {
+            ImageRequest.Builder(context).data(url)
+                .apply { if (sizePx != null) size(sizePx) }
+                .apply { if (transformation != null) transformations(transformation) }
+                .build()
+        }
+    }
+    val painter = rememberAsyncImagePainter(request)
     val state by painter.state.collectAsState()
     // Stands in until [painter] has loaded; null when there's none.
     val fallback = fallbackUrl?.let { rememberAsyncImagePainter(it) }

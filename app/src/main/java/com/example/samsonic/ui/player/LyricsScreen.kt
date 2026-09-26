@@ -9,13 +9,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.layout.Box
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -25,8 +27,7 @@ import androidx.compose.ui.unit.dp
 import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.R
 import com.example.samsonic.model.LyricLine
-import com.example.samsonic.ui.theme.scrollBottomFade
-import com.example.samsonic.ui.theme.scrollTopFade
+import com.example.samsonic.ui.theme.scrollEdgeFades
 
 /** Synced lyrics, the current line highlighted from the live playback position; the body of the Lyrics card. */
 @Composable
@@ -43,10 +44,16 @@ fun LyricsScreen(
     val lines by produceState<List<LyricLine>?>(initialValue = null, key1 = song.id) {
         value = runCatching { repository.getLyrics(song.id) }.getOrDefault(emptyList())
     }
-    val positionMs = (player.positionSeconds * 1000).toLong()
-    // Plain lyrics (every line at 0) have no current line to pick out.
-    val synced = lines.orEmpty().any { it.timeMs > 0 }
-    val currentIndex = if (synced) lines.orEmpty().indexOfLast { it.timeMs <= positionMs }.coerceAtLeast(0) else -1
+    // Plain lyrics (every line at 0) have no current line to pick out. Derived, so the
+    // playback position ticking recomposes the lyrics only when the line changes.
+    val currentIndex by remember(lines) {
+        derivedStateOf {
+            val all = lines.orEmpty()
+            if (all.none { it.timeMs > 0 }) return@derivedStateOf -1
+            val positionMs = (player.positionSeconds * 1000).toLong()
+            all.indexOfLast { it.timeMs <= positionMs }.coerceAtLeast(0)
+        }
+    }
 
     Column(modifier = modifier.fillMaxSize()) {
         when {
@@ -66,13 +73,13 @@ fun LyricsScreen(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(horizontal = 24.dp)
-                        .scrollTopFade(listState)
-                        .scrollBottomFade(listState),
+                        .scrollEdgeFades(listState),
                     state = listState,
                     verticalArrangement = Arrangement.spacedBy(20.dp),
                 ) {
-                    items(lines!!) { line ->
-                        val isCurrent = lines!!.indexOf(line) == currentIndex
+                    // By place: a chorus repeats the same line, and each copy is its own.
+                    itemsIndexed(lines!!) { index, line ->
+                        val isCurrent = index == currentIndex
                         Text(
                             text = line.text,
                             style = if (isCurrent) MaterialTheme.typography.headlineMedium else MaterialTheme.typography.titleMedium,

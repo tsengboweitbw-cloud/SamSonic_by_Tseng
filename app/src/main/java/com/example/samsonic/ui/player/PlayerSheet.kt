@@ -39,6 +39,7 @@ import com.example.samsonic.ui.components.pickThresholdPx
 import com.example.samsonic.ui.components.pileCard
 import com.example.samsonic.ui.components.pileSwipe
 import com.example.samsonic.ui.theme.AccentSheen
+import com.example.samsonic.ui.theme.ChromeBlurScale
 import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.LocalHazeState
 import com.example.samsonic.ui.theme.OneUiChrome
@@ -140,6 +141,7 @@ private fun SheetSurface(
     // Gone once open, so its (invisible) pill can't catch Now Playing's taps.
     val miniShowing by remember(sheet) { derivedStateOf { sheet.progress < 0.999f } }
     val atRest by remember(sheet) { derivedStateOf { sheet.progress == 0f } }
+    val pillBlurs by remember(sheet) { derivedStateOf { sheet.progress < 0.15f } }
     val dragState = rememberDraggableState { sheet.dragBy(it) }
     val radiusPx = with(LocalDensity.current) { PillRadius.toPx() }
     // Piled and at rest, a swipe up goes to the pile; one down still swipes the pill away.
@@ -215,10 +217,15 @@ private fun SheetSurface(
                 .graphicsLayer { alpha = 1f - ramp(sheet.progress, 0.3f, 0.6f) }
                 .glassSurface(
                     shape = RoundedCornerShape(PillRadius),
-                    hazeState = LocalHazeState.current,
+                    // Only near rest: the frame grows every frame of the morph, and a blur
+                    // of a new size each frame costs, while Now Playing fades in over it.
+                    hazeState = LocalHazeState.current.takeIf { pillBlurs },
                     tint = MaterialTheme.colorScheme.surfaceContainerHigh,
                     alpha = GlassAlpha.MiniPlayer,
                     sheen = AccentSheen.Chrome,
+                    // At rest only: a scaled copy is a buffer the glass's size, remade each
+                    // frame the frame grows.
+                    inputScale = ChromeBlurScale.takeIf { atRest },
                 ),
         )
         // Now Playing, laid out full-screen and riding the sheet's top edge.

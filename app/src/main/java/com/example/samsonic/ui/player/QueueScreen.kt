@@ -46,8 +46,7 @@ import com.example.samsonic.ui.components.SwipeActions
 import com.example.samsonic.ui.theme.OneUiRadius
 import com.example.samsonic.ui.theme.OneUiRow
 import com.example.samsonic.ui.theme.accentWash
-import com.example.samsonic.ui.theme.scrollBottomFade
-import com.example.samsonic.ui.theme.scrollTopFade
+import com.example.samsonic.ui.theme.scrollEdgeFades
 
 /** The queue's rows in play order, swipeable to play next or remove; the body of the Up Next card. */
 @Composable
@@ -63,7 +62,7 @@ fun QueueScreen(modifier: Modifier = Modifier) {
         val listState = rememberLazyListState()
         val rowKeys = player.queue.occurrenceKeys()
         LazyColumn(
-            modifier = Modifier.fillMaxWidth().weight(1f).scrollTopFade(listState).scrollBottomFade(listState),
+            modifier = Modifier.fillMaxWidth().weight(1f).scrollEdgeFades(listState),
             state = listState,
             // Lines the rows' text up with the card's title.
             contentPadding = PaddingValues(horizontal = 4.dp),

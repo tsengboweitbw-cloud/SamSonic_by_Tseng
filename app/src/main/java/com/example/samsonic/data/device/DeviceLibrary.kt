@@ -210,10 +210,11 @@ class DeviceLibrary(context: Context) : MusicLibrary {
 
     override suspend fun getGenres() = index().genres
 
-    override suspend fun search(query: String): SearchResults {
+    // Off the main thread: it filters the whole library, and it's called as the user types.
+    override suspend fun search(query: String): SearchResults = withContext(Dispatchers.Default) {
         val index = index()
         val q = query.trim()
-        return SearchResults(
+        SearchResults(
             artists = index.trackArtists.filter { it.name.contains(q, ignoreCase = true) }.take(20),
             albums = index.albums.filter { it.title.contains(q, ignoreCase = true) }.take(20),
             songs = index.songs.filter { it.title.contains(q, ignoreCase = true) }.take(30),

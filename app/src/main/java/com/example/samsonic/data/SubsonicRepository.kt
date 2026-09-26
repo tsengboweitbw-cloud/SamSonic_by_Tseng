@@ -431,12 +431,24 @@ class SubsonicRepository(
     override fun coverArtUrl(coverArt: String?, size: Int): String? {
         if (coverArt.isNullOrBlank()) return null
         val bucket = CoverArtSizes.bucket(size)
-        return buildUrl("rest/getCoverArt.view", mapOf("id" to coverArt, "size" to bucket.toString()))
+        return buildUrl("rest/getCoverArt.view", mapOf("id" to coverArt, "size" to bucket.toString()), coverAuth())
     }
 
-    private fun buildUrl(path: String, extra: Map<String, String>): String {
+    // One salt and token for every cover's URL while signed in to the same account: each
+    // row composing builds one, and a fresh salt each time (a secure random and an MD5)
+    // was a cost paid by every row of a fling. Servers take a salt used before.
+    @Volatile
+    private var coverAuthFor: Pair<Any, Map<String, String>>? = null
+
+    private fun coverAuth(): Map<String, String> {
         val creds = requireCreds()
-        val params = SubsonicAuth.params(creds.username, creds.password) + extra
+        coverAuthFor?.let { (forCreds, params) -> if (forCreds === creds) return params }
+        return SubsonicAuth.params(creds.username, creds.password).also { coverAuthFor = creds to it }
+    }
+
+    private fun buildUrl(path: String, extra: Map<String, String>, auth: Map<String, String>? = null): String {
+        val creds = requireCreds()
+        val params = (auth ?: SubsonicAuth.params(creds.username, creds.password)) + extra
         val query = params.entries.joinToString("&") { (k, v) -> "$k=${URLEncoder.encode(v, "UTF-8")}" }
         return "${creds.serverUrl}rest/${path.removePrefix("rest/")}?$query"
     }

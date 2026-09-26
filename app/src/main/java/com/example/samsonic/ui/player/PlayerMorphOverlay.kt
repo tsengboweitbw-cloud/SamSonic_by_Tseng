@@ -70,6 +70,8 @@ fun PlayerMorphOverlay(morph: PlayerMorphState, modifier: Modifier = Modifier) {
     val palette = MaterialTheme.accentPalette
     val trackColor = MaterialTheme.colorScheme.surfaceContainerHighest
     val shadowPaint = remember { android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG) }
+    // Reused every frame of the flight rather than made anew each one.
+    val clip = remember { Path() }
 
     Canvas(modifier) {
         val fraction = morph.fraction
@@ -81,6 +83,7 @@ fun PlayerMorphOverlay(morph: PlayerMorphState, modifier: Modifier = Modifier) {
                 gradient = gradient,
                 painter = painter,
                 shadowPaint = shadowPaint,
+                clip = clip,
             )
         }
         morph.boundsOf(PlayerElement.Progress)?.let { bounds ->
@@ -106,6 +109,7 @@ private fun DrawScope.drawArt(
     gradient: List<Color>,
     painter: Painter,
     shadowPaint: android.graphics.Paint,
+    clip: Path,
 ) {
     // Same as the real covers: art keeps its proportions inside the square, and only
     // the art gets the corners and shadow. The gradient only stands in until it loads.
@@ -120,7 +124,8 @@ private fun DrawScope.drawArt(
             )
         }
     }
-    val clip = Path().apply { addRoundRect(RoundRect(bounds, CornerRadius(radius))) }
+    clip.rewind()
+    clip.addRoundRect(RoundRect(bounds, CornerRadius(radius)))
     clipPath(clip) {
         if (ratio == null) {
             drawRect(

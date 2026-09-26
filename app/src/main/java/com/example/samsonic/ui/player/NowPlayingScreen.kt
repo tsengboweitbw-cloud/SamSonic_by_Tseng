@@ -49,6 +49,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.R
 import com.example.samsonic.model.Song
+import com.example.samsonic.playback.PlayerState
 import com.example.samsonic.model.artSeed
 import com.example.samsonic.ui.library.AddToPlaylistState
 import com.example.samsonic.ui.components.ChromeButtonIconSize
@@ -162,37 +163,7 @@ fun NowPlayingScreen(
 
         Spacer(Modifier.height(12.dp))
 
-        var dragPosition by remember(song.id) { mutableFloatStateOf(-1f) }
-        val fraction = if (dragPosition >= 0f) dragPosition else {
-            if (song.durationSeconds > 0) (player.positionSeconds / song.durationSeconds).coerceIn(0f, 1f) else 0f
-        }
-        // Elapsed | seek bar | total on one row; tabular digits keep the bar from jittering as time ticks.
-        val timeStyle = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum")
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = formatDuration((fraction * song.durationSeconds).toInt()),
-                style = timeStyle,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            OneUiSlider(
-                value = fraction,
-                onValueChange = { dragPosition = it },
-                onValueChangeFinished = {
-                    player.seekToFraction(dragPosition)
-                    dragPosition = -1f
-                },
-                modifier = Modifier.weight(1f).padding(horizontal = 12.dp),
-                trackModifier = Modifier.playerMorphAnchor(PlayerElement.Progress, PlayerSurface.Full),
-            )
-            Text(
-                text = formatDuration(song.durationSeconds),
-                style = timeStyle,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
+        SeekRow(player, song)
 
         Spacer(Modifier.height(16.dp))
 
@@ -251,6 +222,52 @@ fun NowPlayingScreen(
             modifier = Modifier.padding(bottom = 20.dp),
         )
         }
+    }
+}
+
+/**
+ * Elapsed | seek bar | total on one row. Its own scope, so the playback position
+ * ticking, and a finger dragging the bar, recompose only this row, not Now Playing;
+ * the elapsed time changes only as the whole second does.
+ */
+@Composable
+private fun SeekRow(player: PlayerState, song: Song) {
+    var dragPosition by remember(song.id) { mutableFloatStateOf(-1f) }
+    val fraction = if (dragPosition >= 0f) dragPosition else {
+        if (song.durationSeconds > 0) (player.positionSeconds / song.durationSeconds).coerceIn(0f, 1f) else 0f
+    }
+    val elapsed by remember(song.id) {
+        derivedStateOf {
+            val at = if (dragPosition >= 0f) dragPosition * song.durationSeconds else player.positionSeconds
+            at.toInt().coerceIn(0, song.durationSeconds.coerceAtLeast(0))
+        }
+    }
+    // Tabular digits keep the bar from jittering as time ticks.
+    val timeStyle = MaterialTheme.typography.bodyMedium.copy(fontFeatureSettings = "tnum")
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = formatDuration(elapsed),
+            style = timeStyle,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        OneUiSlider(
+            value = fraction,
+            onValueChange = { dragPosition = it },
+            onValueChangeFinished = {
+                player.seekToFraction(dragPosition)
+                dragPosition = -1f
+            },
+            modifier = Modifier.weight(1f).padding(horizontal = 12.dp),
+            trackModifier = Modifier.playerMorphAnchor(PlayerElement.Progress, PlayerSurface.Full),
+        )
+        Text(
+            text = formatDuration(song.durationSeconds),
+            style = timeStyle,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 

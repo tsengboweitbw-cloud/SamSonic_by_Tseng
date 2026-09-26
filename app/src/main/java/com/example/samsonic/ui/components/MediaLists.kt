@@ -90,7 +90,7 @@ fun AlbumCard(
     modifier: Modifier = Modifier,
     artSize: Dp = 140.dp,
 ) {
-    val cornerRadius by LocalAppContainer.current.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
+    val cornerRadius = LocalRowPrefs.current.artCornerRadius
     val art = rememberSharedArt(ArtKeys.album(album.id), album, onClick)
     // The menu grows out of the cover.
     val addToPlaylist = rememberAddToPlaylistLongPress(album, originRadius = cornerRadius)
@@ -173,7 +173,7 @@ fun PlaylistCard(
     modifier: Modifier = Modifier,
     artSize: Dp = 140.dp,
 ) {
-    val cornerRadius by LocalAppContainer.current.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
+    val cornerRadius = LocalRowPrefs.current.artCornerRadius
     val art = rememberSharedArt(ArtKeys.playlist(playlist.id), playlist, onClick)
     PressableCard(onClick = art.onClick, modifier = modifier) {
         Column(
@@ -213,8 +213,8 @@ fun SongRow(
     onMoreClick: (() -> Unit)? = null,
     leading: @Composable (() -> Unit)? = null,
 ) {
-    val cornerRadius by LocalAppContainer.current.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
-    val likesEnabled by LocalAppContainer.current.themeManager.likesEnabled.collectAsStateWithLifecycle()
+    val cornerRadius = LocalRowPrefs.current.artCornerRadius
+    val likesEnabled = LocalRowPrefs.current.likesEnabled
     val display = audioFormatDisplay()
     val addToPlaylist = rememberAddToPlaylistLongPress(song)
 

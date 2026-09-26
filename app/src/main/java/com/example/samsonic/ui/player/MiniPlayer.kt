@@ -152,11 +152,11 @@ fun MiniPlayer(
             }
         }
 
-        val progress = if (song.durationSeconds > 0) {
-            (player.positionSeconds / song.durationSeconds).coerceIn(0f, 1f)
-        } else 0f
         PlayerProgressLine(
-            progress = progress,
+            // Read as the line is drawn, so the playback tick redraws only the line.
+            progress = {
+                if (song.durationSeconds > 0) (player.positionSeconds / song.durationSeconds).coerceIn(0f, 1f) else 0f
+            },
             // Starts past the art (no horizontal overlap with it) and
             // ends at the last button's midpoint, not the full width.
             modifier = Modifier
@@ -175,7 +175,7 @@ fun MiniPlayer(
  * track so the two read as one line while it morphs between them.
  */
 @Composable
-private fun PlayerProgressLine(progress: Float, modifier: Modifier = Modifier) {
+private fun PlayerProgressLine(progress: () -> Float, modifier: Modifier = Modifier) {
     val palette = MaterialTheme.accentPalette
     val trackColor = MaterialTheme.colorScheme.surfaceContainerHighest
     Canvas(modifier = modifier) {
@@ -183,9 +183,10 @@ private fun PlayerProgressLine(progress: Float, modifier: Modifier = Modifier) {
         val stroke = 2.dp.toPx()
         val y = size.height / 2f
         drawLine(trackColor, Offset(0f, y), Offset(size.width, y), stroke, StrokeCap.Round)
-        if (progress > 0f) {
+        val at = progress()
+        if (at > 0f) {
             val active = progressBrush(palette, 0f, size.width)
-            drawLine(active, Offset(0f, y), Offset(size.width * progress, y), stroke, StrokeCap.Round)
+            drawLine(active, Offset(0f, y), Offset(size.width * at, y), stroke, StrokeCap.Round)
         }
     }
 }

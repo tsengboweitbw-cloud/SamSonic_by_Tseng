@@ -54,7 +54,8 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.layout.boundsInRoot
-import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -77,8 +78,7 @@ import com.example.samsonic.ui.player.PanelState
 import com.example.samsonic.ui.settings.MenuOption
 import com.example.samsonic.ui.settings.SettingsMenu
 import com.example.samsonic.ui.theme.OneUiRadius
-import com.example.samsonic.ui.theme.scrollBottomFade
-import com.example.samsonic.ui.theme.scrollTopFade
+import com.example.samsonic.ui.theme.scrollEdgeFades
 import dev.chrisbanes.haze.HazeState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -159,16 +159,18 @@ private fun rememberAddToPlaylistLongPress(originRadius: Dp, items: () -> Playli
     val haptics = LocalHapticFeedback.current
     val currentItems by rememberUpdatedState(items)
     val currentRadius by rememberUpdatedState(originRadius)
-    // A plain holder, so scrolling doesn't recompose.
-    val bounds = remember { arrayOf(Rect.Zero) }
+    // A plain holder, so scrolling doesn't recompose. Only the row's coordinates are kept
+    // as it's placed; its bounds are worked out on the long press, not on every scroll frame.
+    val coordinates = remember { arrayOfNulls<LayoutCoordinates>(1) }
     val label = stringResource(R.string.library_add_to_playlist)
     return remember(state, haptics, label) {
         if (state == null) return@remember AddToPlaylistLongPress(Modifier, null, null)
         AddToPlaylistLongPress(
-            origin = Modifier.onGloballyPositioned { bounds[0] = it.boundsInRoot() },
+            origin = Modifier.onPlaced { coordinates[0] = it },
             onLongClick = {
                 haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                state.open(currentItems(), bounds[0], currentRadius)
+                val bounds = coordinates[0]?.takeIf { it.isAttached }?.boundsInRoot() ?: Rect.Zero
+                state.open(currentItems(), bounds, currentRadius)
             },
             label = label,
         )
@@ -324,8 +326,7 @@ fun AddToPlaylistMenu(state: AddToPlaylistState, haze: HazeState) {
                                 Column(
                                     Modifier
                                         .heightIn(max = PlaylistListMaxHeight.dp)
-                                        .scrollTopFade(scroll)
-                                        .scrollBottomFade(scroll)
+                                        .scrollEdgeFades(scroll)
                                         .verticalScroll(scroll),
                                 ) {
                                     list.data.forEach { playlist ->

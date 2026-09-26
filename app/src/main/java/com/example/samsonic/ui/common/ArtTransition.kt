@@ -8,11 +8,14 @@ import androidx.compose.animation.core.CubicBezierEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
-import java.util.UUID
+import java.util.concurrent.atomic.AtomicLong
 
 /** Shared-element keys for the art a page grows out of: an album's, artist's or playlist's. */
 object ArtKeys {
@@ -72,7 +75,11 @@ fun Modifier.sharedArt(key: String, token: Any? = null): Modifier {
     val shared = LocalSharedTransitionScope.current ?: return this
     val scope = LocalNavAnimatedScope.current ?: return this
     val transitions = LocalArtTransitions.current
-    val active = if (token != null) transitions.isSource(key, token) else transitions.hasSource(key)
+    // Derived, so a tap (which writes the map every card reads) recomposes only the cards
+    // it switches on or off, not every card on the page in the frame the page opens.
+    val active by remember(transitions, key, token) {
+        derivedStateOf { if (token != null) transitions.isSource(key, token) else transitions.hasSource(key) }
+    }
     if (!active) return this
     return with(shared) {
         this@sharedArt.sharedElement(
@@ -90,7 +97,13 @@ fun Modifier.sharedArt(key: String, token: Any? = null): Modifier {
  * and the art would have nowhere to shrink back into.
  */
 @Composable
-fun rememberArtToken(): Any = rememberSaveable { UUID.randomUUID().toString() }
+fun rememberArtToken(): Any = rememberSaveable { "$TokenRun-${nextToken.incrementAndGet()}" }
+
+// Unique within this run of the app by the counter, and across runs (tokens restored after
+// the process was killed) by the run's own start. A random UUID per row cost a secure
+// random for every row composed.
+private val TokenRun = System.nanoTime().toString(36)
+private val nextToken = AtomicLong()
 
 /** A card's travelling art: [modifier] for its art, [onClick] for the card. */
 class SharedArtSource(val modifier: Modifier, val onClick: () -> Unit)

@@ -1,55 +1,41 @@
 package com.example.samsonic.ui.theme
 
-import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.ScrollableState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.BlendMode
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.CompositingStrategy
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+
+/**
+ * How far (0 to 1) an edge fade is shown: animated toward 1 while [edgeHasMore], else
+ * 0. Followed in an effect, not composition, so a list starting or stopping being
+ * scrollable past that edge doesn't recompose the screen it's on.
+ */
+@Composable
+private fun rememberEdgeFade(state: ScrollableState, edgeHasMore: (ScrollableState) -> Boolean): Animatable<Float, *> {
+    val fade = remember(state) { Animatable(if (edgeHasMore(state)) 1f else 0f) }
+    LaunchedEffect(state) {
+        snapshotFlow { edgeHasMore(state) }.collect { fade.animateTo(if (it) 1f else 0f, tween(200)) }
+    }
+    return fade
+}
 
 /**
  * The top-edge partner of [bottomFade]: fades the top [height] of a scrolling
  * list so rows melt away under the fixed header (or status bar) instead of
  * being sliced off. Only shows once the list is scrolled, so at rest the first
- * row is never dimmed.
- *
- * Offscreen compositing is required: DstIn has to mask this layer's own
- * pixels, not whatever was already drawn underneath it.
+ * row is never dimmed. Only the faded strip is drawn offscreen (see [drawWithVerticalFades]).
  */
 @Composable
 fun Modifier.scrollTopFade(state: ScrollableState, height: Dp = 32.dp): Modifier {
-    val fade by animateDpAsState(
-        targetValue = if (state.canScrollBackward) height else 0.dp,
-        animationSpec = tween(200),
-        label = "scrollTopFade",
-    )
-    return this
-        .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
-        .drawWithContent {
-            drawContent()
-            val fadePx = fade.toPx()
-            if (fadePx <= 0f) return@drawWithContent
-            drawRect(
-                brush = Brush.verticalGradient(
-                    0f to Color.Transparent,
-                    1f to Color.Black,
-                    startY = 0f,
-                    endY = fadePx,
-                ),
-                size = Size(size.width, fadePx),
-                blendMode = BlendMode.DstIn,
-            )
-        }
+    val fade = rememberEdgeFade(state) { it.canScrollBackward }
+    return drawWithContent { drawWithVerticalFades(top = fade.value * height.toPx(), bottom = 0f) }
 }
 
 /**
@@ -59,30 +45,16 @@ fun Modifier.scrollTopFade(state: ScrollableState, height: Dp = 32.dp): Modifier
  */
 @Composable
 fun Modifier.scrollBottomFade(state: ScrollableState, height: Dp = 32.dp): Modifier {
-    val fade by animateDpAsState(
-        targetValue = if (state.canScrollForward) height else 0.dp,
-        animationSpec = tween(200),
-        label = "scrollBottomFade",
-    )
-    return this
-        .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
-        .drawWithContent {
-            drawContent()
-            val fadePx = fade.toPx()
-            if (fadePx <= 0f) return@drawWithContent
-            val top = size.height - fadePx
-            drawRect(
-                brush = Brush.verticalGradient(
-                    0f to Color.Black,
-                    1f to Color.Transparent,
-                    startY = top,
-                    endY = size.height,
-                ),
-                topLeft = Offset(0f, top),
-                size = Size(size.width, fadePx),
-                blendMode = BlendMode.DstIn,
-            )
-        }
+    val fade = rememberEdgeFade(state) { it.canScrollForward }
+    return drawWithContent { drawWithVerticalFades(top = 0f, bottom = fade.value * height.toPx()) }
+}
+
+/** [scrollTopFade] and [scrollBottomFade] together, drawn in one pass. */
+@Composable
+fun Modifier.scrollEdgeFades(state: ScrollableState, height: Dp = 32.dp): Modifier {
+    val top = rememberEdgeFade(state) { it.canScrollBackward }
+    val bottom = rememberEdgeFade(state) { it.canScrollForward }
+    return drawWithContent { drawWithVerticalFades(top = top.value * height.toPx(), bottom = bottom.value * height.toPx()) }
 }
 
 /**
@@ -93,46 +65,7 @@ fun Modifier.scrollBottomFade(state: ScrollableState, height: Dp = 32.dp): Modif
  */
 @Composable
 fun Modifier.horizontalScrollFade(state: ScrollableState, width: Dp = 8.dp): Modifier {
-    val start by animateDpAsState(
-        targetValue = if (state.canScrollBackward) width else 0.dp,
-        animationSpec = tween(200),
-        label = "scrollStartFade",
-    )
-    val end by animateDpAsState(
-        targetValue = if (state.canScrollForward) width else 0.dp,
-        animationSpec = tween(200),
-        label = "scrollEndFade",
-    )
-    return this
-        .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
-        .drawWithContent {
-            drawContent()
-            val startPx = start.toPx()
-            if (startPx > 0f) {
-                drawRect(
-                    brush = Brush.horizontalGradient(
-                        0f to Color.Transparent,
-                        1f to Color.Black,
-                        startX = 0f,
-                        endX = startPx,
-                    ),
-                    size = Size(startPx, size.height),
-                    blendMode = BlendMode.DstIn,
-                )
-            }
-            val endPx = end.toPx()
-            if (endPx > 0f) {
-                drawRect(
-                    brush = Brush.horizontalGradient(
-                        0f to Color.Black,
-                        1f to Color.Transparent,
-                        startX = size.width - endPx,
-                        endX = size.width,
-                    ),
-                    topLeft = Offset(size.width - endPx, 0f),
-                    size = Size(endPx, size.height),
-                    blendMode = BlendMode.DstIn,
-                )
-            }
-        }
+    val start = rememberEdgeFade(state) { it.canScrollBackward }
+    val end = rememberEdgeFade(state) { it.canScrollForward }
+    return drawWithContent { drawWithHorizontalFades(start = start.value * width.toPx(), end = end.value * width.toPx()) }
 }

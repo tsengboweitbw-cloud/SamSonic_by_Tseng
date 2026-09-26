@@ -55,7 +55,7 @@ fun ArtistRow(artist: Artist, onClick: () -> Unit, modifier: Modifier = Modifier
 /** A playlist as a list row, laid out like [AlbumRow]: cover, name, song count. */
 @Composable
 fun PlaylistRow(playlist: Playlist, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    val cornerRadius by LocalAppContainer.current.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
+    val cornerRadius = LocalRowPrefs.current.artCornerRadius
     val art = rememberSharedArt(ArtKeys.playlist(playlist.id), playlist, onClick)
     LibraryRow(
         title = playlist.name,

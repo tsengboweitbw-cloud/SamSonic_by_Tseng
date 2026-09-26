@@ -1,5 +1,12 @@
 package com.example.samsonic.ui.theme
 
+import com.example.samsonic.data.CoverArtSizes
+import androidx.compose.runtime.remember
+import androidx.compose.ui.unit.max
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
@@ -8,7 +15,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
@@ -60,6 +66,10 @@ fun Modifier.glassSurface(
     // True for a big panel that grows and shrinks (see the hazeEffect below); a small bar's
     // lighter blur shows the smaller copy it blurs as blocks.
     downsample: Boolean = false,
+    // Blurs a copy this much smaller (0.5 = half across) for glass always on screen over
+    // scrolling content, redrawn every frame: a strong blur looks the same, at a fraction
+    // of the GPU's work. Null blurs at full size.
+    inputScale: Float? = null,
     // How much of the accent's sheen washes over the glass (see [AccentSheen]); 0 for none.
     sheen: Float = 0f,
 ): Modifier {
@@ -95,7 +105,11 @@ fun Modifier.glassSurface(
             // blur), which looks the same under a blur this strong at a fraction of the
             // cost: at full size, a panel's glass redrawn every frame of its growing
             // (by the morph's moving clip) blurred the whole card each frame, and stuttered.
-            if (downsample) inputScale = HazeInputScale.Auto
+            if (downsample) {
+                this.inputScale = HazeInputScale.Auto
+            } else if (inputScale != null) {
+                this.inputScale = HazeInputScale.Fixed(inputScale)
+            }
         }
     } else {
         clipped.background(tint.copy(alpha = alpha))
@@ -126,20 +140,32 @@ private fun Modifier.accentSheen(strength: Float): Modifier {
     val palette = MaterialTheme.accentPalette
     val scale = if (MaterialTheme.colorScheme.background.luminance() < 0.5f) 1f else 0.7f
     val a = strength * scale
-    return drawBehind {
-        drawRect(
-            Brush.linearGradient(
-                0f to palette.primary.copy(alpha = a),
-                0.55f to palette.secondary.copy(alpha = a * 0.45f),
-                1f to palette.tertiary.copy(alpha = a * 0.15f),
-                start = Offset.Zero,
-                end = Offset(size.width, size.height),
-            ),
+    // Built once per size, not on every draw: the glass redraws each frame what's behind
+    // it scrolls.
+    return drawWithCache {
+        val brush = Brush.linearGradient(
+            0f to palette.primary.copy(alpha = a),
+            0.55f to palette.secondary.copy(alpha = a * 0.45f),
+            1f to palette.tertiary.copy(alpha = a * 0.15f),
+            start = Offset.Zero,
+            end = Offset(size.width, size.height),
         )
+        onDrawBehind { drawRect(brush) }
     }
 }
 
 val GlassRimWidth = 1.5.dp
+
+/** The [glassSurface] inputScale of the chrome (the nav bar and mini player), always on screen. */
+const val ChromeBlurScale = 0.5f
+
+/**
+ * The inputScale the tab pills' glass blurs with ([ChromeBlurScale], or null for full
+ * size): scaled while the chrome sits still over scrolling pages, full size while it
+ * moves (the nav bar sinking as Now Playing opens), where a scaled blur is redone at far
+ * greater cost each frame than a full-size one.
+ */
+val LocalChromeBlurScale = compositionLocalOf<Float?> { ChromeBlurScale }
 
 /**
  * The thin rim [glassSurface] draws around its edge. A light rim reads as a
@@ -174,13 +200,22 @@ fun BlurredArtBackdrop(
     blurRadius: Dp = LocalGlassSettings.current.backdropBlur,
 ) {
     val background = MaterialTheme.colorScheme.background
-    Box(modifier = modifier.fillMaxSize()) {
+    val density = LocalDensity.current
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        // Blurred once as the art loads (see BackdropBlur), not live each frame: the art
+        // fills the screen cropped, so it's shown as big as the screen's longer side.
+        val shownPx = with(density) { max(maxWidth, maxHeight).toPx() }
+        val radiusPx = with(density) { blurRadius.toPx() }
+        val blur = remember(radiusPx, shownPx) {
+            if (radiusPx > 0f && shownPx > 0f) BackdropBlur(radiusPx / shownPx) else null
+        }
         MediaArtFill(
             coverArt = coverArt,
             colorSeed = colorSeed,
-            modifier = Modifier
-                .fillMaxSize()
-                .blur(blurRadius),
+            modifier = Modifier.fillMaxSize(),
+            transformation = blur,
+            // Small is enough for what the blur leaves; unblurred (no blur set), full size.
+            sourceSize = if (blur != null) CoverArtSizes.Small else 1000,
         )
         Box(
             modifier = Modifier

@@ -4,11 +4,13 @@ import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -25,6 +27,26 @@ internal class MainTabs(
     val controllers: List<NavHostController>,
     private val scope: CoroutineScope,
 ) {
+    /**
+     * The tabs whose pages are up: those shown so far, and after the app first settles,
+     * all of them ([warmUp]). The pager keeps every tab composed but only draws what's on
+     * screen; a tab not up yet is an empty page. A switch from Home to Settings slides past
+     * Library and Search, and building those in the middle of the slide dropped frames.
+     */
+    val visited = mutableStateListOf<Boolean>().apply { repeat(routes.size) { add(it == pager.currentPage) } }
+
+    /**
+     * Brings every tab's pages up, for when the app has settled after starting: one at a
+     * time, [gapMillis] apart, so building them never lands in one long frame.
+     */
+    suspend fun warmUp(gapMillis: Long) {
+        for (i in visited.indices) {
+            if (visited[i]) continue
+            visited[i] = true
+            delay(gapMillis)
+        }
+    }
+
     /** The tab showing, or the one a switch is heading for. */
     val current: Int get() = pager.targetPage
 

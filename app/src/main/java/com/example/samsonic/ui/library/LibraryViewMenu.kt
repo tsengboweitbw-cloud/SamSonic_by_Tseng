@@ -158,10 +158,12 @@ internal fun LibraryTabsPanel(
                     .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onDismiss),
             )
         }
-        // The glass is always laid out at the full panel size and never resizes:
+        // While shown, the glass is laid out at the full panel size and doesn't resize:
         // the morph only moves a rounded clip ("window") down and up over it.
         // Resizing the blurred surface every frame made the blur and its tint
-        // gradient rebuild each frame, and the background flickered.
+        // gradient rebuild each frame, and the background flickered. Closed, it's just
+        // the pill's size, so the content scrolling under it re-blurs only the pill.
+        val window = remember { Path() }
         Box(
             modifier = Modifier
                 // Same side margins as the floating nav bar.
@@ -189,9 +191,9 @@ internal fun LibraryTabsPanel(
                     val radius = lerp(pillHeight[0] / 2f, cornerRadius.toPx(), progress.coerceIn(0f, 1f))
                     val windowHeight = lerp(pillHeight[0].toFloat(), size.height, progress)
                         .coerceIn(pillHeight[0].toFloat().coerceAtMost(size.height), size.height)
-                    val window = RoundRect(0f, 0f, size.width, windowHeight, CornerRadius(radius))
-                    val path = Path().apply { addRoundRect(window) }
-                    clipPath(path) { this@drawWithContent.drawContent() }
+                    window.rewind()
+                    window.addRoundRect(RoundRect(0f, 0f, size.width, windowHeight, CornerRadius(radius)))
+                    clipPath(window) { this@drawWithContent.drawContent() }
                     // The rim follows the window, not the full glass bounds.
                     val inset = GlassRimWidth.toPx() / 2
                     drawRoundRect(
@@ -243,7 +245,7 @@ internal fun LibraryTabsPanel(
                 val panel = measurables[2].measure(loose)
                 val blocker = measurables[1].measure(Constraints.fixed(constraints.maxWidth, panel.height))
                 pillHeight[0] = pill.height
-                layout(constraints.maxWidth, panel.height) {
+                layout(constraints.maxWidth, if (state.isShown) panel.height else pill.height) {
                     pill.place(0, 0)
                     // Closed, the blocker and settings stay composed but unplaced:
                     // not drawn and not hit, so taps go to the tabs and content.

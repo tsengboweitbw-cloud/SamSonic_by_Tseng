@@ -18,8 +18,7 @@ import com.example.samsonic.R
 import com.example.samsonic.data.AutoDjMode
 import com.example.samsonic.ui.components.ToggleChip
 import com.example.samsonic.ui.settings.GroupLabel
-import com.example.samsonic.ui.theme.scrollBottomFade
-import com.example.samsonic.ui.theme.scrollTopFade
+import com.example.samsonic.ui.theme.scrollEdgeFades
 
 /**
  * All of Auto DJ's settings, for its panel in Now Playing and its menu in Settings:
@@ -33,7 +32,7 @@ fun AutoDjPanel(modifier: Modifier = Modifier) {
     val config by settings.config.collectAsStateWithLifecycle()
     val listState = rememberLazyListState()
     LazyColumn(
-        modifier = modifier.scrollTopFade(listState).scrollBottomFade(listState),
+        modifier = modifier.scrollEdgeFades(listState),
         state = listState,
         contentPadding = PaddingValues(bottom = 16.dp),
     ) {

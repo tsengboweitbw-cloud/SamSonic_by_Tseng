@@ -199,7 +199,7 @@ fun LibraryScreen(
                         selectedIndex = pagerState.targetPage,
                         onSelect = ::onTabSelected,
                         hazeState = null,
-                        position = pagerState.currentPage + pagerState.currentPageOffsetFraction,
+                        position = remember(pagerState) { { pagerState.currentPage + pagerState.currentPageOffsetFraction } },
                         // Faded out under the open panel: taps there must not switch tabs.
                         enabled = !viewOptions.targetState,
                         glass = false,
@@ -228,7 +228,16 @@ fun LibraryScreen(
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.fillMaxSize(),
+            // The tabs either side stay built, so a swipe doesn't build a grid mid-slide.
+            beyondViewportPageCount = 1,
         ) { page ->
+            // Kept built beside the tab on screen, a tab not yet visited shows nothing, not
+            // its loading spinner: an endless animation off screen still draws every frame.
+            // It loads, spinner and all, once a swipe brings it on screen.
+            if (page !in visited) {
+                Box(Modifier.fillMaxSize())
+                return@HorizontalPager
+            }
             // Pulling down past the top reloads the tab, as on Home.
             OneUiPullToRefresh(
                 isRefreshing = refreshes[page].isRefreshing,

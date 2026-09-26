@@ -31,7 +31,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
+import androidx.compose.ui.layout.layout
 import com.example.samsonic.R
 import com.example.samsonic.model.Song
 import com.example.samsonic.ui.autodj.AutoDjIcon
@@ -153,7 +153,11 @@ internal fun NowPlayingActions(
                     isOpen = { open[index].value },
                     inFrontOpen = { open[Math.floorMod(index - 1, count)].value },
                     haze = haze.takeIf { index == liftable },
-                    modifier = Modifier.zIndex(pile.zIndex(index)),
+                    // Set as it's placed, so the pile reordering only re-places it.
+                    modifier = Modifier.layout { measurable, constraints ->
+                        val placeable = measurable.measure(constraints)
+                        layout(placeable.width, placeable.height) { placeable.place(0, 0, zIndex = pile.zIndex(index)) }
+                    },
                 )
             }
         }

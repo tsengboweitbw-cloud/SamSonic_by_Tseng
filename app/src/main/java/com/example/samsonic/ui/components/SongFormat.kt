@@ -35,7 +35,7 @@ import com.example.samsonic.util.isHiRes
 /** How song rows show the audio format, as picked in Settings. */
 @Composable
 fun audioFormatDisplay(): AudioFormatDisplay {
-    val display by LocalAppContainer.current.themeManager.audioFormatDisplay.collectAsStateWithLifecycle()
+    val display = LocalRowPrefs.current.audioFormat
     return display
 }
 

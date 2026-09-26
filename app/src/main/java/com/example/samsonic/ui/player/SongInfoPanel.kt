@@ -24,8 +24,7 @@ import com.example.samsonic.R
 import com.example.samsonic.model.Song
 import com.example.samsonic.playback.LocalPlayerState
 import com.example.samsonic.ui.components.pressClickable
-import com.example.samsonic.ui.theme.scrollBottomFade
-import com.example.samsonic.ui.theme.scrollTopFade
+import com.example.samsonic.ui.theme.scrollEdgeFades
 import com.example.samsonic.util.formatDuration
 import com.example.samsonic.util.formatFileSize
 import dev.chrisbanes.haze.HazeState
@@ -52,8 +51,7 @@ internal fun SongInfoPanel(panel: PanelState, haze: HazeState) {
         SelectionContainer(
             Modifier
                 .fillMaxSize()
-                .scrollTopFade(scroll)
-                .scrollBottomFade(scroll)
+                .scrollEdgeFades(scroll)
                 .verticalScroll(scroll)
                 .padding(horizontal = 24.dp),
         ) {

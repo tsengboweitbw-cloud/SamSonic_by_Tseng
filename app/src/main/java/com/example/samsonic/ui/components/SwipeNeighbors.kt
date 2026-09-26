@@ -61,29 +61,32 @@ internal object SwipeNeighbors {
     /**
      * How far the row at [centerY] is pulled while attached; 0 unless it's a near neighbor
      * of the swiped one. Follows the finger directly, with no spring of its own in between.
+     * [centerY] is only asked for while a row is being swiped.
      */
-    fun pullFor(row: Any, centerY: Float): Float {
+    fun pullFor(row: Any, centerY: () -> Float): Float {
         if (dragged == null || dragged === row || rowHeight <= 0f) return 0f
-        if (centerY.isNaN() || this.centerY.isNaN()) return 0f
+        if (this.centerY.isNaN()) return 0f
+        val centerY = centerY()
+        if (centerY.isNaN()) return 0f
         val steps = abs((centerY - this.centerY) / rowHeight).roundToInt()
         return offset * NeighborPull.getOrElse(steps) { 0f }
     }
 }
 
 /**
- * This row's magnetic pull toward a swiped neighbor, in px; [centerY] holds the row's
- * on-screen center (a plain holder, so scrolling doesn't recompose). Call the returned
+ * This row's magnetic pull toward a swiped neighbor, in px; [centerY] gives the row's
+ * on-screen center, worked out only while some row is swiped (not on every scroll frame). Call the returned
  * function from a layout or draw lambda: it follows the drag every frame without
  * recomposing. Only letting go and reattaching animate, as a spring on how much of the
  * pull applies (restarting a spring per touch event would never let it take a step).
  */
 @Composable
-internal fun rememberNeighborPull(row: Any, centerY: FloatArray): () -> Float {
+internal fun rememberNeighborPull(row: Any, centerY: () -> Float): () -> Float {
     val attached = remember { Animatable(1f) }
     LaunchedEffect(row) {
         snapshotFlow { SwipeNeighbors.isDetached }.collectLatest { detached ->
             attached.animateTo(if (detached) 0f else 1f, if (detached) DetachSpring else ReattachSpring)
         }
     }
-    return remember(row) { { SwipeNeighbors.pullFor(row, centerY[0]) * attached.value } }
+    return remember(row) { { SwipeNeighbors.pullFor(row, centerY) * attached.value } }
 }

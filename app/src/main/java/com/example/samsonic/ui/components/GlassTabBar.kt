@@ -9,20 +9,20 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -32,12 +32,15 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.ui.theme.AccentSheen
+import com.example.samsonic.ui.theme.LocalChromeBlurScale
 import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.OneUiChrome
 import com.example.samsonic.ui.theme.OneUiRadius
@@ -45,6 +48,7 @@ import com.example.samsonic.ui.theme.glassSurface
 import dev.chrisbanes.haze.HazeState
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 /**
  * How big a [GlassTabBar] is, and how it moves. [Chrome] matches the floating
@@ -74,8 +78,9 @@ fun GlassTabBar(
     modifier: Modifier = Modifier,
     // The indicator's live position in tabs (e.g. a pager's page plus its
     // offset fraction), so it tracks a swipe under the finger. Without it the
-    // indicator springs to [selectedIndex] on its own.
-    position: Float? = null,
+    // indicator springs to [selectedIndex] on its own. Read only as the bar is
+    // laid out and drawn, so a slide redraws it without recomposing it.
+    position: (() -> Float)? = null,
     // Frozen: taps do nothing and give no press feedback (the caller dims it).
     enabled: Boolean = true,
     // False draws only the tabs and indicator, for a caller that supplies
@@ -103,17 +108,26 @@ fun GlassTabBar(
     val finger = remember { FloatArray(1) }
     var follow by remember { mutableStateOf<Job?>(null) }
     val count = labels.size
-    val p = (if (swiping) animated.value else position ?: animated.value)
-        .coerceIn(0f, (count - 1).coerceAtLeast(0).toFloat())
-    val weights = tabWeights(count, p, barSize.selectedExtraWeight)
+    val currentPosition by rememberUpdatedState(position)
+    // Where the indicator is, in tabs. Read only in layout and draw.
+    val p: () -> Float = remember(count) {
+        {
+            (if (swiping) animated.value else currentPosition?.invoke() ?: animated.value)
+                .coerceIn(0f, (count - 1).coerceAtLeast(0).toFloat())
+        }
+    }
     val indicatorColors = tabIndicatorColors()
+    val extraWeight = barSize.selectedExtraWeight
 
-    Row(
+    Layout(
         modifier = modifier
             .fillMaxWidth()
             .height(barSize.height)
             .then(if (glass) Modifier.glassTabPill(hazeState) else Modifier)
-            .drawBehind { drawTabIndicator(weights, p, barSize.padding.toPx(), indicatorColors) }
+            .drawBehind {
+                val at = p()
+                drawTabIndicator(tabWeights(count, at, extraWeight), at, barSize.padding.toPx(), indicatorColors)
+            }
             .tabBarSwipe(
                 count = count,
                 inset = barSize.padding,
@@ -126,7 +140,7 @@ fun GlassTabBar(
                         finger[0] = at
                         if (!swiping) {
                             // Picks up from wherever [position] had it.
-                            val from = if (position != null) p else null
+                            val from = if (position != null) p() else null
                             swiping = true
                             follow = scope.launch {
                                 if (from != null) animated.snapTo(from)
@@ -153,32 +167,50 @@ fun GlassTabBar(
                 },
             )
             .padding(horizontal = barSize.padding),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        labels.forEachIndexed { index, label ->
-            val icon = icons?.getOrNull(index)
-            if (icon != null) {
-                IconLabelTab(
-                    icon = icon,
-                    label = label,
-                    selected = index == selectedIndex,
-                    emphasis = tabProximity(index, p),
-                    weight = weights[index],
-                    verticalPadding = barSize.padding,
-                    enabled = enabled,
-                    onClick = { onSelect(index) },
-                )
-            } else {
-                GlassTab(
-                    label = label,
-                    selected = index == selectedIndex,
-                    emphasis = tabProximity(index, p),
-                    weight = weights[index],
-                    enabled = enabled,
-                    size = barSize,
-                    onClick = { onSelect(index) },
-                )
+        content = {
+            labels.forEachIndexed { index, label ->
+                val icon = icons?.getOrNull(index)
+                val emphasis = remember(index, p) { { tabProximity(index, p()) } }
+                if (icon != null) {
+                    IconLabelTab(
+                        icon = icon,
+                        label = label,
+                        selected = index == selectedIndex,
+                        emphasis = emphasis,
+                        verticalPadding = barSize.padding,
+                        enabled = enabled,
+                        onClick = { onSelect(index) },
+                    )
+                } else {
+                    GlassTab(
+                        label = label,
+                        selected = index == selectedIndex,
+                        emphasis = emphasis,
+                        enabled = enabled,
+                        size = barSize,
+                        onClick = { onSelect(index) },
+                    )
+                }
             }
+        },
+    ) { measurables, constraints ->
+        // Each tab its share of the width by its weight (the one under the indicator
+        // wider), worked out here rather than in composition, so a slide only lays out.
+        val weights = tabWeights(count, p(), extraWeight)
+        val total = weights.sum().takeIf { it > 0f } ?: 1f
+        val width = constraints.maxWidth
+        val height = constraints.maxHeight
+        var sum = 0f
+        val edges = IntArray(measurables.size + 1)
+        for (i in measurables.indices) {
+            sum += weights.getOrElse(i) { 0f }
+            edges[i + 1] = (width * sum / total).roundToInt()
+        }
+        val placeables = measurables.mapIndexed { i, m ->
+            m.measure(Constraints.fixed((edges[i + 1] - edges[i]).coerceAtLeast(0), height))
+        }
+        layout(width, height) {
+            placeables.forEachIndexed { i, placeable -> placeable.placeRelative(edges[i], 0) }
         }
     }
 }
@@ -191,14 +223,14 @@ fun Modifier.glassTabPill(hazeState: HazeState?): Modifier = glassSurface(
     tint = MaterialTheme.colorScheme.surfaceContainerHigh,
     alpha = GlassAlpha.Nav,
     sheen = AccentSheen.Chrome,
+    inputScale = LocalChromeBlurScale.current,
 )
 
 @Composable
-private fun RowScope.GlassTab(
+private fun GlassTab(
     label: String,
     selected: Boolean,
-    emphasis: Float,
-    weight: Float,
+    emphasis: () -> Float,
     enabled: Boolean,
     size: GlassTabBarSize,
     onClick: () -> Unit,
@@ -216,12 +248,12 @@ private fun RowScope.GlassTab(
         label = "tabPressGlow",
     )
     val glowColor = MaterialTheme.colorScheme.onSurface
-    val color = lerp(MaterialTheme.colorScheme.onSurfaceVariant, MaterialTheme.colorScheme.primary, emphasis)
+    val restColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val onColor = MaterialTheme.colorScheme.primary
 
     Row(
         modifier = Modifier
-            .weight(weight)
-            .fillMaxHeight()
+            .fillMaxSize()
             .padding(vertical = size.padding)
             .clip(RoundedCornerShape(OneUiRadius.Pill))
             .drawBehind { if (pressGlow > 0f) drawRect(glowColor, alpha = pressGlow) }
@@ -242,11 +274,12 @@ private fun RowScope.GlassTab(
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
+        // Its colour is worked out as it's drawn, following the indicator without recomposing.
+        BasicText(
             text = label,
-            style = if (size == GlassTabBarSize.Chrome) MaterialTheme.typography.titleMedium else MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold,
-            color = color,
+            style = (if (size == GlassTabBarSize.Chrome) MaterialTheme.typography.titleMedium else MaterialTheme.typography.titleSmall)
+                .copy(fontWeight = FontWeight.SemiBold),
+            color = { lerp(restColor, onColor, emphasis()) },
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )

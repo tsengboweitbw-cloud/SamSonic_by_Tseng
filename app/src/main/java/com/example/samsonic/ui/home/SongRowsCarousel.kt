@@ -1,5 +1,6 @@
 package com.example.samsonic.ui.home
 
+import com.example.samsonic.ui.components.LocalRowPrefs
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.snapping.SnapPosition
 import androidx.compose.foundation.gestures.snapping.rememberSnapFlingBehavior
@@ -80,8 +81,8 @@ fun SongRowsCarousel(songs: List<Song>, modifier: Modifier = Modifier) {
 /** Cover, title and "artist • year", with the audio format over the duration at the end. */
 @Composable
 private fun ShelfSongRow(song: Song, isCurrent: Boolean, onClick: () -> Unit) {
-    val cornerRadius by LocalAppContainer.current.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
-    val likesEnabled by LocalAppContainer.current.themeManager.likesEnabled.collectAsStateWithLifecycle()
+    val cornerRadius = LocalRowPrefs.current.artCornerRadius
+    val likesEnabled = LocalRowPrefs.current.likesEnabled
     val display = audioFormatDisplay()
     val player = LocalPlayerState.current
     val addToPlaylist = rememberAddToPlaylistLongPress(song)

@@ -323,7 +323,7 @@ internal fun MorphPanel(
                             scale(rect.width / own.width, rect.height / own.height, pivot = Offset.Zero)
                             translate(-own.left, -own.top)
                         }) {
-                            clipPath(Path().apply { addRoundRect(RoundRect(own, CornerRadius(corner))) }) {
+                            clipPath(morphClip(RoundRect(own, CornerRadius(corner)))) {
                                 this@drawWithContent.drawContent()
                                 drawRect(wash, own.topLeft, own.size, alpha = washAlpha)
                             }
@@ -333,8 +333,8 @@ internal fun MorphPanel(
                         // draw: a lasting fade on the glass drops its blur out (see above), but
                         // here the shape is small and nearly gone by then.
                         val fade = glassAlpha()
-                        if (fade < 1f) drawContext.canvas.saveLayer(rect, Paint().apply { alpha = fade })
-                        clipPath(Path().apply { addRoundRect(RoundRect(rect, CornerRadius(corner))) }) {
+                        if (fade < 1f) drawContext.canvas.saveLayer(rect, FadePaint.apply { alpha = fade })
+                        clipPath(morphClip(RoundRect(rect, CornerRadius(corner)))) {
                             this@drawWithContent.drawContent()
                             // Thickens the glass as it grows, in draw: a fade on the glass
                             // itself would drop the blur out (see above).
@@ -439,4 +439,14 @@ private class PanelPullDown(private val panel: PanelState) : NestedScrollConnect
         panel.dragBy(deltaY)
         return Offset(0f, (before - panel.progress) * panel.travelPx)
     }
+}
+
+// Reused for every frame of every panel's morph (drawing is on the one UI thread, and a
+// recorded clip keeps its own copy), rather than made anew each frame.
+private val MorphClip = Path()
+private val FadePaint = Paint()
+
+private fun morphClip(shape: RoundRect): Path = MorphClip.apply {
+    rewind()
+    addRoundRect(shape)
 }

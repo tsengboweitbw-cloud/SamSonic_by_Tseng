@@ -1,0 +1,5 @@
+# Compiles all of the app's own code ahead of time at install, rather than leaving it to
+# run interpreted and warm up by JIT the first times each screen and animation runs,
+# which stuttered then. The Compose libraries bring profiles of their own.
+HSPLcom/example/samsonic/**->**(**)**
+Lcom/example/samsonic/**;
