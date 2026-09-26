@@ -53,6 +53,7 @@ import com.example.samsonic.ui.components.PileStep
 import com.example.samsonic.ui.components.pileCard
 import com.example.samsonic.ui.components.pileSwipe
 import com.example.samsonic.ui.components.rememberCardPileState
+import com.example.samsonic.ui.player.MiniPillMotion
 import com.example.samsonic.ui.player.MiniPlayerCard
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -200,6 +201,7 @@ fun SamSonicNavHost(lastTab: LastTab) {
     }
     // How far above the nav bar the mini player's own place is: all the way apart, none piled.
     val apartPx = with(LocalDensity.current) { (navBarHeight + 8.dp).toPx() }
+    val navBarHeightPx = with(LocalDensity.current) { navBarHeight.toPx() }
     val miniAboveNavPx = { apartPx * (1f - stackAmount) }
     // Which of the two is drawn over the other, changing only as one goes behind; and
     // the player sheet goes over both as it opens.
@@ -383,8 +385,21 @@ fun SamSonicNavHost(lastTab: LastTab) {
                                                 stackEntrance.value.coerceIn(0f, 1f)
                                         }
                                     },
-                                    whole = { playerSheet.dismissal > 0f || stackEntrance.value < 1f },
-                                    offsetFromFront = { -miniAboveNavPx() },
+                                    // Cut just where the mini player is drawn as it comes in or
+                                    // goes (MiniPillMotion), as clearly as it's drawn: so the nav
+                                    // bar dissolves under it, never cut where it isn't yet.
+                                    cut = { MiniPillMotion.alpha(1f - stackEntrance.value.coerceIn(0f, 1f), playerSheet.dismissal.coerceIn(0f, 1f)) },
+                                    offsetFromFront = {
+                                        -miniAboveNavPx() + MiniPillMotion.shift(
+                                            1f - stackEntrance.value.coerceIn(0f, 1f),
+                                            playerSheet.dismissal.coerceIn(0f, 1f),
+                                            navBarHeightPx,
+                                            playerSheet.dismissTravelPx,
+                                        )
+                                    },
+                                    frontScale = {
+                                        MiniPillMotion.scale(1f - stackEntrance.value.coerceIn(0f, 1f), playerSheet.dismissal.coerceIn(0f, 1f))
+                                    },
                                 )
                                 .then(if (piled) Modifier.pileSwipe(chromePile, navBarHeight) else Modifier)
                         } else {

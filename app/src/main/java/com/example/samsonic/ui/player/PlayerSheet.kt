@@ -51,6 +51,22 @@ import kotlin.math.roundToInt
 private val PillMargin = 12.dp
 private val PillRadius = OneUiChrome.BarHeight / 2
 
+/**
+ * How the mini player's pill is drawn off its place as it comes in ([coming], 1 to 0)
+ * or is swiped away ([away], 0 to 1): moved down (px), scaled about its centre, faded.
+ * Shared with the nav bar behind it in the stacked pile, which is cut away just where
+ * the pill is drawn, as clearly as it's drawn, so it dissolves under the pill as that
+ * comes over it rather than being cut where the pill isn't yet.
+ */
+internal object MiniPillMotion {
+    fun shift(coming: Float, away: Float, heightPx: Float, awayTravelPx: Float): Float =
+        coming * heightPx * 0.9f + away * awayTravelPx
+
+    fun scale(coming: Float, away: Float): Float = lerp(1f, 0.92f, coming) * lerp(1f, 0.85f, away)
+
+    fun alpha(coming: Float, away: Float): Float = (1f - coming) * (1f - ramp(away, 0.3f, 1f))
+}
+
 /** The mini player's place in the pile it shares with the nav bar (card 0). */
 const val MiniPlayerCard = 1
 
@@ -241,22 +257,16 @@ private fun SheetSurface(
                 clip = true
                 // Swiped down, the pill goes with the finger, under the nav bar, and
                 // draws in a little (to 85%) as it fades, until it's gone.
-                // Coming in: up from below its place, growing a touch, as it fades in.
+                // Coming in (up from below its place, growing a touch, as it fades in) or
+                // swiped away (down with the finger, drawing in, fading out): see MiniPillMotion.
                 val coming = 1f - entrance()
-                if (coming > 0f) {
-                    translationY = coming * size.height * 0.9f
-                    val scale = lerp(1f, 0.92f, coming)
-                    scaleX = scale
-                    scaleY = scale
-                    alpha = 1f - coming
-                }
                 val away = sheet.dismissal
-                if (away > 0f) {
-                    translationY = away * sheet.dismissTravelPx
-                    val scale = lerp(1f, 0.85f, away)
+                if (coming > 0f || away > 0f) {
+                    translationY = MiniPillMotion.shift(coming, away, size.height, sheet.dismissTravelPx)
+                    val scale = MiniPillMotion.scale(coming, away)
                     scaleX = scale
                     scaleY = scale
-                    alpha = 1f - ramp(away, 0.3f, 1f)
+                    alpha = MiniPillMotion.alpha(coming, away)
                 }
             }
             .draggable(

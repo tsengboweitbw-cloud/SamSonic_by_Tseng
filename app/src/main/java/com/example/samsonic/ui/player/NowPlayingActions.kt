@@ -188,7 +188,7 @@ private fun StackedCapsule(
                 pile,
                 index,
                 CapsuleHeight,
-                whole = inFrontOpen,
+                cut = { if (inFrontOpen()) 0f else 1f },
                 // Hidden while its panel is out, which starts as a copy of it; the rest of
                 // the pile stays in place behind, the next one, left in front, as clear as
                 // a front one. Each switch is made under the panel's copy of the capsule.

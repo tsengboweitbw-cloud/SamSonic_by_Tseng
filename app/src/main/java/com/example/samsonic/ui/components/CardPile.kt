@@ -371,27 +371,30 @@ private class FingerVelocity(first: PointerInputChange) {
 /**
  * Card [index] of [pile], drawn in its place in the pile (cards [cardHeight] high, fully
  * rounded): sized, raised and faded, and cut away where the card just in front of it
- * covers it, so through translucent glass only its peeking edge shows. [whole] draws
- * it uncut, as while the one in front is away; [alpha] overrides how clearly it shows,
+ * covers it, so through translucent glass only its peeking edge shows. [cut] is how much
+ * of it is cut away there, 0 (drawn whole, as while the one in front is away) to 1, in
+ * between fading, so the cut comes and goes with that card; [alpha] overrides how clearly it shows,
  * from its pose, and [squeeze] shrinks it a little more. With [ignoreTouchesBehind],
  * touches on it do nothing unless it's in front.
  *
  * [weight] eases the whole pile in and out of its poses (0 draws every card as it is,
  * 1 in the pile), for cards that come together into a pile from apart; then
  * [offsetFromFront] is how far (px, up) this card's own place is above that of the
- * card in front, so the cut still follows that card.
+ * card in front, and [frontScale] how much that card is scaled on top of its pose, so the
+ * cut still follows it.
  */
 @Composable
 fun Modifier.pileCard(
     pile: CardPileState,
     index: Int,
     cardHeight: Dp,
-    whole: () -> Boolean = { false },
+    cut: () -> Float = { 1f },
     alpha: ((CardPose) -> Float)? = null,
     squeeze: () -> Float = { 1f },
     ignoreTouchesBehind: Boolean = false,
     weight: () -> Float = { 1f },
     offsetFromFront: () -> Float = { 0f },
+    frontScale: () -> Float = { 1f },
 ): Modifier {
     val cutout = remember { Path() }
     val posed = this
@@ -409,7 +412,8 @@ fun Modifier.pileCard(
             val inFront = pile.depth(inFrontIndex)
             // Cut away only where the one in front is drawn over this one: not the front
             // one itself, nor one on its way up over the top, nor by one gone behind.
-            val underIt = (d > 0f || d < -ToTopShare) && inFront >= -ToTopShare && !whole()
+            val amount = cut().coerceIn(0f, 1f)
+            val underIt = (d > 0f || d < -ToTopShare) && inFront >= -ToTopShare && amount > 0f
             if (!underIt) {
                 drawContent()
                 return@drawWithContent
@@ -419,7 +423,7 @@ fun Modifier.pileCard(
             val w = weight()
             val own = pile.pose(index, size.height, step, threshold).weighted(w)
             val front = pile.pose(inFrontIndex, size.height, step, threshold).weighted(w)
-            val ratio = front.scale / own.scale
+            val ratio = front.scale * frontScale() / own.scale
             val halfW = size.width / 2 * ratio
             val halfH = size.height / 2 * ratio
             val centreY = size.height / 2 + (front.rise - own.rise + offsetFromFront()) / own.scale
@@ -434,6 +438,14 @@ fun Modifier.pileCard(
                 ),
             )
             clipPath(cutout, ClipOp.Difference) { this@drawWithContent.drawContent() }
+            // Partly cut: what's under the card in front shows faded, rather than switching
+            // off in one frame (which, through that card's translucent glass, blinked).
+            if (amount < 1f) {
+                CutFadePaint.alpha = 1f - amount
+                drawContext.canvas.saveLayer(cutout.getBounds(), CutFadePaint)
+                clipPath(cutout) { this@drawWithContent.drawContent() }
+                drawContext.canvas.restore()
+            }
         }
     if (!ignoreTouchesBehind) return posed
     return posed.pointerInput(pile, index) {
@@ -524,3 +536,6 @@ private fun stackRise(depth: Float, step: Float): Float = -step * depth.coerceAt
 private fun floorMod(value: Int, count: Int): Int = ((value % count) + count) % count
 
 private fun floorModFloat(value: Float, count: Float): Float = ((value % count) + count) % count
+
+// Drawing is on the one UI thread, and saveLayer only reads it.
+private val CutFadePaint = androidx.compose.ui.graphics.Paint()
