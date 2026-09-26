@@ -78,6 +78,8 @@
     <string name="settings_accent_hex">Hex</string>
     <string name="settings_accent_reset">Reset</string>
     <string name="settings_accent_apply">Apply</string>
+    <string name="settings_stack_chrome">Stack nav bar and mini player</string>
+    <string name="settings_stack_chrome_hint">Pile them in one place, like the capsules in Now Playing: swipe up to bring the other forward</string>
     <string name="settings_album_art_roundness">Album art roundness</string>
     <string name="settings_album_art_roundness_hint">How round the corners of covers are</string>
     <string name="settings_glass_opacity">Navigation bar opacity</string>

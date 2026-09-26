@@ -77,6 +77,8 @@
     <string name="settings_accent_hex">色碼</string>
     <string name="settings_accent_reset">重設</string>
     <string name="settings_accent_apply">套用</string>
+    <string name="settings_stack_chrome">堆疊導覽列與迷你播放器</string>
+    <string name="settings_stack_chrome_hint">像「正在播放」底部的膠囊一樣疊在同一處，向上滑動即可切換到另一個</string>
     <string name="settings_album_art_roundness">專輯封面圓角</string>
     <string name="settings_album_art_roundness_hint">封面邊角的圓潤程度</string>
     <string name="settings_glass_opacity">導覽列不透明度</string>

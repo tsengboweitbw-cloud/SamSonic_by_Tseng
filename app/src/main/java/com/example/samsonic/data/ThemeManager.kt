@@ -93,6 +93,16 @@ class ThemeManager(context: Context) {
     private val _swipeMiniForSong = MutableStateFlow(prefs.getBoolean(KEY_SWIPE_MINI_SONG, true))
     val swipeMiniForSong: StateFlow<Boolean> = _swipeMiniForSong.asStateFlow()
 
+    // The nav bar and mini player piled in one place, a swipe up bringing the other forward,
+    // instead of the mini player floating above the nav bar.
+    private val _stackChrome = MutableStateFlow(prefs.getBoolean(KEY_STACK_CHROME, false))
+    val stackChrome: StateFlow<Boolean> = _stackChrome.asStateFlow()
+
+    fun setStackChrome(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_STACK_CHROME, enabled).apply()
+        _stackChrome.value = enabled
+    }
+
     fun setThemeMode(mode: ThemeMode) {
         prefs.edit().putString(KEY_MODE, mode.name).apply()
         _themeMode.value = mode
@@ -179,6 +189,7 @@ class ThemeManager(context: Context) {
         private const val KEY_SHOW_AUDIO_FORMAT = "show_audio_format"
         private const val KEY_AUDIO_FORMAT_DISPLAY = "audio_format_display"
         private const val KEY_SWIPE_MINI_SONG = "swipe_mini_for_song"
+        private const val KEY_STACK_CHROME = "stack_chrome"
         val DefaultAccent = Color(0xFF8875FF)
         val DefaultAlbumArtCornerRadius = 2.dp
         const val DefaultGlassOpacity = 1f

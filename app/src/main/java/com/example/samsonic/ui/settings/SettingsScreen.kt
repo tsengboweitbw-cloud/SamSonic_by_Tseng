@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.RoundedCorner
@@ -74,6 +75,7 @@ fun SettingsScreen(
     val accentColor by container.themeManager.accentColor.collectAsStateWithLifecycle()
     val albumArtCornerRadius by container.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
     val likesEnabled by container.themeManager.likesEnabled.collectAsStateWithLifecycle()
+    val stackChrome by container.themeManager.stackChrome.collectAsStateWithLifecycle()
     val autoDjConfig by container.autoDjSettings.config.collectAsStateWithLifecycle()
     val audioFormatDisplay by container.themeManager.audioFormatDisplay.collectAsStateWithLifecycle()
     val albumArtistsOnly by container.libraryLayoutManager.albumArtistsOnly.collectAsStateWithLifecycle()
@@ -210,6 +212,13 @@ fun SettingsScreen(
                         hint = stringResource(R.string.settings_accent_color_hint),
                         onClick = { accentMenu.open() },
                         modifier = Modifier.menuOrigin(accentMenu),
+                    )
+                    SwitchRow(
+                        icon = Icons.Filled.Layers,
+                        title = stringResource(R.string.settings_stack_chrome),
+                        checked = stackChrome,
+                        onCheckedChange = container.themeManager::setStackChrome,
+                        hint = stringResource(R.string.settings_stack_chrome_hint),
                     )
                     SliderRow(
                         icon = Icons.Filled.RoundedCorner,

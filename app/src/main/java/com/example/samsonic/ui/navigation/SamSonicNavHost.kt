@@ -32,6 +32,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.lerp
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.ui.zIndex
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.samsonic.playback.LocalPlayerState
+import com.example.samsonic.ui.components.PileStep
+import com.example.samsonic.ui.components.pileCard
+import com.example.samsonic.ui.components.pileSwipe
+import com.example.samsonic.ui.components.rememberCardPileState
+import com.example.samsonic.ui.player.MiniPlayerCard
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -121,6 +135,32 @@ fun SamSonicNavHost(lastTab: LastTab) {
     val chromeGuard = remember { ChromeGuard() }
     val navBarHeight = OneUiChrome.BarHeight
     val navBarBottomInset = 16.dp
+    // Stacked, the nav bar (card 0) and the mini player share one place, piled; only
+    // while there's a song, else the nav bar is on its own.
+    val stackChrome by container.themeManager.stackChrome.collectAsStateWithLifecycle()
+    val hasSong = LocalPlayerState.current.currentSong != null
+    // Switched between the two, the mini player glides down behind the nav bar into the
+    // pile, or rises out of it back to its place above: 0 apart, 1 piled.
+    val stackAmount by animateFloatAsState(
+        targetValue = if (stackChrome) 1f else 0f,
+        // No overshoot: past either end it would pile or part for a frame.
+        animationSpec = spring(dampingRatio = 1f, stiffness = 300f),
+        label = "stackChrome",
+    )
+    // Drawn in the pile while it comes together or apart; swiped only once it has.
+    val pileShown = hasSong && stackAmount > 0f
+    val piled = hasSong && stackChrome && stackAmount >= 1f
+    val chromePile = rememberCardPileState(2)
+    // Piling up, the mini player goes behind; with it gone, or apart again, the nav bar is in front.
+    LaunchedEffect(stackChrome) { if (stackChrome) chromePile.snapTo(0) }
+    LaunchedEffect(pileShown) { if (!pileShown) chromePile.snapTo(0) }
+    // How far above the nav bar the mini player's own place is: all the way apart, none piled.
+    val apartPx = with(LocalDensity.current) { (navBarHeight + 8.dp).toPx() }
+    val miniAboveNavPx = { apartPx * (1f - stackAmount) }
+    // Which of the two is drawn over the other, changing only as one goes behind; and
+    // the player sheet goes over both as it opens.
+    val navBarOnTop by remember(chromePile) { derivedStateOf { chromePile.zIndex(0) > chromePile.zIndex(MiniPlayerCard) } }
+    val sheetOpening by remember(playerSheet) { derivedStateOf { playerSheet.progress > 0f } }
 
     Scaffold(containerColor = MaterialTheme.colorScheme.background) { innerPadding ->
         CompositionLocalProvider(
@@ -133,7 +173,8 @@ fun SamSonicNavHost(lastTab: LastTab) {
             val chromeBottomInset = innerPadding.calculateBottomPadding()
             val systemBarInset = if (showChrome) chromeBottomInset else 0.dp
             val navBarReserve = if (showChrome) navBarHeight + navBarBottomInset else 0.dp
-            val miniPlayerReserve = if (showChrome) OneUiChrome.BarHeight + 8.dp else 0.dp
+            // Stacked, only the peeking edge of the card behind rises above the nav bar.
+            val miniPlayerReserve = if (showChrome) lerp(OneUiChrome.BarHeight + 8.dp, PileStep, stackAmount) else 0.dp
             val contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve
             // Content melts into the background near the bottom edge: 1.5 times the
             // space below the nav bar (its bottom gap and the system bar), so the
@@ -160,7 +201,8 @@ fun SamSonicNavHost(lastTab: LastTab) {
             // composite into one flattened layer before hazeSource snapshots
             // it - LazyColumn content otherwise has known gaps in Haze's
             // capture (text and item edges stay sharp/unblurred).
-            Box(modifier = Modifier.fillMaxSize().bottomFade(bottomFadeHeight).graphicsLayer().hazeSource(hazeState)) {
+            // Beneath the piled chrome, which is ordered by zIndex (see below).
+            Box(modifier = Modifier.zIndex(-3f).fillMaxSize().bottomFade(bottomFadeHeight).graphicsLayer().hazeSource(hazeState)) {
             // Inside the haze source, so the frosted bars pick up its color as they blur it.
             AmbientGlow()
             // Covers and pictures travel from the card tapped to the page it opens (see sharedArt).
@@ -221,7 +263,13 @@ fun SamSonicNavHost(lastTab: LastTab) {
                 val openFromPlayer = remember(tabs) { { route: String -> tabs.open(Routes.LIBRARY, route); Unit } }
                 PlayerSheet(
                     sheet = playerSheet,
-                    collapsedBottom = chromeBottomInset + navBarHeight + navBarBottomInset + 8.dp,
+                    // Stacked, in the nav bar's own place and width.
+                    collapsedBottom = chromeBottomInset + navBarBottomInset + lerp(navBarHeight + 8.dp, 0.dp, stackAmount),
+                    collapsedMargin = lerp(12.dp, 16.dp, stackAmount),
+                    pile = chromePile.takeIf { pileShown },
+                    pileWeight = { stackAmount },
+                    pileOffset = miniAboveNavPx,
+                    modifier = if (pileShown) Modifier.zIndex(if (sheetOpening) -0.5f else if (navBarOnTop) -2f else -1f) else Modifier,
                     onAlbumClick = remember(openFromPlayer) { { openFromPlayer(Routes.album(it)) } },
                     onArtistClick = remember(openFromPlayer) { { openFromPlayer(Routes.artist(it)) } },
                 )
@@ -233,6 +281,7 @@ fun SamSonicNavHost(lastTab: LastTab) {
                 enter = slideInVertically { it } + fadeIn(),
                 exit = slideOutVertically { it } + fadeOut(),
                 modifier = Modifier
+                    .then(if (pileShown) Modifier.zIndex(if (navBarOnTop) -1f else -2f) else Modifier)
                     .align(Alignment.BottomCenter)
                     .graphicsLayer {
                         val progress = playerSheet.progress
@@ -242,7 +291,25 @@ fun SamSonicNavHost(lastTab: LastTab) {
                     .padding(horizontal = 16.dp)
                     .padding(bottom = chromeBottomInset + navBarBottomInset)
                     .fillMaxWidth()
-                    .height(navBarHeight),
+                    .height(navBarHeight)
+                    // Piled with the mini player: posed in the pile, and a swipe up sends it
+                    // to the back; behind, it takes no touches.
+                    .then(
+                        if (pileShown) {
+                            Modifier
+                                .pileCard(
+                                    chromePile,
+                                    0,
+                                    navBarHeight,
+                                    ignoreTouchesBehind = true,
+                                    weight = { stackAmount },
+                                    offsetFromFront = { -miniAboveNavPx() },
+                                )
+                                .then(if (piled) Modifier.pileSwipe(chromePile, navBarHeight) else Modifier)
+                        } else {
+                            Modifier
+                        },
+                    ),
             ) {
                 FloatingNavBar(
                     destinations = bottomDestinations,

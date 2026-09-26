@@ -32,6 +32,12 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.model.Song
 import com.example.samsonic.playback.LocalPlayerState
+import com.example.samsonic.ui.components.CardPileState
+import com.example.samsonic.ui.components.PileDownDrag
+import com.example.samsonic.ui.components.contentAlpha
+import com.example.samsonic.ui.components.pickThresholdPx
+import com.example.samsonic.ui.components.pileCard
+import com.example.samsonic.ui.components.pileSwipe
 import com.example.samsonic.ui.theme.AccentSheen
 import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.LocalHazeState
@@ -41,6 +47,9 @@ import kotlin.math.roundToInt
 
 private val PillMargin = 12.dp
 private val PillRadius = OneUiChrome.BarHeight / 2
+
+/** The mini player's place in the pile it shares with the nav bar (card 0). */
+const val MiniPlayerCard = 1
 
 // How far (in pill heights) a drag down takes the mini player to swipe it away.
 private const val DismissTravel = 1.5f
@@ -58,7 +67,10 @@ private fun ramp(value: Float, start: Float, end: Float) = ((value - start) / (e
  * Lyrics, queue and song info open inside the sheet, growing out of the capsule
  * stack at the foot of Now Playing.
  *
- * [collapsedBottom] is the gap between the pill and the bottom of the screen.
+ * [collapsedBottom] is the gap between the pill and the bottom of the screen, and
+ * [collapsedMargin] that at each side. Given a [pile], the pill is its card
+ * [MiniPlayerCard], piled with the nav bar: a swipe up at rest sends it to the back
+ * (or does nothing while it's behind) instead of opening Now Playing, which a tap does.
  * [onAlbumClick] and [onArtistClick] open those pages from Now Playing, after the sheet folds away.
  */
 @Composable
@@ -68,6 +80,10 @@ fun PlayerSheet(
     onAlbumClick: (albumId: String) -> Unit,
     onArtistClick: (artistId: String) -> Unit,
     modifier: Modifier = Modifier,
+    collapsedMargin: Dp = PillMargin,
+    pile: CardPileState? = null,
+    pileWeight: () -> Float = { 1f },
+    pileOffset: () -> Float = { 0f },
 ) {
     val player = LocalPlayerState.current
     val song = player.currentSong
@@ -90,7 +106,7 @@ fun PlayerSheet(
                 val full = Rect(0f, 0f, constraints.maxWidth.toFloat(), constraints.maxHeight.toFloat())
                 val collapsed = with(density) {
                     val bottom = full.bottom - collapsedBottom.toPx()
-                    Rect(PillMargin.toPx(), bottom - OneUiChrome.BarHeight.toPx(), full.right - PillMargin.toPx(), bottom)
+                    Rect(collapsedMargin.toPx(), bottom - OneUiChrome.BarHeight.toPx(), full.right - collapsedMargin.toPx(), bottom)
                 }
                 SideEffect {
                     sheet.travelPx = collapsed.top
@@ -101,7 +117,7 @@ fun PlayerSheet(
                         if (surface == PlayerSurface.Mini) frame.topLeft else Offset(0f, frame.top)
                     }
                 }
-                SheetSurface(sheet, song, collapsed, full)
+                SheetSurface(sheet, song, collapsed, full, pile, pileWeight, pileOffset)
                 // Above the sheet: the cover and progress line in flight.
                 PlayerMorphOverlay(morph, Modifier.fillMaxSize())
             }
@@ -111,13 +127,33 @@ fun PlayerSheet(
 }
 
 @Composable
-private fun SheetSurface(sheet: PlayerSheetState, song: Song, collapsed: Rect, full: Rect) {
+private fun SheetSurface(
+    sheet: PlayerSheetState,
+    song: Song,
+    collapsed: Rect,
+    full: Rect,
+    pile: CardPileState?,
+    pileWeight: () -> Float,
+    pileOffset: () -> Float,
+) {
     // Kept until fully open: its art and progress line are the morph's start points.
     // Gone once open, so its (invisible) pill can't catch Now Playing's taps.
     val miniShowing by remember(sheet) { derivedStateOf { sheet.progress < 0.999f } }
     val atRest by remember(sheet) { derivedStateOf { sheet.progress == 0f } }
     val dragState = rememberDraggableState { sheet.dragBy(it) }
     val radiusPx = with(LocalDensity.current) { PillRadius.toPx() }
+    // Piled and at rest, a swipe up goes to the pile; one down still swipes the pill away.
+    // Drawn in the pile as it comes together, but swiped only once it has.
+    val posed = pile != null && atRest
+    val settled by remember(pileWeight) { derivedStateOf { pileWeight() >= 1f } }
+    val piled = posed && settled
+    val swipeAway = remember(sheet) {
+        object : PileDownDrag {
+            override fun start() = sheet.startDrag()
+            override fun drag(deltaPx: Float) = sheet.dragBy(deltaPx)
+            override fun end(velocityPx: Float) = sheet.settle(velocityPx)
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -131,6 +167,20 @@ private fun SheetSurface(sheet: PlayerSheetState, song: Song, collapsed: Rect, f
                     placeable.place(bounds.left.roundToInt(), bounds.top.roundToInt())
                 }
             }
+            .then(
+                if (posed) {
+                    Modifier.pileCard(
+                        pile!!,
+                        MiniPlayerCard,
+                        OneUiChrome.BarHeight,
+                        ignoreTouchesBehind = true,
+                        weight = pileWeight,
+                        offsetFromFront = pileOffset,
+                    )
+                } else {
+                    Modifier
+                },
+            )
             .graphicsLayer {
                 // Pill corners hold until the sheet nearly fills the screen, then square off.
                 val radius = lerp(radiusPx, 0f, ramp(sheet.progress, 0.75f, 1f))
@@ -150,12 +200,13 @@ private fun SheetSurface(sheet: PlayerSheetState, song: Song, collapsed: Rect, f
             .draggable(
                 state = dragState,
                 orientation = Orientation.Vertical,
-                // Panels over Now Playing take their own drags.
-                enabled = !sheet.hasPanelOpen,
+                // Panels over Now Playing take their own drags; piled at rest, the pile does.
+                enabled = !sheet.hasPanelOpen && !piled,
                 startDragImmediately = sheet.isMoving || sheet.isDismissing,
                 onDragStarted = { sheet.startDrag() },
                 onDragStopped = { velocity -> sheet.settle(velocity) },
-            ),
+            )
+            .then(if (piled) Modifier.pileSwipe(pile!!, OneUiChrome.BarHeight, downDrag = swipeAway) else Modifier),
     ) {
         // The mini player's glass, fading once Now Playing's backdrop covers it.
         Box(
@@ -199,7 +250,11 @@ private fun SheetSurface(sheet: PlayerSheetState, song: Song, collapsed: Rect, f
                         )
                         layout(constraints.maxWidth, constraints.maxHeight) { placeable.place(0, 0) }
                     }
-                    .graphicsLayer { alpha = 1f - ramp(sheet.progress, 0f, 0.25f) },
+                    .graphicsLayer {
+                        // Behind the nav bar, only its glass edge shows.
+                        val piledAlpha = pile?.let { lerp(1f, it.contentAlpha(MiniPlayerCard, pickThresholdPx()), pileWeight()) } ?: 1f
+                        alpha = (1f - ramp(sheet.progress, 0f, 0.25f)) * piledAlpha
+                    },
             ) {
                 MiniPlayer(song = song, onExpand = { sheet.expand() })
             }
