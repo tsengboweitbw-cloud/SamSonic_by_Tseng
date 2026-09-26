@@ -70,6 +70,7 @@ fun NowPlayingScreen(
     lyrics: PanelState,
     queue: PanelState,
     info: PanelState,
+    autoDj: PanelState,
     modifier: Modifier = Modifier,
     // Where the top-right button opens Add to playlist; null hides it (no playlists to add to).
     addToPlaylist: AddToPlaylistState? = null,
@@ -86,9 +87,9 @@ fun NowPlayingScreen(
     // While a panel is out, Now Playing's glass goes flat: dimmed under the panel, over
     // art already blurred, its blur doesn't show, but the panel's own blur of Now
     // Playing would redo it every frame of the panel's growing.
-    val panelOut by remember(lyrics, queue, info, addToPlaylist) {
+    val panelOut by remember(lyrics, queue, info, autoDj, addToPlaylist) {
         derivedStateOf {
-            listOfNotNull(lyrics, queue, info, addToPlaylist?.panel).any { it.progress > 0f }
+            listOfNotNull(lyrics, queue, info, autoDj, addToPlaylist?.panel).any { it.progress > 0f }
         }
     }
     val glassHaze = stackHaze.takeUnless { panelOut }
@@ -243,6 +244,7 @@ fun NowPlayingScreen(
             lyrics = lyrics,
             queue = queue,
             info = info,
+            autoDj = autoDj,
             addToPlaylist = addToPlaylist,
             song = song,
             haze = glassHaze,

@@ -58,6 +58,7 @@ import androidx.compose.ui.util.lerp
 import androidx.compose.ui.zIndex
 import com.example.samsonic.R
 import com.example.samsonic.model.Song
+import com.example.samsonic.ui.autodj.AutoDjIcon
 import com.example.samsonic.ui.components.pressClickable
 import com.example.samsonic.ui.library.AddToPlaylistState
 import com.example.samsonic.ui.library.toPlaylistItems
@@ -112,7 +113,7 @@ private const val LandingSqueeze = 3f
  * the pile stays; let go high enough ([PickThreshold]) it goes to the bottom of the
  * pile and the next comes forward (see [capsulePose]), one capsule a swipe; lower, it
  * drops back. A drag down is left to Now Playing. A tap opens the front one: lyrics,
- * the queue, song info, or Add to playlist ([addToPlaylist], if there are playlists to
+ * the queue, song info, Auto DJ, or Add to playlist ([addToPlaylist], if there are playlists to
  * add to), each growing out of the front capsule as the rest of the pile stays.
  */
 @Composable
@@ -120,6 +121,7 @@ internal fun NowPlayingActions(
     lyrics: PanelState,
     queue: PanelState,
     info: PanelState,
+    autoDj: PanelState,
     addToPlaylist: AddToPlaylistState?,
     song: Song,
     haze: HazeState?,
@@ -129,14 +131,16 @@ internal fun NowPlayingActions(
     val queueLabel = stringResource(R.string.player_queue)
     val infoLabel = stringResource(R.string.player_song_info)
     val addLabel = stringResource(R.string.components_add_to_playlist)
+    val autoDjLabel = stringResource(R.string.auto_dj_title)
     val currentSong by rememberUpdatedState(song)
-    val capsules = remember(lyrics, queue, info, addToPlaylist, lyricsLabel, queueLabel, infoLabel, addLabel) {
+    val capsules = remember(lyrics, queue, info, autoDj, addToPlaylist, lyricsLabel, queueLabel, infoLabel, addLabel, autoDjLabel) {
         fun PanelState.capsule(icon: ImageVector, label: String) =
             StackCapsule(icon, label, { progress }, { landing }) { open() }
         listOfNotNull(
             lyrics.capsule(PanelIcons.Lyrics, lyricsLabel),
             queue.capsule(PanelIcons.Queue, queueLabel),
             info.capsule(PanelIcons.Info, infoLabel),
+            autoDj.capsule(AutoDjIcon, autoDjLabel),
             addToPlaylist?.let { state ->
                 StackCapsule(Icons.Filled.LibraryAdd, addLabel, { state.panel.progress }, { state.panel.landing }) { from ->
                     state.open(currentSong.toPlaylistItems(), from, originRadius = null)
@@ -175,6 +179,7 @@ internal fun NowPlayingActions(
                     lyrics.origin = at
                     queue.origin = at
                     info.origin = at
+                    autoDj.origin = at
                 }
                 // A swipe up picks the front capsule up. Only up: a drag that sets off
                 // downward is left alone, for Now Playing to close.

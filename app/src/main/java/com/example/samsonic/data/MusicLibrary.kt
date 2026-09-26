@@ -68,6 +68,15 @@ interface MusicLibrary {
      */
     suspend fun getSongList(type: String, size: Int): List<Song>
 
+    /**
+     * Up to [count] songs picked at random, only of [genre] and from [fromYear] to [toYear]
+     * where given (each end on its own is fine): what Auto DJ picks from.
+     */
+    suspend fun randomSongs(count: Int, genre: String? = null, fromYear: Int? = null, toYear: Int? = null): List<Song>
+
+    /** Up to [count] albums in random order, only of [genre] and from [fromYear] to [toYear] where given. */
+    suspend fun randomAlbums(count: Int, genre: String? = null, fromYear: Int? = null, toYear: Int? = null): List<Album>
+
     suspend fun getPlaylists(): List<Playlist>
 
     suspend fun getPlaylist(id: String): Pair<Playlist, List<Song>>

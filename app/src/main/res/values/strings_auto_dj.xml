@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Auto DJ: keeps the music going when the queue runs out -->
+    <string name="auto_dj_title">Auto DJ</string>
+    <string name="auto_dj_hint">Keeps the music going when the queue runs out</string>
+
+    <string name="auto_dj_group_mode">When the queue runs out</string>
+    <string name="auto_dj_mode_off">Off</string>
+    <string name="auto_dj_mode_off_supporting">The music stops at the end of the queue</string>
+    <string name="auto_dj_mode_songs">Songs</string>
+    <string name="auto_dj_mode_songs_supporting">Adds a few songs at a time</string>
+    <string name="auto_dj_mode_albums">Albums</string>
+    <string name="auto_dj_mode_albums_supporting">Adds a whole album at a time</string>
+
+    <string name="auto_dj_group_follow">Follow the song playing</string>
+    <string name="auto_dj_follow_artist">Same artist</string>
+    <string name="auto_dj_follow_genre">Same genre</string>
+    <string name="auto_dj_follow_genre_hint">For a song of several genres, choose which to follow in Up next</string>
+    <string name="auto_dj_follow_era">Same era</string>
+    <string name="auto_dj_follow_era_hint">From the same decade</string>
+    <string name="auto_dj_follow_note">With none on, anything may come next. When nothing fits them all, Auto DJ lets go of the artist first, then the era, then the genre.</string>
+
+    <string name="auto_dj_group_filters">Only pick</string>
+    <string name="auto_dj_filters_note">These always hold, whatever is followed.</string>
+    <string name="auto_dj_any">Any</string>
+    <string name="auto_dj_clear">Clear</string>
+    <string name="auto_dj_filter_genres">Genres</string>
+    <string name="auto_dj_show_all">Show all</string>
+    <string name="auto_dj_show_fewer">Show fewer</string>
+    <string name="auto_dj_no_genres">No genres in this library</string>
+    <string name="auto_dj_filter_decades">Decades</string>
+    <string name="auto_dj_decade_earlier">Before 1950</string>
+    <string name="auto_dj_decade">%1$ds</string>
+    <string name="auto_dj_filter_artists">Artists</string>
+    <string name="auto_dj_search_artists">Search for an artist to add</string>
+    <string name="auto_dj_no_artists_found">No artists found</string>
+    <string name="auto_dj_remove">Remove %1$s</string>
+    <string name="auto_dj_liked_only">Liked songs only</string>
+    <string name="auto_dj_hi_res_only">Hi-Res only</string>
+    <string name="auto_dj_hi_res_only_hint">Better than CD: over 48 kHz or 16 bits. Music on the phone doesn\'t say, so none of it counts.</string>
+    <string name="auto_dj_never_played">Never played</string>
+    <string name="auto_dj_never_played_hint">Only songs with no plays yet</string>
+
+    <!-- Up next -->
+    <string name="auto_dj_follow_these">Follow</string>
+    <string name="auto_dj_picking">Finding what\'s next…</string>
+    <plurals name="auto_dj_filter_count">
+        <item quantity="one">%1$s · %2$d filter</item>
+        <item quantity="other">%1$s · %2$d filters</item>
+    </plurals>
+</resources>

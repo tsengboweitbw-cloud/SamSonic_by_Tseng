@@ -62,7 +62,7 @@ fun QueueScreen(modifier: Modifier = Modifier) {
         val listState = rememberLazyListState()
         val rowKeys = player.queue.occurrenceKeys()
         LazyColumn(
-            modifier = Modifier.fillMaxSize().scrollTopFade(listState),
+            modifier = Modifier.fillMaxWidth().weight(1f).scrollTopFade(listState),
             state = listState,
             // Lines the rows' text up with the card's title.
             contentPadding = PaddingValues(horizontal = 4.dp),
@@ -138,6 +138,7 @@ fun QueueScreen(modifier: Modifier = Modifier) {
                 }
             }
         }
+        AutoDjStrip()
     }
 }
 

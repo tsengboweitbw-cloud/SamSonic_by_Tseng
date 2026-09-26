@@ -72,6 +72,8 @@ data class AlbumDto(
     val duration: Int = 0,
     val year: Int? = null,
     val genre: String? = null,
+    // OpenSubsonic extension: each of its genres, where [genre] may hold only one.
+    val genres: List<ItemGenreDto> = emptyList(),
     val starred: String? = null,
 )
 
@@ -86,6 +88,7 @@ data class AlbumDetailDto(
     val duration: Int = 0,
     val year: Int? = null,
     val genre: String? = null,
+    val genres: List<ItemGenreDto> = emptyList(),
     val starred: String? = null,
     val song: List<SongDto> = emptyList(),
 )
@@ -104,6 +107,8 @@ data class SongDto(
     val track: Int? = null,
     val year: Int? = null,
     val genre: String? = null,
+    // OpenSubsonic extension: each of its genres, where [genre] may hold only one.
+    val genres: List<ItemGenreDto> = emptyList(),
     val coverArt: String? = null,
     val duration: Int = 0,
     val starred: String? = null,
@@ -135,6 +140,10 @@ data class SongDto(
 
 @Serializable
 data class ArtistRefDto(val id: String? = null, val name: String? = null)
+
+/** One of a song's or album's genres (OpenSubsonic). */
+@Serializable
+data class ItemGenreDto(val name: String = "")
 
 @Serializable
 data class SongsDto(val song: List<SongDto> = emptyList())

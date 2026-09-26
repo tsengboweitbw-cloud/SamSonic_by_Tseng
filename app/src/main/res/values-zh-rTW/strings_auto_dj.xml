@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="auto_dj_title">自動 DJ</string>
+    <string name="auto_dj_hint">播放佇列結束時自動接續播放</string>
+
+    <string name="auto_dj_group_mode">佇列播完時</string>
+    <string name="auto_dj_mode_off">關閉</string>
+    <string name="auto_dj_mode_off_supporting">佇列播完就停止</string>
+    <string name="auto_dj_mode_songs">歌曲</string>
+    <string name="auto_dj_mode_songs_supporting">每次加入幾首歌曲</string>
+    <string name="auto_dj_mode_albums">專輯</string>
+    <string name="auto_dj_mode_albums_supporting">每次加入一整張專輯</string>
+
+    <string name="auto_dj_group_follow">依照正在播放的歌曲</string>
+    <string name="auto_dj_follow_artist">相同演出者</string>
+    <string name="auto_dj_follow_genre">相同曲風</string>
+    <string name="auto_dj_follow_genre_hint">歌曲有多種曲風時，可在「接下來播放」中選擇要依照哪些</string>
+    <string name="auto_dj_follow_era">相同年代</string>
+    <string name="auto_dj_follow_era_hint">同一個十年間</string>
+    <string name="auto_dj_follow_note">全部關閉時，接下來的歌曲完全隨機。若沒有歌曲同時符合所有條件，會依序放寬演出者、年代，最後是曲風。</string>
+
+    <string name="auto_dj_group_filters">只挑選</string>
+    <string name="auto_dj_filters_note">無論依照什麼，這些條件一律適用。</string>
+    <string name="auto_dj_any">不限</string>
+    <string name="auto_dj_clear">清除</string>
+    <string name="auto_dj_filter_genres">曲風</string>
+    <string name="auto_dj_show_all">顯示全部</string>
+    <string name="auto_dj_show_fewer">顯示較少</string>
+    <string name="auto_dj_no_genres">這個音樂庫沒有曲風</string>
+    <string name="auto_dj_filter_decades">年代</string>
+    <string name="auto_dj_decade_earlier">1950 年以前</string>
+    <string name="auto_dj_decade">%1$d 年代</string>
+    <string name="auto_dj_filter_artists">演出者</string>
+    <string name="auto_dj_search_artists">搜尋要加入的演出者</string>
+    <string name="auto_dj_no_artists_found">找不到演出者</string>
+    <string name="auto_dj_remove">移除 %1$s</string>
+    <string name="auto_dj_liked_only">只挑喜歡的歌曲</string>
+    <string name="auto_dj_hi_res_only">只挑 Hi-Res</string>
+    <string name="auto_dj_hi_res_only_hint">優於 CD：超過 48 kHz 或 16 位元。手機上的音樂沒有這項資訊，因此都不算。</string>
+    <string name="auto_dj_never_played">從未播放</string>
+    <string name="auto_dj_never_played_hint">只挑還沒播放過的歌曲</string>
+
+    <string name="auto_dj_follow_these">依照</string>
+    <string name="auto_dj_picking">正在挑選接下來的音樂…</string>
+    <plurals name="auto_dj_filter_count">
+        <item quantity="other">%1$s · %2$d 個條件</item>
+    </plurals>
+</resources>

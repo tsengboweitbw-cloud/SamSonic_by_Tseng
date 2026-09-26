@@ -9,6 +9,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import com.example.samsonic.R
+import com.example.samsonic.ui.autodj.AutoDjIcon
+import com.example.samsonic.ui.autodj.AutoDjPanel
 import com.example.samsonic.ui.library.AddToPlaylistMenu
 import com.example.samsonic.ui.library.LocalAddToPlaylist
 import com.example.samsonic.ui.library.rememberAddToPlaylistState
@@ -41,6 +43,7 @@ internal fun PlayerPages(sheet: PlayerSheetState) {
             lyrics = sheet.lyrics,
             queue = sheet.queue,
             info = sheet.info,
+            autoDj = sheet.autoDj,
             addToPlaylist = addToPlaylist.takeIf { canAddToPlaylist },
         )
         PanelCard(sheet.lyrics, PanelIcons.Lyrics, title = stringResource(R.string.player_lyrics), haze = haze) {
@@ -50,6 +53,9 @@ internal fun PlayerPages(sheet: PlayerSheetState) {
             QueueScreen()
         }
         SongInfoPanel(sheet.info, haze)
+        PanelCard(sheet.autoDj, AutoDjIcon, title = stringResource(R.string.auto_dj_title), haze = haze) {
+            AutoDjPanel(Modifier.fillMaxSize())
+        }
         if (canAddToPlaylist) AddToPlaylistMenu(addToPlaylist, haze)
     }
 }
@@ -61,7 +67,7 @@ internal fun PlayerPages(sheet: PlayerSheetState) {
  */
 @Composable
 internal fun PlayerSheetBackHandling(sheet: PlayerSheetState) {
-    val panel = listOf(sheet.info, sheet.queue, sheet.lyrics).firstOrNull { it.isOpen }
+    val panel = listOf(sheet.autoDj, sheet.info, sheet.queue, sheet.lyrics).firstOrNull { it.isOpen }
     // Each shrinks from wherever it is when the gesture starts (still opening, even),
     // not from fully open, so backing out of an opening sheet or panel doesn't jump.
     PredictiveBackHandler(enabled = sheet.isExpanded && panel != null) { events ->

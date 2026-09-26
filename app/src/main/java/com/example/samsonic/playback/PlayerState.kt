@@ -21,6 +21,9 @@ import com.google.common.util.concurrent.MoreExecutors
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 enum class RepeatMode { OFF, ALL, ONE }
@@ -71,6 +74,14 @@ class PlayerState(
         private set
     private var likedOverrides by mutableStateOf(mapOf<String, Boolean>())
 
+    private val _changes = MutableStateFlow(0L)
+    /**
+     * Ticks after every change to the queue, its order, the repeat mode or what's
+     * playing: for what watches them away from the UI, such as Auto DJ with the screen
+     * off, where Compose state may not notify.
+     */
+    val changes: StateFlow<Long> = _changes.asStateFlow()
+
     private val playerListener = object : Player.Listener {
         override fun onIsPlayingChanged(isPlaying: Boolean) {
             this@PlayerState.isPlaying = isPlaying
@@ -80,11 +91,13 @@ class PlayerState(
             currentIndex = controller?.currentMediaItemIndex ?: -1
             currentSong = mediaItem?.mediaId?.let { songById[it] }
             positionSeconds = 0f
+            _changes.value++
         }
 
         override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
             shuffle = shuffleModeEnabled
             refreshPlayOrder()
+            _changes.value++
         }
 
         override fun onTimelineChanged(timeline: Timeline, reason: Int) {
@@ -92,10 +105,12 @@ class PlayerState(
             // without a media item transition.
             currentIndex = controller?.currentMediaItemIndex ?: -1
             refreshPlayOrder()
+            _changes.value++
         }
 
         override fun onRepeatModeChanged(mode: Int) {
             repeatMode = mode.toRepeatMode()
+            _changes.value++
         }
     }
 
@@ -120,6 +135,7 @@ class PlayerState(
             repeatMode = c.repeatMode.toRepeatMode()
             refreshPlayOrder()
             isReady = true
+            _changes.value++
         }, MoreExecutors.directExecutor())
     }
 
@@ -140,6 +156,20 @@ class PlayerState(
         if (songs.isEmpty()) return
         if (c.mediaItemCount == 0) return play(songs.first(), songs)
         insert(queue.size, songs, ShufflePlacement.End)
+    }
+
+    /**
+     * [addToQueue], and if the queue had already played to its end and stopped, plays on
+     * into [songs]: for what's added as the queue runs out (Auto DJ), which may arrive late.
+     */
+    fun continueWith(songs: List<Song>) {
+        val c = controller ?: return
+        val ended = c.playbackState == Player.STATE_ENDED
+        addToQueue(songs)
+        if (ended && c.hasNextMediaItem()) {
+            c.seekToNextMediaItem()
+            c.play()
+        }
     }
 
     /** Inserts [song] right after the current track; with nothing queued yet, starts playing it. */
@@ -229,6 +259,16 @@ class PlayerState(
      * default) in [playOrder] (1 the next song, -1 the previous), or null past either
      * end, as the cover carousel pages.
      */
+    /**
+     * The song playing, if it's the last to play (in [playOrder], so with shuffle on too)
+     * and repeat is off, so nothing follows it; else null.
+     */
+    fun lastToPlay(): Song? {
+        val order = playOrder.takeIf { it.size == queue.size && it.isNotEmpty() } ?: return null
+        if (repeatMode != RepeatMode.OFF || order.last() != currentIndex) return null
+        return currentSong
+    }
+
     fun playOrderNeighbor(step: Int, from: Int = currentIndex): Int? {
         val order = playOrder.ifEmpty { listOf(from) }
         val at = order.indexOf(from)

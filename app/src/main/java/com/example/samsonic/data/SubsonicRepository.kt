@@ -6,6 +6,7 @@ import com.example.samsonic.data.remote.AlbumDetailDto
 import com.example.samsonic.data.remote.AlbumDto
 import com.example.samsonic.data.remote.ArtistDetailDto
 import com.example.samsonic.data.remote.ArtistDto
+import com.example.samsonic.data.remote.ItemGenreDto
 import com.example.samsonic.data.remote.PlaylistDetailDto
 import com.example.samsonic.data.remote.PlaylistDto
 import com.example.samsonic.data.remote.SongDto
@@ -361,9 +362,39 @@ class SubsonicRepository(
         )
     }
 
-    suspend fun getRandomSongs(count: Int = 20): List<Song> {
-        val params = authParams() + ("size" to count.toString())
+    suspend fun getRandomSongs(count: Int = 20): List<Song> = randomSongs(count)
+
+    override suspend fun randomSongs(count: Int, genre: String?, fromYear: Int?, toYear: Int?): List<Song> {
+        val params = authParams() + buildMap {
+            put("size", count.toString())
+            genre?.let { put("genre", it) }
+            fromYear?.let { put("fromYear", "$it") }
+            toYear?.let { put("toYear", "$it") }
+        }
         return requireApi().getRandomSongs(params).response.randomSongs?.song.orEmpty().map { it.toDomain() }
+    }
+
+    /**
+     * getAlbumList2 filters by genre or by years, never both, and only its "random" list
+     * is in random order: so a genre's (or years') albums, a page of them, shuffled here,
+     * and with both, the years kept here from the genre's.
+     */
+    override suspend fun randomAlbums(count: Int, genre: String?, fromYear: Int?, toYear: Int?): List<Album> {
+        val query = when {
+            genre != null -> mapOf("type" to "byGenre", "genre" to genre, "size" to "$ALBUM_PAGE_SIZE")
+            fromYear != null || toYear != null -> mapOf(
+                "type" to "byYear",
+                "fromYear" to "${fromYear ?: 0}",
+                "toYear" to "${toYear ?: 9999}",
+                "size" to "$ALBUM_PAGE_SIZE",
+            )
+            else -> mapOf("type" to "random", "size" to "$count")
+        }
+        val albums = requireApi().getAlbumList2(authParams() + query).response.albumList2?.album.orEmpty().map { it.toDomain() }
+        return albums
+            .filter { album -> genre == null || (album.year ?: -1).let { y -> (fromYear == null || y >= fromYear) && (toYear == null || y <= toYear) } }
+            .shuffled()
+            .take(count)
     }
 
     suspend fun getStarredSongs(): List<Song> {
@@ -424,6 +455,7 @@ class SubsonicRepository(
         trackCount = songCount,
         durationSeconds = duration,
         coverArt = coverArt,
+        genres = genres.names(),
     )
 
     private fun AlbumDetailDto.toDomain() = Album(
@@ -436,7 +468,10 @@ class SubsonicRepository(
         trackCount = songCount,
         durationSeconds = duration,
         coverArt = coverArt,
+        genres = genres.names(),
     )
+
+    private fun List<ItemGenreDto>.names() = map { it.name }.filter { it.isNotBlank() }
 
     private fun SongDto.toDomain() = Song(
         id = id,
@@ -466,6 +501,7 @@ class SubsonicRepository(
         artists = artists.mapNotNull { ref -> ref.name?.takeIf { it.isNotBlank() }?.let { ArtistCredit(ref.id, it) } },
         albumArtistId = albumArtists.firstOrNull()?.id,
         albumArtistName = displayAlbumArtist?.takeIf { it.isNotBlank() } ?: albumArtists.firstOrNull()?.name,
+        genres = genres.names(),
     )
 
     private fun PlaylistDto.toDomain() = Playlist(

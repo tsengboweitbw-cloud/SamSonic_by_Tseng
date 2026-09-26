@@ -27,12 +27,14 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.semantics
@@ -46,6 +48,10 @@ import com.example.samsonic.BuildConfig
 import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.R
 import com.example.samsonic.data.ActiveSource
+import com.example.samsonic.data.AutoDjMode
+import com.example.samsonic.ui.autodj.AutoDjIcon
+import com.example.samsonic.ui.autodj.AutoDjMenu
+import com.example.samsonic.ui.autodj.autoDjModeLabel
 import com.example.samsonic.data.ThemeManager
 import com.example.samsonic.playback.LocalPlayerState
 import com.example.samsonic.ui.player.PanelState
@@ -68,6 +74,7 @@ fun SettingsScreen(
     val accentColor by container.themeManager.accentColor.collectAsStateWithLifecycle()
     val albumArtCornerRadius by container.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
     val likesEnabled by container.themeManager.likesEnabled.collectAsStateWithLifecycle()
+    val autoDjConfig by container.autoDjSettings.config.collectAsStateWithLifecycle()
     val audioFormatDisplay by container.themeManager.audioFormatDisplay.collectAsStateWithLifecycle()
     val albumArtistsOnly by container.libraryLayoutManager.albumArtistsOnly.collectAsStateWithLifecycle()
     val showFavourites by container.libraryLayoutManager.showFavourites.collectAsStateWithLifecycle()
@@ -80,6 +87,7 @@ fun SettingsScreen(
     val clearCacheMenu = remember { PanelState(scope) }
     val dsdMenu = remember { PanelState(scope) }
     val languageMenu = remember { PanelState(scope) }
+    val autoDjMenu = remember { PanelState(scope) }
     val cacheUsage = rememberCacheUsage()
     val clearMusicCacheMenu = remember { PanelState(scope) }
     val musicCacheUsage = rememberMusicCacheUsage(container.musicCache)
@@ -89,7 +97,7 @@ fun SettingsScreen(
     TitledPage(
         modifier = modifier,
         title = { PageTitle(stringResource(R.string.settings_title)) },
-        overlay = { haze ->
+        overlay = { haze -> CompositionLocalProvider(LocalMenuBottomInset provides contentPaddingBottom) {
             ThemeMenu(themeMenu, haze, current = themeMode, onSelect = container.themeManager::setThemeMode)
             AudioFormatMenu(
                 audioFormatMenu,
@@ -110,7 +118,8 @@ fun SettingsScreen(
             ClearMusicCacheMenu(clearMusicCacheMenu, haze, musicCacheUsage)
             DsdOutputMenu(dsdMenu, haze, container.bitPerfect)
             LanguageMenu(languageMenu, haze)
-        },
+            AutoDjMenu(autoDjMenu, haze)
+        } },
     ) { topPadding ->
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -123,6 +132,19 @@ fun SettingsScreen(
             item {
                 SettingsCard {
                     SleepTimerRow(player)
+                    NavRow(
+                        icon = AutoDjIcon,
+                        title = stringResource(R.string.auto_dj_title),
+                        value = autoDjConfig.mode.let { mode ->
+                            val label = autoDjModeLabel(mode)
+                            val filters = autoDjConfig.filters.count
+                            if (mode == AutoDjMode.OFF || filters == 0) label
+                            else pluralStringResource(R.plurals.auto_dj_filter_count, filters, label, filters)
+                        },
+                        hint = stringResource(R.string.auto_dj_hint),
+                        onClick = { autoDjMenu.open() },
+                        modifier = Modifier.menuOrigin(autoDjMenu),
+                    )
                     SwitchRow(
                         icon = Icons.Filled.Favorite,
                         title = stringResource(R.string.settings_like_button),
@@ -234,7 +256,7 @@ fun SettingsScreen(
 }
 
 @Composable
-private fun GroupLabel(text: String) {
+internal fun GroupLabel(text: String) {
     Text(
         text = text.uppercase(),
         style = MaterialTheme.typography.labelSmall,

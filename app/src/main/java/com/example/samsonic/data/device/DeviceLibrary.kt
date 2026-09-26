@@ -15,6 +15,7 @@ import com.example.samsonic.model.LyricLine
 import com.example.samsonic.model.Playlist
 import com.example.samsonic.model.SearchResults
 import com.example.samsonic.model.Song
+import com.example.samsonic.model.genreNames
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -112,6 +113,20 @@ class DeviceLibrary(context: Context) : MusicLibrary {
     override suspend fun getAlbumList(type: String, size: Int): List<Album> = index().albumList(type).take(size)
 
     override suspend fun getSongList(type: String, size: Int): List<Song> = index().songList(type).take(size)
+
+    override suspend fun randomSongs(count: Int, genre: String?, fromYear: Int?, toYear: Int?): List<Song> =
+        index().songs.filter { matches(it.genreNames, it.year, genre, fromYear, toYear) }.shuffled().take(count)
+
+    override suspend fun randomAlbums(count: Int, genre: String?, fromYear: Int?, toYear: Int?): List<Album> =
+        index().albums.filter { matches(it.genreNames, it.year, genre, fromYear, toYear) }.shuffled().take(count)
+
+    /** Whether something of [genres] and [year] is of [genre] and between [fromYear] and [toYear], where given. */
+    private fun matches(genres: List<String>, year: Int?, genre: String?, fromYear: Int?, toYear: Int?): Boolean {
+        if (genre != null && genres.none { it.equals(genre, ignoreCase = true) }) return false
+        if (fromYear == null && toYear == null) return true
+        val y = year ?: return false
+        return (fromYear == null || y >= fromYear) && (toYear == null || y <= toYear)
+    }
 
     override suspend fun getPlaylists(): List<Playlist> = emptyList()
 

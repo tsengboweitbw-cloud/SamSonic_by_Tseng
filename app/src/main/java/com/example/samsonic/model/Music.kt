@@ -23,6 +23,8 @@ data class Album(
     val trackCount: Int,
     val durationSeconds: Int,
     val coverArt: String?,
+    // Each of its genres where the source lists them apart (OpenSubsonic); see genreNames.
+    val genres: List<String> = emptyList(),
 )
 
 data class Song(
@@ -59,6 +61,8 @@ data class Song(
     // OpenSubsonic only; on other servers the album artist comes from the album.
     val albumArtistId: String? = null,
     val albumArtistName: String? = null,
+    // Each of its genres where the source lists them apart (OpenSubsonic); see genreNames.
+    val genres: List<String> = emptyList(),
 )
 
 data class Playlist(
