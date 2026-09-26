@@ -10,6 +10,8 @@ import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
@@ -58,6 +60,8 @@ fun Modifier.glassSurface(
     // True for a big panel that grows and shrinks (see the hazeEffect below); a small bar's
     // lighter blur shows the smaller copy it blurs as blocks.
     downsample: Boolean = false,
+    // How much of the accent's sheen washes over the glass (see [AccentSheen]); 0 for none.
+    sheen: Float = 0f,
 ): Modifier {
     // Scale by the user's global opacity preference, keeping each surface's
     // base alpha as its relative density.
@@ -96,7 +100,43 @@ fun Modifier.glassSurface(
     } else {
         clipped.background(tint.copy(alpha = alpha))
     }
-    return if (rim) filled.border(GlassRimWidth, glassRimBrush(), shape) else filled
+    val tinted = if (sheen > 0f) filled.accentSheen(sheen) else filled
+    return if (rim) tinted.border(GlassRimWidth, glassRimBrush(), shape) else tinted
+}
+
+/**
+ * How strongly the accent washes over each kind of glass: a colour the eye catches,
+ * never a coloured slab. Cards and menus a touch more, the chrome (always on screen)
+ * less.
+ */
+object AccentSheen {
+    const val Card = 0.18f
+    const val Menu = 0.15f
+    const val Chrome = 0.1f
+}
+
+/**
+ * A soft wash of the accent over glass, [strength] at its strongest: the accent from the
+ * top-left corner, where the rim catches the light, easing through its warmer neighbour
+ * and fading out by the far corner, so every surface carries a hint of the user's colour.
+ * Lighter in the light theme, where a tint shows far more readily.
+ */
+@Composable
+private fun Modifier.accentSheen(strength: Float): Modifier {
+    val palette = MaterialTheme.accentPalette
+    val scale = if (MaterialTheme.colorScheme.background.luminance() < 0.5f) 1f else 0.7f
+    val a = strength * scale
+    return drawBehind {
+        drawRect(
+            Brush.linearGradient(
+                0f to palette.primary.copy(alpha = a),
+                0.55f to palette.secondary.copy(alpha = a * 0.45f),
+                1f to palette.tertiary.copy(alpha = a * 0.15f),
+                start = Offset.Zero,
+                end = Offset(size.width, size.height),
+            ),
+        )
+    }
 }
 
 val GlassRimWidth = 1.5.dp

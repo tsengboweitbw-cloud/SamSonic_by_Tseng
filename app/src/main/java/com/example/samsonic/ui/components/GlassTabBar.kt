@@ -37,6 +37,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.example.samsonic.ui.theme.AccentSheen
 import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.OneUiChrome
 import com.example.samsonic.ui.theme.OneUiRadius
@@ -189,6 +190,7 @@ fun Modifier.glassTabPill(hazeState: HazeState?): Modifier = glassSurface(
     hazeState = hazeState,
     tint = MaterialTheme.colorScheme.surfaceContainerHigh,
     alpha = GlassAlpha.Nav,
+    sheen = AccentSheen.Chrome,
 )
 
 @Composable

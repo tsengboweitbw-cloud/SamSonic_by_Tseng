@@ -32,6 +32,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.model.Song
 import com.example.samsonic.playback.LocalPlayerState
+import com.example.samsonic.ui.theme.AccentSheen
 import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.LocalHazeState
 import com.example.samsonic.ui.theme.OneUiChrome
@@ -166,6 +167,7 @@ private fun SheetSurface(sheet: PlayerSheetState, song: Song, collapsed: Rect, f
                     hazeState = LocalHazeState.current,
                     tint = MaterialTheme.colorScheme.surfaceContainerHigh,
                     alpha = GlassAlpha.MiniPlayer,
+                    sheen = AccentSheen.Chrome,
                 ),
         )
         // Now Playing, laid out full-screen and riding the sheet's top edge.

@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.example.samsonic.ui.theme.AccentSheen
 import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.OneUiRadius
 import com.example.samsonic.ui.theme.glassSurface
@@ -39,6 +40,7 @@ internal fun SettingsCard(content: @Composable () -> Unit) {
                 hazeState = null,
                 tint = MaterialTheme.colorScheme.surfaceContainerHigh,
                 alpha = GlassAlpha.Sheet,
+                sheen = AccentSheen.Card,
             ),
     ) { measurables, constraints ->
         val rowConstraints = constraints.copy(minHeight = 0, maxHeight = Constraints.Infinity)

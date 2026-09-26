@@ -36,6 +36,7 @@ import com.example.samsonic.ui.player.MorphPanel
 import com.example.samsonic.ui.player.PanelState
 import com.example.samsonic.ui.player.MorphGlassBase
 import com.example.samsonic.ui.player.washToReach
+import com.example.samsonic.ui.theme.AccentSheen
 import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.LocalGlassSettings
 import com.example.samsonic.ui.theme.OneUiRadius
@@ -109,6 +110,7 @@ internal fun SettingsMenu(
                 alpha = MorphGlassBase,
                 blurRadius = glass.panelBlur,
                 downsample = true,
+                sheen = AccentSheen.Menu,
                 scaleOpacity = false,
                 rim = false,
             ),

@@ -42,6 +42,7 @@ import com.example.samsonic.ui.common.LocalChromeGuard
 import com.example.samsonic.ui.player.MorphPanel
 import com.example.samsonic.ui.player.PanelState
 import com.example.samsonic.ui.settings.menuOrigin
+import com.example.samsonic.ui.theme.AccentSheen
 import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.LocalGlassSettings
 import com.example.samsonic.ui.theme.OneUiRadius
@@ -120,6 +121,7 @@ internal fun BoxScope.CollectionViewMenu(section: LibrarySection, title: String,
                 tint = MaterialTheme.colorScheme.surfaceContainerHigh,
                 alpha = GlassAlpha.Nav,
                 blurRadius = glass.blurRadius,
+                sheen = AccentSheen.Menu,
                 rim = false,
             ),
             modifier = Modifier

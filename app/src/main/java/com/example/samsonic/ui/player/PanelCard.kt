@@ -30,6 +30,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.R
 import com.example.samsonic.ui.components.pressClickable
+import com.example.samsonic.ui.theme.AccentSheen
 import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.LocalGlassSettings
 import com.example.samsonic.ui.theme.OneUiRadius
@@ -104,6 +105,7 @@ internal fun PanelCard(
                 alpha = MorphGlassBase,
                 blurRadius = glass.panelBlur,
                 downsample = true,
+                sheen = AccentSheen.Menu,
                 scaleOpacity = false,
                 rim = false,
             ),

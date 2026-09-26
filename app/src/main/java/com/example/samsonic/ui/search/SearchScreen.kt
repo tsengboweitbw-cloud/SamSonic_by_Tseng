@@ -49,6 +49,7 @@ import com.example.samsonic.ui.components.ListItemMove
 import com.example.samsonic.ui.components.PressIconButton
 import com.example.samsonic.ui.components.SectionHeader
 import com.example.samsonic.ui.components.SongRow
+import com.example.samsonic.ui.theme.AccentSheen
 import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.OneUiChrome
 import com.example.samsonic.ui.theme.OneUiRadius
@@ -198,6 +199,7 @@ private fun SearchField(
                 hazeState = hazeState,
                 tint = MaterialTheme.colorScheme.surfaceContainerHigh,
                 alpha = GlassAlpha.Nav,
+                sheen = AccentSheen.Chrome,
             ),
         placeholder = { Text(stringResource(R.string.search_placeholder)) },
         leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },

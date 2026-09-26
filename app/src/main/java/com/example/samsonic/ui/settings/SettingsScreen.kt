@@ -260,7 +260,7 @@ internal fun GroupLabel(text: String) {
     Text(
         text = text.uppercase(),
         style = MaterialTheme.typography.labelSmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        color = MaterialTheme.colorScheme.primary,
         modifier = Modifier.padding(start = 24.dp, top = 20.dp, bottom = 8.dp),
     )
 }

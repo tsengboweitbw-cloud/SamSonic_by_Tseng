@@ -47,6 +47,7 @@ import com.example.samsonic.ui.common.GuardChrome
 import com.example.samsonic.ui.common.LocalChromeGuard
 import com.example.samsonic.ui.common.pageScrim
 import com.example.samsonic.ui.components.PressIconButton
+import com.example.samsonic.ui.theme.AccentSheen
 import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.GlassRimWidth
 import com.example.samsonic.ui.theme.LocalGlassSettings
@@ -210,6 +211,8 @@ internal fun LibraryTabsPanel(
                     // Already scaled above; the panel's wash must not be thinned again.
                     scaleOpacity = false,
                     rim = false,
+                    // The tab bar's, as the nav bar's: it's chrome, open as a menu or not.
+                    sheen = AccentSheen.Chrome,
                 )
                 .drawBehind { drawRect(tint, alpha = wash) },
             // No pointer modifier on the glass: closed, taps below the pill
