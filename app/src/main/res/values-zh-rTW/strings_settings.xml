@@ -63,7 +63,7 @@
     <string name="settings_favourites_playlist_hint">你喜愛的歌曲，列在「播放清單」分頁的最前面</string>
 
     <!-- Player gestures -->
-    <string name="settings_swipe_mini_song">滑動迷你播放器切換歌曲</string>
+    <string name="settings_swipe_mini_song">滑動手勢</string>
     <string name="settings_swipe_mini_song_hint">向左滑動迷你播放器播放下一首，向右滑動則播放上一首，取代「下一首」按鈕</string>
 
     <!-- Appearance -->
@@ -79,9 +79,9 @@
     <string name="settings_accent_apply">套用</string>
     <string name="settings_album_art_roundness">專輯封面圓角</string>
     <string name="settings_album_art_roundness_hint">封面邊角的圓潤程度</string>
-    <string name="settings_glass_opacity">玻璃不透明度</string>
+    <string name="settings_glass_opacity">導覽列不透明度</string>
     <string name="settings_glass_opacity_hint">毛玻璃列與卡片的不透明程度</string>
-    <string name="settings_glass_blur">玻璃模糊</string>
+    <string name="settings_glass_blur">導覽列模糊</string>
     <string name="settings_glass_blur_hint">毛玻璃列與卡片對後方內容的模糊程度</string>
     <string name="settings_player_blur">播放器背景模糊</string>
     <string name="settings_player_blur_hint">「正在播放」畫面對後方封面的模糊程度</string>

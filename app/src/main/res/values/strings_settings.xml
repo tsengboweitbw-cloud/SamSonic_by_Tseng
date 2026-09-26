@@ -64,7 +64,7 @@
     <string name="settings_favourites_playlist_hint">Your liked songs, first in the Playlists tab</string>
 
     <!-- Player gestures -->
-    <string name="settings_swipe_mini_song">Swipe the mini player to change song</string>
+    <string name="settings_swipe_mini_song">Swipe gesture</string>
     <string name="settings_swipe_mini_song_hint">Swipe the mini player left for the next song, or right for the previous one, in place of its next button</string>
 
     <!-- Appearance -->
@@ -80,9 +80,9 @@
     <string name="settings_accent_apply">Apply</string>
     <string name="settings_album_art_roundness">Album art roundness</string>
     <string name="settings_album_art_roundness_hint">How round the corners of covers are</string>
-    <string name="settings_glass_opacity">Glass opacity</string>
+    <string name="settings_glass_opacity">Navigation bar opacity</string>
     <string name="settings_glass_opacity_hint">How solid the frosted bars and cards are</string>
-    <string name="settings_glass_blur">Glass blur</string>
+    <string name="settings_glass_blur">Navigation bar blur</string>
     <string name="settings_glass_blur_hint">How much the frosted bars and cards blur what\'s behind them</string>
     <string name="settings_player_blur">Player background blur</string>
     <string name="settings_player_blur_hint">How much Now Playing blurs the cover behind it</string>
