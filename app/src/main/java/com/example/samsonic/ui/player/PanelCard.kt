@@ -25,11 +25,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.samsonic.R
-import com.example.samsonic.ui.components.pressClickable
 import com.example.samsonic.ui.theme.AccentSheen
 import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.LocalGlassSettings
@@ -61,9 +57,9 @@ private fun dialogDimAmount(): Float {
 
 /**
  * A panel as a floating glass card over a dimmed Now Playing, styled like the
- * Settings menus: [title] on top, [content] below, and Close at the bottom.
- * It grows out of its button ([MorphPanel]); tapping outside it, back, or Close
- * folds it back, as does pulling it down from the top of its content. Every card
+ * Settings menus: [title] on top, [content] below.
+ * It grows out of its button ([MorphPanel]); tapping outside it or back folds it
+ * back, as does pulling it down from the top of its content. Every card
  * has the same fixed height, which [content] fills.
  * [haze] is Now Playing's haze source, which the card's glass blurs.
  */
@@ -128,20 +124,9 @@ internal fun PanelCard(
                 )
                 Column(
                     modifier = Modifier
-                        .padding(top = 16.dp, bottom = 8.dp)
+                        .padding(top = 16.dp)
                         .weight(1f),
                     content = content,
-                )
-                Text(
-                    text = stringResource(R.string.player_close),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 24.dp)
-                        .pressClickable({ panel.close() }, pressedScale = 0.95f)
-                        .padding(vertical = 12.dp),
                 )
             }
         }

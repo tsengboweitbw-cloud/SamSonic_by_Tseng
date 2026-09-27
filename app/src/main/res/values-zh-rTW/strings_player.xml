@@ -28,7 +28,6 @@
     <string name="player_previous">上一首</string>
     <string name="player_repeat">重複播放</string>
     <string name="player_collapse">收合</string>
-    <string name="player_close">關閉</string>
     <string name="player_remove">移除</string>
     <string name="player_now_playing">正在播放</string>
     <string name="player_lyrics">歌詞</string>
