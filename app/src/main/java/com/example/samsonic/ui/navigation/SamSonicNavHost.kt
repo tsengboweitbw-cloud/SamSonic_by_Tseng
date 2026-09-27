@@ -49,7 +49,6 @@ import androidx.compose.runtime.derivedStateOf
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.playback.LocalPlayerState
-import com.example.samsonic.ui.components.PileStep
 import com.example.samsonic.ui.components.pileCard
 import com.example.samsonic.ui.components.pileSwipe
 import com.example.samsonic.ui.components.rememberCardPileState
@@ -229,12 +228,13 @@ fun SamSonicNavHost(lastTab: LastTab) {
             val chromeBottomInset = innerPadding.calculateBottomPadding()
             val systemBarInset = if (showChrome) chromeBottomInset else 0.dp
             val navBarReserve = if (showChrome) navBarHeight + navBarBottomInset else 0.dp
-            // Stacked, only the peeking edge of the card behind rises above the nav bar.
-            // Straight to the new layout's, not animated with it: the padding reaches every
-            // tab's pages, and changing it each frame would rebuild them all.
+            // Stacked, nothing rises above the nav bar: the card behind peeks out below it,
+            // into the gap over the screen's edge. Straight to the new layout's, not animated
+            // with it: the padding reaches every tab's pages, and changing it each frame would
+            // rebuild them all.
             val miniPlayerReserve = when {
                 !showChrome -> 0.dp
-                stackChrome -> PileStep
+                stackChrome -> 0.dp
                 else -> OneUiChrome.BarHeight + 8.dp
             }
             val contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve
@@ -249,7 +249,8 @@ fun SamSonicNavHost(lastTab: LastTab) {
                             0f
                         } else {
                             val nav = (systemBarInset + navBarBottomInset + navBarHeight).toPx()
-                            val rise = lerp(OneUiChrome.BarHeight + 8.dp, PileStep, stackAmount).toPx()
+                            // Piled, the card behind peeks out below, so the front card's top is the top.
+                            val rise = lerp(OneUiChrome.BarHeight + 8.dp, 0.dp, stackAmount).toPx()
                             nav + rise * miniPresence.value * (1f - playerSheet.dismissal.coerceIn(0f, 1f))
                         }
                     }

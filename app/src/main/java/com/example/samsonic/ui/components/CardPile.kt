@@ -44,8 +44,8 @@ import kotlin.math.floor
 import kotlin.math.max
 import kotlin.math.roundToInt
 
-// Each card further back in a pile sits this much higher and this much smaller,
-// so its top edge peeks out above the one in front.
+// Each card further back in a pile sits this much lower and this much smaller,
+// so its bottom edge peeks out below the one in front, as the Now Bar's do.
 val PileStep = 7.dp
 private const val PileShrink = 0.07f
 
@@ -63,7 +63,7 @@ private val HandOffSpring = spring<Float>(dampingRatio = 1f, stiffness = 700f)
 
 // Held up off the pile, a card grows this much by the threshold, as a card picked
 // up does; on its way to the back it rises to this far (in its own heights) above the
-// pile's back edge before going behind.
+// front card's place, clear of the pile, before going down behind it.
 private const val PickScale = 1.04f
 private const val PickLift = 0.9f
 
@@ -73,7 +73,7 @@ const val ToTopShare = 0.3f
 
 /**
  * A pile of [count] same-sized cards, stacked like the lock screen's Now Brief: the
- * front one full size, the rest peeking out behind it. A swipe up ([pileSwipe]) picks
+ * front one full size, the rest peeking out below it. A swipe up ([pileSwipe]) picks
  * the front card up and it follows the finger; let go high enough it goes to the back
  * and the next comes forward, one card a swipe; lower, it drops back. Now Playing's
  * capsules are one; the stacked nav bar and mini player another.
@@ -251,7 +251,7 @@ private suspend fun PointerInputScope.pileGesture(
     val handOffPx = LiftHandOff.toPx()
     val conversionPx = LiftConversion.toPx()
     // Past the pile's top the finger drags the card on more slowly.
-    val topPx = cardHeight.toPx() * PickLift - stackRise((pile.count - 1).toFloat(), PileStep.toPx())
+    val topPx = cardHeight.toPx() * PickLift
     awaitEachGesture {
         val down = awaitFirstDown(requireUnconsumed = false)
         if (!enabled()) return@awaitEachGesture
@@ -470,12 +470,12 @@ class CardPose(val scale: Float, val rise: Float, val alpha: Float) {
 
 /**
  * The pose of a card [depth] into the pile of [heightPx]-high cards, [stepPx]
- * apart. In the pile (0 and on) each further back is smaller and higher, the front one
+ * apart. In the pile (0 and on) each further back is smaller and lower, the front one
  * held up [lift] px by the finger, growing toward [PickScale] as it nears the threshold
  * ([thresholdPx]). On its way to the back (between 0 and -1), set off from [liftFrom]
  * px up, it's a card moved from the top of a pile to the bottom: it carries on up to
- * clear the pile, whole, then goes behind and settles into the back place
- * ([backDepth]), taking on the look of the card there only as it arrives.
+ * clear the pile, whole, then goes down behind it and settles into the back place at its
+ * bottom ([backDepth]), taking on the look of the card there only as it arrives.
  */
 fun cardPose(
     depth: Float,
@@ -491,7 +491,9 @@ fun cardPose(
     if (depth > 0f) return CardPose(stackScale(depth), stackRise(depth, stepPx), stackAlpha(depth))
     val t = -depth
     val back = CardPose(stackScale(backDepth), stackRise(backDepth, stepPx), stackAlpha(backDepth))
-    val top = minOf(back.rise - heightPx * PickLift, -liftFrom)
+    // Up clear of the front card's place (and of the pile below it), whole, before it goes
+    // down behind the pile and comes out at the bottom, the last card.
+    val top = minOf(minOf(back.rise, 0f) - heightPx * PickLift, -liftFrom)
     return if (t < ToTopShare) {
         val u = t / ToTopShare
         val eased = 1f - (1f - u) * (1f - u)
@@ -524,14 +526,41 @@ fun Density.pickThresholdPx(): Float = PickThreshold.toPx()
 /** Maps [value] from [start]..[end] onto 0..1, clamped. */
 private fun ramp(value: Float, start: Float, end: Float) = ((value - start) / (end - start)).coerceIn(0f, 1f)
 
-/** How clearly a card [depth] back in the pile shows: fainter further back, but all of the pile shows. */
-private fun stackAlpha(depth: Float): Float = (1f - 0.25f * depth).coerceIn(0f, 1f)
+/**
+ * How clearly a card [depth] back in the pile shows: fainter further back, and past the
+ * last layer that shows ([ShownLayers]) fading away behind it, so however many cards
+ * there are, the pile is only ever a couple of slim edges.
+ */
+private fun stackAlpha(depth: Float): Float {
+    val d = depth.coerceAtLeast(0f)
+    if (d <= ShownLayers) return 1f - 0.25f * d
+    return (1f - 0.25f * ShownLayers) * (1f - (d - ShownLayers)).coerceIn(0f, 1f)
+}
 
-/** How big a card [depth] back in the pile is drawn. */
-private fun stackScale(depth: Float): Float = 1f - PileShrink * depth.coerceAtLeast(0f)
+/** How big a card [depth] back in the pile is drawn: each shown layer smaller, the hidden ones as the last. */
+private fun stackScale(depth: Float): Float = 1f - PileShrink * layerDepth(depth)
 
-/** How far (px, negative = up) a card [depth] back in the pile is raised, by [step] per place. */
-private fun stackRise(depth: Float, step: Float): Float = -step * depth.coerceAtLeast(0f)
+/**
+ * How far (px, positive = down) a card [depth] back in the pile is lowered: a full [step]
+ * for the first card behind, less for the next ([LayerTaper]), so the edges taper off as
+ * the Now Bar's do; ones further back wait where the last shown one is.
+ */
+private fun stackRise(depth: Float, step: Float): Float = step * layerDepth(depth)
+
+// How many cards behind the front one show, as edges; any more wait unseen behind the last.
+private const val ShownLayers = 2f
+
+// Each layer after the first sits this much of a step (and a shrink) behind the one before.
+private const val LayerTaper = 0.55f
+
+/** A card [depth] back, in steps of the first layer's: 1 for it, tapering after, and no further than the last shown. */
+private fun layerDepth(depth: Float): Float {
+    val d = depth.coerceIn(0f, ShownLayers)
+    return if (d <= 1f) d else 1f + (d - 1f) * LayerTaper
+}
+
+/** How far below the front card a pile of [count] reaches: room to keep for its edges. */
+fun pileExtent(count: Int): Dp = PileStep * layerDepth((count - 1).toFloat())
 
 private fun floorMod(value: Int, count: Int): Int = ((value % count) + count) % count
 
