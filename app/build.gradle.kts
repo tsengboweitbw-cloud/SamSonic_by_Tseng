@@ -13,8 +13,8 @@ android {
         applicationId = "com.example.samsonic"
         minSdk = 31
         targetSdk = 37
-        versionCode = 8
-        versionName = "2.0.4"
+        versionCode = 9
+        versionName = "2.0.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
