@@ -32,6 +32,10 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChange
 import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.drawscope.ContentDrawScope
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
@@ -397,55 +401,28 @@ fun Modifier.pileCard(
     frontScale: () -> Float = { 1f },
 ): Modifier {
     val cutout = remember { Path() }
+    // A card further back is shaded toward the page rather than faded: faded, the page's
+    // own sharp content bled through its glass (whose blur hides it with an opaque base).
+    val shadeColor = MaterialTheme.colorScheme.background
+    fun Density.clarity(heightPx: Float): Float {
+        val pose = pile.pose(index, heightPx, PileStep.toPx(), PickThreshold.toPx()).weighted(weight())
+        return alpha?.invoke(pose) ?: pose.alpha
+    }
     val posed = this
         .graphicsLayer {
-            val w = weight()
-            val pose = pile.pose(index, cardHeight.toPx(), PileStep.toPx(), PickThreshold.toPx()).weighted(w)
+            val pose = pile.pose(index, cardHeight.toPx(), PileStep.toPx(), PickThreshold.toPx()).weighted(weight())
             scaleX = pose.scale * squeeze()
             scaleY = pose.scale * squeeze()
             translationY = pose.rise
-            this.alpha = alpha?.invoke(pose) ?: pose.alpha
+            val clear = clarity(cardHeight.toPx())
+            this.alpha = layerAlpha(clear)
+            // The shade is painted over just what's drawn, which needs a layer of its own.
+            compositingStrategy = if (shade(clear) > 0f) CompositingStrategy.Offscreen else CompositingStrategy.Auto
         }
         .drawWithContent {
-            val d = pile.depth(index)
-            val inFrontIndex = floorMod(index - 1, pile.count)
-            val inFront = pile.depth(inFrontIndex)
-            // Cut away only where the one in front is drawn over this one: not the front
-            // one itself, nor one on its way up over the top, nor by one gone behind.
-            val amount = cut().coerceIn(0f, 1f)
-            val underIt = (d > 0f || d < -ToTopShare) && inFront >= -ToTopShare && amount > 0f
-            if (!underIt) {
-                drawContent()
-                return@drawWithContent
-            }
-            val step = PileStep.toPx()
-            val threshold = PickThreshold.toPx()
-            val w = weight()
-            val own = pile.pose(index, size.height, step, threshold).weighted(w)
-            val front = pile.pose(inFrontIndex, size.height, step, threshold).weighted(w)
-            val ratio = front.scale * frontScale() / own.scale
-            val halfW = size.width / 2 * ratio
-            val halfH = size.height / 2 * ratio
-            val centreY = size.height / 2 + (front.rise - own.rise + offsetFromFront()) / own.scale
-            cutout.reset()
-            cutout.addRoundRect(
-                RoundRect(
-                    left = size.width / 2 - halfW,
-                    top = centreY - halfH,
-                    right = size.width / 2 + halfW,
-                    bottom = centreY + halfH,
-                    cornerRadius = CornerRadius(halfH),
-                ),
-            )
-            clipPath(cutout, ClipOp.Difference) { this@drawWithContent.drawContent() }
-            // Partly cut: what's under the card in front shows faded, rather than switching
-            // off in one frame (which, through that card's translucent glass, blinked).
-            if (amount < 1f) {
-                CutFadePaint.alpha = 1f - amount
-                drawContext.canvas.saveLayer(cutout.getBounds(), CutFadePaint)
-                clipPath(cutout) { this@drawWithContent.drawContent() }
-                drawContext.canvas.restore()
-            }
+            drawPiled(pile, index, cut, weight, frontScale, offsetFromFront, cutout)
+            val shade = shade(clarity(size.height))
+            if (shade > 0f) drawRect(shadeColor, alpha = shade, blendMode = BlendMode.SrcAtop)
         }
     if (!ignoreTouchesBehind) return posed
     return posed.pointerInput(pile, index) {
@@ -568,3 +545,70 @@ private fun floorModFloat(value: Float, count: Float): Float = ((value % count) 
 
 // Drawing is on the one UI thread, and saveLayer only reads it.
 private val CutFadePaint = androidx.compose.ui.graphics.Paint()
+
+/**
+ * Draws card [index] of [pile], cut away where the card just in front of it covers it
+ * (see [pileCard]).
+ */
+private fun ContentDrawScope.drawPiled(
+    pile: CardPileState,
+    index: Int,
+    cut: () -> Float,
+    weight: () -> Float,
+    frontScale: () -> Float,
+    offsetFromFront: () -> Float,
+    cutout: Path,
+) {
+    val d = pile.depth(index)
+    val inFrontIndex = floorMod(index - 1, pile.count)
+    val inFront = pile.depth(inFrontIndex)
+    // Cut away only where the one in front is drawn over this one: not the front
+    // one itself, nor one on its way up over the top, nor by one gone behind.
+    val amount = cut().coerceIn(0f, 1f)
+    val underIt = (d > 0f || d < -ToTopShare) && inFront >= -ToTopShare && amount > 0f
+    if (!underIt) {
+        drawContent()
+        return
+    }
+    val step = PileStep.toPx()
+    val threshold = PickThreshold.toPx()
+    val w = weight()
+    val own = pile.pose(index, size.height, step, threshold).weighted(w)
+    val front = pile.pose(inFrontIndex, size.height, step, threshold).weighted(w)
+    val ratio = front.scale * frontScale() / own.scale
+    val halfW = size.width / 2 * ratio
+    val halfH = size.height / 2 * ratio
+    val centreY = size.height / 2 + (front.rise - own.rise + offsetFromFront()) / own.scale
+    cutout.reset()
+    cutout.addRoundRect(
+        RoundRect(
+            left = size.width / 2 - halfW,
+            top = centreY - halfH,
+            right = size.width / 2 + halfW,
+            bottom = centreY + halfH,
+            cornerRadius = CornerRadius(halfH),
+        ),
+    )
+    clipPath(cutout, ClipOp.Difference) { this@drawPiled.drawContent() }
+    // Partly cut: what's under the card in front shows faded, rather than switching
+    // off in one frame (which, through that card's translucent glass, blinked).
+    if (amount < 1f) {
+        CutFadePaint.alpha = 1f - amount
+        drawContext.canvas.saveLayer(cutout.getBounds(), CutFadePaint)
+        clipPath(cutout) { this@drawPiled.drawContent() }
+        drawContext.canvas.restore()
+    }
+}
+
+/**
+ * How clearly the last shown layer of a pile shows ([ShownLayers]): the least a card is
+ * ever shaded. Down to it, a card is shaded toward the page; past it (a hidden layer, or
+ * one hidden outright), it really fades.
+ */
+private val LastLayerClarity = stackAlpha(ShownLayers)
+
+/** The layer opacity for a card of [clarity]: whole while it's merely shaded, fading past the last shown layer. */
+private fun layerAlpha(clarity: Float): Float = (clarity / LastLayerClarity).coerceIn(0f, 1f)
+
+/** How much a card of [clarity] is shaded toward the page, over its glass: never more than the last shown layer. */
+private fun shade(clarity: Float): Float = (1f - clarity).coerceIn(0f, 1f - LastLayerClarity)
