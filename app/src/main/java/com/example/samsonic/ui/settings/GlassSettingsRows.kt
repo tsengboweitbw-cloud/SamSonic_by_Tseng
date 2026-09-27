@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BlurOn
 import androidx.compose.material.icons.filled.Opacity
@@ -29,13 +31,41 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.R
 import com.example.samsonic.data.ThemeManager
+import com.example.samsonic.ui.player.PanelState
 import com.example.samsonic.ui.theme.OneUiSlider
+import dev.chrisbanes.haze.HazeState
 import kotlin.math.roundToInt
 
 private val SliderTouchHeight = 32.dp
 // Extra room when a slider row is first/last in its card (see cardEdgeInset).
 private val SliderEdgeInsetTop = 4.dp
 private val SliderEdgeInsetBottom = 6.dp
+
+/**
+ * The Glass row: opens [GlassMenu], where every glass blur and opacity slider lives,
+ * so the Settings page itself isn't a wall of sliders. Just its arrow, no value.
+ */
+@Composable
+internal fun GlassRow(menu: PanelState) {
+    NavRow(
+        icon = Icons.Filled.BlurOn,
+        title = stringResource(R.string.settings_glass),
+        value = "",
+        hint = stringResource(R.string.settings_glass_hint),
+        onClick = { menu.open() },
+        modifier = Modifier.menuOrigin(menu),
+    )
+}
+
+/** The Glass row's secondary menu ([SettingsMenu]): [GlassSliderRows], scrolling if the screen is short. */
+@Composable
+internal fun GlassMenu(panel: PanelState, haze: HazeState, themeManager: ThemeManager) {
+    SettingsMenu(panel, haze, title = stringResource(R.string.settings_glass)) {
+        Column(Modifier.verticalScroll(rememberScrollState()).padding(horizontal = 8.dp)) {
+            GlassSliderRows(themeManager)
+        }
+    }
+}
 
 /**
  * Sliders for the global glass look: opacity of every glass surface, blur of

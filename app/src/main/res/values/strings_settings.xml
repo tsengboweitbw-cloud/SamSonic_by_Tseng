@@ -4,7 +4,6 @@
     <string name="settings_title">Settings</string>
     <string name="settings_group_music_source">Music source</string>
     <string name="settings_group_playback">Playback</string>
-    <string name="settings_group_gestures">Player gestures</string>
     <string name="settings_group_library">Library</string>
     <string name="settings_group_appearance">Appearance</string>
     <string name="settings_group_storage">Storage</string>
@@ -91,6 +90,9 @@
     <string name="settings_stack_player_actions_hint">Pile lyrics, the queue, song info, Auto DJ and Add to playlist as capsules at the bottom of Now Playing: swipe up to bring the next forward. Turned off, they sit in a row as round buttons</string>
     <string name="settings_album_art_roundness">Album art roundness</string>
     <string name="settings_album_art_roundness_hint">How round the corners of covers are</string>
+    <!-- The row opening every glass blur and opacity setting -->
+    <string name="settings_glass">Glass</string>
+    <string name="settings_glass_hint">How see-through and blurred the navigation bar, Now Playing and menus are</string>
     <string name="settings_glass_opacity">Navigation bar opacity</string>
     <string name="settings_glass_opacity_hint">How solid the frosted bars and cards are</string>
     <string name="settings_glass_blur">Navigation bar blur</string>

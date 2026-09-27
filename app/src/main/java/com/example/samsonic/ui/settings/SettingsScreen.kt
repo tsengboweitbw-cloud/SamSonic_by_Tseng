@@ -92,6 +92,7 @@ fun SettingsScreen(
     val dsdMenu = remember { PanelState(scope) }
     val languageMenu = remember { PanelState(scope) }
     val listActionsMenu = remember { PanelState(scope) }
+    val glassMenu = remember { PanelState(scope) }
     val autoDjMenu = remember { PanelState(scope) }
     val cacheUsage = rememberCacheUsage()
     val clearMusicCacheMenu = remember { PanelState(scope) }
@@ -124,6 +125,7 @@ fun SettingsScreen(
             DsdOutputMenu(dsdMenu, haze, container.bitPerfect)
             LanguageMenu(languageMenu, haze)
             ListActionsMenu(listActionsMenu, haze)
+            GlassMenu(glassMenu, haze, container.themeManager)
             AutoDjMenu(autoDjMenu, haze)
         } },
     ) { topPadding ->
@@ -158,6 +160,8 @@ fun SettingsScreen(
                         onCheckedChange = container.themeManager::setLikesEnabled,
                         hint = stringResource(R.string.settings_like_button_hint),
                     )
+                    // The mini player's swipes, with the rest of how the player behaves.
+                    SwipeGestureRows(container.themeManager)
                     // How every song list shows each song's format, or not at all.
                     NavRow(
                         icon = Icons.Filled.GraphicEq,
@@ -171,9 +175,6 @@ fun SettingsScreen(
                     DsdOutputRow(container.bitPerfect, dsdMenu)
                 }
             }
-
-            item { GroupLabel(stringResource(R.string.settings_group_gestures)) }
-            item { SettingsCard { SwipeGestureRows(container.themeManager) } }
 
             item { GroupLabel(stringResource(R.string.settings_group_library)) }
             item {
@@ -243,7 +244,7 @@ fun SettingsScreen(
                         valueRange = 0f..48f,
                         onValueChange = { container.themeManager.setAlbumArtCornerRadius(it.dp) },
                     )
-                    GlassSliderRows(container.themeManager)
+                    GlassRow(glassMenu)
                 }
             }
 

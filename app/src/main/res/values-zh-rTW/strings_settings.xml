@@ -4,7 +4,6 @@
     <string name="settings_title">設定</string>
     <string name="settings_group_music_source">音樂來源</string>
     <string name="settings_group_playback">播放</string>
-    <string name="settings_group_gestures">播放器手勢</string>
     <string name="settings_group_library">音樂庫</string>
     <string name="settings_group_appearance">外觀</string>
     <string name="settings_group_storage">儲存空間</string>
@@ -90,6 +89,8 @@
     <string name="settings_stack_player_actions_hint">將歌詞、播放佇列、歌曲資訊、自動 DJ 與加入播放清單疊成「正在播放」底部的膠囊，向上滑動即可切換到下一個。關閉後改以圓形按鈕排成一列</string>
     <string name="settings_album_art_roundness">專輯封面圓角</string>
     <string name="settings_album_art_roundness_hint">封面邊角的圓潤程度</string>
+    <string name="settings_glass">毛玻璃</string>
+    <string name="settings_glass_hint">導覽列、播放畫面與選單的透明與模糊程度</string>
     <string name="settings_glass_opacity">導覽列不透明度</string>
     <string name="settings_glass_opacity_hint">毛玻璃列與卡片的不透明程度</string>
     <string name="settings_glass_blur">導覽列模糊</string>
