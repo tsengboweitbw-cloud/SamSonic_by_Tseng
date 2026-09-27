@@ -80,6 +80,8 @@ fun NowPlayingScreen(
     val song = player.currentSong ?: return
     val cornerRadius by LocalAppContainer.current.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
     val likesEnabled by LocalAppContainer.current.themeManager.likesEnabled.collectAsStateWithLifecycle()
+    // The actions at the bottom as a stack of capsules, or a row of round buttons.
+    val stackActions by LocalAppContainer.current.themeManager.stackPlayerActions.collectAsStateWithLifecycle()
     val horizontalPadding = 24.dp
     // What the capsule stack's glass blurs: the backdrop and everything above the
     // stack, sources beside the stack rather than around it (a glass inside its own
@@ -122,7 +124,7 @@ fun NowPlayingScreen(
         ) {
         Column(Modifier.weight(1f).graphicsLayer().hazeSource(stackHaze, zIndex = 1f)) {
         // A floating glass button (One UI Gallery style) instead of a bar; Add to
-        // playlist is in the capsule stack at the bottom.
+        // playlist is with the other actions at the bottom.
         Row(modifier = Modifier.fillMaxWidth().padding(top = 12.dp)) {
             GlassCircleButton(onClick = onCollapse, haze = glassHaze) {
                 Icon(Icons.Filled.KeyboardArrowDown, contentDescription = stringResource(R.string.player_collapse), modifier = Modifier.size(ChromeButtonIconSize))
@@ -211,16 +213,28 @@ fun NowPlayingScreen(
 
         Spacer(Modifier.height(16.dp))
 
-        NowPlayingActions(
-            lyrics = lyrics,
-            queue = queue,
-            info = info,
-            autoDj = autoDj,
-            addToPlaylist = addToPlaylist,
-            song = song,
-            haze = glassHaze,
-            modifier = Modifier.padding(bottom = 20.dp),
-        )
+        if (stackActions) {
+            NowPlayingActions(
+                lyrics = lyrics,
+                queue = queue,
+                info = info,
+                autoDj = autoDj,
+                addToPlaylist = addToPlaylist,
+                song = song,
+                haze = glassHaze,
+                modifier = Modifier.padding(bottom = 20.dp),
+            )
+        } else {
+            NowPlayingActionRow(
+                lyrics = lyrics,
+                queue = queue,
+                info = info,
+                autoDj = autoDj,
+                addToPlaylist = addToPlaylist,
+                song = song,
+                modifier = Modifier.padding(bottom = 20.dp),
+            )
+        }
         }
     }
 }

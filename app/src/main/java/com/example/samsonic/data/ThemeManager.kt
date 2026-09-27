@@ -103,6 +103,16 @@ class ThemeManager(context: Context) {
         _stackChrome.value = enabled
     }
 
+    // Now Playing's lyrics, queue, song info and the rest piled as capsules at the bottom,
+    // a swipe up bringing the next forward, instead of a row of round buttons.
+    private val _stackPlayerActions = MutableStateFlow(prefs.getBoolean(KEY_STACK_PLAYER_ACTIONS, true))
+    val stackPlayerActions: StateFlow<Boolean> = _stackPlayerActions.asStateFlow()
+
+    fun setStackPlayerActions(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_STACK_PLAYER_ACTIONS, enabled).apply()
+        _stackPlayerActions.value = enabled
+    }
+
     fun setThemeMode(mode: ThemeMode) {
         prefs.edit().putString(KEY_MODE, mode.name).apply()
         _themeMode.value = mode
@@ -190,6 +200,7 @@ class ThemeManager(context: Context) {
         private const val KEY_AUDIO_FORMAT_DISPLAY = "audio_format_display"
         private const val KEY_SWIPE_MINI_SONG = "swipe_mini_for_song"
         private const val KEY_STACK_CHROME = "stack_chrome"
+        private const val KEY_STACK_PLAYER_ACTIONS = "stack_player_actions"
         val DefaultAccent = Color(0xFF8875FF)
         val DefaultAlbumArtCornerRadius = 2.dp
         const val DefaultGlassOpacity = 1f

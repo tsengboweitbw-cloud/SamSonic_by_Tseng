@@ -79,6 +79,8 @@
     <string name="settings_accent_apply">套用</string>
     <string name="settings_stack_chrome">堆疊導覽列與迷你播放器</string>
     <string name="settings_stack_chrome_hint">像「正在播放」底部的膠囊一樣疊在同一處，向上滑動即可切換到另一個。在螢幕這麼低的位置滑動，可能會觸發三星的單手模式</string>
+    <string name="settings_stack_player_actions">堆疊「正在播放」按鈕</string>
+    <string name="settings_stack_player_actions_hint">將歌詞、播放佇列、歌曲資訊、自動 DJ 與加入播放清單疊成「正在播放」底部的膠囊，向上滑動即可切換到下一個。關閉後改以圓形按鈕排成一列</string>
     <string name="settings_album_art_roundness">專輯封面圓角</string>
     <string name="settings_album_art_roundness_hint">封面邊角的圓潤程度</string>
     <string name="settings_glass_opacity">導覽列不透明度</string>

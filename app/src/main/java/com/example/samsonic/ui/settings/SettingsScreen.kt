@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.RoundedCorner
+import androidx.compose.material.icons.filled.Style
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -76,6 +77,7 @@ fun SettingsScreen(
     val albumArtCornerRadius by container.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
     val likesEnabled by container.themeManager.likesEnabled.collectAsStateWithLifecycle()
     val stackChrome by container.themeManager.stackChrome.collectAsStateWithLifecycle()
+    val stackPlayerActions by container.themeManager.stackPlayerActions.collectAsStateWithLifecycle()
     val autoDjConfig by container.autoDjSettings.config.collectAsStateWithLifecycle()
     val audioFormatDisplay by container.themeManager.audioFormatDisplay.collectAsStateWithLifecycle()
     val albumArtistsOnly by container.libraryLayoutManager.albumArtistsOnly.collectAsStateWithLifecycle()
@@ -221,6 +223,13 @@ fun SettingsScreen(
                         hint = stringResource(R.string.settings_stack_chrome_hint),
                         // Shown as it's turned on: it warns of the clash with One-handed mode.
                         hintWhenTurnedOn = true,
+                    )
+                    SwitchRow(
+                        icon = Icons.Filled.Style,
+                        title = stringResource(R.string.settings_stack_player_actions),
+                        checked = stackPlayerActions,
+                        onCheckedChange = container.themeManager::setStackPlayerActions,
+                        hint = stringResource(R.string.settings_stack_player_actions_hint),
                     )
                     SliderRow(
                         icon = Icons.Filled.RoundedCorner,

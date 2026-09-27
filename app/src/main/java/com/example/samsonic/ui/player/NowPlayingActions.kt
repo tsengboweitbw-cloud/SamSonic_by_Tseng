@@ -54,22 +54,58 @@ internal object PanelIcons {
     val Info = Icons.Outlined.Info
 }
 
-/** One capsule of the stack: what it shows, and the panel (or card) it opens. */
-private class StackCapsule(
+/** One of Now Playing's actions, a capsule of the stack or a button of the row: what it shows, and the panel (or card) it opens. */
+internal class PlayerAction(
     val icon: ImageVector,
     val label: String,
     /** How far its panel is open, and its close bounce ([PanelState.landing]). */
     val progress: () -> Float,
     val landing: () -> Float,
-    /** Opens it, growing out of the capsule at [from] (in root coordinates). */
+    /** Opens it, growing out of the capsule or button at [from] (in root coordinates). */
     val open: (from: Rect) -> Unit,
 )
+
+/** Now Playing's actions, in order: lyrics, the queue, song info, Auto DJ and Add to playlist ([addToPlaylist], if there are playlists to add to). */
+@Composable
+internal fun rememberPlayerActions(
+    lyrics: PanelState,
+    queue: PanelState,
+    info: PanelState,
+    autoDj: PanelState,
+    addToPlaylist: AddToPlaylistState?,
+    song: Song,
+): List<PlayerAction> {
+    val lyricsLabel = stringResource(R.string.player_lyrics)
+    val queueLabel = stringResource(R.string.player_queue)
+    val infoLabel = stringResource(R.string.player_song_info)
+    val addLabel = stringResource(R.string.components_add_to_playlist)
+    val autoDjLabel = stringResource(R.string.auto_dj_title)
+    val currentSong by rememberUpdatedState(song)
+    return remember(lyrics, queue, info, autoDj, addToPlaylist, lyricsLabel, queueLabel, infoLabel, addLabel, autoDjLabel) {
+        fun PanelState.action(icon: ImageVector, label: String) =
+            PlayerAction(icon, label, { progress }, { landing }) { from ->
+                origin = from
+                open()
+            }
+        listOfNotNull(
+            lyrics.action(PanelIcons.Lyrics, lyricsLabel),
+            queue.action(PanelIcons.Queue, queueLabel),
+            info.action(PanelIcons.Info, infoLabel),
+            autoDj.action(AutoDjIcon, autoDjLabel),
+            addToPlaylist?.let { state ->
+                PlayerAction(Icons.Filled.LibraryAdd, addLabel, { state.panel.progress }, { state.panel.landing }) { from ->
+                    state.open(currentSong.toPlaylistItems(), from, originRadius = null, offersQueue = false)
+                }
+            },
+        )
+    }
+}
 
 private val CapsuleWidth = 220.dp
 private val CapsuleHeight = 52.dp
 
-// How much a capsule shrinks per unit of its panel's close overshoot (a few % at most).
-private const val LandingSqueeze = 3f
+// How much a capsule (or a row's button) shrinks per unit of its panel's close overshoot (a few % at most).
+internal const val LandingSqueeze = 3f
 
 /**
  * Now Playing's bottom capsules, [icon] and text, stacked like the lock screen's
@@ -92,27 +128,7 @@ internal fun NowPlayingActions(
     haze: HazeState?,
     modifier: Modifier = Modifier,
 ) {
-    val lyricsLabel = stringResource(R.string.player_lyrics)
-    val queueLabel = stringResource(R.string.player_queue)
-    val infoLabel = stringResource(R.string.player_song_info)
-    val addLabel = stringResource(R.string.components_add_to_playlist)
-    val autoDjLabel = stringResource(R.string.auto_dj_title)
-    val currentSong by rememberUpdatedState(song)
-    val capsules = remember(lyrics, queue, info, autoDj, addToPlaylist, lyricsLabel, queueLabel, infoLabel, addLabel, autoDjLabel) {
-        fun PanelState.capsule(icon: ImageVector, label: String) =
-            StackCapsule(icon, label, { progress }, { landing }) { open() }
-        listOfNotNull(
-            lyrics.capsule(PanelIcons.Lyrics, lyricsLabel),
-            queue.capsule(PanelIcons.Queue, queueLabel),
-            info.capsule(PanelIcons.Info, infoLabel),
-            autoDj.capsule(AutoDjIcon, autoDjLabel),
-            addToPlaylist?.let { state ->
-                StackCapsule(Icons.Filled.LibraryAdd, addLabel, { state.panel.progress }, { state.panel.landing }) { from ->
-                    state.open(currentSong.toPlaylistItems(), from, originRadius = null, offersQueue = false)
-                }
-            },
-        )
-    }
+    val capsules = rememberPlayerActions(lyrics, queue, info, autoDj, addToPlaylist, song)
     val count = capsules.size
     val pile = rememberCardPileState(count)
     // The one capsule that can be lifted over the controls, the front one or the one on its
@@ -171,7 +187,7 @@ internal fun NowPlayingActions(
  */
 @Composable
 private fun StackedCapsule(
-    capsule: StackCapsule,
+    capsule: PlayerAction,
     pile: CardPileState,
     index: Int,
     // Whether its own panel is out, and that of the one in front: while that one's is
