@@ -12,12 +12,12 @@
     <string name="auto_dj_mode_albums_supporting">每次加入一整張專輯</string>
 
     <string name="auto_dj_group_follow">依照正在播放的歌曲</string>
-    <string name="auto_dj_follow_artist">相同演出者</string>
+    <string name="auto_dj_follow_artist">相同歌手</string>
     <string name="auto_dj_follow_genre">相同曲風</string>
     <string name="auto_dj_follow_genre_hint">歌曲有多種曲風時，可在「接下來播放」中選擇要依照哪些</string>
     <string name="auto_dj_follow_era">相同年代</string>
     <string name="auto_dj_follow_era_hint">同一個十年間</string>
-    <string name="auto_dj_follow_note">全部關閉時，接下來的歌曲完全隨機。若沒有歌曲同時符合所有條件，會依序放寬演出者、年代，最後是曲風。</string>
+    <string name="auto_dj_follow_note">全部關閉時，接下來的歌曲完全隨機。若沒有歌曲同時符合所有條件，會依序放寬歌手、年代，最後是曲風。</string>
 
     <string name="auto_dj_group_filters">只挑選</string>
     <string name="auto_dj_filters_note">無論依照什麼，這些條件一律適用。</string>
@@ -30,9 +30,9 @@
     <string name="auto_dj_filter_decades">年代</string>
     <string name="auto_dj_decade_earlier">1950 年以前</string>
     <string name="auto_dj_decade">%1$d 年代</string>
-    <string name="auto_dj_filter_artists">演出者</string>
-    <string name="auto_dj_search_artists">搜尋要加入的演出者</string>
-    <string name="auto_dj_no_artists_found">找不到演出者</string>
+    <string name="auto_dj_filter_artists">歌手</string>
+    <string name="auto_dj_search_artists">搜尋要加入的歌手</string>
+    <string name="auto_dj_no_artists_found">找不到歌手</string>
     <string name="auto_dj_remove">移除 %1$s</string>
     <string name="auto_dj_liked_only">只挑喜歡的歌曲</string>
     <string name="auto_dj_hi_res_only">只挑 Hi-Res</string>
