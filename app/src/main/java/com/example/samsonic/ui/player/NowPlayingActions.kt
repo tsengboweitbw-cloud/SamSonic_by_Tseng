@@ -161,6 +161,10 @@ internal fun NowPlayingActions(
             // back: read instead of how far open it is, so the stack doesn't redraw every
             // frame of the panel growing, which, blurring Now Playing, would redo its blur.
             val open = remember(capsules) { capsules.map { derivedStateOf { it.progress() > 0f } } }
+            // Out, or still landing: its close springs on past folded, the capsule squeezing
+            // in and back. Until that's done, the one behind isn't cut where it covers it;
+            // cut to the capsule's resting outline as it squeezed, it was cut off short.
+            val away = remember(capsules) { capsules.map { derivedStateOf { it.progress() > 0f || it.landing() > 0f } } }
             capsules.forEachIndexed { index, capsule ->
                 StackedCapsule(
                     capsule = capsule,
@@ -168,6 +172,7 @@ internal fun NowPlayingActions(
                     index = index,
                     isOpen = { open[index].value },
                     inFrontOpen = { open[Math.floorMod(index - 1, count)].value },
+                    inFrontAway = { away[Math.floorMod(index - 1, count)].value },
                     haze = haze.takeIf { index == liftable },
                     // Set as it's placed, so the pile reordering only re-places it.
                     modifier = Modifier.layout { measurable, constraints ->
@@ -194,6 +199,9 @@ private fun StackedCapsule(
     // (and so that one hidden), this one shows whole, with its contents.
     isOpen: () -> Boolean,
     inFrontOpen: () -> Boolean,
+    // Whether the one in front's panel is out or still landing, its capsule squeezing: until
+    // it's done, this one isn't cut to that capsule's resting outline, which it no longer fills.
+    inFrontAway: () -> Boolean,
     haze: HazeState?,
     modifier: Modifier = Modifier,
 ) {
@@ -204,7 +212,7 @@ private fun StackedCapsule(
                 pile,
                 index,
                 CapsuleHeight,
-                cut = { if (inFrontOpen()) 0f else 1f },
+                cut = { if (inFrontAway()) 0f else 1f },
                 // Hidden while its panel is out, which starts as a copy of it; the rest of
                 // the pile stays in place behind, the next one, left in front, as clear as
                 // a front one. Each switch is made under the panel's copy of the capsule.
