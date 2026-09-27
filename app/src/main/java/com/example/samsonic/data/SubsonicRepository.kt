@@ -523,6 +523,7 @@ class SubsonicRepository(
         songCount = songCount,
         durationSeconds = duration,
         coverArt = coverArt,
+        changed = changed,
     )
 
     private fun PlaylistDetailDto.toDomain() = Playlist(
@@ -532,5 +533,6 @@ class SubsonicRepository(
         songCount = songCount,
         durationSeconds = duration,
         coverArt = coverArt,
+        changed = changed,
     )
 }

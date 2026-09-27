@@ -160,6 +160,8 @@ data class PlaylistDto(
     val songCount: Int = 0,
     val duration: Int = 0,
     val coverArt: String? = null,
+    // When it was last changed (core Subsonic), as an ISO 8601 timestamp.
+    val changed: String? = null,
 )
 
 @Serializable
@@ -170,6 +172,8 @@ data class PlaylistDetailDto(
     val songCount: Int = 0,
     val duration: Int = 0,
     val coverArt: String? = null,
+    // When it was last changed (core Subsonic), as an ISO 8601 timestamp.
+    val changed: String? = null,
     val entry: List<SongDto> = emptyList(),
 )
 

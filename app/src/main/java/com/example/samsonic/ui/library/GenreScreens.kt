@@ -28,6 +28,9 @@ import com.example.samsonic.ui.common.StateContent
 import com.example.samsonic.ui.common.rememberScreenLoad
 import com.example.samsonic.ui.components.BackButtonClearance
 import com.example.samsonic.ui.components.GlassBackButton
+import com.example.samsonic.ui.components.FloatingListActions
+import com.example.samsonic.ui.components.floatingActionsSlot
+import com.example.samsonic.ui.components.floatingActionsEnd
 import com.example.samsonic.ui.components.MediaArt
 import com.example.samsonic.ui.components.PlayShuffleButtons
 import com.example.samsonic.ui.components.backButtonHazeSource
@@ -68,37 +71,44 @@ fun GenreDetailScreen(
     val backHaze = rememberHazeState()
     Box(modifier = modifier.fillMaxSize().statusBarsPadding()) {
         StateContent(state = state, modifier = Modifier.fillMaxSize()) { (albums, artists, songs) ->
-            LazyColumn(
-                modifier = Modifier.fillMaxSize().scrollTopFade(listState).backButtonHazeSource(backHaze),
-                state = listState,
-                contentPadding = PaddingValues(top = BackButtonClearance, bottom = contentPaddingBottom),
-            ) {
-                item(key = "header") {
-                    DetailHeader(
-                        title = genre,
-                        subtitle = stringResource(
-                            R.string.library_genre_summary,
-                            pluralStringResource(R.plurals.library_artist_count, artists.size, artists.size),
-                            pluralStringResource(R.plurals.library_album_count, albums.size, albums.size),
-                        ),
-                        // No picture of its own: the newest album's cover stands in.
-                        art = {
-                            MediaArt(
-                                coverArt = albums.firstOrNull()?.coverArt,
-                                colorSeed = genre.artSeed(),
-                                size = 140.dp,
-                                cornerRadius = cornerRadius,
-                            )
-                        },
-                    ) {
-                        // Plays the whole genre, not just the songs listed here.
-                        PlayShuffleButtons(key = genre, loadSongs = { repository.getGenreSongs(genre) })
+            Box(Modifier.fillMaxSize()) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize().scrollTopFade(listState).backButtonHazeSource(backHaze),
+                    state = listState,
+                    contentPadding = PaddingValues(top = BackButtonClearance, bottom = contentPaddingBottom),
+                ) {
+                    item(key = "header") {
+                        DetailHeader(
+                            title = genre,
+                            subtitle = stringResource(
+                                R.string.library_genre_summary,
+                                pluralStringResource(R.plurals.library_artist_count, artists.size, artists.size),
+                                pluralStringResource(R.plurals.library_album_count, albums.size, albums.size),
+                            ),
+                            // No picture of its own: the newest album's cover stands in.
+                            art = {
+                                MediaArt(
+                                    coverArt = albums.firstOrNull()?.coverArt,
+                                    colorSeed = genre.artSeed(),
+                                    size = 140.dp,
+                                    cornerRadius = cornerRadius,
+                                )
+                            },
+                            actions = {},
+                        )
                     }
+                    // Play and shuffle float over the list ([FloatingListActions]); this keeps their place.
+                    floatingActionsSlot()
+                    artistShelf("artists", R.string.library_artists, artists, onAllArtistsClick, onArtistClick)
+                    albumShelf("albums", R.string.library_albums, albums, onAllAlbumsClick, onAlbumClick, rows = 2)
+                    songSection("songs", R.string.library_songs, songs.take(SONGS_PREVIEW), player, onTitleClick = onAllSongsClick)
+                    floatingActionsEnd()
+                    item(key = "end") { Spacer(Modifier.height(24.dp)) }
                 }
-                artistShelf("artists", R.string.library_artists, artists, onAllArtistsClick, onArtistClick)
-                albumShelf("albums", R.string.library_albums, albums, onAllAlbumsClick, onAlbumClick, rows = 2)
-                songSection("songs", R.string.library_songs, songs.take(SONGS_PREVIEW), player, onTitleClick = onAllSongsClick)
-                item(key = "end") { Spacer(Modifier.height(24.dp)) }
+                FloatingListActions(listState, haze = backHaze) {
+                    // Plays the whole genre, not just the songs listed here.
+                    PlayShuffleButtons(key = genre, loadSongs = { repository.getGenreSongs(genre) })
+                }
             }
         }
         // Floats over the list: rows scroll up under it and fade out at the status bar.

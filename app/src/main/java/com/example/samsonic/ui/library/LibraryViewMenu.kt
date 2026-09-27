@@ -42,6 +42,7 @@ import androidx.compose.ui.util.lerp
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.R
 import com.example.samsonic.data.LibraryLayout
+import com.example.samsonic.data.LibrarySort
 import com.example.samsonic.data.LibraryViewMode
 import com.example.samsonic.ui.common.GuardChrome
 import com.example.samsonic.ui.common.LocalChromeGuard
@@ -115,6 +116,8 @@ internal fun LibraryTabsPanel(
     sectionName: String,
     layout: LibraryLayout,
     onLayoutChange: (LibraryLayout) -> Unit,
+    sort: LibrarySort?,
+    onSortChange: (LibrarySort) -> Unit,
     onDismiss: () -> Unit,
     tabs: @Composable () -> Unit,
 ) {
@@ -236,7 +239,13 @@ internal fun LibraryTabsPanel(
                     Box(Modifier.clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {})
                     // ... while the settings come in from 25%: overlapping, no empty frame.
                     Box(Modifier.graphicsLayer { alpha = ((progress - 0.25f) / 0.75f).coerceIn(0f, 1f) }) {
-                        ViewOptionsPanel(sectionName = sectionName, layout = layout, onLayoutChange = onLayoutChange)
+                        ViewOptionsPanel(
+                            sectionName = sectionName,
+                            layout = layout,
+                            onLayoutChange = onLayoutChange,
+                            sort = sort,
+                            onSortChange = onSortChange,
+                        )
                     }
                 },
             ) { measurables, constraints ->

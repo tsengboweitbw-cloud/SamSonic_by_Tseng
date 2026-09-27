@@ -84,6 +84,34 @@
     <string name="library_list">List</string>
     <string name="library_grid">Grid</string>
     <string name="library_grid_columns">Grid columns</string>
+    <string name="library_sort_by">Sort by</string>
+    <string name="library_sort_name">Name</string>
+    <!-- Artists with the most albums first -->
+    <string name="library_sort_album_count">Albums</string>
+    <string name="library_sort_artist">Artist</string>
+    <string name="library_sort_title">Title</string>
+    <!-- On the Albums tab, newest first; in an opened list, in the order picked -->
+    <string name="library_sort_year">Year</string>
+    <!-- Recently added first -->
+    <string name="library_sort_added">Added</string>
+    <!-- Playlists changed most recently first -->
+    <string name="library_sort_changed">Updated</string>
+    <!-- Playlists with the most songs first -->
+    <string name="library_sort_song_count">Songs</string>
+    <!-- On the Playlists tab, longest first; in an opened list, in the order picked -->
+    <string name="library_sort_duration">Length</string>
+    <!-- The sort button on an album, a playlist or a list of songs or albums -->
+    <string name="library_sort">Sort</string>
+    <string name="library_sort_album">Album</string>
+    <!-- An album's own track order -->
+    <string name="library_sort_track">Track number</string>
+    <!-- A playlist's own order, as its songs were added -->
+    <string name="library_sort_playlist_order">Playlist order</string>
+    <!-- The order a list comes in -->
+    <string name="library_sort_default">Default</string>
+    <string name="library_sort_order">Order</string>
+    <string name="library_sort_ascending">Ascending</string>
+    <string name="library_sort_descending">Descending</string>
 
     <!-- Add to playlist -->
     <string name="library_add_to_playlist">Add to playlist</string>

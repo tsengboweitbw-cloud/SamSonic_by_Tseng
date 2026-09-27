@@ -23,7 +23,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -47,12 +49,15 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.R
 import com.example.samsonic.data.LibrarySection
+import com.example.samsonic.data.LibrarySort
 import com.example.samsonic.data.LibraryViewMode
+import com.example.samsonic.data.newestFirst
 import com.example.samsonic.model.Album
 import com.example.samsonic.model.Artist
 import com.example.samsonic.model.Genre
 import com.example.samsonic.model.Playlist
 import com.example.samsonic.model.favouritesPlaylist
+import com.example.samsonic.model.isFavourites
 import com.example.samsonic.ui.common.StateContent
 import com.example.samsonic.ui.common.PageTitle
 import com.example.samsonic.ui.common.TitledPage
@@ -107,6 +112,10 @@ fun LibraryScreen(
     val layouts by layoutManager.layouts.collectAsStateWithLifecycle()
     val albumArtistsOnly by layoutManager.albumArtistsOnly.collectAsStateWithLifecycle()
     val showFavourites by layoutManager.showFavourites.collectAsStateWithLifecycle()
+    val sorts by layoutManager.sorts.collectAsStateWithLifecycle()
+    val artistSort = sorts.getValue(LibrarySection.ARTISTS)
+    val albumSort = sorts.getValue(LibrarySection.ALBUMS)
+    val playlistSort = sorts.getValue(LibrarySection.PLAYLISTS)
     // The view options panel (open/closed, animated) and the tab it was opened for.
     val viewOptions = remember { MutableTransitionState(false) }
     var viewSection by remember { mutableStateOf(LibrarySection.ALBUMS) }
@@ -122,18 +131,24 @@ fun LibraryScreen(
     val repository = LocalAppContainer.current.repository
     // A pull-to-refresh per tab, reloading just that tab while its list stays up.
     val refreshes = remember { List(tabs.size) { ScreenRefresh() } }
-    val artists = if (0 in visited) {
+    // Each tab loads in the order its sort starts from, then is sorted here, so a sort
+    // that only needs what's already loaded re-sorts it at once, with no reload.
+    val loadedArtists = if (0 in visited) {
         rememberScreenLoad(albumArtistsOnly, errorMessage = stringResource(R.string.library_artists_load_error), refresh = refreshes[0]) {
             if (albumArtistsOnly) repository.getAlbumArtists() else repository.getArtists()
         }
     } else UiState.Loading
-    val albums = if (1 in visited) {
-        rememberScreenLoad(Unit, errorMessage = stringResource(R.string.library_albums_load_error), refresh = refreshes[1]) {
-            repository.getAlbumList("alphabeticalByArtist", 500)
+    val artists = remember(loadedArtists, artistSort) { loadedArtists.sortedWith(artistSort.artistOrder()) }
+    // Only the first 500 come, so the ones a sort starts with must be the server's own.
+    val albumListType = albumSort.albumListType()
+    val loadedAlbums = if (1 in visited) {
+        rememberScreenLoad(albumListType, errorMessage = stringResource(R.string.library_albums_load_error), refresh = refreshes[1]) {
+            repository.getAlbumList(albumListType, 500)
         }
     } else UiState.Loading
+    val albums = remember(loadedAlbums, albumSort) { loadedAlbums.sortedWith(albumSort.albumOrder()) }
     val favouritesName = stringResource(R.string.data_favourites)
-    val playlists = if (2 in visited) {
+    val loadedPlaylists = if (2 in visited) {
         // Favourites (the liked songs) first, when shown; the rest are the library's own.
         rememberScreenLoad(showFavourites, errorMessage = stringResource(R.string.library_playlists_load_error), refresh = refreshes[2]) {
             coroutineScope {
@@ -143,6 +158,11 @@ fun LibraryScreen(
             }
         }
     } else UiState.Loading
+    val playlists = remember(loadedPlaylists, playlistSort) { loadedPlaylists.sortedWith(playlistSort.playlistOrder()) }
+
+    ScrollToTopOnSort(artistSort, artistsGrid)
+    ScrollToTopOnSort(albumSort, albumsGrid)
+    ScrollToTopOnSort(playlistSort, playlistsGrid)
     val genres = if (3 in visited) {
         rememberScreenLoad(Unit, errorMessage = stringResource(R.string.library_genres_load_error), refresh = refreshes[3]) { repository.getGenres() }
     } else UiState.Loading
@@ -192,6 +212,8 @@ fun LibraryScreen(
                 sectionName = stringResource(tabs[viewSection.ordinal]),
                 layout = layouts.getValue(viewSection),
                 onLayoutChange = { layoutManager.setLayout(viewSection, it) },
+                sort = sorts[viewSection],
+                onSortChange = layoutManager::setSort,
                 onDismiss = { viewOptions.targetState = false },
                 tabs = {
                     GlassTabBar(
@@ -279,6 +301,57 @@ fun LibraryScreen(
         }
     }
 }
+
+/**
+ * Takes a tab back to its top when its [sort] changes, as a fresh list; not when the
+ * Library comes back from a page, whose tabs stay scrolled where they were left.
+ */
+@Composable
+private fun ScrollToTopOnSort(sort: LibrarySort, grid: LazyGridState) {
+    var shown by rememberSaveable { mutableStateOf(sort) }
+    LaunchedEffect(sort) {
+        if (sort == shown) return@LaunchedEffect
+        shown = sort
+        grid.scrollToItem(0)
+    }
+}
+
+/** [sort]'s order for the artists as loaded (A to Z), or null to keep that. */
+private fun LibrarySort.artistOrder(): Comparator<Artist>? = when (this) {
+    LibrarySort.ARTIST_ALBUM_COUNT -> compareByDescending<Artist> { it.albumCount }.thenBy { it.name.lowercase() }
+    else -> null
+}
+
+/** The server's album list [sort] starts from: those it can order itself are fetched in that order. */
+private fun LibrarySort.albumListType(): String = when (this) {
+    LibrarySort.ALBUM_TITLE -> "alphabeticalByName"
+    LibrarySort.ALBUM_ADDED -> "newest"
+    // Years are sorted here, from the albums by artist, so each year's stay in artist order.
+    else -> "alphabeticalByArtist"
+}
+
+/** [sort]'s order for the albums as [albumListType] loaded them, or null to keep that. */
+private fun LibrarySort.albumOrder(): Comparator<Album>? = when (this) {
+    LibrarySort.ALBUM_YEAR -> newestFirst { it.year }
+    else -> null
+}
+
+/** [sort]'s order for the playlists, Favourites always first. */
+private fun LibrarySort.playlistOrder(): Comparator<Playlist> {
+    val favouritesFirst = compareByDescending<Playlist> { it.isFavourites }
+    val byName = compareBy<Playlist> { it.name.lowercase() }
+    return when (this) {
+        // Ones with no time known go last.
+        LibrarySort.PLAYLIST_CHANGED -> favouritesFirst.thenByDescending { it.changed }.then(byName)
+        LibrarySort.PLAYLIST_SONG_COUNT -> favouritesFirst.thenByDescending { it.songCount }.then(byName)
+        LibrarySort.PLAYLIST_DURATION -> favouritesFirst.thenByDescending { it.durationSeconds }.then(byName)
+        else -> favouritesFirst.then(byName)
+    }
+}
+
+/** The loaded list in [order] (a stable sort), or as it is without one or before it loads. */
+private fun <T> UiState<List<T>>.sortedWith(order: Comparator<T>?): UiState<List<T>> =
+    if (this is UiState.Success && order != null) UiState.Success(data.sortedWith(order)) else this
 
 /** Fixed-size slot, so the title row keeps its height when the button hides on Genres. */
 @Composable

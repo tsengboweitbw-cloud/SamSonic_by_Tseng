@@ -9,11 +9,14 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ViewList
 import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.derivedStateOf
@@ -27,6 +30,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.rememberTextMeasurer
@@ -37,8 +41,10 @@ import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.R
 import com.example.samsonic.data.LibrarySection
 import com.example.samsonic.data.LibraryViewMode
+import com.example.samsonic.data.SortedList
 import com.example.samsonic.ui.common.GuardChrome
 import com.example.samsonic.ui.common.LocalChromeGuard
+import com.example.samsonic.ui.components.PressIconButton
 import com.example.samsonic.ui.player.MorphPanel
 import com.example.samsonic.ui.player.PanelState
 import com.example.samsonic.ui.settings.menuOrigin
@@ -54,34 +60,74 @@ private const val ScrimAlpha = 0.32f
 
 /**
  * A "see all" page's own view options, kept apart from the Library tab's: the
- * view button, floating top right across from the back button, itself grows
- * into the panel ([MorphPanel]) - hidden while its glass is out, its icon riding
- * along - and the panel lands where the Library's view options sit: full width
- * under the Library's title row, with the same settings for [section].
+ * view button, floating top right across from the back button, grows into the
+ * panel ([CornerMenu]), which lands where the Library's view options sit: full
+ * width under the Library's title row, with the same settings for [section],
+ * and [sortedList]'s sort, if given.
  * [haze] is the page content's haze source, which the panel's glass blurs.
  * Placed in a page under the status bar, as the Library's title is.
  */
 @Composable
-internal fun BoxScope.CollectionViewMenu(section: LibrarySection, title: String, haze: HazeState) {
+internal fun BoxScope.CollectionViewMenu(section: LibrarySection, title: String, haze: HazeState, sortedList: SortedList? = null) {
     val layoutManager = LocalAppContainer.current.libraryLayoutManager
     val layouts by layoutManager.layouts.collectAsStateWithLifecycle()
     val layout = layouts.getValue(section)
+    CornerMenu(
+        icon = if (layout.mode == LibraryViewMode.GRID) Icons.Filled.GridView else Icons.AutoMirrored.Filled.ViewList,
+        contentDescription = stringResource(R.string.library_view_options),
+        haze = haze,
+        panelTop = libraryTitleRowHeight(),
+    ) {
+        ViewOptionsPanel(
+            sectionName = title,
+            layout = layout,
+            onLayoutChange = { layoutManager.setLayout(section, it) },
+            footer = sortedList?.let { list -> { ListSortOptions(list) } },
+        )
+    }
+}
+
+/**
+ * A round glass button floating in a page's top right corner, [endOffset] in from
+ * the usual spot, that itself grows into a panel of [content] ([MorphPanel]): hidden
+ * while its glass is out, its [icon] riding along. The panel lands full width,
+ * [panelTop] down, over the page dimmed; a tap outside or back closes it.
+ * [haze] is the page content's haze source, which the panel's glass blurs;
+ * [buttonHaze], if given, the button's.
+ */
+@Composable
+internal fun BoxScope.CornerMenu(
+    icon: ImageVector,
+    contentDescription: String,
+    haze: HazeState,
+    panelTop: Dp,
+    buttonSize: Dp = 48.dp,
+    buttonHaze: HazeState? = null,
+    endOffset: Dp = 0.dp,
+    content: @Composable () -> Unit,
+) {
     val scope = rememberCoroutineScope()
     val panel = remember { PanelState(scope) }
     val showing by remember(panel) { derivedStateOf { panel.progress > 0f } }
-    val icon = if (layout.mode == LibraryViewMode.GRID) Icons.Filled.GridView else Icons.AutoMirrored.Filled.ViewList
 
-    LibraryViewButton(
-        mode = layout.mode,
-        open = false,
+    PressIconButton(
         onClick = { panel.open() },
+        size = buttonSize,
         modifier = Modifier
             .align(Alignment.TopEnd)
-            .padding(end = 16.dp, top = 8.dp)
+            .padding(end = 16.dp + endOffset, top = 8.dp)
             .menuOrigin(panel)
             // The panel's glass is this button while it's out, so there's just the one.
-            .graphicsLayer { alpha = if (showing) 0f else 1f },
-    )
+            .graphicsLayer { alpha = if (showing) 0f else 1f }
+            .glassSurface(
+                shape = CircleShape,
+                hazeState = buttonHaze,
+                tint = MaterialTheme.colorScheme.surfaceContainerHigh,
+                alpha = GlassAlpha.Nav,
+            ),
+    ) {
+        Icon(icon, contentDescription = contentDescription, modifier = Modifier.size(24.dp))
+    }
 
     BackHandler(enabled = panel.isOpen) { panel.close() }
     if (!showing) return
@@ -114,7 +160,7 @@ internal fun BoxScope.CollectionViewMenu(section: LibrarySection, title: String,
             panel = panel,
             icon = icon,
             // The navigation bar's glass, its opacity and blur settings included, as its
-            // view button's is.
+            // button's is.
             surface = Modifier.glassSurface(
                 shape = RoundedCornerShape(OneUiRadius.Card),
                 hazeState = haze,
@@ -125,20 +171,15 @@ internal fun BoxScope.CollectionViewMenu(section: LibrarySection, title: String,
                 rim = false,
             ),
             modifier = Modifier
-                .padding(top = libraryTitleRowHeight(), start = 16.dp, end = 16.dp)
+                .padding(top = panelTop, start = 16.dp, end = 16.dp)
                 .fillMaxWidth()
                 // Swallows taps so only the space around the panel dismisses.
                 .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {},
             radius = OneUiRadius.Card,
             // As the Library's: a tap outside or back closes it.
             dragToClose = false,
-        ) {
-            ViewOptionsPanel(
-                sectionName = title,
-                layout = layout,
-                onLayoutChange = { layoutManager.setLayout(section, it) },
-            )
-        }
+            content = content,
+        )
     }
 }
 

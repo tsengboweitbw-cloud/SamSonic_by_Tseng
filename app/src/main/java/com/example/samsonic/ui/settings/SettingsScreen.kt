@@ -91,6 +91,7 @@ fun SettingsScreen(
     val clearCacheMenu = remember { PanelState(scope) }
     val dsdMenu = remember { PanelState(scope) }
     val languageMenu = remember { PanelState(scope) }
+    val listActionsMenu = remember { PanelState(scope) }
     val autoDjMenu = remember { PanelState(scope) }
     val cacheUsage = rememberCacheUsage()
     val clearMusicCacheMenu = remember { PanelState(scope) }
@@ -122,6 +123,7 @@ fun SettingsScreen(
             ClearMusicCacheMenu(clearMusicCacheMenu, haze, musicCacheUsage)
             DsdOutputMenu(dsdMenu, haze, container.bitPerfect)
             LanguageMenu(languageMenu, haze)
+            ListActionsMenu(listActionsMenu, haze)
             AutoDjMenu(autoDjMenu, haze)
         } },
     ) { topPadding ->
@@ -192,6 +194,7 @@ fun SettingsScreen(
                         onCheckedChange = container.libraryLayoutManager::setShowFavourites,
                         hint = stringResource(R.string.settings_favourites_playlist_hint),
                     )
+                    ListActionsRow(listActionsMenu)
                 }
             }
 

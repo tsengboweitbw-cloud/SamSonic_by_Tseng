@@ -29,6 +29,9 @@ import com.example.samsonic.ui.components.AlbumRow
 import com.example.samsonic.ui.components.BackButtonClearance
 import com.example.samsonic.ui.components.backButtonHazeSource
 import com.example.samsonic.ui.components.GlassBackButton
+import com.example.samsonic.ui.components.FloatingListActions
+import com.example.samsonic.ui.components.floatingActionsSlot
+import com.example.samsonic.ui.components.floatingActionsEnd
 import com.example.samsonic.ui.components.PlayShuffleButtons
 import com.example.samsonic.ui.theme.scrollTopFade
 import dev.chrisbanes.haze.rememberHazeState
@@ -57,13 +60,13 @@ fun AlbumShelfScreen(
     Box(modifier = modifier.fillMaxSize().statusBarsPadding()) {
         StateContent(state = state, modifier = Modifier.fillMaxSize()) { albums ->
             val listState = rememberLazyListState()
-            LazyColumn(
-                modifier = Modifier.fillMaxSize().scrollTopFade(listState).backButtonHazeSource(backHaze),
-                state = listState,
-                contentPadding = PaddingValues(top = BackButtonClearance, bottom = contentPaddingBottom),
-            ) {
-                item {
-                    Column {
+            Box(Modifier.fillMaxSize()) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize().scrollTopFade(listState).backButtonHazeSource(backHaze),
+                    state = listState,
+                    contentPadding = PaddingValues(top = BackButtonClearance, bottom = contentPaddingBottom),
+                ) {
+                    item {
                         Text(
                             text = stringResource(shelf.title),
                             style = MaterialTheme.typography.displaySmall,
@@ -71,19 +74,23 @@ fun AlbumShelfScreen(
                                 .fillMaxWidth()
                                 .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 20.dp),
                         )
-                        PlayShuffleButtons(
-                            key = albums,
-                            loadSongs = { repository.getAlbumsSongs(albums) },
-                            modifier = Modifier.padding(horizontal = 24.dp),
-                        )
-                        Spacer(Modifier.height(12.dp))
                     }
+                    // Play and shuffle float over the list ([FloatingListActions]); this keeps their place.
+                    floatingActionsSlot(bottomSpacing = 12.dp)
+                    // Keyed by position too: a server can list the same album twice.
+                    itemsIndexed(albums, key = { index, album -> "${album.id}#$index" }) { _, album ->
+                        AlbumRow(album = album, onClick = { onAlbumClick(album) })
+                    }
+                    floatingActionsEnd()
+                    item { Spacer(Modifier.height(24.dp)) }
                 }
-                // Keyed by position too: a server can list the same album twice.
-                itemsIndexed(albums, key = { index, album -> "${album.id}#$index" }) { _, album ->
-                    AlbumRow(album = album, onClick = { onAlbumClick(album) })
+                FloatingListActions(listState, haze = backHaze) {
+                    PlayShuffleButtons(
+                        key = albums,
+                        loadSongs = { repository.getAlbumsSongs(albums) },
+                        modifier = Modifier.padding(horizontal = 24.dp),
+                    )
                 }
-                item { Spacer(Modifier.height(24.dp)) }
             }
         }
         // Floats over the list: rows scroll up under it and fade out at the status bar.

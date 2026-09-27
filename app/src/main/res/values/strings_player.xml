@@ -14,6 +14,8 @@
     <string name="components_play_next">Play next</string>
     <string name="components_add_to_queue">Add to queue</string>
     <string name="components_add_to_playlist">Add to playlist</string>
+    <!-- The corner button that opens into play, shuffle and queue -->
+    <string name="components_play_options">Play options</string>
     <plurals name="components_song_count">
         <item quantity="one">%d song</item>
         <item quantity="other">%d songs</item>

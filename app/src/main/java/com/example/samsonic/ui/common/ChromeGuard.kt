@@ -36,6 +36,15 @@ class ChromeGuard {
     var height by mutableStateOf(0.dp)
         internal set
 
+    /**
+     * Where the top of the highest bar is right now, in px up from the screen's bottom:
+     * the nav bar's, or the mini player's above it (apart or piled), following them as
+     * the mini player comes, goes or is swiped away. Unlike [height], which only
+     * reserves room, it's live: read it in layout or draw. Set by the nav host.
+     */
+    var top: () -> Float = { 0f }
+        internal set
+
     /** The open menu's dim over the page (read at draw time) and how to close it. */
     internal class Claim(val dim: () -> Float, val dismiss: () -> Unit)
 }

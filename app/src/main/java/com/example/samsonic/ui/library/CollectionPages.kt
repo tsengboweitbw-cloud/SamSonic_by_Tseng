@@ -18,6 +18,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import com.example.samsonic.data.ListSort
+import com.example.samsonic.data.SortedList
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -36,6 +39,10 @@ import com.example.samsonic.ui.components.ArtistCard
 import com.example.samsonic.ui.components.ArtistRow
 import com.example.samsonic.ui.components.BackButtonClearance
 import com.example.samsonic.ui.components.GlassBackButton
+import com.example.samsonic.ui.components.ChromeButtonSize
+import com.example.samsonic.ui.components.FloatingListActions
+import com.example.samsonic.ui.components.floatingActionsSlot
+import com.example.samsonic.ui.components.floatingActionsEnd
 import com.example.samsonic.ui.components.PlayShuffleButtons
 import com.example.samsonic.ui.components.SongRow
 import com.example.samsonic.ui.components.backButtonHazeSource
@@ -69,24 +76,32 @@ internal fun AlbumsPage(
     BackButtonPage(
         onBack,
         modifier,
-        overlay = if (ownView) { haze -> CollectionViewMenu(section, title, haze) } else null,
+        overlay = if (ownView) { haze -> CollectionViewMenu(section, title, haze, sortedList = SortedList.ALBUMS) } else null,
     ) { backHaze ->
-        StateContent(state = state, modifier = Modifier.fillMaxSize()) { (owner, albums) ->
-            LibraryCollection(
-                state = UiState.Success(albums),
-                gridState = gridState,
-                layout = layouts.getValue(section),
-                padding = LibraryPadding(top = BackButtonClearance, bottom = contentPaddingBottom),
-                key = { it.id },
-                card = { album, size -> AlbumCard(album, onClick = { onAlbumClick(album) }, artSize = size) },
-                row = { album -> AlbumRow(album, onClick = { onAlbumClick(album) }) },
-                header = {
-                    PageHeader(owner = owner, title = title) {
-                        PlayShuffleButtons(key = albums, loadSongs = { container.repository.getAlbumsSongs(albums) })
-                    }
-                },
-                modifier = Modifier.scrollTopFade(gridState).backButtonHazeSource(backHaze),
-            )
+        StateContent(state = state, modifier = Modifier.fillMaxSize()) { (owner, loaded) ->
+            // Only a page with its own view menu has the sort to go with it.
+            val sort = if (ownView) rememberListSort(SortedList.ALBUMS) else ListSort()
+            val albums = remember(loaded, sort) { loaded.sortedAlbumsFor(sort) }
+            OnSortChange(sort) { if (gridState.firstVisibleItemIndex > 2) gridState.scrollToItem(2) }
+            Box(Modifier.fillMaxSize()) {
+                LibraryCollection(
+                    state = UiState.Success(albums),
+                    gridState = gridState,
+                    layout = layouts.getValue(section),
+                    padding = LibraryPadding(top = BackButtonClearance, bottom = contentPaddingBottom),
+                    key = { it.id },
+                    card = { album, size -> AlbumCard(album, onClick = { onAlbumClick(album) }, artSize = size) },
+                    row = { album -> AlbumRow(album, onClick = { onAlbumClick(album) }) },
+                    header = { PageHeader(owner = owner, title = title, bottomSpacing = 0.dp) },
+                    // Play and shuffle float over the grid ([FloatingListActions]); this keeps their place.
+                    actionsSlot = 12.dp,
+                    modifier = Modifier.scrollTopFade(gridState).backButtonHazeSource(backHaze),
+                )
+                // Its corner button goes beside the view button (48dp), when the page has one.
+                FloatingListActions(gridState, cornerEndOffset = if (ownView) 56.dp else 0.dp, haze = backHaze) {
+                    PlayShuffleButtons(key = albums, loadSongs = { container.repository.getAlbumsSongs(albums) })
+                }
+            }
         }
     }
 }
@@ -131,26 +146,33 @@ internal fun SongsPage(
 ) {
     val player = LocalPlayerState.current
     val listState = rememberLazyListState()
-    BackButtonPage(onBack, modifier) { backHaze ->
-        StateContent(state = state, modifier = Modifier.fillMaxSize()) { (owner, songs) ->
-            LazyColumn(
-                modifier = Modifier.fillMaxSize().scrollTopFade(listState).backButtonHazeSource(backHaze),
-                state = listState,
-                contentPadding = PaddingValues(top = BackButtonClearance, bottom = contentPaddingBottom),
-            ) {
-                item {
-                    PageHeader(owner = owner, title = title, modifier = Modifier.padding(horizontal = 20.dp)) {
-                        PlayShuffleButtons(songs = songs)
+    BackButtonPage(onBack, modifier, overlay = { haze -> ListSortMenu(SortedList.SONGS, haze) }) { backHaze ->
+        StateContent(state = state, modifier = Modifier.fillMaxSize()) { (owner, loaded) ->
+            val sort = rememberListSort(SortedList.SONGS)
+            // Played in the order shown.
+            val songs = remember(loaded, sort) { loaded.sortedFor(sort) }
+            OnSortChange(sort) { if (listState.firstVisibleItemIndex > 2) listState.scrollToItem(2) }
+            Box(Modifier.fillMaxSize()) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize().scrollTopFade(listState).backButtonHazeSource(backHaze),
+                    state = listState,
+                    contentPadding = PaddingValues(top = BackButtonClearance, bottom = contentPaddingBottom),
+                ) {
+                    item { PageHeader(owner = owner, title = title, modifier = Modifier.padding(horizontal = 20.dp), bottomSpacing = 0.dp) }
+                    // Play and shuffle float over the list ([FloatingListActions]); this keeps their place.
+                    floatingActionsSlot(bottomSpacing = 12.dp)
+                    items(songs, key = { it.id }) { song ->
+                        SongRow(
+                            song = song,
+                            isCurrent = player.currentSong?.id == song.id,
+                            onClick = { player.play(song, songs) },
+                        )
                     }
+                    floatingActionsEnd()
+                    item { Spacer(Modifier.height(24.dp)) }
                 }
-                items(songs, key = { it.id }) { song ->
-                    SongRow(
-                        song = song,
-                        isCurrent = player.currentSong?.id == song.id,
-                        onClick = { player.play(song, songs) },
-                    )
-                }
-                item { Spacer(Modifier.height(24.dp)) }
+                // Its corner button goes beside the sort button.
+                FloatingListActions(listState, cornerEndOffset = ChromeButtonSize + 8.dp, haze = backHaze) { PlayShuffleButtons(songs = songs) }
             }
         }
     }
@@ -177,15 +199,16 @@ private fun BackButtonPage(
 }
 
 /**
- * The [owner]'s name over the page's large [title], then [actions] (play and
- * shuffle), if any. Starts at the content's 20dp edge; the caller supplies that inset.
+ * The [owner]'s name over the page's large [title], with [bottomSpacing] under it
+ * (none where the page's play buttons, in its list's floatingActionsSlot, follow).
+ * Starts at the content's 20dp edge; the caller supplies that inset.
  */
 @Composable
 private fun PageHeader(
     owner: String,
     title: String,
     modifier: Modifier = Modifier,
-    actions: (@Composable () -> Unit)? = null,
+    bottomSpacing: Dp = 12.dp,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
         Text(
@@ -199,9 +222,6 @@ private fun PageHeader(
             style = MaterialTheme.typography.displaySmall,
             modifier = Modifier.padding(bottom = 20.dp),
         )
-        if (actions != null) {
-            Box(Modifier.padding(horizontal = 4.dp)) { actions() }
-        }
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(bottomSpacing))
     }
 }

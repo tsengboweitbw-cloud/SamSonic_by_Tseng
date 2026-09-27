@@ -24,6 +24,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import java.time.Instant
 
 /**
  * The music stored on this phone, read from MediaStore. The scan is kept in memory
@@ -193,6 +194,7 @@ class DeviceLibrary(context: Context) : MusicLibrary {
         songCount = songs.size,
         durationSeconds = songs.sumOf { it.durationSeconds },
         coverArt = songs.firstOrNull()?.coverArt,
+        changed = changedMs?.let { Instant.ofEpochMilli(it).toString() },
     )
 
     override val canEditPlaylists: Boolean get() = true

@@ -8,12 +8,16 @@ import kotlinx.serialization.json.Json
 import java.io.File
 import java.util.UUID
 
-/** A playlist of the music on this phone: its songs' MediaStore ids, in order. */
+/**
+ * A playlist of the music on this phone: its songs' MediaStore ids, in order, and when
+ * it was last changed (epoch millis; null for one saved before the app kept that).
+ */
 @Serializable
 internal data class DevicePlaylist(
     val id: String,
     val name: String,
     val songIds: List<String>,
+    val changedMs: Long? = null,
 )
 
 /** How often a song was listened to, and when last (epoch millis). */
@@ -37,17 +41,17 @@ internal class DeviceStore(context: Context) {
     fun playlist(id: String): DevicePlaylist? = playlists().firstOrNull { it.id == id }
 
     @Synchronized
-    fun createPlaylist(name: String, songIds: List<String>) {
-        val playlist = DevicePlaylist(id = PLAYLIST_ID_PREFIX + UUID.randomUUID(), name = name, songIds = songIds)
+    fun createPlaylist(name: String, songIds: List<String>, nowMs: Long = System.currentTimeMillis()) {
+        val playlist = DevicePlaylist(id = PLAYLIST_ID_PREFIX + UUID.randomUUID(), name = name, songIds = songIds, changedMs = nowMs)
         write(KEY_PLAYLISTS, playlists() + playlist)
     }
 
-    /** Adds [songIds] to the end of playlist [id]; false if there's no such playlist. */
+    /** Adds [songIds] to the end of playlist [id], now; false if there's no such playlist. */
     @Synchronized
-    fun addToPlaylist(id: String, songIds: List<String>): Boolean {
+    fun addToPlaylist(id: String, songIds: List<String>, nowMs: Long = System.currentTimeMillis()): Boolean {
         val all = playlists()
         if (all.none { it.id == id }) return false
-        write(KEY_PLAYLISTS, all.map { if (it.id == id) it.copy(songIds = it.songIds + songIds) else it })
+        write(KEY_PLAYLISTS, all.map { if (it.id == id) it.copy(songIds = it.songIds + songIds, changedMs = nowMs) else it })
         return true
     }
 

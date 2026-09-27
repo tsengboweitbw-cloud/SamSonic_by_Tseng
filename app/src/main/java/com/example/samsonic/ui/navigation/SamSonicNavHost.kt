@@ -165,6 +165,13 @@ fun SamSonicNavHost(lastTab: LastTab) {
         animationSpec = spring(dampingRatio = 1f, stiffness = 300f),
         label = "stackChrome",
     )
+    // 1 while there's a song (the mini player up), 0 without, easing between as music
+    // starts or stops: for what floats above the chrome to follow it (ChromeGuard.top).
+    val miniPresence = animateFloatAsState(
+        targetValue = if (hasSong) 1f else 0f,
+        animationSpec = spring(dampingRatio = 1f, stiffness = 400f),
+        label = "miniPresence",
+    )
     // Drawn in the pile while it comes together or apart; swiped only once it has.
     val pileShown by remember { derivedStateOf { hasSong && stackAmount > 0f } }
     // The nav bar keeps its place in the pile (its layer, order and pose) for as long as
@@ -231,6 +238,23 @@ fun SamSonicNavHost(lastTab: LastTab) {
                 else -> OneUiChrome.BarHeight + 8.dp
             }
             val contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve
+            // The live top of the highest bar, for what floats just above it (a page's docked
+            // play buttons): the nav bar's, plus the mini player's rise above it while there's
+            // a song, apart or piled, easing as it comes or goes and following a swipe away.
+            val density = LocalDensity.current
+            SideEffect {
+                chromeGuard.top = {
+                    with(density) {
+                        if (!showChrome) {
+                            0f
+                        } else {
+                            val nav = (systemBarInset + navBarBottomInset + navBarHeight).toPx()
+                            val rise = lerp(OneUiChrome.BarHeight + 8.dp, PileStep, stackAmount).toPx()
+                            nav + rise * miniPresence.value * (1f - playerSheet.dismissal.coerceIn(0f, 1f))
+                        }
+                    }
+                }
+            }
             // Content melts into the background near the bottom edge: 1.5 times the
             // space below the nav bar (its bottom gap and the system bar), so the
             // fade reaches a little way up behind the bar. Above that it stays

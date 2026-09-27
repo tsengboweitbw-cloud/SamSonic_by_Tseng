@@ -14,6 +14,7 @@
     <string name="components_play_next">下一首播放</string>
     <string name="components_add_to_queue">加入播放佇列</string>
     <string name="components_add_to_playlist">加入播放清單</string>
+    <string name="components_play_options">播放選項</string>
     <plurals name="components_song_count">
         <item quantity="other">%d 首歌曲</item>
     </plurals>

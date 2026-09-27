@@ -21,6 +21,8 @@ import com.example.samsonic.data.LibraryLayout
 import com.example.samsonic.data.LibraryViewMode
 import com.example.samsonic.ui.common.StateContent
 import com.example.samsonic.ui.common.UiState
+import com.example.samsonic.ui.components.floatingActionsEnd
+import com.example.samsonic.ui.components.floatingActionsSlot
 
 /** Space the tab content keeps clear: under the pinned tab bar, and above the floating chrome. */
 internal data class LibraryPadding(val top: Dp, val bottom: Dp)
@@ -45,6 +47,8 @@ internal fun <T> LibraryCollection(
     card: @Composable (item: T, artSize: Dp) -> Unit,
     row: @Composable (item: T) -> Unit,
     header: (@Composable () -> Unit)? = null,
+    // Room under the header for a page's FloatingListActions, with this much space under it.
+    actionsSlot: Dp? = null,
     modifier: Modifier = Modifier,
 ) {
     StateContent(state = state, modifier = Modifier.fillMaxSize()) { items ->
@@ -74,6 +78,7 @@ internal fun <T> LibraryCollection(
                     Box(Modifier.padding(horizontal = if (grid) 0.dp else 20.dp)) { header() }
                 }
             }
+            if (actionsSlot != null) floatingActionsSlot(bottomSpacing = actionsSlot)
             items(items, key = key) { item ->
                 if (grid) {
                     BoxWithConstraints(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
@@ -83,6 +88,7 @@ internal fun <T> LibraryCollection(
                     row(item)
                 }
             }
+            if (actionsSlot != null) floatingActionsEnd()
         }
     }
 }

@@ -78,6 +78,24 @@
     <string name="library_list">清單</string>
     <string name="library_grid">格狀</string>
     <string name="library_grid_columns">格狀欄數</string>
+    <string name="library_sort_by">排序方式</string>
+    <string name="library_sort_name">名稱</string>
+    <string name="library_sort_album_count">專輯數</string>
+    <string name="library_sort_artist">歌手</string>
+    <string name="library_sort_title">標題</string>
+    <string name="library_sort_year">年份</string>
+    <string name="library_sort_added">加入日期</string>
+    <string name="library_sort_changed">更新時間</string>
+    <string name="library_sort_song_count">歌曲數</string>
+    <string name="library_sort_duration">長度</string>
+    <string name="library_sort">排序</string>
+    <string name="library_sort_album">專輯</string>
+    <string name="library_sort_track">曲目編號</string>
+    <string name="library_sort_playlist_order">播放清單順序</string>
+    <string name="library_sort_default">預設</string>
+    <string name="library_sort_order">順序</string>
+    <string name="library_sort_ascending">遞增</string>
+    <string name="library_sort_descending">遞減</string>
 
     <!-- Add to playlist -->
     <string name="library_add_to_playlist">加入播放清單</string>

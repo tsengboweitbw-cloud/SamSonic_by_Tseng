@@ -28,6 +28,9 @@ import com.example.samsonic.ui.common.UiState
 import com.example.samsonic.ui.common.rememberScreenLoad
 import com.example.samsonic.ui.components.BackButtonClearance
 import com.example.samsonic.ui.components.GlassBackButton
+import com.example.samsonic.ui.components.FloatingListActions
+import com.example.samsonic.ui.components.floatingActionsSlot
+import com.example.samsonic.ui.components.floatingActionsEnd
 import com.example.samsonic.ui.components.PlayShuffleButtons
 import com.example.samsonic.ui.components.SongRow
 import com.example.samsonic.ui.components.backButtonHazeSource
@@ -58,13 +61,13 @@ fun SongShelfScreen(
     Box(modifier = modifier.fillMaxSize().statusBarsPadding()) {
         StateContent(state = state, modifier = Modifier.fillMaxSize()) { songs ->
             val listState = rememberLazyListState()
-            LazyColumn(
-                modifier = Modifier.fillMaxSize().scrollTopFade(listState).backButtonHazeSource(backHaze),
-                state = listState,
-                contentPadding = PaddingValues(top = BackButtonClearance, bottom = contentPaddingBottom),
-            ) {
-                item {
-                    Column {
+            Box(Modifier.fillMaxSize()) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize().scrollTopFade(listState).backButtonHazeSource(backHaze),
+                    state = listState,
+                    contentPadding = PaddingValues(top = BackButtonClearance, bottom = contentPaddingBottom),
+                ) {
+                    item {
                         Text(
                             text = stringResource(shelf.title),
                             style = MaterialTheme.typography.displaySmall,
@@ -72,18 +75,20 @@ fun SongShelfScreen(
                                 .fillMaxWidth()
                                 .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 20.dp),
                         )
-                        PlayShuffleButtons(songs = songs, modifier = Modifier.padding(horizontal = 24.dp))
-                        Spacer(Modifier.height(12.dp))
                     }
+                    // Play and shuffle float over the list ([FloatingListActions]); this keeps their place.
+                    floatingActionsSlot(bottomSpacing = 12.dp)
+                    items(songs, key = { it.id }) { song ->
+                        SongRow(
+                            song = song,
+                            isCurrent = player.currentSong?.id == song.id,
+                            onClick = { player.play(song, songs) },
+                        )
+                    }
+                    floatingActionsEnd()
+                    item { Spacer(Modifier.height(24.dp)) }
                 }
-                items(songs, key = { it.id }) { song ->
-                    SongRow(
-                        song = song,
-                        isCurrent = player.currentSong?.id == song.id,
-                        onClick = { player.play(song, songs) },
-                    )
-                }
-                item { Spacer(Modifier.height(24.dp)) }
+                FloatingListActions(listState, haze = backHaze) { PlayShuffleButtons(songs = songs, modifier = Modifier.padding(horizontal = 24.dp)) }
             }
         }
         // Floats over the list: rows scroll up under it and fade out at the status bar.

@@ -18,6 +18,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import com.example.samsonic.data.SortedList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
@@ -44,6 +46,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.ui.components.BackButtonClearance
 import com.example.samsonic.ui.components.backButtonHazeSource
 import com.example.samsonic.ui.components.GlassBackButton
+import com.example.samsonic.ui.components.ChromeButtonSize
+import com.example.samsonic.ui.components.FloatingListActions
+import com.example.samsonic.ui.components.floatingActionsSlot
+import com.example.samsonic.ui.components.floatingActionsEnd
 import com.example.samsonic.ui.components.PlaylistArt
 import com.example.samsonic.ui.components.PlayShuffleButtons
 import com.example.samsonic.ui.components.SongRow
@@ -91,31 +97,42 @@ fun PlaylistDetailScreen(
             modifier = Modifier.fillMaxSize(),
             // The preview above stands in for the spinner.
             loading = if (preview != null) ({}) else null,
-        ) { (playlist, songs) ->
+        ) { (playlist, loaded) ->
+            val sort = rememberListSort(SortedList.PLAYLIST_SONGS)
+            // Played in the order shown.
+            val songs = remember(loaded, sort) { loaded.sortedFor(sort) }
             val listState = rememberLazyListState()
-            LazyColumn(
-                modifier = Modifier.fillMaxSize().scrollTopFade(listState).backButtonHazeSource(backHaze),
-                state = listState,
-                contentPadding = PaddingValues(top = BackButtonClearance, bottom = contentPaddingBottom),
-            ) {
-                item {
-                    PlaylistHeader(playlist, songs.size, cornerRadius) { PlayShuffleButtons(songs = songs, playlistTitle = playlist.name) }
+            // A new sort starts over from the first song, if the list was past it.
+            OnSortChange(sort) { if (listState.firstVisibleItemIndex > 2) listState.scrollToItem(2) }
+            Box(Modifier.fillMaxSize()) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize().scrollTopFade(listState).backButtonHazeSource(backHaze),
+                    state = listState,
+                    contentPadding = PaddingValues(top = BackButtonClearance, bottom = contentPaddingBottom),
+                ) {
+                    item { PlaylistHeader(playlist, songs.size, cornerRadius, actions = null) }
+                    // Play and shuffle float over the list ([FloatingListActions]); this keeps their place.
+                    floatingActionsSlot(bottomSpacing = 8.dp)
+                    // By place as well as song: a playlist can hold the same song more than once.
+                    itemsIndexed(songs, key = { i, s -> "${s.id}#$i" }) { _, song ->
+                        SongRow(
+                            song = song,
+                            isCurrent = player.currentSong?.id == song.id,
+                            liked = player.isLiked(song),
+                            onToggleLike = { player.toggleLike(song) },
+                            onClick = { player.play(song, songs) },
+                        )
+                    }
+                    floatingActionsEnd()
+                    item { Spacer(Modifier.height(24.dp)) }
                 }
-                // By place as well as song: a playlist can hold the same song more than once.
-                itemsIndexed(songs, key = { i, s -> "${s.id}#$i" }) { _, song ->
-                    SongRow(
-                        song = song,
-                        isCurrent = player.currentSong?.id == song.id,
-                        liked = player.isLiked(song),
-                        onToggleLike = { player.toggleLike(song) },
-                        onClick = { player.play(song, songs) },
-                    )
-                }
-                item { Spacer(Modifier.height(24.dp)) }
+                // Its corner button goes beside the sort button.
+                FloatingListActions(listState, cornerEndOffset = ChromeButtonSize + 8.dp, haze = backHaze) { PlayShuffleButtons(songs = songs, playlistTitle = playlist.name) }
             }
         }
         // Floats over the list: rows scroll up under it and fade out at the status bar.
         GlassBackButton(onClick = onBack, hazeState = backHaze, modifier = Modifier.padding(start = 16.dp, top = 8.dp))
+        ListSortMenu(SortedList.PLAYLIST_SONGS, backHaze)
     }
 }
 

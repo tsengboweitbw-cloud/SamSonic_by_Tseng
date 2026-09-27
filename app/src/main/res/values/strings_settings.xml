@@ -62,6 +62,13 @@
     <string name="settings_album_artists_only_hint">The Artists tab lists album artists, not everyone credited on a song</string>
     <string name="settings_favourites_playlist">Favourites playlist</string>
     <string name="settings_favourites_playlist_hint">Your liked songs, first in the Playlists tab</string>
+    <string name="settings_list_actions">Play buttons</string>
+    <string name="settings_list_actions_hint">Where play, shuffle and queue go as you scroll an album, playlist or list</string>
+    <string name="settings_list_actions_scroll">Scroll with the page</string>
+    <string name="settings_list_actions_top">Pin at the top</string>
+    <string name="settings_list_actions_bottom">Dock at the bottom</string>
+    <string name="settings_list_actions_side">Dock at the side</string>
+    <string name="settings_list_actions_corner">Corner button</string>
 
     <!-- Player gestures -->
     <string name="settings_swipe_mini_song">Swipe gesture</string>

@@ -37,6 +37,9 @@ import androidx.compose.ui.Alignment
 import com.example.samsonic.ui.common.rememberScreenLoad
 import com.example.samsonic.ui.components.BackButtonClearance
 import com.example.samsonic.ui.components.GlassBackButton
+import com.example.samsonic.ui.components.FloatingListActions
+import com.example.samsonic.ui.components.floatingActionsSlot
+import com.example.samsonic.ui.components.floatingActionsEnd
 import com.example.samsonic.ui.components.MediaArt
 import com.example.samsonic.ui.components.PlayShuffleButtons
 import com.example.samsonic.ui.components.backButtonHazeSource
@@ -114,32 +117,39 @@ fun ArtistDetailScreen(
             loading = if (preview != null) ({}) else null,
         ) { detail ->
             val (artist, albums, topSongs, songs, appearsOn) = detail
-            LazyColumn(
-                modifier = Modifier.fillMaxSize().scrollTopFade(listState).backButtonHazeSource(backHaze),
-                state = listState,
-                contentPadding = PaddingValues(top = BackButtonClearance, bottom = contentPaddingBottom),
-            ) {
-                item(key = "header") {
-                    DetailHeader(
-                        title = artist.name,
-                        subtitle = pluralStringResource(R.plurals.library_album_count, artist.albumCount, artist.albumCount),
-                        art = { ArtistPicture(artist) },
-                    ) {
-                        // Plays everything, not just the songs listed here.
-                        PlayShuffleButtons(
-                            key = artist.id,
-                            loadSongs = { repository.getArtistSongs(artist, albums) },
-                            playlistTitle = artist.name,
+            Box(Modifier.fillMaxSize()) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize().scrollTopFade(listState).backButtonHazeSource(backHaze),
+                    state = listState,
+                    contentPadding = PaddingValues(top = BackButtonClearance, bottom = contentPaddingBottom),
+                ) {
+                    item(key = "header") {
+                        DetailHeader(
+                            title = artist.name,
+                            subtitle = pluralStringResource(R.plurals.library_album_count, artist.albumCount, artist.albumCount),
+                            art = { ArtistPicture(artist) },
+                            actions = {},
                         )
                     }
+                    // Play and shuffle float over the list ([FloatingListActions]); this keeps their place.
+                    floatingActionsSlot()
+                    songSection("popular", R.string.library_popular, topSongs, player, onTitleClick = null)
+                    // Two rows only once there are enough albums to fill them; fewer sit in one.
+                    val albumRows = if (albums.size < TWO_ROW_MIN_ALBUMS) 1 else 2
+                    albumShelf("albums", R.string.library_albums, albums, onAllAlbumsClick, onAlbumClick, rows = albumRows)
+                    songSection("songs", R.string.library_songs, songs, player, onTitleClick = onAllSongsClick)
+                    albumShelf("appearsOn", R.string.library_appears_on, appearsOn, onAppearsOnClick, onAlbumClick)
+                    floatingActionsEnd()
+                    item(key = "end") { Spacer(Modifier.height(24.dp)) }
                 }
-                songSection("popular", R.string.library_popular, topSongs, player, onTitleClick = null)
-                // Two rows only once there are enough albums to fill them; fewer sit in one.
-                val albumRows = if (albums.size < TWO_ROW_MIN_ALBUMS) 1 else 2
-                albumShelf("albums", R.string.library_albums, albums, onAllAlbumsClick, onAlbumClick, rows = albumRows)
-                songSection("songs", R.string.library_songs, songs, player, onTitleClick = onAllSongsClick)
-                albumShelf("appearsOn", R.string.library_appears_on, appearsOn, onAppearsOnClick, onAlbumClick)
-                item(key = "end") { Spacer(Modifier.height(24.dp)) }
+                FloatingListActions(listState, haze = backHaze) {
+                    // Plays everything, not just the songs listed here.
+                    PlayShuffleButtons(
+                        key = artist.id,
+                        loadSongs = { repository.getArtistSongs(artist, albums) },
+                        playlistTitle = artist.name,
+                    )
+                }
             }
         }
         // Floats over the list: rows scroll up under it and fade out at the status bar.

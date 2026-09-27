@@ -72,6 +72,9 @@ data class Playlist(
     val songCount: Int,
     val durationSeconds: Int,
     val coverArt: String?,
+    // When it was last changed, as an ISO 8601 timestamp (sorts as text in time order);
+    // null where that isn't known, such as a phone playlist from before the app kept it.
+    val changed: String? = null,
 )
 
 /** The id of the Favourites playlist: the liked songs, kept by the app rather than the server. */
