@@ -1,6 +1,6 @@
 # 🎵 Samsonic
 
-[![Version](https://img.shields.io/badge/Version-v2.0.0-blue.svg)](https://github.com/TsengBoWei/SamSonic/releases)
+[![Version](https://img.shields.io/badge/Version-v2.0.5-blue.svg)](https://github.com/tsengboweitbw-cloud/SamSonic_by_Tseng/releases)
 [![Android](https://img.shields.io/badge/Android-31%2B-green.svg)](https://developer.android.com)
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.0-blue.svg)](https://kotlinlang.org)
 [![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-M3-purple.svg)](https://developer.android.com/jetpack/compose)
@@ -46,9 +46,9 @@
 
 ## Download & Installation | 下載與安裝
 
-Please visit [GitHub Releases](https://github.com/TsengBoWei/SamSonic/releases) to download the latest `Samsonic.apk`.
+Please visit [GitHub Releases](https://github.com/tsengboweitbw-cloud/SamSonic_by_Tseng/releases) to download the latest `Samsonic-by-Tseng-V<version>.apk`.
 
-請至 [GitHub Releases](https://github.com/TsengBoWei/SamSonic/releases) 下載最新發佈的 `Samsonic.apk` 進行安裝。
+請至 [GitHub Releases](https://github.com/tsengboweitbw-cloud/SamSonic_by_Tseng/releases) 下載最新發佈的 `Samsonic-by-Tseng-V<version>.apk` 進行安裝。
 
 ---
 
@@ -63,11 +63,11 @@ Please visit [GitHub Releases](https://github.com/TsengBoWei/SamSonic/releases) 
 ### Build Steps | 建置步驟
 1. **Clone repository | 複製專案**:
    ```bash
-   git clone https://github.com/TsengBoWei/SamSonic.git
-   cd SamSonic
+   git clone https://github.com/tsengboweitbw-cloud/SamSonic_by_Tseng.git
+   cd SamSonic_by_Tseng
    ```
 2. **Open in Android Studio | 開啟專案**:
-   Select `Open` in Android Studio and select the `SamSonic` root directory.
+   Select `Open` in Android Studio and select the `SamSonic_by_Tseng` root directory.
 3. **Build & Run | 編譯並執行**:
    Wait for Gradle Sync to complete, select your connected Android device or emulator, and click **▶️ Run**.
 
