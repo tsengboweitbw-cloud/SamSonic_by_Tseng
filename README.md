@@ -42,6 +42,9 @@
   Built with MVVM architecture, Coroutines / Flow reactive data streams, and Haze frosted glass rendering.  
   採用 MVVM 架構、Coroutines / Flow 響應式資料流與 Haze 毛玻璃渲染。
 
+- **Supports All types of Devices (In development) | 支援多種裝置 (開發中)**  
+  Supports different kinds of devices, phones, tablets, foldables, and even DeX.  
+  支援多種裝置，包括手機、平板、折疊手機與 Samsung DeX。
 ---
 
 ## Download & Installation | 下載與安裝
