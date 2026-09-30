@@ -203,9 +203,9 @@ class LibraryLayoutManager(context: Context) {
         return if ((form == GridForm.PHONE || form == GridForm.PHONE_LANDSCAPE) && screenWidth > 0f && screenHeight > 0f) {
             val x = screenHeight / screenWidth
             when {
-                x > 2f -> 2
-                x > 1.4f -> 3
-                x >= 0.707f -> 4
+                x >= 2.3f -> 2
+                x >= 1.3f -> 3
+                x >= 0.7f -> 4
                 else -> 6
             }
         } else {
