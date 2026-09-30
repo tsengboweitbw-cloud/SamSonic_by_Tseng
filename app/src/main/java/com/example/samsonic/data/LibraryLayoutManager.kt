@@ -199,7 +199,7 @@ class LibraryLayoutManager(context: Context) {
         _showFavourites.value = enabled
     }
 
-    private fun computeDefaultColumns(section: LibrarySection, form: GridForm): Int {
+private fun computeDefaultColumns(section: LibrarySection, form: GridForm): Int {
         return if ((form == GridForm.PHONE || form == GridForm.PHONE_LANDSCAPE) && screenWidth > 0f && screenHeight > 0f) {
             val x = screenHeight / screenWidth
             when {
@@ -226,13 +226,13 @@ class LibraryLayoutManager(context: Context) {
             .apply()
         // Sections still following this one (never changed themselves) follow along.
         val followers = LibrarySection.entries.filter { it.inheritsFrom == section && !prefs.contains(columnsKey(it)) && !prefs.contains(modeKey(it)) }
-        _layouts.value = _layouts.value + (listOf(section) + followers).associateWith { 
-            val followerDefault = computeDefaultColumns(it, form)
-            layout.copy(
-                columns = if (isDefault) followerDefault else columns,
-                isDefault = isDefault,
-            )
-        }
+        _layouts.value += (listOf(section) + followers).associateWith {
+                    val followerDefault = computeDefaultColumns(it, form)
+                    layout.copy(
+                        columns = if (isDefault) followerDefault else columns,
+                        isDefault = isDefault,
+                    )
+                }
     }
 
     private fun load(section: LibrarySection): LibraryLayout {
