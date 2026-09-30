@@ -51,10 +51,10 @@ fun GlassBackButton(onClick: () -> Unit, hazeState: HazeState?, modifier: Modifi
 fun Modifier.backButtonHazeSource(state: HazeState): Modifier = graphicsLayer().hazeSource(state)
 
 /** The size of the round glass buttons at a page's top, back and collapse alike, so they match. */
-val ChromeButtonSize = 42.dp
+val ChromeButtonSize = 48.dp
 
 /** Their arrows' size, in proportion. */
-val ChromeButtonIconSize = 30.dp
+val ChromeButtonIconSize = 34.dp
 
 /** Room a list leaves at its top so its first row starts below a floating [GlassBackButton]. */
 val BackButtonClearance = 8.dp + ChromeButtonSize
