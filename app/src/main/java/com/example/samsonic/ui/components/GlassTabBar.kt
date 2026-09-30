@@ -37,8 +37,12 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.example.samsonic.ui.common.HoverGlowAlpha
+import com.example.samsonic.ui.common.hovered
 import com.example.samsonic.ui.theme.AccentSheen
 import com.example.samsonic.ui.theme.LocalChromeBlurScale
 import com.example.samsonic.ui.theme.GlassAlpha
@@ -117,7 +121,14 @@ fun GlassTabBar(
         }
     }
     val indicatorColors = tabIndicatorColors()
-    val extraWeight = barSize.selectedExtraWeight
+    // How much wider the tab under the indicator is than the rest. With icons, at least
+    // enough that the longest label shows whole there (the bar's own share left a long
+    // label, or any label on a narrow bar, cut off at a fade): worked out as the bar is
+    // laid out, from its width, and read by the indicator and the swipe from there.
+    val fitWeight = remember { FloatArray(1) { barSize.selectedExtraWeight } }
+    val widestTabPx = rememberWidestIconTab(labels.takeIf { icons != null && barSize.selectedExtraWeight > 0f })
+    val minTabPx = with(LocalDensity.current) { IconOnlyTabWidth.toPx() }
+    val extraWeight = { fitWeight[0] }
 
     Layout(
         modifier = modifier
@@ -126,12 +137,12 @@ fun GlassTabBar(
             .then(if (glass) Modifier.glassTabPill(hazeState) else Modifier)
             .drawBehind {
                 val at = p()
-                drawTabIndicator(tabWeights(count, at, extraWeight), at, barSize.padding.toPx(), indicatorColors)
+                drawTabIndicator(tabWeights(count, at, extraWeight()), at, barSize.padding.toPx(), indicatorColors)
             }
             .tabBarSwipe(
                 count = count,
                 inset = barSize.padding,
-                extraWeight = barSize.selectedExtraWeight,
+                extraWeight = extraWeight,
                 enabled = enabled,
                 onSwipe = { at ->
                     if (onSwipe != null) {
@@ -196,7 +207,7 @@ fun GlassTabBar(
     ) { measurables, constraints ->
         // Each tab its share of the width by its weight (the one under the indicator
         // wider), worked out here rather than in composition, so a slide only lays out.
-        val weights = tabWeights(count, p(), extraWeight)
+        val weights = tabWeights(count, p(), fitExtraWeight(constraints.maxWidth, count, widestTabPx, minTabPx, barSize.selectedExtraWeight).also { fitWeight[0] = it })
         val total = weights.sum().takeIf { it > 0f } ?: 1f
         val width = constraints.maxWidth
         val height = constraints.maxHeight
@@ -243,7 +254,7 @@ private fun GlassTab(
         label = "tabPressScale",
     )
     val pressGlow by animateFloatAsState(
-        targetValue = if (pressed) 0.08f else 0f,
+        targetValue = if (pressed) 0.08f else if (hovered(interactionSource)) HoverGlowAlpha else 0f,
         animationSpec = tween(if (pressed) 90 else 260),
         label = "tabPressGlow",
     )
@@ -284,4 +295,38 @@ private fun GlassTab(
             overflow = TextOverflow.Ellipsis,
         )
     }
+}
+
+// A tab showing only its icon: the icon and IconLabelTab's padding either side.
+private val IconOnlyTabWidth = 48.dp
+
+/**
+ * The width, in px, of the widest of [labels] as the tab under the indicator draws it
+ * ([IconLabelTab]: its padding, icon, gap and label, and a little over for rounding).
+ * 0 for none (a bar without icons, or whose tabs don't widen).
+ */
+@Composable
+private fun rememberWidestIconTab(labels: List<String>?): Float {
+    val measurer = rememberTextMeasurer()
+    val style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold)
+    val density = LocalDensity.current
+    return remember(labels, style, density) {
+        if (labels.isNullOrEmpty()) return@remember 0f
+        val text = labels.maxOf { measurer.measure(it, style, maxLines = 1, softWrap = false).size.width }
+        text + with(density) { (12.dp * 2 + 24.dp + 8.dp + 4.dp).toPx() }
+    }
+}
+
+/**
+ * How much wider the tab under the indicator is, across a bar [widthPx] wide of [count]
+ * tabs: at least [base], and enough for a tab [widestPx] wide there, so long as the
+ * others keep [minTabPx] each for their icons.
+ */
+internal fun fitExtraWeight(widthPx: Int, count: Int, widestPx: Float, minTabPx: Float, base: Float): Float {
+    val width = widthPx.toFloat()
+    if (widestPx <= 0f || count < 2 || widestPx >= width) return base
+    // The tab under the indicator is width * (1 + x) / (count + x); solved for it to be widestPx.
+    val needed = (widestPx * count - width) / (width - widestPx)
+    val most = width / minTabPx - count
+    return maxOf(base, minOf(needed, most))
 }

@@ -1,5 +1,7 @@
 package com.example.samsonic.ui.home
 
+import com.example.samsonic.ui.common.shiftWheelScrollsSideways
+import com.example.samsonic.ui.common.onSecondaryClick
 import com.example.samsonic.ui.components.LocalRowPrefs
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.snapping.SnapPosition
@@ -59,7 +61,7 @@ fun SongRowsCarousel(songs: List<Song>, modifier: Modifier = Modifier) {
     remember(songs) { rowState.requestScrollToItem(0) }
 
     LazyRow(
-        modifier = modifier.horizontalScrollFade(rowState),
+        modifier = modifier.horizontalScrollFade(rowState).shiftWheelScrollsSideways(rowState),
         state = rowState,
         contentPadding = PaddingValues(horizontal = 8.dp),
         flingBehavior = rememberSnapFlingBehavior(rowState, SnapPosition.Start),
@@ -92,7 +94,8 @@ private fun ShelfSongRow(song: Song, isCurrent: Boolean, onClick: () -> Unit) {
             .padding(OneUiRow.Inset)
             .clip(OneUiRow.Shape)
             .then(addToPlaylist.origin)
-            .combinedClickable(
+            .onSecondaryClick(addToPlaylist.onLongClick)
+                .combinedClickable(
                 onClick = onClick,
                 onLongClick = addToPlaylist.onLongClick,
                 onLongClickLabel = addToPlaylist.label,

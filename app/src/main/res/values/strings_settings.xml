@@ -86,8 +86,13 @@
     <string name="settings_accent_apply">Apply</string>
     <string name="settings_stack_chrome">Stack nav bar and mini player</string>
     <string name="settings_stack_chrome_hint">Pile them in one place, like the capsules in Now Playing: swipe up to bring the other forward. Swiping this low on the screen may set off Samsung\'s One-handed mode</string>
+    <string name="settings_stack_chrome_phone_only_hint">Only on phones: on a wider screen the nav bar is a rail at the side, with the mini player on its own at the foot</string>
+    <string name="settings_rail_stays_put">Keep nav rail still</string>
+    <string name="settings_rail_stays_put_hint">The rail stays where it is as music starts and stops, with room below it for the mini player. Off, it moves up to stay centred above the mini player while something plays</string>
+    <string name="settings_rail_stays_put_wide_only_hint">Only on wider screens, where the nav bar is a rail at the side</string>
     <string name="settings_stack_player_actions">Stack Now Playing buttons</string>
     <string name="settings_stack_player_actions_hint">Pile lyrics, the queue, song info, Auto DJ and Add to playlist as capsules at the bottom of Now Playing: swipe up to bring the next forward. Turned off, they sit in a row as round buttons</string>
+    <string name="settings_stack_player_actions_dex_hint">Not in DeX: with a mouse, Now Playing shows a row of buttons</string>
     <string name="settings_album_art_roundness">Album art roundness</string>
     <string name="settings_album_art_roundness_hint">How round the corners of covers are</string>
     <!-- The row opening every glass blur and opacity setting -->

@@ -103,6 +103,17 @@ class ThemeManager(context: Context) {
         _stackChrome.value = enabled
     }
 
+    // On wider screens, whether the nav rail stays where it is as music starts and stops
+    // (centred above the mini player's place either way), or moves to stay centred in the
+    // room left above the mini player while there's one.
+    private val _railStaysPut = MutableStateFlow(prefs.getBoolean(KEY_RAIL_STAYS_PUT, true))
+    val railStaysPut: StateFlow<Boolean> = _railStaysPut.asStateFlow()
+
+    fun setRailStaysPut(enabled: Boolean) {
+        prefs.edit().putBoolean(KEY_RAIL_STAYS_PUT, enabled).apply()
+        _railStaysPut.value = enabled
+    }
+
     // Now Playing's lyrics, queue, song info and the rest piled as capsules at the bottom,
     // a swipe up bringing the next forward, instead of a row of round buttons.
     private val _stackPlayerActions = MutableStateFlow(prefs.getBoolean(KEY_STACK_PLAYER_ACTIONS, true))
@@ -200,6 +211,7 @@ class ThemeManager(context: Context) {
         private const val KEY_AUDIO_FORMAT_DISPLAY = "audio_format_display"
         private const val KEY_SWIPE_MINI_SONG = "swipe_mini_for_song"
         private const val KEY_STACK_CHROME = "stack_chrome"
+        private const val KEY_RAIL_STAYS_PUT = "rail_stays_put"
         private const val KEY_STACK_PLAYER_ACTIONS = "stack_player_actions"
         val DefaultAccent = Color(0xFF8875FF)
         val DefaultAlbumArtCornerRadius = 2.dp

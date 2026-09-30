@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -35,6 +36,13 @@ import dev.chrisbanes.haze.HazeState
 
 // Every card is this share of the height, tall enough for a list to show a good stretch of itself.
 private const val CardHeight = 0.88f
+
+/**
+ * Where the panel cards' room starts across Now Playing: at its side, or in two columns
+ * at the controls' column, so a card opens beside the cover rather than over it. Set by
+ * PlayerPages.
+ */
+internal val LocalPanelStart = compositionLocalOf { 0.dp }
 
 /**
  * How much a platform dialog dims the screen behind it: Compose's Dialog sets
@@ -86,6 +94,8 @@ internal fun PanelCard(
                 enabled = panel.isOpen,
                 onClick = { panel.close() },
             )
+            // In two columns, over the controls' side only, leaving the cover in view.
+            .padding(start = LocalPanelStart.current)
             .systemBarsPadding()
             .padding(horizontal = 28.dp, vertical = 24.dp),
         contentAlignment = Alignment.Center,

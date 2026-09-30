@@ -6,7 +6,8 @@ import com.example.samsonic.model.Album
 import com.example.samsonic.model.Song
 
 /** How many albums or songs a shelf's full list page loads. */
-const val SHELF_FULL_LIST_SIZE = 100
+const val SHELF_FULL_LIST_SIZE = 99
+const val SHELF_ALBUM_LIST_SIZE = 60
 
 /** Whether a shelf holds albums or songs. */
 enum class ShelfKind { Albums, Songs }
@@ -30,12 +31,12 @@ enum class HomeShelf(
     val history: Boolean = false,
 ) {
     PickedForYou("random", ShelfKind.Songs, R.string.home_shelf_picked_for_you, SHELF_FULL_LIST_SIZE, sharesHomeList = true),
-    RecentlyAddedAlbums("newest", ShelfKind.Albums, R.string.home_shelf_recently_added_albums, 20),
-    RecentlyAddedSongs("newest", ShelfKind.Songs, R.string.home_shelf_recently_added_songs, 20),
-    RecentlyPlayedAlbums("recent", ShelfKind.Albums, R.string.home_shelf_recently_played_albums, 12, history = true),
-    RecentlyPlayedSongs("recent", ShelfKind.Songs, R.string.home_shelf_recently_played_songs, 20, history = true),
-    MostPlayedAlbums("frequent", ShelfKind.Albums, R.string.home_shelf_most_played_albums, 12, history = true),
-    MostPlayedSongs("frequent", ShelfKind.Songs, R.string.home_shelf_most_played_songs, 20, history = true);
+    RecentlyAddedAlbums("newest", ShelfKind.Albums, R.string.home_shelf_recently_added_albums, SHELF_ALBUM_LIST_SIZE),
+    RecentlyAddedSongs("newest", ShelfKind.Songs, R.string.home_shelf_recently_added_songs, SHELF_FULL_LIST_SIZE),
+    RecentlyPlayedAlbums("recent", ShelfKind.Albums, R.string.home_shelf_recently_played_albums, SHELF_ALBUM_LIST_SIZE, history = true),
+    RecentlyPlayedSongs("recent", ShelfKind.Songs, R.string.home_shelf_recently_played_songs, SHELF_FULL_LIST_SIZE, history = true),
+    MostPlayedAlbums("frequent", ShelfKind.Albums, R.string.home_shelf_most_played_albums, SHELF_ALBUM_LIST_SIZE, history = true),
+    MostPlayedSongs("frequent", ShelfKind.Songs, R.string.home_shelf_most_played_songs, SHELF_FULL_LIST_SIZE, history = true);
 
     /** The shelf page's route argument. */
     val key: String get() = name

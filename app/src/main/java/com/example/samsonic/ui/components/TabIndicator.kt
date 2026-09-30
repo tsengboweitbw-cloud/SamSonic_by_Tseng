@@ -5,6 +5,8 @@ import androidx.compose.animation.core.AnimationVector1D
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
@@ -105,16 +107,30 @@ private inline fun <T> indicatorSpan(
  * inset by [inset] px from the bar's edges, growing and shrinking with the
  * tab it passes over. Filled with [colors] as a gradient across the whole bar, so
  * the pill shifts shade as it glides from one end of the bar to the other.
+ * [vertical] for a bar standing on end (the nav rail): the tabs run top to bottom.
  */
-fun DrawScope.drawTabIndicator(weights: List<Float>, position: Float, inset: Float, colors: List<Color>, alpha: Float = 1f) {
+fun DrawScope.drawTabIndicator(
+    weights: List<Float>,
+    position: Float,
+    inset: Float,
+    colors: List<Color>,
+    alpha: Float = 1f,
+    vertical: Boolean = false,
+) {
     if (weights.isEmpty() || alpha <= 0f) return
-    val height = size.height - inset * 2
-    indicatorSpan(weights, position, inset, size.width) { left, width ->
+    val length = if (vertical) size.height else size.width
+    val across = (if (vertical) size.width else size.height) - inset * 2
+    indicatorSpan(weights, position, inset, length) { start, span ->
         drawRoundRect(
-            brush = Brush.horizontalGradient(colors, startX = inset, endX = size.width - inset),
-            topLeft = Offset(left, inset),
-            size = Size(width, height),
-            cornerRadius = CornerRadius(height / 2),
+            brush = if (vertical) {
+                Brush.verticalGradient(colors, startY = inset, endY = length - inset)
+            } else {
+                Brush.horizontalGradient(colors, startX = inset, endX = length - inset)
+            },
+            topLeft = if (vertical) Offset(inset, start) else Offset(start, inset),
+            size = if (vertical) Size(across, span) else Size(span, across),
+            // Along a rail, a tab can be shorter than the rail is wide.
+            cornerRadius = CornerRadius((if (vertical) minOf(across, span) else across) / 2),
             alpha = alpha,
         )
     }
@@ -142,22 +158,24 @@ private fun tabPositionAt(x: Float, barWidth: Float, inset: Float, count: Int, e
  * and on letting go [onSwipeEnd] gets the tab to settle on: the nearest, or after a
  * flick, the next one the way it was going. Goes before the bar's own padding, so it
  * measures the width the indicator is drawn across; [inset] and [extraWeight] are
- * the ones it is drawn with. Taps still reach the tabs: a swipe only starts past
- * the touch slop.
+ * the ones it is drawn with ([extraWeight] read as the finger moves, as the bar may
+ * work it out only once laid out). Taps still reach the tabs: a swipe only starts past
+ * the touch slop. [vertical] for a bar standing on end, swiped up and down.
  */
 @Composable
 fun Modifier.tabBarSwipe(
     count: Int,
     inset: Dp,
-    extraWeight: Float,
+    extraWeight: () -> Float,
     enabled: Boolean,
     onSwipe: (Float) -> Unit,
     onSwipeEnd: (Int) -> Unit,
+    vertical: Boolean = false,
 ): Modifier {
     val swipe by rememberUpdatedState(onSwipe)
     val swipeEnd by rememberUpdatedState(onSwipeEnd)
     if (!enabled || count < 2) return this
-    return pointerInput(count, inset, extraWeight) {
+    return pointerInput(count, inset, vertical) {
         val flingVelocity = SwipeFlingVelocity.toPx()
         val tracker = VelocityTracker()
         var last = 0f
@@ -169,15 +187,26 @@ fun Modifier.tabBarSwipe(
             }
             swipeEnd(target.roundToInt().coerceIn(0, count - 1))
         }
-        detectHorizontalDragGestures(
-            onDragStart = { tracker.resetTracking() },
-            onDragEnd = { settle(tracker.calculateVelocity().x) },
-            onDragCancel = { settle(0f) },
-        ) { change, _ ->
+        val length = if (vertical) size.height.toFloat() else size.width.toFloat()
+        val onDrag = { change: PointerInputChange ->
             change.consume()
             tracker.addPosition(change.uptimeMillis, change.position)
-            last = tabPositionAt(change.position.x, size.width.toFloat(), inset.toPx(), count, extraWeight)
+            val along = if (vertical) change.position.y else change.position.x
+            last = tabPositionAt(along, length, inset.toPx(), count, extraWeight())
             swipe(last)
+        }
+        if (vertical) {
+            detectVerticalDragGestures(
+                onDragStart = { tracker.resetTracking() },
+                onDragEnd = { settle(tracker.calculateVelocity().y) },
+                onDragCancel = { settle(0f) },
+            ) { change, _ -> onDrag(change) }
+        } else {
+            detectHorizontalDragGestures(
+                onDragStart = { tracker.resetTracking() },
+                onDragEnd = { settle(tracker.calculateVelocity().x) },
+                onDragCancel = { settle(0f) },
+            ) { change, _ -> onDrag(change) }
         }
     }
 }

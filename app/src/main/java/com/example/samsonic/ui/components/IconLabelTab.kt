@@ -44,6 +44,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.example.samsonic.ui.common.HoverGlowAlpha
+import com.example.samsonic.ui.common.hovered
 import com.example.samsonic.ui.theme.OneUiRadius
 import kotlin.math.roundToInt
 
@@ -74,7 +76,7 @@ fun IconLabelTab(
         label = "tabPressScale",
     )
     val pressGlow by animateFloatAsState(
-        targetValue = if (pressed) 0.08f else 0f,
+        targetValue = if (pressed) 0.08f else if (hovered(interactionSource)) HoverGlowAlpha else 0f,
         animationSpec = tween(if (pressed) 90 else 260),
         label = "tabPressGlow",
     )

@@ -4,6 +4,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import com.example.samsonic.ui.components.GlassNavRail
+import com.example.samsonic.ui.components.NavRail
+import androidx.compose.ui.unit.Dp
 import com.example.samsonic.ui.components.GlassTabBar
 import com.example.samsonic.ui.components.GlassTabBarSize
 import dev.chrisbanes.haze.HazeState
@@ -37,5 +40,36 @@ internal fun FloatingNavBar(
         icons = icons,
         onSwipe = tabs::swipeTo,
         onSwipeEnd = tabs::settle,
+    )
+}
+
+/**
+ * The nav bar as a rail at the side of wider screens ([GlassNavRail]): the same tabs,
+ * glass and indicator standing on end. A tap or a swipe along it opens a tab, which
+ * fades in over the last (a sideways slide under a finger moving up and down would
+ * read wrong).
+ */
+@Composable
+internal fun FloatingNavRail(
+    destinations: List<BottomDestination>,
+    tabs: MainTabs,
+    hazeState: HazeState?,
+    modifier: Modifier = Modifier,
+    width: Dp = NavRail.Width,
+    tabHeight: Dp = NavRail.TabHeight,
+    iconSize: Dp = NavRail.IconSize,
+) {
+    val labels = destinations.map { stringResource(it.label) }
+    val icons = remember(destinations) { destinations.map { it.icon } }
+    GlassNavRail(
+        labels = remember(labels) { labels },
+        icons = icons,
+        selectedIndex = tabs.current,
+        onSelect = tabs::select,
+        hazeState = hazeState,
+        modifier = modifier,
+        width = width,
+        tabHeight = tabHeight,
+        iconSize = iconSize,
     )
 }

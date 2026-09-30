@@ -21,15 +21,21 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.ui.unit.sp
 import com.example.samsonic.ui.components.marqueeWhenLong
 
 // Every tile is this exact size, whether it holds an icon or a format name, so the
 // rows' text all starts at the same x and the tiles stack as one neat column.
-private val TileWidth = 32.dp
-private val TileHeight = 18.dp
+// In sp, so they grow with the text in them and beside them (a larger font size, a
+// tablet, DeX) rather than cutting it off.
+private val TileWidth = 32.sp
+private val TileHeight = 18.sp
 private val TileShape = RoundedCornerShape(5.dp)
-private val TileIconSize = 13.dp
+private val TileIconSize = 13.sp
 
 /** What a Now Playing info row's tile shows: an icon, or a short text such as "FLAC". */
 internal sealed interface InfoTile {
@@ -44,17 +50,17 @@ internal sealed interface InfoTile {
  */
 @Composable
 internal fun InfoTileRow(tile: InfoTile, description: String, text: String, active: Boolean = true) {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.height(TileHeight)) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.heightIn(min = TileHeight.toDp())) {
         val content = if (active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
         Box(
             modifier = Modifier
-                .size(TileWidth, TileHeight)
+                .size(TileWidth.toDp(), TileHeight.toDp())
                 .background(content.copy(alpha = if (active) 0.16f else 0.12f), TileShape)
                 .semantics { contentDescription = description },
             contentAlignment = Alignment.Center,
         ) {
             when (tile) {
-                is InfoTile.Glyph -> Icon(tile.icon, contentDescription = null, tint = content, modifier = Modifier.size(TileIconSize))
+                is InfoTile.Glyph -> Icon(tile.icon, contentDescription = null, tint = content, modifier = Modifier.size(TileIconSize.toDp()))
                 is InfoTile.Label -> TileLabel(tile.text, content)
             }
         }
@@ -72,7 +78,7 @@ internal fun InfoTileRow(tile: InfoTile, description: String, text: String, acti
 /** A blank line the height of an [InfoTileRow], holding a row's place until it has something to show. */
 @Composable
 internal fun InfoTileRowPlaceholder() {
-    Spacer(Modifier.height(TileHeight))
+    Spacer(Modifier.height(TileHeight.toDp()))
 }
 
 /** A format name sized to fit the tile: smaller the longer it is ("DSF", "FLAC", "OGG/OPUS"...). */
@@ -96,3 +102,7 @@ private fun TileLabel(text: String, color: Color) {
         overflow = TextOverflow.Clip,
     )
 }
+
+/** [this] (in sp) as dp at the current font size. */
+@Composable
+private fun TextUnit.toDp(): Dp = with(LocalDensity.current) { this@toDp.toDp() }

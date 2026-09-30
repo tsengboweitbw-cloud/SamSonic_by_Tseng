@@ -22,6 +22,15 @@ object CoverArtSizes {
     val All = listOf(Small, Large)
 
     fun bucket(px: Int): Int = All.firstOrNull { px <= it } ?: Large
+
+    // The sizes art is decoded at, each about a quarter larger than the last: art laid out
+    // at any size in between is decoded at the next one up. So a grid easing between widths
+    // (a page opening beside it in two panes) finds the same few sizes already in memory,
+    // rather than decoding the art again, placeholder showing, at every width it passes.
+    private val DecodeSteps = listOf(64, 80, 100, 128, 160, 200, 256, 320, 400, 512, 640, 800, 1000, 1280)
+
+    /** The size to decode art laid out [px] across at. */
+    fun decodeStep(px: Int): Int = DecodeSteps.firstOrNull { px <= it } ?: px
 }
 
 /**

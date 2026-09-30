@@ -28,10 +28,31 @@ enum class LibrarySection(val defaultColumns: Int, val inheritsFrom: LibrarySect
     }
 }
 
-data class LibraryLayout(val mode: LibraryViewMode, val columns: Int) {
+data class LibraryLayout(val columns: Int, val isDefault: Boolean = false) {
+    val mode: LibraryViewMode get() = if (columns == 1) LibraryViewMode.LIST else LibraryViewMode.GRID
+
     companion object {
-        const val MIN_COLUMNS = 2
-        const val MAX_COLUMNS = 4
+        const val MIN_COLUMNS = 1
+    }
+}
+
+/**
+ * The kind of screen a grid is on, each keeping its own column count (the list or
+ * grid choice is shared): a phone (or a foldable's cover screen), a foldable open, and
+ * a tablet either way round. Until changed there, each starts at its [defaultColumns]
+ * (a phone at the section's own); a grid there has up to [maxColumns].
+ */
+enum class GridForm(val defaultColumns: Int?, val maxColumns: Int, internal val keySuffix: String) {
+    PHONE(defaultColumns = null, maxColumns = 6, keySuffix = ""),
+    PHONE_LANDSCAPE(defaultColumns = null, maxColumns = 6, keySuffix = "_phone_landscape"),
+    FOLDABLE(defaultColumns = 4, maxColumns = 6, keySuffix = "_foldable"),
+    FOLDABLE_LANDSCAPE(defaultColumns = 4, maxColumns = 6, keySuffix = "_foldable_landscape"),
+    TABLET_PORTRAIT(defaultColumns = 4, maxColumns = 6, keySuffix = "_tablet_portrait"),
+    TABLET_LANDSCAPE(defaultColumns = 6, maxColumns = 6, keySuffix = "_tablet_landscape"),
+    ;
+
+    companion object {
+        val FOLDABLE_PORTRAIT = FOLDABLE
     }
 }
 
@@ -130,8 +151,24 @@ class LibraryLayoutManager(context: Context) {
         return options.find { it.name == prefs.getString(sortKey(section), null) } ?: options.first()
     }
 
+    private var screenWidth: Float = 0f
+    private var screenHeight: Float = 0f
+
+    // The kind of screen the app is on now, whose column counts [layouts] has.
+    private val _gridForm = MutableStateFlow(GridForm.PHONE)
+    val gridForm: StateFlow<GridForm> = _gridForm.asStateFlow()
+
     private val _layouts = MutableStateFlow(LibrarySection.entries.associateWith(::load))
     val layouts: StateFlow<Map<LibrarySection, LibraryLayout>> = _layouts.asStateFlow()
+
+    /** Switches [layouts] to [form]'s column counts, as the window turns, folds or resizes. */
+    fun setGridForm(form: GridForm, width: Float = screenWidth, height: Float = screenHeight) {
+        if (form == _gridForm.value && width == screenWidth && height == screenHeight) return
+        _gridForm.value = form
+        screenWidth = width
+        screenHeight = height
+        _layouts.value = LibrarySection.entries.associateWith(::load)
+    }
 
     // Whether the Artists tab lists album artists (what albums are filed under) or every artist.
     private val _albumArtistsOnly = MutableStateFlow(prefs.getBoolean(KEY_ALBUM_ARTISTS_ONLY, true))
@@ -144,7 +181,7 @@ class LibraryLayoutManager(context: Context) {
 
     // Where a page's Play / Shuffle / Queue buttons go once its header scrolls away.
     private val _listActionsPin = MutableStateFlow(
-        ListActionsPin.entries.find { it.name == prefs.getString(KEY_LIST_ACTIONS_PIN, null) } ?: ListActionsPin.TOP,
+        ListActionsPin.entries.find { it.name == prefs.getString(KEY_LIST_ACTIONS_PIN, null) } ?: ListActionsPin.OFF,
     )
     val listActionsPin: StateFlow<ListActionsPin> = _listActionsPin.asStateFlow()
 
@@ -162,30 +199,65 @@ class LibraryLayoutManager(context: Context) {
         _showFavourites.value = enabled
     }
 
+    private fun computeDefaultColumns(section: LibrarySection, form: GridForm): Int {
+        return if ((form == GridForm.PHONE || form == GridForm.PHONE_LANDSCAPE) && screenWidth > 0f && screenHeight > 0f) {
+            val x = screenHeight / screenWidth
+            when {
+                x > 2f -> 2
+                x > 1.4f -> 3
+                x >= 0.707f -> 4
+                else -> 6
+            }
+        } else {
+            form.defaultColumns ?: section.defaultColumns
+        }
+    }
+
+    /** Sets [section]'s view, and its column count on this kind of screen ([gridForm]). */
     fun setLayout(section: LibrarySection, layout: LibraryLayout) {
-        val columns = layout.columns.coerceIn(LibraryLayout.MIN_COLUMNS, LibraryLayout.MAX_COLUMNS)
+        val form = _gridForm.value
+        val defaultCols = computeDefaultColumns(section, form)
+        val isDefault = layout.isDefault || layout.columns == 0
+        val columns = if (isDefault) defaultCols else layout.columns.coerceIn(LibraryLayout.MIN_COLUMNS, form.maxColumns)
+        val storedCols = if (isDefault) 0 else columns
         prefs.edit()
-            .putString(modeKey(section), layout.mode.name)
-            .putInt(columnsKey(section), columns)
+            .putString(modeKey(section), if (columns == 1) LibraryViewMode.LIST.name else LibraryViewMode.GRID.name)
+            .putInt(columnsKey(section), storedCols)
             .apply()
         // Sections still following this one (never changed themselves) follow along.
-        val followers = LibrarySection.entries.filter { it.inheritsFrom == section && !prefs.contains(modeKey(it)) }
-        _layouts.value = _layouts.value + (listOf(section) + followers).associateWith { layout.copy(columns = columns) }
+        val followers = LibrarySection.entries.filter { it.inheritsFrom == section && !prefs.contains(columnsKey(it)) && !prefs.contains(modeKey(it)) }
+        _layouts.value = _layouts.value + (listOf(section) + followers).associateWith { 
+            val followerDefault = computeDefaultColumns(it, form)
+            layout.copy(
+                columns = if (isDefault) followerDefault else columns,
+                isDefault = isDefault,
+            )
+        }
     }
 
     private fun load(section: LibrarySection): LibraryLayout {
-        val inherited = section.inheritsFrom?.takeUnless { prefs.contains(modeKey(section)) }
+        val inherited = section.inheritsFrom?.takeUnless { prefs.contains(columnsKey(section)) || prefs.contains(modeKey(section)) }
         if (inherited != null) return load(inherited)
+        val form = _gridForm.value
+        val defaultCols = computeDefaultColumns(section, form)
+        val savedCols = prefs.getInt(columnsKey(section), 0)
+        val savedMode = prefs.getString(modeKey(section), null)
+        val isDefault = savedCols == 0 && savedMode != LibraryViewMode.LIST.name
+        val columns = when {
+            savedCols > 0 -> savedCols.coerceIn(LibraryLayout.MIN_COLUMNS, form.maxColumns)
+            savedMode == LibraryViewMode.LIST.name -> 1
+            else -> defaultCols
+        }
         return LibraryLayout(
-            mode = LibraryViewMode.entries.find { it.name == prefs.getString(modeKey(section), null) }
-                ?: LibraryViewMode.GRID,
-            columns = prefs.getInt(columnsKey(section), section.defaultColumns)
-                .coerceIn(LibraryLayout.MIN_COLUMNS, LibraryLayout.MAX_COLUMNS),
+            columns = columns,
+            isDefault = isDefault,
         )
     }
 
     private fun modeKey(section: LibrarySection) = "${section.name.lowercase()}_view_mode"
-    private fun columnsKey(section: LibrarySection) = "${section.name.lowercase()}_columns"
+
+    // A phone's under the name it always had, so its count carries on; each other kind of screen its own.
+    private fun columnsKey(section: LibrarySection) = "${section.name.lowercase()}_columns${_gridForm.value.keySuffix}"
     private fun sortKey(section: LibrarySection) = "${section.name.lowercase()}_sort"
 
     private companion object {

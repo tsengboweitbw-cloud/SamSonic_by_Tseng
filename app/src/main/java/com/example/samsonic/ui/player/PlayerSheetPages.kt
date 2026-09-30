@@ -4,6 +4,8 @@ import androidx.activity.compose.PredictiveBackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.unit.dp
+import com.example.samsonic.ui.common.LocalWindowLayout
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -45,6 +47,10 @@ internal fun PlayerPages(sheet: PlayerSheetState) {
     // blur not shown does no work, and switching it off and on at each open and close
     // rebuilt it right as the sheet started and stopped moving.)
     val live by remember(sheet) { derivedStateOf { sheet.progress > 0f } }
+    // On a wide screen the cover may sit beside the controls; the panels then open over
+    // the controls' half, beside the cover.
+    val columns = rememberNowPlayingColumns()
+    val panelStart = if (columns == NowPlayingColumns.Two) LocalWindowLayout.current.width / 2 else 0.dp
     Box(Modifier.fillMaxSize()) {
         CompositionLocalProvider(LocalMarqueeRunning provides live) {
         NowPlayingScreen(
@@ -55,8 +61,10 @@ internal fun PlayerPages(sheet: PlayerSheetState) {
             info = sheet.info,
             autoDj = sheet.autoDj,
             addToPlaylist = addToPlaylist.takeIf { canAddToPlaylist },
+            columns = columns,
         )
         }
+        CompositionLocalProvider(LocalPanelStart provides panelStart) {
         PanelCard(sheet.lyrics, PanelIcons.Lyrics, title = stringResource(R.string.player_lyrics), haze = haze) {
             LyricsScreen(onCollapse = { sheet.lyrics.close() })
         }
@@ -66,6 +74,7 @@ internal fun PlayerPages(sheet: PlayerSheetState) {
         SongInfoPanel(sheet.info, haze)
         PanelCard(sheet.autoDj, AutoDjIcon, title = stringResource(R.string.auto_dj_title), haze = haze) {
             AutoDjPanel(Modifier.fillMaxSize())
+        }
         }
         if (canAddToPlaylist) AddToPlaylistMenu(addToPlaylist, haze)
     }

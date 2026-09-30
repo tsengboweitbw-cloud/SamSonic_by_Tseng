@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.data.LibraryLayout
@@ -60,7 +61,7 @@ internal fun <T> LibraryCollection(
             else -> 10.dp
         }
         LazyVerticalGrid(
-            columns = GridCells.Fixed(if (grid) layout.columns else 1),
+            columns = if (grid) FittedColumns(layout.columns) else GridCells.Fixed(1),
             state = gridState,
             contentPadding = if (grid) {
                 PaddingValues(start = 20.dp, end = 20.dp, top = padding.top, bottom = 16.dp + padding.bottom)
@@ -91,4 +92,20 @@ internal fun <T> LibraryCollection(
             if (actionsSlot != null) floatingActionsEnd()
         }
     }
+}
+
+/**
+ * [count] columns, or as many as fit where there's less room: at the
+ * side of two panes, the grid is far narrower than the screen its count was set for.
+ */
+private class FittedColumns(private val count: Int) : GridCells {
+    override fun Density.calculateCrossAxisCellSizes(availableSize: Int, spacing: Int): List<Int> {
+        val columns = count
+        val width = (availableSize - spacing * (columns - 1)).coerceAtLeast(0)
+        return List(columns) { i -> width / columns + if (i < width % columns) 1 else 0 }
+    }
+
+    override fun equals(other: Any?) = other is FittedColumns && other.count == count
+
+    override fun hashCode() = count
 }

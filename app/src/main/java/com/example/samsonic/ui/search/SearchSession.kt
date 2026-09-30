@@ -3,6 +3,7 @@ package com.example.samsonic.ui.search
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.setValue
 import com.example.samsonic.model.SearchResults
 
@@ -33,5 +34,17 @@ class SearchSession {
         query = ""
         results = null
         resultsQuery = null
+    }
+
+    companion object {
+        /**
+         * Keeps the query through the activity starting over (the system closing it in the
+         * background, the phone switching dark mode): the results aren't kept, and Search
+         * looks the query up again.
+         */
+        val Saver: Saver<SearchSession, String> = Saver(
+            save = { it.query },
+            restore = { SearchSession().apply { query = it } },
+        )
     }
 }

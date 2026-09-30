@@ -53,6 +53,9 @@ fun CoverCarousel(
     cornerRadius: Dp,
     bleed: Dp,
     modifier: Modifier = Modifier,
+    // Where in its space the cover sits: at the foot, next to the song info below it, or
+    // (in two columns, beside the song info) in the middle.
+    alignment: Alignment = Alignment.BottomCenter,
 ) {
     // The timeline can lag a fresh queue by a moment; show the current cover alone meanwhile.
     val order = player.playOrder.ifEmpty { listOf(player.currentIndex) }
@@ -68,8 +71,8 @@ fun CoverCarousel(
     // The cover is the largest square that fits: up to the full content width,
     // or shorter when the height given is tighter; then the side padding widens
     // so it stays centred and the neighbours peek into the freed margin. Sits at
-    // the bottom of its space, next to the song info.
-    BoxWithConstraints(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.BottomCenter) {
+    // the bottom of its space, next to the song info (or where [alignment] has it).
+    BoxWithConstraints(modifier = modifier.fillMaxWidth(), contentAlignment = alignment) {
         val side = minOf(maxWidth, maxHeight).coerceAtLeast(0.dp)
         val sidePadding = bleed + (maxWidth - side) / 2
         HorizontalPager(

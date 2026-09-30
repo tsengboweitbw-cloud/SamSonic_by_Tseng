@@ -76,11 +76,19 @@ fun GuardChrome(active: Boolean, dim: () -> Float, onDismiss: () -> Unit) {
 @Composable
 fun ChromeGuardLayer(guard: ChromeGuard, height: Dp, modifier: Modifier = Modifier) {
     SideEffect { guard.height = height }
+    ChromeGuardArea(guard, modifier.fillMaxWidth().height(height))
+}
+
+/**
+ * Laid over floating chrome elsewhere than the foot of the screen (the nav rail at its
+ * side), [modifier] placing and sizing it: while a menu has claimed [guard], dims what's
+ * under it as the page is dimmed and takes every touch, a tap closing the menu.
+ */
+@Composable
+fun ChromeGuardArea(guard: ChromeGuard, modifier: Modifier = Modifier) {
     val claim = guard.claim ?: return
     Box(
         modifier = modifier
-            .fillMaxWidth()
-            .height(height)
             .drawBehind { drawRect(Color.Black.copy(alpha = claim.dim().coerceIn(0f, 1f))) }
             .dismissOnTap(claim),
     )

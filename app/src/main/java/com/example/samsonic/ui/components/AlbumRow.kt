@@ -1,5 +1,6 @@
 package com.example.samsonic.ui.components
 
+import com.example.samsonic.ui.common.onSecondaryClick
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -58,6 +59,7 @@ fun AlbumRow(
                 .fillMaxWidth()
                 .clip(OneUiRow.Shape)
                 .then(addToPlaylist.origin)
+                .onSecondaryClick(addToPlaylist.onLongClick)
                 .combinedClickable(
                     onClick = art.onClick,
                     onLongClick = addToPlaylist.onLongClick,

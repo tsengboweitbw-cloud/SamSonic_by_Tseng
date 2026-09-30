@@ -1,5 +1,6 @@
 package com.example.samsonic.ui.theme
 
+import com.example.samsonic.ui.common.onSecondaryClick
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
@@ -37,7 +38,7 @@ fun Modifier.oneUiRowClickable(onClick: () -> Unit): Modifier = oneUiRowClickabl
 
 /** [oneUiRowClickable] that also answers a long press ([onLongClick], if any) without the tap. */
 fun Modifier.oneUiRowClickable(onClick: () -> Unit, onLongClick: (() -> Unit)?): Modifier =
-    padding(OneUiRow.Inset).clip(OneUiRow.Shape).combinedClickable(onLongClick = onLongClick, onClick = onClick)
+    padding(OneUiRow.Inset).clip(OneUiRow.Shape).onSecondaryClick(onLongClick).combinedClickable(onLongClick = onLongClick, onClick = onClick)
 
 // Shared sizing for the floating chrome (bottom nav bar, mini player) so both
 // bars are literally the same thickness, not just visually similar pills.

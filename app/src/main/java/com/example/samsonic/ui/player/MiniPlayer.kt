@@ -7,6 +7,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -23,7 +25,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -51,7 +55,15 @@ fun MiniPlayer(
     song: Song,
     onExpand: () -> Unit,
     modifier: Modifier = Modifier,
+    // Under the nav rail: the rail's width, standing on end ([RailMiniPlayer]).
+    compact: Boolean = false,
+    // Under a short rail (a phone on its side): the same, shorter.
+    short: Boolean = false,
 ) {
+    if (compact) {
+        RailMiniPlayer(song, onExpand, modifier, short)
+        return
+    }
     val player = LocalPlayerState.current
     val cornerRadius by LocalAppContainer.current.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
 
@@ -167,6 +179,87 @@ fun MiniPlayer(
                 .playerMorphAnchor(PlayerElement.Progress, PlayerSurface.Mini)
                 .height(2.dp),
         )
+    }
+}
+
+/** How tall the mini player is under the nav rail, as wide as the rail. */
+val RailMiniPlayerHeight = 176.dp
+
+/** Under a short rail, on a phone on its side. */
+val ShortRailMiniPlayerHeight = 116.dp
+
+/**
+ * The mini player under the nav rail, as narrow as the rail and standing on end like
+ * it: the art, set down from the capsule's round top so its corners keep clear of the
+ * curve, and play/pause below in a ring that fills as the song plays, sitting in the
+ * round foot. A tap opens Now Playing, which the art grows into, as from the wide mini
+ * player (the ring, a circle, has no seek bar to become: that fades in with the rest).
+ */
+@Composable
+private fun RailMiniPlayer(song: Song, onExpand: () -> Unit, modifier: Modifier = Modifier, short: Boolean = false) {
+    val player = LocalPlayerState.current
+    val cornerRadius by LocalAppContainer.current.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .pressClickable(onExpand, pressedScale = 0.96f)
+            .playerMorphRoot(PlayerSurface.Mini)
+            .padding(top = if (short) 14.dp else 30.dp, bottom = if (short) 10.dp else 16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        MediaArt(
+            coverArt = song.coverArt,
+            colorSeed = song.id.artSeed(),
+            modifier = Modifier.playerMorphAnchor(PlayerElement.Art, PlayerSurface.Mini),
+            size = if (short) 44.dp else 52.dp,
+            cornerRadius = cornerRadius,
+            shadowElevation = 0.dp,
+        )
+        Spacer(Modifier.weight(1f))
+        Box(contentAlignment = Alignment.Center) {
+            ProgressRing(
+                // Read as the ring is drawn, so the playback tick redraws only the ring.
+                progress = {
+                    if (song.durationSeconds > 0) (player.positionSeconds / song.durationSeconds).coerceIn(0f, 1f) else 0f
+                },
+                modifier = Modifier.size(if (short) 46.dp else 56.dp),
+            )
+            PressIconButton(onClick = { player.togglePlayPause() }, size = if (short) 40.dp else 48.dp) {
+                Icon(
+                    imageVector = if (player.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                    contentDescription = stringResource(if (player.isPlaying) R.string.player_pause else R.string.components_play),
+                )
+            }
+        }
+    }
+}
+
+/**
+ * The progress line bent into a ring: its track all the way round, and the part played
+ * so far clockwise from the top, drawn as the line and the seek bar are.
+ */
+@Composable
+private fun ProgressRing(progress: () -> Float, modifier: Modifier = Modifier) {
+    val palette = MaterialTheme.accentPalette
+    val trackColor = MaterialTheme.colorScheme.surfaceContainerHighest
+    Canvas(modifier = modifier) {
+        val stroke = 2.5.dp.toPx()
+        val inset = stroke / 2
+        val arcSize = Size(size.width - stroke, size.height - stroke)
+        val topLeft = Offset(inset, inset)
+        drawArc(trackColor, startAngle = 0f, sweepAngle = 360f, useCenter = false, topLeft = topLeft, size = arcSize, style = Stroke(stroke))
+        val at = progress()
+        if (at > 0f) {
+            drawArc(
+                brush = progressBrush(palette, 0f, size.width),
+                startAngle = -90f,
+                sweepAngle = 360f * at,
+                useCenter = false,
+                topLeft = topLeft,
+                size = arcSize,
+                style = Stroke(stroke, cap = StrokeCap.Round),
+            )
+        }
     }
 }
 

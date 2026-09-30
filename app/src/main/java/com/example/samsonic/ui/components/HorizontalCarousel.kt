@@ -1,5 +1,6 @@
 package com.example.samsonic.ui.components
 
+import com.example.samsonic.ui.common.shiftWheelScrollsSideways
 import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.VisibilityThreshold
@@ -55,7 +56,7 @@ fun <T> HorizontalCarousel(
     remember(keys) { rowState.requestScrollToItem(0) }
 
     LazyRow(
-        modifier = modifier.horizontalScrollFade(rowState),
+        modifier = modifier.horizontalScrollFade(rowState).shiftWheelScrollsSideways(rowState),
         state = rowState,
         // Vertical room for the cards' press plate, which reaches past them.
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = PlateOutset),

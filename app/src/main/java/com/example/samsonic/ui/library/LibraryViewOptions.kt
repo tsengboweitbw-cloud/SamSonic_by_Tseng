@@ -1,27 +1,33 @@
 package com.example.samsonic.ui.library
 
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.LocalMinimumInteractiveComponentSize
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.samsonic.LocalAppContainer
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.R
 import androidx.annotation.StringRes
 import com.example.samsonic.data.LibraryLayout
 import com.example.samsonic.data.LibrarySort
-import com.example.samsonic.data.LibraryViewMode
 import com.example.samsonic.ui.components.GlassTabBar
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.ui.Alignment
+import com.example.samsonic.ui.theme.OneUiSlider
+import kotlin.math.abs
 
-private val columnChoices = (LibraryLayout.MIN_COLUMNS..LibraryLayout.MAX_COLUMNS).toList()
 
 /**
  * The settings inside a view options panel: the Library's ([LibraryTabsPanel]), or
@@ -45,29 +51,40 @@ internal fun ViewOptionsPanel(
             Spacer(Modifier.height(20.dp))
         }
 
-        PanelLabel(stringResource(R.string.library_layout))
-        GlassTabBar(
-            labels = listOf(stringResource(R.string.library_list), stringResource(R.string.library_grid)),
-            selectedIndex = if (layout.mode == LibraryViewMode.GRID) 1 else 0,
-            onSelect = { index ->
-                onLayoutChange(layout.copy(mode = if (index == 1) LibraryViewMode.GRID else LibraryViewMode.LIST))
-            },
-            hazeState = null,
-        )
-        Spacer(Modifier.height(20.dp))
-
-        // Frozen in list view: the saved count still shows, dimmed, for when grid comes back.
-        val grid = layout.mode == LibraryViewMode.GRID
-        val frozenAlpha by animateFloatAsState(if (grid) 1f else 0.38f, label = "columnsAlpha")
-        Column(Modifier.alpha(frozenAlpha)) {
-            PanelLabel(stringResource(R.string.library_grid_columns))
-            GlassTabBar(
-                labels = columnChoices.map { it.toString() },
-                selectedIndex = columnChoices.indexOf(layout.columns).coerceAtLeast(0),
-                onSelect = { index -> onLayoutChange(layout.copy(columns = columnChoices[index])) },
-                hazeState = null,
-                enabled = grid,
-            )
+        // Up to more columns on a larger screen (see GridForm).
+        val gridForm by LocalAppContainer.current.libraryLayoutManager.gridForm.collectAsStateWithLifecycle()
+        val columnChoices = remember(gridForm) { listOf(0) + (LibraryLayout.MIN_COLUMNS..gridForm.maxColumns).toList() }
+        Column {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                PanelLabel(stringResource(R.string.library_grid_columns))
+                val currentLabel = if (layout.isDefault) stringResource(R.string.library_sort_default) else layout.columns.toString()
+                Text(
+                    text = currentLabel,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 8.dp, end = 4.dp),
+                )
+            }
+            val currentValue = if (layout.isDefault) 0f else layout.columns.toFloat()
+            CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 32.dp) {
+                OneUiSlider(
+                    value = currentValue,
+                    onValueChange = { newValue ->
+                        val closest = columnChoices.minByOrNull { abs(it.toFloat() - newValue) } ?: 0
+                        onLayoutChange(layout.copy(
+                            columns = if (closest == 0) 0 else closest,
+                            isDefault = closest == 0,
+                        ))
+                    },
+                    valueRange = 0f..gridForm.maxColumns.toFloat(),
+                    enabled = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
         }
 
         if (sort != null) {
