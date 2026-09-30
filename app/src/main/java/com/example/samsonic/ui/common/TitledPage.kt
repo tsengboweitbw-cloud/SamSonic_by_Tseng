@@ -118,7 +118,7 @@ fun PageTitle(text: String, trailing: (@Composable () -> Unit)? = null) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 20.dp, end = 16.dp, top = 12.dp, bottom = 12.dp)
+            .padding(start = 20.dp, end = 16.dp, top = 8.dp, bottom = 12.dp)
             .heightIn(min = 48.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
