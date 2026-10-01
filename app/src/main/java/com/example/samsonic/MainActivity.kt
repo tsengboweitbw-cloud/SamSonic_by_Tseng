@@ -40,7 +40,6 @@ import com.example.samsonic.playback.LocalPlayerState
 import com.example.samsonic.ui.common.LocalWindowLayout
 import com.example.samsonic.ui.common.currentWindowLayout
 import com.example.samsonic.ui.common.gridFormFor
-import com.example.samsonic.ui.common.isFoldable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
@@ -108,7 +107,7 @@ class MainActivity : ComponentActivity() {
             event.keyCode == KeyEvent.KEYCODE_DPAD_RIGHT && event.isCtrlPressed ->
                 player.takeIf { it.currentSong != null }?.let { { it.skipNext() } }
             event.keyCode == KeyEvent.KEYCODE_ESCAPE && event.hasNoModifiers() ->
-                { { onBackPressedDispatcher.onBackPressed() } }
+            { { onBackPressedDispatcher.onBackPressed() } }
             else -> null
         }
         if (action == null) return false
@@ -125,7 +124,7 @@ class MainActivity : ComponentActivity() {
         // following the window below), not a phone's, switched a frame later.
         val startSize = resources.configuration
         container.libraryLayoutManager.setGridForm(
-            gridFormFor(startSize.screenWidthDp.dp, startSize.screenHeightDp.dp, isFoldable()),
+            gridFormFor(startSize.screenWidthDp.dp, startSize.screenHeightDp.dp),
             startSize.screenWidthDp.toFloat(),
             startSize.screenHeightDp.toFloat(),
         )

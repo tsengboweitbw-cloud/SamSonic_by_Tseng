@@ -1,21 +1,18 @@
 package com.example.samsonic.ui.common
 
-import android.content.Context
-import android.content.pm.PackageManager
 import android.content.res.Configuration
-import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
-import com.example.samsonic.data.GridForm
 import androidx.compose.material3.adaptive.Posture
 import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.example.samsonic.data.GridForm
 
 /**
  * Which layout the app's window gets, from its size alone: never from the device, nor
@@ -42,9 +39,14 @@ private val PhoneMinHeight = 480.dp
 private val WideMinWidth = 700.dp
 private val WideMinHeight = 600.dp
 
+// Text is only scaled up on a tablet whose shorter side is at least this: a Z Fold's inner
+// screen is about 704 the short way round and stays at a phone's size; a Tab S9 is about 800.
+// Check against real devices, the gap between the two is small.
+private val TabletTextScaleMinShortSide = 750.dp
+
 /**
  * The window's [layoutClass], its size, how a foldable is folded ([posture]: hinges,
- * tabletop), and whether the device folds at all ([foldable], folded shut or not).
+ * tabletop).
  */
 @Immutable
 data class WindowLayout(
@@ -52,7 +54,6 @@ data class WindowLayout(
     val width: Dp,
     val height: Dp,
     val posture: Posture,
-    val foldable: Boolean = false,
     // In Samsung DeX: the app in a window on a monitor, worked with a mouse and keyboard.
     val desktop: Boolean = false,
 ) {
@@ -78,33 +79,33 @@ data class WindowLayout(
 
     /**
      * How much larger text is than on a phone: a size up in DeX (a monitor, further off
-     * still) and on a tablet, where it read small; none on a phone or a foldable.
+     * still) and on a real tablet, where it read small; none on a phone or a foldable's
+     * inner screen (judged by its short side, not by the device).
      */
     val textScale: Float
         get() = when {
             desktop -> DesktopTextScale
-            isTablet && !foldable -> TabletTextScale
+            isTablet && minOf(width, height) >= TabletTextScaleMinShortSide -> TabletTextScale
             else -> 1f
         }
 
     /** The kind of screen for the grids' column counts. */
-    val gridForm: GridForm get() = gridFormFor(width, height, foldable)
+    val gridForm: GridForm get() = gridFormFor(width, height)
 }
 
 /**
  * The kind of screen a window [width] by [height] is, for the grids' column counts: a
- * phone's layout (a foldable's cover screen included), a foldable open, or a tablet the
- * wide or the tall way round.
+ * phone's layout (a foldable's cover screen included), or a tablet the wide or the tall
+ * way round (a foldable's inner screen included).
  */
-fun gridFormFor(width: Dp, height: Dp, foldable: Boolean): GridForm = when {
-    layoutClassFor(width, height) == LayoutClass.Phone -> {
-        if (width > height) GridForm.PHONE_LANDSCAPE else GridForm.PHONE
+fun gridFormFor(width: Dp, height: Dp): GridForm {
+    val landscape = width > height
+    return when {
+        layoutClassFor(width, height) == LayoutClass.Phone ->
+            if (landscape) GridForm.PHONE_LANDSCAPE else GridForm.PHONE
+        else ->
+            if (landscape) GridForm.TABLET_LANDSCAPE else GridForm.TABLET_PORTRAIT
     }
-    foldable -> {
-        if (width > height) GridForm.FOLDABLE_LANDSCAPE else GridForm.FOLDABLE
-    }
-    width > height -> GridForm.TABLET_LANDSCAPE
-    else -> GridForm.TABLET_PORTRAIT
 }
 
 /**
@@ -125,9 +126,6 @@ fun Configuration.isSamsungDex(): Boolean {
     }
 }
 
-/** Whether this device folds: it has a hinge angle sensor, as every foldable does. */
-fun Context.isFoldable(): Boolean = packageManager.hasSystemFeature(PackageManager.FEATURE_SENSOR_HINGE_ANGLE)
-
 internal fun layoutClassFor(width: Dp, height: Dp): LayoutClass = when {
     width < PhoneMaxWidth || height < PhoneMinHeight -> LayoutClass.Phone
     width >= WideMinWidth && height >= WideMinHeight -> LayoutClass.Wide
@@ -140,11 +138,9 @@ fun currentWindowLayout(): WindowLayout {
     val size = LocalWindowInfo.current.containerSize
     val (width, height) = with(LocalDensity.current) { size.width.toDp() to size.height.toDp() }
     val posture = currentWindowAdaptiveInfo().windowPosture
-    val context = LocalContext.current
-    val foldable = remember(context) { context.isFoldable() }
     val configuration = LocalConfiguration.current
     val desktop = remember(configuration) { configuration.isSamsungDex() }
-    return WindowLayout(layoutClassFor(width, height), width, height, posture, foldable, desktop)
+    return WindowLayout(layoutClassFor(width, height), width, height, posture, desktop)
 }
 
 /** The app window's layout; provided in MainActivity. The phone's until then. */

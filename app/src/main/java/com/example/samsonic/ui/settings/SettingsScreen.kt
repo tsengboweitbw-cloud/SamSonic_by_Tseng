@@ -371,7 +371,7 @@ private const val ItemsPerGroup = 2
 
 /** One group of settings: its name and icon (for the list of groups beside it), and its card. */
 private class SettingsGroup(
-    @StringRes val label: Int,
+    @param:StringRes val label: Int,
     val icon: ImageVector,
     val content: @Composable () -> Unit,
 )

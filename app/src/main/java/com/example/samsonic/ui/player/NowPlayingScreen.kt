@@ -99,7 +99,7 @@ fun NowPlayingScreen(
     val window = LocalWindowLayout.current
     val stackActions = stackSetting && !window.desktop
     // Two columns on a tablet held wide, or in DeX: the side beside the cover a size up.
-    val largeSide = columns == NowPlayingColumns.Two && (window.desktop || (window.isTablet && !window.foldable))
+    val largeSide = columns == NowPlayingColumns.Two && (window.desktop || (window.isTablet)) //&& !window.foldable
     val horizontalPadding = 24.dp
     // What the capsule stack's glass blurs: the backdrop and everything above the
     // stack, sources beside the stack rather than around it (a glass inside its own

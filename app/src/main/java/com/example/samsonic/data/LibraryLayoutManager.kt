@@ -45,22 +45,15 @@ data class LibraryLayout(val columns: Int, val isDefault: Boolean = false) {
 
 /**
  * The kind of screen a grid is on, each keeping its own column count (the list or
- * grid choice is shared): a phone (or a foldable's cover screen), a foldable open, and
- * a tablet either way round. Until changed there, each starts at its [defaultColumns]
- * (a phone at the section's own); a grid there has up to [maxColumns].
+ * grid choice is shared): a phone (or a foldable's cover screen), and a tablet either
+ * way round (a foldable's inner screen included). Until changed there, each starts at
+ * its [defaultColumns] (a phone at the section's own); a grid there has up to [maxColumns].
  */
 enum class GridForm(val defaultColumns: Int?, val maxColumns: Int, internal val keySuffix: String) {
     PHONE(defaultColumns = null, maxColumns = 6, keySuffix = ""),
     PHONE_LANDSCAPE(defaultColumns = null, maxColumns = 6, keySuffix = "_phone_landscape"),
-    FOLDABLE(defaultColumns = 4, maxColumns = 6, keySuffix = "_foldable"),
-    FOLDABLE_LANDSCAPE(defaultColumns = 4, maxColumns = 6, keySuffix = "_foldable_landscape"),
     TABLET_PORTRAIT(defaultColumns = 4, maxColumns = 6, keySuffix = "_tablet_portrait"),
     TABLET_LANDSCAPE(defaultColumns = 6, maxColumns = 6, keySuffix = "_tablet_landscape"),
-    ;
-
-    companion object {
-        val FOLDABLE_PORTRAIT = FOLDABLE
-    }
 }
 
 /**
@@ -228,12 +221,12 @@ class LibraryLayoutManager(context: Context) {
         // Sections still following this one (never changed themselves) follow along.
         val followers = LibrarySection.entries.filter { it.inheritsFrom == section && !prefs.contains(columnsKey(it)) && !prefs.contains(modeKey(it)) }
         _layouts.value += (listOf(section) + followers).associateWith {
-                    val followerDefault = computeDefaultColumns(it, form)
-                    layout.copy(
-                        columns = if (isDefault) followerDefault else columns,
-                        isDefault = isDefault,
-                    )
-                }
+            val followerDefault = computeDefaultColumns(it, form)
+            layout.copy(
+                columns = if (isDefault) followerDefault else columns,
+                isDefault = isDefault,
+            )
+        }
     }
 
     private fun load(section: LibrarySection): LibraryLayout {
