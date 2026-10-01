@@ -64,7 +64,7 @@ internal val LocalMenuMatchesOrigin = staticCompositionLocalOf { false }
 private val MenuSideMargin = 20.dp
 
 // A card matching its row is this much narrower each side, centred on it.
-private val MenuInsetFromRow = 12.dp
+private val MenuInsetFromRow = 6.dp
 
 // The same dim as the Library view options' scrim.
 private const val ScrimAlpha = 0.32f
