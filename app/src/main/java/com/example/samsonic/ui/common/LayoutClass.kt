@@ -74,7 +74,7 @@ data class WindowLayout(
      * Settings' groups beside the one picked): wide enough, and held the wide way round.
      * Held tall, a tablet or an open foldable keeps one column, with the rail.
      */
-    val twoPane: Boolean get() = layoutClass == LayoutClass.Wide && width > height
+    val twoPane: Boolean get() = layoutClass == LayoutClass.Wide //&& width > height
 
     /**
      * How much larger text is than on a phone: a size up in DeX (a monitor, further off
