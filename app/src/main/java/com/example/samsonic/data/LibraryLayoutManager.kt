@@ -4,6 +4,7 @@ import android.content.Context
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import androidx.core.content.edit
 
 enum class LibraryViewMode { LIST, GRID }
 
@@ -122,10 +123,10 @@ class LibraryLayoutManager(context: Context) {
     val listSorts: StateFlow<Map<SortedList, ListSort>> = _listSorts.asStateFlow()
 
     fun setListSort(list: SortedList, sort: ListSort) {
-        prefs.edit()
-            .putString(listSortKey(list), sort.key.name)
-            .putBoolean(listDescendingKey(list), sort.descending)
-            .apply()
+        prefs.edit {
+            putString(listSortKey(list), sort.key.name)
+                .putBoolean(listDescendingKey(list), sort.descending)
+        }
         _listSorts.value = _listSorts.value + (list to sort)
     }
 
@@ -142,7 +143,7 @@ class LibraryLayoutManager(context: Context) {
     val sorts: StateFlow<Map<LibrarySection, LibrarySort>> = _sorts.asStateFlow()
 
     fun setSort(sort: LibrarySort) {
-        prefs.edit().putString(sortKey(sort.section), sort.name).apply()
+        prefs.edit { putString(sortKey(sort.section), sort.name) }
         _sorts.value = _sorts.value + (sort.section to sort)
     }
 
@@ -175,7 +176,7 @@ class LibraryLayoutManager(context: Context) {
     val albumArtistsOnly: StateFlow<Boolean> = _albumArtistsOnly.asStateFlow()
 
     fun setAlbumArtistsOnly(enabled: Boolean) {
-        prefs.edit().putBoolean(KEY_ALBUM_ARTISTS_ONLY, enabled).apply()
+        prefs.edit { putBoolean(KEY_ALBUM_ARTISTS_ONLY, enabled) }
         _albumArtistsOnly.value = enabled
     }
 
@@ -186,7 +187,7 @@ class LibraryLayoutManager(context: Context) {
     val listActionsPin: StateFlow<ListActionsPin> = _listActionsPin.asStateFlow()
 
     fun setListActionsPin(pin: ListActionsPin) {
-        prefs.edit().putString(KEY_LIST_ACTIONS_PIN, pin.name).apply()
+        prefs.edit { putString(KEY_LIST_ACTIONS_PIN, pin.name) }
         _listActionsPin.value = pin
     }
 
@@ -195,7 +196,7 @@ class LibraryLayoutManager(context: Context) {
     val showFavourites: StateFlow<Boolean> = _showFavourites.asStateFlow()
 
     fun setShowFavourites(enabled: Boolean) {
-        prefs.edit().putBoolean(KEY_SHOW_FAVOURITES, enabled).apply()
+        prefs.edit { putBoolean(KEY_SHOW_FAVOURITES, enabled) }
         _showFavourites.value = enabled
     }
 
@@ -214,10 +215,13 @@ class LibraryLayoutManager(context: Context) {
         val isDefault = layout.isDefault || layout.columns == 0
         val columns = if (isDefault) defaultCols else layout.columns.coerceIn(LibraryLayout.MIN_COLUMNS, form.maxColumns)
         val storedCols = if (isDefault) 0 else columns
-        prefs.edit()
-            .putString(modeKey(section), if (columns == 1) LibraryViewMode.LIST.name else LibraryViewMode.GRID.name)
-            .putInt(columnsKey(section), storedCols)
-            .apply()
+        prefs.edit {
+            putString(
+                modeKey(section),
+                if (columns == 1) LibraryViewMode.LIST.name else LibraryViewMode.GRID.name
+            )
+                .putInt(columnsKey(section), storedCols)
+        }
         // Sections still following this one (never changed themselves) follow along.
         val followers = LibrarySection.entries.filter { it.inheritsFrom == section && !prefs.contains(columnsKey(it)) && !prefs.contains(modeKey(it)) }
         _layouts.value += (listOf(section) + followers).associateWith {
