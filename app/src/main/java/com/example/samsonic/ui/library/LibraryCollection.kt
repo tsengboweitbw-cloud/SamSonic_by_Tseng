@@ -7,8 +7,8 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.data.LibraryLayout
 import com.example.samsonic.data.LibraryViewMode
+import com.example.samsonic.data.defaultColumnsForWidth
 import com.example.samsonic.ui.common.StateContent
 import com.example.samsonic.ui.common.UiState
 import com.example.samsonic.ui.components.floatingActionsEnd
@@ -52,44 +53,52 @@ internal fun <T> LibraryCollection(
     actionsSlot: Dp? = null,
     modifier: Modifier = Modifier,
 ) {
-    StateContent(state = state, modifier = Modifier.fillMaxSize()) { items ->
-        val grid = layout.mode == LibraryViewMode.GRID
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val containerWidth = maxWidth.value
+        val effectiveColumns = if (layout.isDefault) {
+            defaultColumnsForWidth(containerWidth)
+        } else {
+            layout.columns
+        }
+        val grid = layout.mode == LibraryViewMode.GRID && effectiveColumns > 1
         // Tighter gutters as columns get narrower, so covers keep most of the width.
-        val gutter = when (layout.columns) {
+        val gutter = when (effectiveColumns) {
             2 -> 16.dp
             3 -> 12.dp
             else -> 10.dp
         }
-        LazyVerticalGrid(
-            columns = if (grid) FittedColumns(layout.columns) else GridCells.Fixed(1),
-            state = gridState,
-            contentPadding = if (grid) {
-                PaddingValues(start = 20.dp, end = 20.dp, top = padding.top, bottom = 16.dp + padding.bottom)
-            } else {
-                // List rows carry their own side padding.
-                PaddingValues(top = padding.top, bottom = 16.dp + padding.bottom)
-            },
-            verticalArrangement = Arrangement.spacedBy(if (grid) gutter + 4.dp else 0.dp),
-            horizontalArrangement = Arrangement.spacedBy(if (grid) gutter else 0.dp),
-            modifier = modifier.fillMaxSize(),
-        ) {
-            // Spans the grid; in grid view the content padding already insets it 20dp, as rows are.
-            if (header != null) {
-                item(span = { GridItemSpan(maxLineSpan) }) {
-                    Box(Modifier.padding(horizontal = if (grid) 0.dp else 20.dp)) { header() }
-                }
-            }
-            if (actionsSlot != null) floatingActionsSlot(bottomSpacing = actionsSlot)
-            items(items, key = key) { item ->
-                if (grid) {
-                    BoxWithConstraints(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
-                        card(item, maxWidth)
-                    }
+        StateContent(state = state, modifier = Modifier.fillMaxSize()) { items ->
+            LazyVerticalGrid(
+                columns = if (grid) FittedColumns(effectiveColumns) else GridCells.Fixed(1),
+                state = gridState,
+                contentPadding = if (grid) {
+                    PaddingValues(start = 20.dp, end = 20.dp, top = padding.top, bottom = 16.dp + padding.bottom)
                 } else {
-                    row(item)
+                    // List rows carry their own side padding.
+                    PaddingValues(top = padding.top, bottom = 16.dp + padding.bottom)
+                },
+                verticalArrangement = Arrangement.spacedBy(if (grid) gutter + 4.dp else 0.dp),
+                horizontalArrangement = Arrangement.spacedBy(if (grid) gutter else 0.dp),
+                modifier = modifier.fillMaxSize(),
+            ) {
+                // Spans the grid; in grid view the content padding already insets it 20dp, as rows are.
+                if (header != null) {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        Box(Modifier.padding(horizontal = if (grid) 0.dp else 20.dp)) { header() }
+                    }
                 }
+                if (actionsSlot != null) floatingActionsSlot(bottomSpacing = actionsSlot)
+                items(items, key = key) { item ->
+                    if (grid) {
+                        BoxWithConstraints(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
+                            card(item, maxWidth)
+                        }
+                    } else {
+                        row(item)
+                    }
+                }
+                if (actionsSlot != null) floatingActionsEnd()
             }
-            if (actionsSlot != null) floatingActionsEnd()
         }
     }
 }

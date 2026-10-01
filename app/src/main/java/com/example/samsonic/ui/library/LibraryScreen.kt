@@ -44,11 +44,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.samsonic.LocalAppContainer
-import com.example.samsonic.R
-import com.example.samsonic.data.LibrarySection
 import com.example.samsonic.data.LibrarySort
 import com.example.samsonic.data.LibraryViewMode
 import com.example.samsonic.data.newestFirst
@@ -56,6 +51,11 @@ import com.example.samsonic.model.Album
 import com.example.samsonic.model.Artist
 import com.example.samsonic.model.Genre
 import com.example.samsonic.model.Playlist
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.samsonic.LocalAppContainer
+import com.example.samsonic.R
+import com.example.samsonic.data.LibrarySection
 import com.example.samsonic.model.favouritesPlaylist
 import com.example.samsonic.model.isFavourites
 import com.example.samsonic.ui.common.StateContent

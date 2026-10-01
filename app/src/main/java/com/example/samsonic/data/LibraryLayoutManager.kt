@@ -7,6 +7,13 @@ import kotlinx.coroutines.flow.asStateFlow
 
 enum class LibraryViewMode { LIST, GRID }
 
+fun defaultColumnsForWidth(widthDp: Float): Int = when {
+    widthDp <= 350f -> 2
+    widthDp <= 500f -> 3
+    widthDp <= 900f -> 4
+    else -> 6
+}
+
 /**
  * Album and artist collections whose view the user can change: the Library tabs
  * (Genres has no art, so it is always a list), then an artist page's "see all"
@@ -199,15 +206,9 @@ class LibraryLayoutManager(context: Context) {
         _showFavourites.value = enabled
     }
 
-private fun computeDefaultColumns(section: LibrarySection, form: GridForm): Int {
-        return if ((form == GridForm.PHONE || form == GridForm.PHONE_LANDSCAPE) && screenWidth > 0f && screenHeight > 0f) {
-            val x = screenHeight / screenWidth
-            when {
-                x >= 2.3f -> 2
-                x >= 1.3f -> 3
-                x >= 0.7f -> 4
-                else -> 6
-            }
+    private fun computeDefaultColumns(section: LibrarySection, form: GridForm): Int {
+        return if (screenWidth > 0f) {
+            defaultColumnsForWidth(screenWidth)
         } else {
             form.defaultColumns ?: section.defaultColumns
         }
