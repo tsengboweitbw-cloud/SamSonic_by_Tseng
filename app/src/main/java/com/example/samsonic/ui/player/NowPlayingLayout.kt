@@ -42,6 +42,13 @@ internal fun twoColumnCover(width: Dp, height: Dp): Dp =
  * larger cover wins outright.
  */
 internal fun nowPlayingColumnsFor(width: Dp, height: Dp, current: NowPlayingColumns?): NowPlayingColumns {
+    val aspectRatio = width / height
+
+    // 如果畫面接近正方形或高度大於寬度（例如 Pixel Fold 直握展開時），
+    // 雙欄會讓左右空間都非常狹窄，此時硬用單欄 (One Column) 呈現大封面會舒暢很多。
+    if (aspectRatio < 1.15f) {
+        return NowPlayingColumns.One
+    }
     val one = oneColumnCover(width, height)
     val two = twoColumnCover(width, height)
     return when (current) {
