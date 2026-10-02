@@ -34,6 +34,10 @@
     <!-- Library -->
     <string name="settings_album_artists_only">僅顯示專輯歌手</string>
     <string name="settings_album_artists_only_hint">「歌手」分頁只列出專輯歌手，而非歌曲上列名的所有人</string>
+    <string name="settings_show_album_names">專輯名稱</string>
+    <string name="settings_show_album_names_hint">在「音樂庫」中，於每張專輯封面下方顯示專輯名稱</string>
+    <string name="settings_show_album_artists">專輯歌手名稱</string>
+    <string name="settings_show_album_artists_hint">在「音樂庫」中，於每張專輯封面下方顯示專輯歌手</string>
     <string name="settings_favourites_playlist">「我的最愛」播放清單</string>
     <string name="settings_favourites_playlist_hint">你喜愛的歌曲，列在「播放清單」分頁的最前面</string>
     <string name="settings_list_actions">播放按鈕</string>

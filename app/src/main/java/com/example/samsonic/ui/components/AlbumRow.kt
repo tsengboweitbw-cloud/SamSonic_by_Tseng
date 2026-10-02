@@ -41,11 +41,13 @@ fun AlbumRow(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     swipeActions: Boolean = true,
+    showTitle: Boolean = true,
+    showArtist: Boolean = true,
 ) {
     val cornerRadius = LocalRowPrefs.current.artCornerRadius
     val art = rememberSharedArt(ArtKeys.album(album.id), album, onClick)
     val details = listOfNotNull(
-        album.artistName,
+        if (showArtist) album.artistName else null,
         album.year?.toString(),
         if (album.trackCount > 0) pluralStringResource(R.plurals.components_song_count, album.trackCount, album.trackCount) else null,
     ).joinToString(" · ")
@@ -78,19 +80,23 @@ fun AlbumRow(
             )
             Spacer(Modifier.width(16.dp))
             Column(Modifier.weight(1f)) {
-                Text(
-                    text = album.title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = details,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                if (showTitle) {
+                    Text(
+                        text = album.title,
+                        style = MaterialTheme.typography.bodyLarge,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                if (details.isNotEmpty()) {
+                    Text(
+                        text = details,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
         }
     }

@@ -258,6 +258,23 @@ class LibraryLayoutManager(
         _albumArtistsOnly.value = enabled
     }
 
+    // Whether album covers in the Library carry the album's name, and its album artist's.
+    private val _showAlbumNames = MutableStateFlow(prefs.getBoolean(KEY_SHOW_ALBUM_NAMES, true))
+    val showAlbumNames: StateFlow<Boolean> = _showAlbumNames.asStateFlow()
+
+    fun setShowAlbumNames(enabled: Boolean) {
+        prefs.edit { putBoolean(KEY_SHOW_ALBUM_NAMES, enabled) }
+        _showAlbumNames.value = enabled
+    }
+
+    private val _showAlbumArtists = MutableStateFlow(prefs.getBoolean(KEY_SHOW_ALBUM_ARTISTS, true))
+    val showAlbumArtists: StateFlow<Boolean> = _showAlbumArtists.asStateFlow()
+
+    fun setShowAlbumArtists(enabled: Boolean) {
+        prefs.edit { putBoolean(KEY_SHOW_ALBUM_ARTISTS, enabled) }
+        _showAlbumArtists.value = enabled
+    }
+
     // Where a page's Play / Shuffle / Queue buttons go once its header scrolls away.
     private val _listActionsPin = MutableStateFlow(prefs.getEnum(KEY_LIST_ACTIONS_PIN, ListActionsPin.OFF))
     val listActionsPin: StateFlow<ListActionsPin> = _listActionsPin.asStateFlow()
@@ -360,6 +377,8 @@ class LibraryLayoutManager(
     private companion object {
         const val PANE_MAX_COLUMNS = 6
         const val KEY_ALBUM_ARTISTS_ONLY = "artists_album_artists_only"
+        const val KEY_SHOW_ALBUM_NAMES = "albums_show_names"
+        const val KEY_SHOW_ALBUM_ARTISTS = "albums_show_artists"
         const val KEY_SHOW_FAVOURITES = "playlists_show_favourites"
         const val KEY_LIST_ACTIONS_PIN = "list_actions_pin"
     }

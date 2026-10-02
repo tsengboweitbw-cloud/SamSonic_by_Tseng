@@ -90,6 +90,8 @@ fun AlbumCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     artSize: Dp = 140.dp,
+    showTitle: Boolean = true,
+    showArtist: Boolean = true,
 ) {
     val cornerRadius = LocalRowPrefs.current.artCornerRadius
     val art = rememberSharedArt(ArtKeys.album(album.id), album, onClick)
@@ -111,20 +113,24 @@ fun AlbumCard(
                 cornerRadius = cornerRadius,
                 modifier = art.modifier.then(addToPlaylist.origin),
             )
-            Spacer(Modifier.height(8.dp))
-            Text(
-                text = album.title,
-                style = MaterialTheme.typography.labelLarge,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text = album.artistName,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            if (showTitle || showArtist) Spacer(Modifier.height(8.dp))
+            if (showTitle) {
+                Text(
+                    text = album.title,
+                    style = MaterialTheme.typography.labelLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            if (showArtist) {
+                Text(
+                    text = album.artistName,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
     }
 }

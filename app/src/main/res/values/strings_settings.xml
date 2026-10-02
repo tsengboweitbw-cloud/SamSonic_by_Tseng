@@ -34,6 +34,10 @@
     <!-- Library -->
     <string name="settings_album_artists_only">Album artists only</string>
     <string name="settings_album_artists_only_hint">The Artists tab lists album artists, not everyone credited on a song</string>
+    <string name="settings_show_album_names">Album names</string>
+    <string name="settings_show_album_names_hint">Show each album\'s name under its cover in the Library</string>
+    <string name="settings_show_album_artists">Album artist names</string>
+    <string name="settings_show_album_artists_hint">Show each album\'s artist under its cover in the Library</string>
     <string name="settings_favourites_playlist">Favourites playlist</string>
     <string name="settings_favourites_playlist_hint">Your liked songs, first in the Playlists tab</string>
     <string name="settings_list_actions">Play buttons</string>

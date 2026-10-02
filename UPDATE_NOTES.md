@@ -15,6 +15,7 @@
 - The Up next card has a Clear queue button above the Auto DJ strip. While music plays, it removes every song but the current one; paused, it removes them all, stops playback and closes Now Playing and the mini player, like swiping the mini player away.
 - The Library tab bar is no wider than 448dp (a side pane at its widest), kept to the left, so on a tablet it no longer stretches across the screen when nothing is open beside it.
 - Beside the navigation rail, sliding a finger along it now fades the page with it: the page fades out as the indicator leaves a tab and the next fades in as it arrives, rather than nothing moving until you let go.
+- Two new Library settings, Album names and Album artist names, hide the name or the artist under each album's cover in the Albums tab and the album pages opened from it (grid and list). Both are on by default.
 - Sliding a finger along the nav bar (and the rail) now holds each tab's label fully open and opaque for a stretch as the indicator passes (from 60% of the way in to the centre), with a shorter edge fade, so a swipe that doesn't stop on a tab no longer shows its label always fading in or out.
 
 Changes since 5dfb5ba.

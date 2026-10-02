@@ -58,6 +58,7 @@ import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Layers
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.RoundedCorner
 import androidx.compose.material.icons.filled.Style
 import androidx.compose.material3.Icon
@@ -120,6 +121,8 @@ fun SettingsScreen(
     val audioFormatDisplay by container.themeManager.audioFormatDisplay.collectAsStateWithLifecycle()
     val albumArtistsOnly by container.libraryLayoutManager.albumArtistsOnly.collectAsStateWithLifecycle()
     val showFavourites by container.libraryLayoutManager.showFavourites.collectAsStateWithLifecycle()
+    val showAlbumNames by container.libraryLayoutManager.showAlbumNames.collectAsStateWithLifecycle()
+    val showAlbumArtists by container.libraryLayoutManager.showAlbumArtists.collectAsStateWithLifecycle()
     val scope = rememberCoroutineScope()
     val themeMenu = remember { PanelState(scope) }
     val audioFormatMenu = remember { PanelState(scope) }
@@ -217,6 +220,20 @@ fun SettingsScreen(
                         checked = albumArtistsOnly,
                         onCheckedChange = container.libraryLayoutManager::setAlbumArtistsOnly,
                         hint = stringResource(R.string.settings_album_artists_only_hint),
+                    )
+                    SwitchRow(
+                        icon = Icons.Filled.Album,
+                        title = stringResource(R.string.settings_show_album_names),
+                        checked = showAlbumNames,
+                        onCheckedChange = container.libraryLayoutManager::setShowAlbumNames,
+                        hint = stringResource(R.string.settings_show_album_names_hint),
+                    )
+                    SwitchRow(
+                        icon = Icons.Filled.Person,
+                        title = stringResource(R.string.settings_show_album_artists),
+                        checked = showAlbumArtists,
+                        onCheckedChange = container.libraryLayoutManager::setShowAlbumArtists,
+                        hint = stringResource(R.string.settings_show_album_artists_hint),
                     )
                     // Your liked songs, first in the Playlists tab.
                     SwitchRow(

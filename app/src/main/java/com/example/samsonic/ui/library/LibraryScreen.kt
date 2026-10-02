@@ -112,6 +112,8 @@ fun LibraryScreen(
     val layouts by layoutManager.layouts.collectAsStateWithLifecycle()
     val albumArtistsOnly by layoutManager.albumArtistsOnly.collectAsStateWithLifecycle()
     val showFavourites by layoutManager.showFavourites.collectAsStateWithLifecycle()
+    val showAlbumNames by layoutManager.showAlbumNames.collectAsStateWithLifecycle()
+    val showAlbumArtists by layoutManager.showAlbumArtists.collectAsStateWithLifecycle()
     val sorts by layoutManager.sorts.collectAsStateWithLifecycle()
     val artistSort = sorts.getValue(LibrarySection.ARTISTS)
     val albumSort = sorts.getValue(LibrarySection.ALBUMS)
@@ -282,9 +284,9 @@ fun LibraryScreen(
                         layout = layouts.getValue(LibrarySection.ALBUMS),
                         padding = padding,
                         key = { it.id },
-                        card = { album, size -> AlbumCard(album, onClick = { onAlbumClick(album) }, artSize = size) },
+                        card = { album, size -> AlbumCard(album, onClick = { onAlbumClick(album) }, artSize = size, showTitle = showAlbumNames, showArtist = showAlbumArtists) },
                         // Sideways swipes here change tabs, so no swipe actions.
-                        row = { album -> AlbumRow(album, onClick = { onAlbumClick(album) }, swipeActions = false) },
+                        row = { album -> AlbumRow(album, onClick = { onAlbumClick(album) }, swipeActions = false, showTitle = showAlbumNames, showArtist = showAlbumArtists) },
                     )
                     2 -> LibraryCollection(
                         state = playlists,

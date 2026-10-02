@@ -73,6 +73,8 @@ internal fun AlbumsPage(
 ) {
     val container = LocalAppContainer.current
     val layouts by container.libraryLayoutManager.layouts.collectAsStateWithLifecycle()
+    val showAlbumNames by container.libraryLayoutManager.showAlbumNames.collectAsStateWithLifecycle()
+    val showAlbumArtists by container.libraryLayoutManager.showAlbumArtists.collectAsStateWithLifecycle()
     val gridState = rememberLazyGridState()
     val overscroll = rememberPullOverscroll()
     BackButtonPage(
@@ -93,8 +95,8 @@ internal fun AlbumsPage(
                     layout = layouts.getValue(section),
                     padding = LibraryPadding(top = BackButtonClearance, bottom = contentPaddingBottom),
                     key = { it.id },
-                    card = { album, size -> AlbumCard(album, onClick = { onAlbumClick(album) }, artSize = size) },
-                    row = { album -> AlbumRow(album, onClick = { onAlbumClick(album) }) },
+                    card = { album, size -> AlbumCard(album, onClick = { onAlbumClick(album) }, artSize = size, showTitle = showAlbumNames, showArtist = showAlbumArtists) },
+                    row = { album -> AlbumRow(album, onClick = { onAlbumClick(album) }, showTitle = showAlbumNames, showArtist = showAlbumArtists) },
                     header = { PageHeader(owner = owner, title = title, bottomSpacing = 0.dp) },
                     // Play and shuffle float over the grid ([FloatingListActions]); this keeps their place.
                     actionsSlot = 12.dp,
