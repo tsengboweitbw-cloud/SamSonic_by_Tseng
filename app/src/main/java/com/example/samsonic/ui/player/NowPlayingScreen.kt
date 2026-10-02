@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
@@ -101,6 +102,11 @@ fun NowPlayingScreen(
     // Two columns on a tablet held wide, or in DeX: the side beside the cover a size up.
     val largeSide = columns == NowPlayingColumns.Two && (window.desktop || (window.isTablet)) //&& !window.foldable
     val horizontalPadding = 24.dp
+    // A phone on its side is short: the collapse button gets a column of its own on the far left
+    // rather than a row (so the cover and the controls take the whole height), and the gap above
+    // and below them is smaller.
+    val collapseColumn = window.phoneLandscape
+    val sideVerticalPadding = if (collapseColumn) 8.dp else 24.dp
     // What the capsule stack's glass blurs: the backdrop and everything above the
     // stack, sources beside the stack rather than around it (a glass inside its own
     // source draws recursively, so Now Playing's source, for the panels, won't do).
@@ -167,6 +173,11 @@ fun NowPlayingScreen(
                     .statusBarsPadding()
                     .navigationBarsPadding(),
             ) {
+                if (collapseColumn) {
+                    Box(Modifier.fillMaxHeight().width(ChromeButtonSize + 24.dp).padding(start = 12.dp)) {
+                        CollapseButtonRow(onCollapse, glassHaze, fillWidth = false)
+                    }
+                }
                 Column(
                     Modifier
                         .weight(1f)
@@ -175,7 +186,7 @@ fun NowPlayingScreen(
                         .graphicsLayer()
                         .hazeSource(stackHaze, zIndex = 1f),
                 ) {
-                    CollapseButtonRow(onCollapse, glassHaze)
+                    if (!collapseColumn) CollapseButtonRow(onCollapse, glassHaze)
                     CoverCarousel(
                         player = player,
                         cornerRadius = cornerRadius,
@@ -183,7 +194,7 @@ fun NowPlayingScreen(
                         alignment = Alignment.Center,
                         modifier = Modifier
                             .weight(1f)
-                            .padding(vertical = 24.dp),
+                            .padding(vertical = sideVerticalPadding),
                     )
                 }
                 Column(
@@ -194,14 +205,18 @@ fun NowPlayingScreen(
                 ) {
                     // Beside the cover and as tall: the song, the seek bar, the transport and
                     // the actions spread evenly from its top to its foot. (Its top and foot are
-                    // the cover's room's: below the collapse button, 24dp in.) Where the cover's
+                    // the cover's room's: below the collapse button, 24dp in (8dp on a phone on
+                    // its side).) Where the cover's
                     // narrower than its room is tall (a foldable), it's centred there, shorter:
                     // so is this, as tall as it, or as its content needs.
                     BoxWithConstraints(
                         Modifier
                             .weight(1f)
                             .fillMaxWidth()
-                            .padding(top = CollapseRowHeight + 24.dp, bottom = 24.dp),
+                            .padding(
+                                top = if (collapseColumn) sideVerticalPadding else CollapseRowHeight + sideVerticalPadding,
+                                bottom = sideVerticalPadding,
+                            ),
                     ) {
                         val coverPx = minOf(constraints.maxWidth, constraints.maxHeight)
                         val roomPx = constraints.maxHeight
@@ -307,8 +322,8 @@ private const val LargeSideScale = 1.2f
  * away; Add to playlist is with the other actions at the bottom.
  */
 @Composable
-private fun CollapseButtonRow(onCollapse: () -> Unit, haze: HazeState?) {
-    Row(modifier = Modifier.fillMaxWidth().padding(top = CollapseRowTop)) {
+private fun CollapseButtonRow(onCollapse: () -> Unit, haze: HazeState?, fillWidth: Boolean = true) {
+    Row(modifier = (if (fillWidth) Modifier.fillMaxWidth() else Modifier).padding(top = CollapseRowTop)) {
         GlassCircleButton(onClick = onCollapse, haze = haze) {
             Icon(Icons.Filled.KeyboardArrowDown, contentDescription = stringResource(R.string.player_collapse), modifier = Modifier.size(ChromeButtonIconSize))
         }

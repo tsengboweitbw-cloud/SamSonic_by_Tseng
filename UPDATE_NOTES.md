@@ -18,6 +18,7 @@
 - Two new Library settings, Album names and Album artist names, hide the name or the artist under each album's cover in the Albums tab and the album pages opened from it (grid and list). Both are on by default.
 - Sliding a finger along the nav bar (and the rail) now holds each tab's label fully open and opaque for a stretch as the indicator passes (from 60% of the way in to the centre), with a shorter edge fade, so a swipe that doesn't stop on a tab no longer shows its label always fading in or out.
 - The frosted glass's grain is thinner on a big screen: 50% as strong on a tablet and 30% in DeX, where the grain, a tile of device pixels, read as coarse speckle rather than fine frosting.
+- On a phone on its side, Now Playing's collapse button sits in a column of its own on the far left instead of a row above the cover, and the gap above and below the cover and the controls beside it is 8dp, not 24dp, so they get about 100dp more height and the controls are less often pushed into scrolling.
 
 Changes since 5dfb5ba.
 
