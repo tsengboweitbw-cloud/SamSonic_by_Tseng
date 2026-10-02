@@ -31,6 +31,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
@@ -144,12 +146,17 @@ private val LocalAboveContent = compositionLocalOf { 0 }
 @Composable
 fun Modifier.pageScrim(clearBottom: Dp = 0.dp, alpha: () -> Float): Modifier {
     val above = LocalAboveContent.current.toFloat()
-    return drawBehind {
+    val guard = LocalChromeGuard.current
+    val span = remember { floatArrayOf(0f, 0f) }
+    return onGloballyPositioned { span[0] = it.boundsInWindow().left; span[1] = it.boundsInWindow().right }.drawBehind {
+        val a = alpha().coerceIn(0f, 1f)
+        // Tells the chrome's dim where this page is: it may be one of two panes.
+        if (a > 0f) guard?.dimSpan = span[0]..span[1]
         drawRect(
             color = Color.Black,
             topLeft = Offset(0f, -above),
             size = Size(size.width, (size.height + above - clearBottom.toPx()).coerceAtLeast(0f)),
-            alpha = alpha().coerceIn(0f, 1f),
+            alpha = a,
         )
     }
 }

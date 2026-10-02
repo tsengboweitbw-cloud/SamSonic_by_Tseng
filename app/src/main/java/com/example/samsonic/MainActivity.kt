@@ -171,7 +171,7 @@ class MainActivity : ComponentActivity() {
                 val windowLayout = currentWindowLayout()
                 val density = LocalDensity.current
                 val gridForm = windowLayout.gridForm
-                SideEffect { container.libraryLayoutManager.setGridForm(gridForm, windowLayout.width.value, windowLayout.height.value) }
+                SideEffect { container.libraryLayoutManager.setGridForm(gridForm, windowLayout.width.value, windowLayout.height.value, windowLayout.twoPane) }
                 val languageFade = rememberLanguageFade()
                 // The tab to come back to when the screens start over for a new source.
                 val lastTab = rememberSaveable(saver = LastTab.Saver) { LastTab() }

@@ -572,7 +572,12 @@ fun SamSonicNavHost(lastTab: LastTab) {
             // At least as far up as the bottom fade, which fades a page's own dim out with the
             // page: beside a rail, where nothing is at the foot, the fade reaches past it.
             val guardHeight = maxOf(contentPaddingBottom, bottomFadeHeight)
-            ChromeGuardLayer(chromeGuard, guardHeight, Modifier.align(Alignment.BottomCenter))
+            ChromeGuardLayer(
+                chromeGuard,
+                guardHeight,
+                Modifier.align(Alignment.BottomCenter),
+                alwaysDimWidth = if (onRail && showChrome) railReserve else 0.dp,
+            )
             if (onRail && showChrome) {
                 // Down to the foot's layer, not over it: two dims there would darken it twice.
                 ChromeGuardArea(
@@ -634,6 +639,10 @@ private fun TabHost(
     // switches (turning, folding), so what was open simply shows in its new place.
     val current by navController.currentBackStackEntryAsState()
     val detailOpen = twoPane && current?.destination?.route.let { it != null && it != route }
+    val layoutManager = LocalAppContainer.current.libraryLayoutManager
+    // The Library keeps its own columns as the side pane. Only the Library's own host says so:
+    // every tab stays composed, and another tab's would overwrite it.
+    if (route == Routes.LIBRARY) SideEffect { layoutManager.setDetailOpen(detailOpen) }
     val split = remember { Animatable(if (detailOpen) 1f else 0f) }
     val twoPaneWas = remember { booleanArrayOf(twoPane) }
     LaunchedEffect(detailOpen, twoPane) {
@@ -784,9 +793,13 @@ private fun RootPage(
 private fun ListPane(navController: NavHostController, route: String, modifier: Modifier, content: @Composable () -> Unit) {
     val stack by navController.currentBackStack.collectAsStateWithLifecycle()
     val entry = stack.firstOrNull { it.destination.route == route } ?: return
+    // The entry's own view models, but the tab's lifecycle: with a page open beside it the
+    // entry is stopped, though the first page is still on screen, and what it collects
+    // (its column counts among them) would stop coming.
+    val lifecycle = LocalLifecycleOwner.current
     CompositionLocalProvider(
         LocalViewModelStoreOwner provides entry,
-        LocalLifecycleOwner provides entry,
+        LocalLifecycleOwner provides lifecycle,
     ) {
         Box(modifier) { content() }
     }

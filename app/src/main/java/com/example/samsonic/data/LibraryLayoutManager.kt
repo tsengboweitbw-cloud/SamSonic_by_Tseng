@@ -152,9 +152,24 @@ class LibraryLayoutManager(
     // The automatic column count for the current window width; 0 until the width is known.
     private var widthBucket: Int = bucketFor(initialWidthDp)
 
+    // The same for the Library as the side pane (see [inPane]).
+    private var paneWidthBucket: Int = 0
+
     // The kind of screen the app is on now, whose column counts [layouts] has.
     private val _gridForm = MutableStateFlow(initialForm)
     val gridForm: StateFlow<GridForm> = _gridForm.asStateFlow()
+
+    // Whether the Library is only the side pane: a two-pane window with a page open beside it.
+    // Its own tabs keep their own view and column count then, apart from when they have the
+    // whole screen; the pages opened beside it (an artist's albums) are not in the side pane.
+    private var windowTwoPane = false
+    private var detailOpen = false
+    private var windowWidth = Float.NaN
+    private val _twoPane = MutableStateFlow(false)
+    val twoPane: StateFlow<Boolean> = _twoPane.asStateFlow()
+
+    /** The most columns the slider offers now: fewer in two panes, where the Library is narrower. */
+    val maxColumns: Int get() = if (_twoPane.value) PANE_MAX_COLUMNS else _gridForm.value.maxColumns
 
     private val _layouts = MutableStateFlow(LibrarySection.entries.associateWith(::load))
     val layouts: StateFlow<Map<LibrarySection, LibraryLayout>> = _layouts.asStateFlow()
@@ -169,11 +184,29 @@ class LibraryLayoutManager(
         form: GridForm,
         width: Float = Float.NaN,
         @Suppress("UNUSED_PARAMETER") height: Float = Float.NaN,
+        twoPane: Boolean = false,
     ) {
-        val bucket = if (width.isNaN()) widthBucket else bucketFor(width)
-        if (form == _gridForm.value && bucket == widthBucket) return
+        windowTwoPane = twoPane
+        if (!width.isNaN()) windowWidth = width
+        update(form)
+    }
+
+    /** Tells whether a page is open beside the Library (only in a two-pane window), as it narrows to the side. */
+    fun setDetailOpen(open: Boolean) {
+        if (open == detailOpen) return
+        detailOpen = open
+        update(_gridForm.value)
+    }
+
+    private fun update(form: GridForm) {
+        val pane = windowTwoPane && detailOpen
+        val bucket = if (windowWidth.isNaN()) widthBucket else bucketFor(windowWidth)
+        val paneBucket = if (windowWidth.isNaN()) paneWidthBucket else bucketFor(paneWidth(windowWidth))
+        if (form == _gridForm.value && bucket == widthBucket && paneBucket == paneWidthBucket && pane == _twoPane.value) return
         _gridForm.value = form
+        _twoPane.value = pane
         widthBucket = bucket
+        paneWidthBucket = paneBucket
         _layouts.value = LibrarySection.entries.associateWith(::load)
     }
 
@@ -252,20 +285,22 @@ class LibraryLayoutManager(
         val columns = if (useDefault) {
             computeDefaultColumns(section, form)
         } else {
-            layout.columns.coerceIn(LibraryLayout.MIN_COLUMNS, form.maxColumns)
+            layout.columns.coerceIn(LibraryLayout.MIN_COLUMNS, maxColumns)
         }
+        val pane = inPane(section)
         // The list is a mode, not a column count: 1 column is never stored, so the mode
         // (shared by every screen kind) stays the single source of truth for list vs grid.
         val storedCols = if (useDefault || columns == LibraryLayout.MIN_COLUMNS) LibraryLayout.AUTO else columns
         prefs.edit {
             putString(
-                modeKey(section),
+                modeKey(section, pane),
                 if (columns == LibraryLayout.MIN_COLUMNS) LibraryViewMode.LIST.name else LibraryViewMode.GRID.name,
             )
-            putInt(columnsKey(section), storedCols)
+            putInt(columnsKey(section, pane), storedCols)
         }
-        // Sections still following this one (never changed themselves) follow along.
-        val followers = LibrarySection.entries.filter { it.inheritsFrom == section && !isCustomised(it) }
+        // Sections still following this one (never changed themselves) follow along; not from
+        // the side pane, which the pages following it are never shown in.
+        val followers = if (pane) emptyList() else LibrarySection.entries.filter { it.inheritsFrom == section && !isCustomised(it, false) }
         _layouts.update { current ->
             current + (listOf(section) + followers).associateWith { target ->
                 LibraryLayout(
@@ -276,17 +311,19 @@ class LibraryLayoutManager(
         }
     }
 
-    private fun load(section: LibrarySection): LibraryLayout {
-        if (!isCustomised(section)) {
-            section.inheritsFrom?.let { return load(it) }
+    private fun load(section: LibrarySection): LibraryLayout = load(section, inPane(section))
+
+    private fun load(section: LibrarySection, pane: Boolean): LibraryLayout {
+        if (!isCustomised(section, pane)) {
+            section.inheritsFrom?.let { return load(it, pane) }
         }
         val form = _gridForm.value
-        val savedMode = prefs.getString(modeKey(section), null)
-        val savedCols = prefs.getInt(columnsKey(section), LibraryLayout.AUTO)
+        val savedMode = prefs.getString(modeKey(section, pane), null)
+        val savedCols = prefs.getInt(columnsKey(section, pane), LibraryLayout.AUTO)
         return when {
             savedMode == LibraryViewMode.LIST.name -> LibraryLayout(columns = 1)
             savedCols >= LibraryLayout.MIN_GRID_COLUMNS ->
-                LibraryLayout(columns = savedCols.coerceIn(LibraryLayout.MIN_GRID_COLUMNS, form.maxColumns))
+                LibraryLayout(columns = savedCols.coerceIn(LibraryLayout.MIN_GRID_COLUMNS, maxColumns))
             else -> LibraryLayout(columns = computeDefaultColumns(section, form), isDefault = true)
         }
     }
@@ -295,22 +332,33 @@ class LibraryLayoutManager(
     // per-section defaults are only the fallback until then.
     private fun computeDefaultColumns(section: LibrarySection, form: GridForm): Int {
         if (section == LibrarySection.PLAYLISTS) return 1   // Playlists 預設一律 list
-        return if (widthBucket > 0) widthBucket else form.defaultColumns ?: section.defaultColumns
+        val bucket = if (inPane(section)) paneWidthBucket else widthBucket
+        return if (bucket > 0) bucket else form.defaultColumns ?: section.defaultColumns
     }
+
+    // The side pane's width in a window of [windowDp] (see TabHost's ListPaneShare and its limits).
+    private fun paneWidth(windowDp: Float) = (windowDp * 0.42f).coerceIn(340f, 480f)
 
     private fun bucketFor(widthDp: Float): Int = if (widthDp > 0f) defaultColumnsForWidth(widthDp) else 0
 
     // The mode key is written on every setLayout and shared by all screen kinds, so its
     // presence alone says whether the user ever changed this section.
-    private fun isCustomised(section: LibrarySection) = prefs.contains(modeKey(section))
+    private fun isCustomised(section: LibrarySection, pane: Boolean) = prefs.contains(modeKey(section, pane))
 
-    private fun modeKey(section: LibrarySection) = "${section.name.lowercase()}_view_mode"
+    // Only the Library's own tabs are ever in the side pane.
+    private fun inPane(section: LibrarySection) = _twoPane.value && section in LibrarySection.Tabs
+
+    private fun paneSuffix(pane: Boolean) = if (pane) "_pane" else ""
+
+    private fun modeKey(section: LibrarySection, pane: Boolean) = "${section.name.lowercase()}_view_mode${paneSuffix(pane)}"
 
     // A phone's under the name it always had, so its count carries on; each other kind of screen its own.
-    private fun columnsKey(section: LibrarySection) = "${section.name.lowercase()}_columns${_gridForm.value.keySuffix}"
+    private fun columnsKey(section: LibrarySection, pane: Boolean) =
+        "${section.name.lowercase()}_columns${_gridForm.value.keySuffix}${paneSuffix(pane)}"
     private fun sortKey(section: LibrarySection) = "${section.name.lowercase()}_sort"
 
     private companion object {
+        const val PANE_MAX_COLUMNS = 6
         const val KEY_ALBUM_ARTISTS_ONLY = "artists_album_artists_only"
         const val KEY_SHOW_FAVOURITES = "playlists_show_favourites"
         const val KEY_LIST_ACTIONS_PIN = "list_actions_pin"

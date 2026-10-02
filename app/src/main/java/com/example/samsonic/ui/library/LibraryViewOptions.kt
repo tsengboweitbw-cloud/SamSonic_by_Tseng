@@ -11,6 +11,8 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.LocalAppContainer
@@ -53,7 +55,10 @@ internal fun ViewOptionsPanel(
 
         // Up to more columns on a larger screen (see GridForm).
         val gridForm by LocalAppContainer.current.libraryLayoutManager.gridForm.collectAsStateWithLifecycle()
-        val columnChoices = remember(gridForm) { listOf(0) + (LibraryLayout.MIN_COLUMNS..gridForm.maxColumns).toList() }
+        val twoPane by LocalAppContainer.current.libraryLayoutManager.twoPane.collectAsStateWithLifecycle()
+        val layoutManager = LocalAppContainer.current.libraryLayoutManager
+        val maxColumns = remember(gridForm, twoPane) { layoutManager.maxColumns }
+        val columnChoices = remember(maxColumns) { listOf(0) + (LibraryLayout.MIN_COLUMNS..maxColumns).toList() }
         Column {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -70,17 +75,24 @@ internal fun ViewOptionsPanel(
                 )
             }
             val currentValue = if (layout.isDefault) 0f else layout.columns.toFloat()
+            // The thumb follows the finger on its own, and the layout changes only as it snaps to
+            // another count: a reload of the layout mid-drag cannot hold it.
+            var dragValue by remember { mutableStateOf<Float?>(null) }
             CompositionLocalProvider(LocalMinimumInteractiveComponentSize provides 32.dp) {
                 OneUiSlider(
-                    value = currentValue,
+                    value = dragValue ?: currentValue,
                     onValueChange = { newValue ->
+                        dragValue = newValue
                         val closest = columnChoices.minByOrNull { abs(it.toFloat() - newValue) } ?: 0
-                        onLayoutChange(layout.copy(
-                            columns = if (closest == 0) 0 else closest,
-                            isDefault = closest == 0,
-                        ))
+                        if (closest.toFloat() != currentValue) {
+                            onLayoutChange(layout.copy(
+                                columns = if (closest == 0) 0 else closest,
+                                isDefault = closest == 0,
+                            ))
+                        }
                     },
-                    valueRange = 0f..gridForm.maxColumns.toFloat(),
+                    onValueChangeFinished = { dragValue = null },
+                    valueRange = 0f..maxColumns.toFloat(),
                     enabled = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
