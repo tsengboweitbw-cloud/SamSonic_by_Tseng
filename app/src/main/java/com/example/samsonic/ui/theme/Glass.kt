@@ -79,6 +79,11 @@ fun Modifier.glassSurface(
     inputScale: Float? = null,
     // How much of the accent's sheen washes over the glass (see [AccentSheen]); 0 for none.
     sheen: Float = 0f,
+    // True for a glass at rest over moving content, which draws [glassPreBlur] as the child it
+    // blurs (a MorphPanel's `smoothing`): the blur then takes that softened copy, not the sharp
+    // source. Skia shrinks what it blurs by a lot under a medium-strong blur, and a sharp edge
+    // moving behind (a scrolling title) shimmers as it's shrunk.
+    preBlurred: Boolean = false,
 ): Modifier {
     // Scale by the user's global opacity preference, keeping each surface's
     // base alpha as its relative density.
@@ -120,7 +125,7 @@ fun Modifier.glassSurface(
             }
         }
         clipped.hazeBlur(
-            input = HazeInput.Sources(hazeState),
+            input = if (preBlurred) HazeInput.Content else HazeInput.Sources(hazeState),
             style = style,
             // Blurs a smaller copy of what's behind (half across, the least Haze goes to),
             // which looks the same under a blur this strong at a fraction of the cost: at
@@ -144,6 +149,30 @@ fun Modifier.glassSurface(
     }
     val tinted = if (sheen > 0f) grained.accentSheen(sheen) else grained
     return if (rim) tinted.border(GlassRimWidth, glassRimBrush(), shape) else tinted
+}
+
+/** How much [glassPreBlur] softens the source: enough to leave Skia's shrinking no sharp edge to shimmer. */
+private val PreBlurRadius = 3.dp
+
+/**
+ * A light blur of what [hazeState] holds behind, drawn as the content of a glass made with
+ * [glassSurface]'s preBlurred, which then blurs this softened copy to the user's radius.
+ */
+@Composable
+fun Modifier.glassPreBlur(hazeState: HazeState): Modifier {
+    val base = MaterialTheme.colorScheme.background
+    val style = remember(base) {
+        HazeBlurStyle {
+            backgroundColor(base)
+            blurRadius(PreBlurRadius)
+            noiseFactor(0f)
+        }
+    }
+    return hazeBlur(
+        input = HazeInput.Sources(hazeState),
+        style = style,
+        performanceMode = HazePerformanceMode.Quality,
+    )
 }
 
 /** Haze's own grain texture, tiled over the glass at the screen's full size, at [alpha]. */

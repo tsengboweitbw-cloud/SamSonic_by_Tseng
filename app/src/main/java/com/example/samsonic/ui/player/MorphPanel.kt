@@ -5,6 +5,7 @@ import androidx.compose.foundation.gestures.Orientation
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
@@ -173,6 +174,8 @@ private fun ramp(value: Float, start: Float, end: Float) = ((value - start) / (e
  * [resizable] is for content that animates its size while open: the glass is laid
  * out once at all the height the panel may take, so the size animation doesn't
  * resize it (and rebuild its blur) every frame.
+ * [smoothing], if any, is drawn over the whole glass as the content [surface] blurs (a surface
+ * made with glassSurface's preBlurred; see glassPreBlur).
  * Not composed while folded away.
  */
 @Composable
@@ -187,6 +190,7 @@ internal fun MorphPanel(
     washAlpha: Float = 0f,
     originRadius: Dp? = null,
     resizable: Boolean = false,
+    smoothing: Modifier? = null,
     content: @Composable () -> Unit,
 ) {
     val showing by remember(panel) { derivedStateOf { panel.progress > 0f } }
@@ -354,7 +358,9 @@ internal fun MorphPanel(
                     )
                 }
                 .then(surface),
-        )
+        ) {
+            if (smoothing != null) Box(Modifier.fillMaxSize().then(smoothing))
+        }
         // The content stays laid out at full size, revealed through the growing shape. On
         // the open's overshoot it stretches onto the grown bounds just as the glass does,
         // so the panel bounces as one piece rather than its edge around still contents.

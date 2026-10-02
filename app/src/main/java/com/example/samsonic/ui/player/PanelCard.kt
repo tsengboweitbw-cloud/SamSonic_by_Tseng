@@ -29,6 +29,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.ui.theme.LocalGlassSettings
 import com.example.samsonic.ui.theme.OneUiRadius
+import com.example.samsonic.ui.theme.glassPreBlur
 import com.example.samsonic.ui.theme.glassSurface
 import dev.chrisbanes.haze.HazeState
 
@@ -112,11 +113,13 @@ internal fun PanelCard(
                 // Open and still, at full size: Now Playing's title and seek bar keep moving
                 // behind it.
                 downsample = !settled,
+                preBlurred = settled,
                 // None either way, as while downsampled, so settling doesn't change its look.
                 noiseFactor = 0f,
                 scaleOpacity = false,
                 rim = false,
             ),
+            smoothing = if (settled) Modifier.glassPreBlur(haze) else null,
             wash = MaterialTheme.colorScheme.surfaceContainerHigh,
             // The player's own glass settings, like the controls it opens from, apart from
             // the chrome's and the menus'.

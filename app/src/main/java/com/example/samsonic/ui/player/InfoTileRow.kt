@@ -33,6 +33,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import com.example.samsonic.playback.LocalPlayerState
 import com.example.samsonic.ui.theme.LocalGlassSettings
 import com.example.samsonic.ui.theme.OneUiRadius
+import com.example.samsonic.ui.theme.glassPreBlur
 import com.example.samsonic.ui.theme.glassSurface
 import dev.chrisbanes.haze.HazeState
 import kotlin.math.roundToInt
@@ -164,10 +165,12 @@ internal fun InfoCapsulePanel(panel: PanelState, haze: HazeState) {
                 alpha = MorphGlassBase,
                 blurRadius = glass.playerBlur,
                 downsample = !settled,
+                preBlurred = settled,
                 noiseFactor = 0f,
                 scaleOpacity = false,
                 rim = false,
             ),
+            smoothing = if (settled) Modifier.glassPreBlur(haze) else null,
             wash = MaterialTheme.colorScheme.surfaceContainerHigh,
             washAlpha = washToReach(MorphGlassBase, glass.playerAlpha),
             modifier = Modifier
