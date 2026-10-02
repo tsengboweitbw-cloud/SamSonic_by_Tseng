@@ -24,7 +24,7 @@ target_include_directories(usb1.0
     PUBLIC ${LIBUSB_DIR}/libusb)
 target_compile_options(usb1.0 PRIVATE -w)
 
-add_library(samsonic_usb SHARED usb_jni.cpp)
+add_library(samsonic_usb SHARED usb_jni.cpp usb_context.cpp uac.cpp iso_stream.cpp)
 target_link_libraries(samsonic_usb usb1.0 log)
 # Android 15+ devices use 16 KB pages.
 target_link_options(samsonic_usb PRIVATE -Wl,-z,max-page-size=16384)

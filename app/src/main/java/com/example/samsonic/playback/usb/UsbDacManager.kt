@@ -57,8 +57,8 @@ class UsbDacManager(context: Context) {
     }
 
     /**
-     * Debug and perfTest builds only, until the driver plays audio: asks for permission to each DAC, then
-     * opens it, wraps it with libusb and logs what it reads (tag SamSonicUsb).
+     * Debug and perfTest builds only, until the driver plays songs: asks for permission to each DAC, then
+     * opens it, logs what libusb reads and plays a short quiet tone (tag SamSonicUsb).
      */
     private fun probeInDebug() {
         if (BuildConfig.BUILD_TYPE == "release") return
@@ -67,8 +67,18 @@ class UsbDacManager(context: Context) {
                 if (probed.add("ask:${dac.device.deviceName}")) requestPermission(dac)
             } else if (probed.add(dac.device.deviceName)) {
                 Thread {
-                    open(dac)?.use { Log.i(TAG, "${dac.name}: ${NativeUsb.probe(it.fd)}") }
-                        ?: Log.w(TAG, "${dac.name}: couldn't open")
+                    val connection = open(dac)
+                    if (connection == null) {
+                        Log.w(TAG, "${dac.name}: couldn't open")
+                        return@Thread
+                    }
+                    connection.use {
+                        NativeUsb.describe(it.fd).lines().forEach { line -> Log.i(TAG, line) }
+                        // A short, quiet tone: the proof that the driver can play.
+                        Log.i(TAG, NativeUsb.startTestTone(it.fd, 48_000))
+                        Thread.sleep(2_500)
+                        NativeUsb.stopTestTone()
+                    }
                 }.start()
             }
         }
