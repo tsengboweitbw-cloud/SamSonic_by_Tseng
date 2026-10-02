@@ -288,9 +288,9 @@ private fun RailTab(
             Text(
                 text = label,
                 modifier = Modifier
-                    .revealHeight(emphasis, edgeFade = 12.dp)
+                    .revealHeight({ (emphasis() / LabelFullAt).coerceAtMost(1f) }, edgeFade = 6.dp)
                     .graphicsLayer {
-                        val t = ((emphasis() - 0.1f) / 0.9f).coerceIn(0f, 1f)
+                        val t = ((emphasis() - 0.02f) / (LabelFullAt - 0.02f)).coerceIn(0f, 1f)
                         alpha = t * t * (3 - 2 * t)
                     }
                     .padding(top = 6.dp),
