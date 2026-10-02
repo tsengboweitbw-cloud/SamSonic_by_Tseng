@@ -1,8 +1,8 @@
 # 🎵 Samsonic
 
-[![Version](https://img.shields.io/badge/Version-v2.0.5-blue.svg)](https://github.com/tsengboweitbw-cloud/SamSonic_by_Tseng/releases)
+[![Version](https://img.shields.io/badge/Version-v2.1.0-blue.svg)](https://github.com/tsengboweitbw-cloud/SamSonic_by_Tseng/releases)
 [![Android](https://img.shields.io/badge/Android-31%2B-green.svg)](https://developer.android.com)
-[![Kotlin](https://img.shields.io/badge/Kotlin-2.0-blue.svg)](https://kotlinlang.org)
+[![Kotlin](https://img.shields.io/badge/Kotlin-2.4-blue.svg)](https://kotlinlang.org)
 [![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-M3-purple.svg)](https://developer.android.com/jetpack/compose)
 [![Licence: GPL v3](https://img.shields.io/badge/Licence-GPLv3-blue.svg)](LICENSE)
 
@@ -18,9 +18,9 @@
   Personalised **Glassmorphism (frosted glass with dynamic sampling blur)** interface. Obsidian dark spatial colour palette with translucent floating panels featuring refined rim-stroke highlighting, plus ambient glows and accent companion colours derived in the OKLCH colour space. **Bottom-heavy reachability**: Floating navigation bar, floating mini player and large rounded card design optimised for effortless one-handed operation. Long-press any setting for a callout hint explaining what it does.  
   高度個人化的 **毛玻璃與動態採樣模糊** 介面。Obsidian 深色空間調色盤與半透明懸浮面板，帶有細緻的邊緣高光，並以 OKLCH 色彩空間衍生環境光暈與輔助強調色。底部優化懸浮導航列與大圓角卡片設計，極致單手操作體驗。長按任一設定選項即可查看說明提示。
 
-- **Audiophile Bit-Perfect & DSD Engine (Experimental) | 發燒級 Bit-Perfect 與 DSD 播放引擎 (測試中)**  
-  Self-built bit-perfect USB DAC routing that bypasses the system mixer, with a custom integer AudioTrack for loss-free 24-bit and 32-bit PCM. An in-app windowed-sinc polyphase resampler handles sample rates the DAC does not support. Full DSD playback via in-app DSD-to-PCM, DoP (DSD over PCM) or native DSD (`ENCODING_DSD`), with automatic fallback and mute protection whenever output is not routed to the DAC. Now Playing shows audio format and output tiles with the exact resolution and hardware status in real time.  
-  USB DAC Bit-Perfect 音訊直通（繞過系統混音器），自訂整數 AudioTrack 支援 24-bit / 32-bit PCM 無損輸出。內建高精度視窗 Sinc 多相重採樣，自動適配 DAC 不支援的採樣率。完整 DSD 輸出支援：PCM 轉換、DoP (DSD over PCM) 及原生 DSD，帶有備用降級鏈與旁路斷開靜音保護。播放畫面即時顯示音訊格式、輸出採樣率與硬體狀態。
+- **Audiophile USB DAC Driver | 發燒級 USB DAC 驅動**  
+  Optional, off by default (Settings > Playback > USB DAC driver). The app drives a plugged-in USB DAC itself in native code (libusb, USB audio class 1 and 2), sending PCM bit for bit in the DAC's own sample size and at the song's own rate where the DAC takes it, with gapless trimming, seeking and pause. DSD files go out as DoP or, with the Native DSD switch, in the DAC's raw-data format. DACs the driver cannot read are left to Android, and without a DAC DSD files play filtered to PCM. Now Playing and Song info show the exact format, output and DAC clock rate.  
+  可選功能，預設關閉（設定 > 播放 > USB DAC 驅動）。應用程式以原生程式碼（libusb，USB Audio Class 1 與 2）直接驅動已連接的 USB DAC，以 DAC 的原生位元深度逐位元輸出 PCM，並在 DAC 支援時使用歌曲原始採樣率，支援無縫播放、拖曳與暫停。DSD 檔案以 DoP 輸出，或開啟原生 DSD 後以 DAC 的原始資料格式輸出。無法讀取的 DAC 交由 Android 處理；未連接 DAC 時，DSD 檔案轉為 PCM 播放。播放畫面與歌曲資訊即時顯示確切格式、輸出與 DAC 時脈。
 
 - **Subsonic & Navidrome Compatibility | Subsonic & Navidrome 相容**  
   Native support for Subsonic / Navidrome REST API authentication and audio streaming. Supports albums, artists, playlists, random shuffle, search and dynamic synchronised lyrics.  
@@ -42,9 +42,10 @@
   Built with MVVM architecture, Coroutines / Flow reactive data streams, and Haze frosted glass rendering.  
   採用 MVVM 架構、Coroutines / Flow 響應式資料流與 Haze 毛玻璃渲染。
 
-- **Supports All Types of Devices (In development) | 支援多種裝置 (開發中)**  
-  Supports different kinds of devices, including phones, tablets, foldables, and even DeX.  
-  支援多種裝置，包括手機、平板、折疊手機與 Samsung DeX。
+- **Supports All Types of Devices | 支援多種裝置**  
+  Adaptive layouts for phones, tablets, foldables and Samsung DeX: a side navigation rail, two-pane Library and Settings, a larger-cover Now Playing, and keyboard and mouse shortcuts. Still being refined.  
+  針對手機、平板、折疊手機與 Samsung DeX 的自適應版面：側邊導覽列、雙窗格資料庫與設定、大封面播放畫面，以及鍵盤與滑鼠快捷鍵。持續優化中。
+
 ---
 
 ## Download & Installation | 下載與安裝
@@ -61,7 +62,7 @@ Please visit [GitHub Releases](https://github.com/tsengboweitbw-cloud/SamSonic_b
 - **Android Studio**: Ladybug / Jellyfish (or newer)
 - **JDK**: 17 or higher
 - **Minimum SDK**: Android 12 (API Level 31)
-- **Target SDK**: Android 15 (API Level 35)
+- **Target SDK**: Android 17 (API Level 37)
 
 ### Build Steps | 建置步驟
 1. **Clone repository | 複製專案**:
