@@ -10,6 +10,7 @@
 - Now Playing's pop-up panels (Up next and the rest) no longer stretch their glass on the bounce at the end of opening: the glass is laid out with room for the overshoot, so the slightly larger bounds show the real blur of what's behind them at every moment.
 - On a phone on its side, the navigation rail is narrower (68dp, not 88dp, widening only if a label needs it) and sits 8dp from the edge, not 16dp, so the pages beside it have more room on the left. It is shorter too, with smaller gaps around it, so it fits a 360dp-tall screen without crowding.
 - On a phone on its side, the navigation rail now uses the height the circular mini player frees: its tabs grow to fill the room between the status bar and the mini player (at most the normal tab height) instead of a fixed 32dp.
+- Now Playing's four audio info lines (format, output, device, device rate) are now one small capsule, the file's format (about 20dp tall, with a chevron). Tapping it opens a small window under it with the other three (output, device, device rate), each with its icon, name and value; tapping outside closes it. The window's text is short: units without spaces (96kHz, 24bit), stereo left unsaid, and the device rate as just the rate. Song info keeps the full wording.
 - On a phone on its side, the mini player under the rail is now just the cover in a circle, with the progress running round it; a tap opens Now Playing and a long press plays or pauses. There is no play/pause button in this layout.
 
 Changes since 5dfb5ba.

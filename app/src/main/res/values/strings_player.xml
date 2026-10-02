@@ -47,7 +47,6 @@
     <string name="player_channel_count">%1$d channels</string>
     <string name="player_device">Device</string>
     <string name="player_device_rate">Device rate</string>
-    <string name="player_device_at">Device at %1$s</string>
     <string name="player_info_title">Title</string>
     <string name="player_info_artist">Artist</string>
     <string name="player_info_album">Album</string>

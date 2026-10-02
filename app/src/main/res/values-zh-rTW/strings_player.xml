@@ -44,7 +44,6 @@
     <string name="player_channel_count">%1$d 聲道</string>
     <string name="player_device">裝置</string>
     <string name="player_device_rate">裝置取樣率</string>
-    <string name="player_device_at">裝置取樣率 %1$s</string>
     <string name="player_info_title">標題</string>
     <string name="player_info_artist">歌手</string>
     <string name="player_info_album">專輯</string>

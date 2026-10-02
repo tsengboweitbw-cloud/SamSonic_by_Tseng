@@ -63,22 +63,18 @@ internal fun <T : Any> rememberLastNonNull(value: T?): T? {
 }
 
 /**
- * Now Playing's five info lines, each behind a same-sized tile: the file's format
- * (its codec in the tile, the rest beside it), then the playback details. Always
- * takes room for all five, blank lines at the end standing in for any not there
- * (yet), so the page doesn't jump as a song loads.
+ * Now Playing's info line: a capsule each for the file's format (its codec leading, the
+ * quality beside it), then the playback details. Keeps the last ones while the next
+ * song's arrive, so the line doesn't jump as a song loads.
  */
 @Composable
 internal fun NowPlayingInfoRows(song: Song) {
     val format = rememberLastNonNull(songFormat(song))
-    if (format != null) {
-        InfoTileRow(format.first, description = stringResource(R.string.player_format), text = format.second)
-    } else {
-        InfoTileRowPlaceholder()
-    }
+    val formatDescription = stringResource(R.string.player_format)
     val details = rememberPlaybackDetails()
-    details.forEach { InfoTileRow(InfoTile.Glyph(iconOf(it)), description = it.label, text = it.line, active = it.active) }
-    repeat(PlaybackDetailCount - details.size) { InfoTileRowPlaceholder() }
+    val capsules = listOfNotNull(format?.let { InfoCapsule(it.first, formatDescription, it.second) }) +
+        details.map { InfoCapsule(InfoTile.Glyph(iconOf(it)), it.label, it.line, it.active) }
+    InfoCapsuleRow(capsules)
 }
 
 /** The format tile (the codec, or a file icon when unknown) and the quality beside it; null if nothing's known. */
@@ -106,9 +102,6 @@ private fun iconOf(detail: PlaybackDetail): ImageVector = when (detail.kind) {
     }
 }
 
-// The most lines [playbackDetails] gives: Output, Device, Device rate.
-private const val PlaybackDetailCount = 3
-
 /**
  * What's actually being played out, which can differ from the file (DSD decoded to
  * PCM, high-res PCM cut to 16-bit): the PCM handed to Android, the device it plays on,
@@ -128,6 +121,16 @@ private fun Resources.playbackDetails(output: AudioOutput): List<PlaybackDetail>
                 channelsOf(output.channels),
             ).joinToString(" · ")
         },
+        // Now Playing's capsule is short: no spaces in the units, and stereo (the usual) goes unsaid.
+        line = if (output.offload) {
+            getString(R.string.player_hardware_decoding)
+        } else {
+            listOfNotNull(
+                formatKilohertz(output.sampleRate).replace(" kHz", "kHz"),
+                describeEncoding(this, output.encoding).replace("-bit", "bit"),
+                output.channels.takeIf { it != 2 }?.let { channelsOf(it) },
+            ).joinToString(" · ")
+        },
     ),
     output.device?.let { PlaybackDetail(PlaybackDetailKind.Device, getString(R.string.player_device), it) },
     output.mixerRate?.let {
@@ -135,7 +138,7 @@ private fun Resources.playbackDetails(output: AudioOutput): List<PlaybackDetail>
             PlaybackDetailKind.DeviceRate,
             getString(R.string.player_device_rate),
             formatKilohertz(it),
-            line = getString(R.string.player_device_at, formatKilohertz(it)),
+            line = formatKilohertz(it).replace(" kHz", "kHz"),
         )
     },
 )

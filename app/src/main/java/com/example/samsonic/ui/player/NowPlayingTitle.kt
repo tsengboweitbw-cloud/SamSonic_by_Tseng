@@ -1,6 +1,5 @@
 package com.example.samsonic.ui.player
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
@@ -47,8 +46,8 @@ internal fun NowPlayingTitle(song: Song, modifier: Modifier = Modifier) {
         )
         // Always laid out, and keeping the last details until the next song's arrive
         // (blank only before the first), so nothing blinks or shifts as a song loads.
-        Spacer(Modifier.height(12.dp))
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) { NowPlayingInfoRows(song) }
+        Spacer(Modifier.height(8.dp))
+        NowPlayingInfoRows(song)
     }
 }
 
