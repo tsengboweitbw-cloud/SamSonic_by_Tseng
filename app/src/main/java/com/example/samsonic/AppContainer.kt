@@ -17,6 +17,7 @@ import com.example.samsonic.playback.AudioOutputMonitor
 import com.example.samsonic.playback.PlaybackStore
 import com.example.samsonic.playback.PlayerState
 import com.example.samsonic.playback.autodj.AutoDj
+import com.example.samsonic.playback.usb.UsbDacManager
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -60,6 +61,9 @@ class AppContainer(context: Context) {
 
     /** What the player sends out and where; the playback service feeds it, Song info shows it. */
     val audioOutput = AudioOutputMonitor(appContext)
+
+    /** USB audio devices plugged in, and the way to open one for the native driver. */
+    val usbDacs = UsbDacManager(appContext)
 
     private val subsonic = SubsonicRepository(okHttpClient, appContext)
 
