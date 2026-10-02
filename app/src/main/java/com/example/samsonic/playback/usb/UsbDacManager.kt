@@ -28,7 +28,7 @@ data class UsbDac(val device: UsbDevice, val name: String, val hasPermission: Bo
 class UsbDacManager(context: Context) {
     private val appContext = context.applicationContext
     private val usbManager = appContext.getSystemService(UsbManager::class.java)
-    private val probed = mutableSetOf<String>()
+    private val asked = mutableSetOf<String>()
     private val _dacs = MutableStateFlow<List<UsbDac>>(emptyList())
     val dacs: StateFlow<List<UsbDac>> = _dacs.asStateFlow()
 
@@ -50,39 +50,18 @@ class UsbDacManager(context: Context) {
         _dacs.value = usbManager.deviceList.values
             .filter { it.isAudioDevice() }
             .map { UsbDac(it, it.productName ?: it.deviceName, usbManager.hasPermission(it)) }
-        // A DAC plugged in again is probed again.
-        val present = _dacs.value.map { it.device.deviceName }
-        probed.removeAll { name -> present.none { name == it || name == "ask:$it" } }
-        probeInDebug()
-    }
-
-    /**
-     * Debug and perfTest builds only, until the driver plays songs: asks for permission to each DAC, then
-     * opens it, logs what libusb reads and plays a short quiet tone (tag SamSonicUsb).
-     */
-    private fun probeInDebug() {
-        if (BuildConfig.BUILD_TYPE == "release") return
-        for (dac in _dacs.value) {
-            if (!dac.hasPermission) {
-                if (probed.add("ask:${dac.device.deviceName}")) requestPermission(dac)
-            } else if (probed.add(dac.device.deviceName)) {
-                Thread {
-                    val connection = open(dac)
-                    if (connection == null) {
-                        Log.w(TAG, "${dac.name}: couldn't open")
-                        return@Thread
-                    }
-                    connection.use {
-                        NativeUsb.describe(it.fd).lines().forEach { line -> Log.i(TAG, line) }
-                        // A short, quiet tone: the proof that the driver can play.
-                        Log.i(TAG, NativeUsb.startTestTone(it.fd, 48_000))
-                        Thread.sleep(2_500)
-                        NativeUsb.stopTestTone()
-                    }
-                }.start()
+        // Until the Settings switch exists, builds other than release ask for each DAC's permission at once.
+        if (BuildConfig.BUILD_TYPE != "release") {
+            val present = _dacs.value.map { it.device.deviceName }
+            asked.retainAll(present.toSet())
+            for (dac in _dacs.value) {
+                if (!dac.hasPermission && asked.add(dac.device.deviceName)) requestPermission(dac)
             }
         }
     }
+
+    /** The first plugged-in DAC the app may open, if any. */
+    fun readyDac(): UsbDac? = _dacs.value.firstOrNull { it.hasPermission }
 
     /** Shows Android's permission dialog; [dacs] updates when it's answered. */
     fun requestPermission(dac: UsbDac) {

@@ -2,7 +2,6 @@
 
 #include <android/log.h>
 
-#include <cmath>
 #include <cstdio>
 #include <memory>
 #include <mutex>
@@ -15,7 +14,7 @@
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
 
 namespace {
-// The DAC currently playing the test tone: the libusb handle wrapping the Java side's descriptor.
+// The DAC the player is using: a libusb handle wrapping the Java side's descriptor.
 struct Session {
     libusb_device_handle* handle = nullptr;
     UacDevice device;
@@ -23,6 +22,10 @@ struct Session {
 };
 std::mutex sessionLock;
 std::unique_ptr<Session> session;
+
+// The rates a player is likely to ask for, from CD to DSD512 as DoP.
+constexpr uint32_t kCandidateRates[] = {44100,  48000,  88200,  96000,  176400, 192000,
+                                        352800, 384000, 705600, 768000, 1411200};
 
 jstring text(JNIEnv* env, const std::string& s) { return env->NewStringUTF(s.c_str()); }
 
@@ -57,38 +60,6 @@ void closeSession() {
     libusb_close(session->handle);
     session.reset();
 }
-
-// A quiet sine, faded in and out, written in the alt setting's layout.
-IsoStream::Pull sineSource(const UacAlt& alt, uint32_t rate, double seconds) {
-    struct State {
-        uint64_t frame = 0;
-    };
-    auto state = std::make_shared<State>();
-    const uint64_t total = static_cast<uint64_t>(rate * seconds);
-    const uint64_t fade = rate / 20;
-    const double amplitude = 0.0316;  // -30 dBFS
-    const int channels = alt.channels;
-    const int subslot = alt.subslotBytes;
-    return [=](uint8_t* dst, size_t frames) {
-        for (size_t i = 0; i < frames; i++) {
-            double v = 0;
-            if (state->frame < total) {
-                double gain = 1.0;
-                if (state->frame < fade) gain = static_cast<double>(state->frame) / fade;
-                if (total - state->frame < fade) gain = static_cast<double>(total - state->frame) / fade;
-                v = std::sin(2.0 * M_PI * 440.0 * static_cast<double>(state->frame) / rate) * amplitude * gain;
-                state->frame++;
-            }
-            int32_t sample = static_cast<int32_t>(v * 2147483647.0);
-            for (int c = 0; c < channels; c++) {
-                // Left-justified in the subslot: the top bytes of the 32-bit sample, low byte first.
-                for (int b = 0; b < subslot; b++) {
-                    *dst++ = static_cast<uint8_t>(sample >> (32 - 8 * subslot + 8 * b));
-                }
-            }
-        }
-    };
-}
 }  // namespace
 
 extern "C" JNIEXPORT jstring JNICALL
@@ -99,66 +70,119 @@ Java_com_example_samsonic_playback_usb_NativeUsb_libusbVersion(JNIEnv* env, jobj
     return text(env, buf);
 }
 
+// Opens the DAC behind [fd] for playing; "" on success, otherwise what went wrong. Any DAC
+// opened before is closed. Describes the DAC in the log.
 extern "C" JNIEXPORT jstring JNICALL
-Java_com_example_samsonic_playback_usb_NativeUsb_describe(JNIEnv* env, jobject /* this */, jint fd) {
-    libusb_device_handle* handle = nullptr;
-    UacDevice dev;
-    std::string error = openDevice(fd, &handle, dev);
-    if (!error.empty()) return text(env, error);
-    libusb_device_descriptor desc{};
-    libusb_get_device_descriptor(libusb_get_device(handle), &desc);
-    char head[96];
-    snprintf(head, sizeof(head), "%04x:%04x, %d configuration(s), USB %x.%02x, speed %d\n", desc.idVendor,
-             desc.idProduct, desc.bNumConfigurations, desc.bcdUSB >> 8, desc.bcdUSB & 0xff,
-             libusb_get_device_speed(libusb_get_device(handle)));
-    // Rates are read per alt setting's clock; the first alt is enough for the log.
-    libusb_claim_interface(handle, dev.controlInterface);
-    queryClockRates(handle, dev, dev.alts.front());
-    libusb_release_interface(handle, dev.controlInterface);
-    std::string result = head + describeUac(dev);
-    libusb_close(handle);
-    return text(env, result);
-}
-
-extern "C" JNIEXPORT jstring JNICALL
-Java_com_example_samsonic_playback_usb_NativeUsb_startTestTone(JNIEnv* env, jobject /* this */, jint fd, jint rate) {
+Java_com_example_samsonic_playback_usb_NativeUsb_open(JNIEnv* env, jobject /* this */, jint fd) {
     std::lock_guard<std::mutex> guard(sessionLock);
     closeSession();
     auto s = std::make_unique<Session>();
     std::string error = openDevice(fd, &s->handle, s->device);
     if (!error.empty()) return text(env, error);
 
+    libusb_device_descriptor desc{};
+    libusb_get_device_descriptor(libusb_get_device(s->handle), &desc);
     libusb_claim_interface(s->handle, s->device.controlInterface);
-    const UacAlt* chosen = nullptr;
     for (const UacAlt& alt : s->device.alts) {
-        if (!alt.pcm || alt.channels < 2) continue;
-        queryClockRates(s->handle, s->device, alt);
-        if (!supportsRate(s->device, alt, rate)) continue;
-        // The widest format that takes the rate.
-        if (!chosen || alt.subslotBytes > chosen->subslotBytes) chosen = &alt;
+        if (alt.pcm) {
+            queryClockRates(s->handle, s->device, alt);
+            break;
+        }
     }
     libusb_release_interface(s->handle, s->device.controlInterface);
-    if (!chosen) {
-        libusb_close(s->handle);
-        return text(env, "no PCM alt setting takes " + std::to_string(rate) + " Hz");
-    }
-    UacAlt alt = *chosen;
-    queryClockRates(s->handle, s->device, alt);
-    error = s->stream.start(sharedUsbContext(), s->handle, s->device, alt, rate, sineSource(alt, rate, 2.0));
-    if (!error.empty()) {
-        libusb_close(s->handle);
-        return text(env, error);
-    }
+    LOGI("%04x:%04x, speed %d\n%s", desc.idVendor, desc.idProduct,
+         libusb_get_device_speed(libusb_get_device(s->handle)), describeUac(s->device).c_str());
     session = std::move(s);
-    char buf[128];
-    snprintf(buf, sizeof(buf), "playing: intf %d alt %d, %d-bit in %d byte(s), %d Hz", alt.interfaceNumber,
-             alt.altSetting, alt.bitResolution, alt.subslotBytes, rate);
-    LOGI("%s", buf);
-    return text(env, buf);
+    return text(env, "");
+}
+
+// The alt settings that play audio, five ints each: index, channels, bytes per sample, bits, 1 if PCM.
+extern "C" JNIEXPORT jintArray JNICALL
+Java_com_example_samsonic_playback_usb_NativeUsb_formats(JNIEnv* env, jobject /* this */) {
+    std::lock_guard<std::mutex> guard(sessionLock);
+    std::vector<jint> flat;
+    if (session) {
+        jint index = 0;
+        for (const UacAlt& alt : session->device.alts) {
+            flat.insert(flat.end(), {index++, alt.channels, alt.subslotBytes, alt.bitResolution, alt.pcm ? 1 : 0});
+        }
+    }
+    jintArray result = env->NewIntArray(static_cast<jsize>(flat.size()));
+    env->SetIntArrayRegion(result, 0, static_cast<jsize>(flat.size()), flat.data());
+    return result;
+}
+
+// Which of the common rates the DAC takes in alt setting [index].
+extern "C" JNIEXPORT jintArray JNICALL
+Java_com_example_samsonic_playback_usb_NativeUsb_rates(JNIEnv* env, jobject /* this */, jint index) {
+    std::lock_guard<std::mutex> guard(sessionLock);
+    std::vector<jint> rates;
+    if (session && index >= 0 && index < static_cast<jint>(session->device.alts.size())) {
+        const UacAlt& alt = session->device.alts[index];
+        for (uint32_t rate : kCandidateRates) {
+            if (supportsRate(session->device, alt, rate)) rates.push_back(static_cast<jint>(rate));
+        }
+    }
+    jintArray result = env->NewIntArray(static_cast<jsize>(rates.size()));
+    env->SetIntArrayRegion(result, 0, static_cast<jsize>(rates.size()), rates.data());
+    return result;
+}
+
+// Starts streaming alt setting [index] at [rate]; "" on success, otherwise what went wrong.
+extern "C" JNIEXPORT jstring JNICALL
+Java_com_example_samsonic_playback_usb_NativeUsb_start(JNIEnv* env, jobject /* this */, jint index, jint rate) {
+    std::lock_guard<std::mutex> guard(sessionLock);
+    if (!session) return text(env, "no DAC is open");
+    if (index < 0 || index >= static_cast<jint>(session->device.alts.size())) return text(env, "no such alt setting");
+    UacAlt alt = session->device.alts[index];
+    libusb_claim_interface(session->handle, session->device.controlInterface);
+    queryClockRates(session->handle, session->device, alt);
+    libusb_release_interface(session->handle, session->device.controlInterface);
+    return text(env, session->stream.start(sharedUsbContext(), session->handle, session->device, alt, rate));
+}
+
+// Queues up to [length] bytes of whole frames from a direct buffer; returns the bytes taken.
+extern "C" JNIEXPORT jint JNICALL Java_com_example_samsonic_playback_usb_NativeUsb_write(
+    JNIEnv* env, jobject /* this */, jobject buffer, jint offset, jint length) {
+    auto* base = static_cast<uint8_t*>(env->GetDirectBufferAddress(buffer));
+    if (!base || !session) return 0;
+    return static_cast<jint>(session->stream.write(base + offset, static_cast<size_t>(length)));
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_example_samsonic_playback_usb_NativeUsb_freeBytes(JNIEnv* /* env */, jobject /* this */) {
+    return session ? static_cast<jint>(session->stream.freeBytes()) : 0;
+}
+
+extern "C" JNIEXPORT jint JNICALL
+Java_com_example_samsonic_playback_usb_NativeUsb_bufferedBytes(JNIEnv* /* env */, jobject /* this */) {
+    return session ? static_cast<jint>(session->stream.bufferedBytes()) : 0;
+}
+
+extern "C" JNIEXPORT jlong JNICALL
+Java_com_example_samsonic_playback_usb_NativeUsb_playedFrames(JNIEnv* /* env */, jobject /* this */) {
+    return session ? static_cast<jlong>(session->stream.playedFrames()) : 0;
 }
 
 extern "C" JNIEXPORT void JNICALL
-Java_com_example_samsonic_playback_usb_NativeUsb_stopTestTone(JNIEnv* /* env */, jobject /* this */) {
+Java_com_example_samsonic_playback_usb_NativeUsb_setPaused(JNIEnv* /* env */, jobject /* this */, jboolean paused) {
+    if (session) session->stream.setPaused(paused);
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_example_samsonic_playback_usb_NativeUsb_flush(JNIEnv* /* env */, jobject /* this */) {
+    if (session) session->stream.flush();
+}
+
+// Stops streaming but keeps the DAC open, for the next format.
+extern "C" JNIEXPORT void JNICALL
+Java_com_example_samsonic_playback_usb_NativeUsb_stop(JNIEnv* /* env */, jobject /* this */) {
+    std::lock_guard<std::mutex> guard(sessionLock);
+    if (session) session->stream.stop();
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_example_samsonic_playback_usb_NativeUsb_close(JNIEnv* /* env */, jobject /* this */) {
     std::lock_guard<std::mutex> guard(sessionLock);
     closeSession();
 }

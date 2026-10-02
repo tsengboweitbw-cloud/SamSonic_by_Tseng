@@ -6,6 +6,8 @@
 #include <unistd.h>
 
 #include <algorithm>
+#include <chrono>
+#include <cstring>
 
 #define LOG_TAG "SamSonicUsb"
 #define LOGI(...) __android_log_print(ANDROID_LOG_INFO, LOG_TAG, __VA_ARGS__)
@@ -38,13 +40,12 @@ void raiseThreadPriority() {
 }  // namespace
 
 std::string IsoStream::start(libusb_context* ctx, libusb_device_handle* handle, const UacDevice& dev,
-                             const UacAlt& alt, uint32_t rate, Pull pull) {
+                             const UacAlt& alt, uint32_t rate) {
     stop();
     ctx_ = ctx;
     handle_ = handle;
     alt_ = alt;
     controlInterface_ = dev.controlInterface;
-    pull_ = std::move(pull);
     frameBytes_ = static_cast<size_t>(alt.channels) * alt.subslotBytes;
     if (frameBytes_ == 0 || alt.dataMaxPacket <= 0) return "the alt setting has no usable format";
     maxFramesPerPacket_ = alt.dataMaxPacket / frameBytes_;
@@ -56,8 +57,14 @@ std::string IsoStream::start(libusb_context* ctx, libusb_device_handle* handle, 
     phase_ = 0;
     feedbackShiftKnown_ = false;
     errorLogs_ = 0;
-    transfersDone_ = packetsBad_ = bytesSent_ = feedbackCount_ = 0;
+    epoch_ = 0;
+    transfersDone_ = packetsBad_ = underruns_ = feedbackCount_ = 0;
+    playedFrames_ = 0;
+    paused_ = false;
+    flushRequested_ = false;
     packetsPerUrb_ = std::max<int>(1, hz * kUrbMillis / 1000);
+    // About half a second of audio.
+    ring_.reset(static_cast<size_t>(rate) * frameBytes_ / 2);
 
     // The same file descriptor is claimed on the Java side; this registers the claim with libusb.
     int r = libusb_claim_interface(handle, controlInterface_);
@@ -68,19 +75,30 @@ std::string IsoStream::start(libusb_context* ctx, libusb_device_handle* handle, 
     std::string rateError = setSampleRate(handle, dev, alt, rate);
     if (!rateError.empty()) LOGW("rate before alt: %s", rateError.c_str());
     r = libusb_set_interface_alt_setting(handle, alt.interfaceNumber, alt.altSetting);
-    if (r != 0) return std::string("selecting the alt setting failed: ") + libusb_error_name(r);
+    if (r != 0) {
+        libusb_release_interface(handle, alt.interfaceNumber);
+        return std::string("selecting the alt setting failed: ") + libusb_error_name(r);
+    }
     rateError = setSampleRate(handle, dev, alt, rate);
     if (!rateError.empty()) LOGW("rate after alt: %s", rateError.c_str());
 
     stopping_ = false;
     inflight_ = 0;
+    started_ = true;  // from here stop() tears down whatever was set up
     size_t bufferBytes = static_cast<size_t>(packetsPerUrb_) * alt.dataMaxPacket;
     for (int i = 0; i < kUrbCount; i++) {
         libusb_transfer* t = libusb_alloc_transfer(packetsPerUrb_);
-        if (!t) return "out of memory";
+        if (!t) {
+            running_ = true;
+            worker_ = std::thread(&IsoStream::run, this);
+            stop();
+            return "out of memory";
+        }
         buffers_.emplace_back(bufferBytes);
+        transfers_.push_back(std::make_unique<Transfer>());
+        transfers_.back()->stream = this;
         libusb_fill_iso_transfer(t, handle, alt.dataEp, buffers_.back().data(), static_cast<int>(bufferBytes),
-                                 packetsPerUrb_, &IsoStream::onData, this, 0);
+                                 packetsPerUrb_, &IsoStream::onData, transfers_.back().get(), 0);
         data_.push_back(t);
     }
     if (alt.feedbackEp != 0 && alt.feedbackMaxPacket > 0) {
@@ -91,23 +109,24 @@ std::string IsoStream::start(libusb_context* ctx, libusb_device_handle* handle, 
         libusb_set_iso_packet_lengths(feedback_, alt.feedbackMaxPacket);
     }
 
+    std::string error;
     for (libusb_transfer* t : data_) {
         fill(t);
         r = libusb_submit_transfer(t);
         if (r != 0) {
-            std::string error = std::string("submitting audio failed: ") + libusb_error_name(r);
-            stopping_ = true;
-            started_ = true;  // so stop() tears down what was set up
-            // The worker cancels what was already submitted and exits once it has all come back.
-            worker_ = std::thread(&IsoStream::run, this);
-            stop();
-            return error;
+            error = std::string("submitting audio failed: ") + libusb_error_name(r);
+            break;
         }
         inflight_++;
     }
-    if (feedback_ && libusb_submit_transfer(feedback_) == 0) inflight_++;
-    started_ = true;
+    if (error.empty() && feedback_ && libusb_submit_transfer(feedback_) == 0) inflight_++;
+    // Even on failure the worker runs, to cancel what was submitted and let it all come back.
+    running_ = true;
     worker_ = std::thread(&IsoStream::run, this);
+    if (!error.empty()) {
+        stop();
+        return error;
+    }
     LOGI("streaming %u Hz, %d-byte frames, %d packets per transfer, %s feedback", rate,
          static_cast<int>(frameBytes_), packetsPerUrb_, feedback_ ? "with" : "without");
     return "";
@@ -117,19 +136,37 @@ void IsoStream::stop() {
     if (!started_) return;
     stopping_ = true;
     if (worker_.joinable()) worker_.join();
-    LOGI("stopped: %llu transfers, %llu bad packets, %llu bytes, %llu feedback values, rate %.4f per interval",
+    running_ = false;
+    LOGI("stopped: %llu transfers, %llu bad packets, %llu underruns, %llu feedback values, rate %.4f per interval",
          static_cast<unsigned long long>(transfersDone_), static_cast<unsigned long long>(packetsBad_),
-         static_cast<unsigned long long>(bytesSent_), static_cast<unsigned long long>(feedbackCount_),
+         static_cast<unsigned long long>(underruns_), static_cast<unsigned long long>(feedbackCount_),
          rateQ16_ / 65536.0);
     for (libusb_transfer* t : data_) libusb_free_transfer(t);
     data_.clear();
     buffers_.clear();
+    transfers_.clear();
     if (feedback_) libusb_free_transfer(feedback_);
     feedback_ = nullptr;
     libusb_set_interface_alt_setting(handle_, alt_.interfaceNumber, 0);
     libusb_release_interface(handle_, alt_.interfaceNumber);
     libusb_release_interface(handle_, controlInterface_);
     started_ = false;
+}
+
+size_t IsoStream::write(const uint8_t* data, size_t bytes) {
+    if (!started_ || frameBytes_ == 0) return 0;
+    return ring_.write(data, bytes - bytes % frameBytes_);
+}
+
+void IsoStream::flush() {
+    if (!started_) return;
+    flushRequested_ = true;
+    // The worker answers at its next refill, a few milliseconds away.
+    auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(100);
+    while (flushRequested_ && running_ && std::chrono::steady_clock::now() < deadline) {
+        usleep(500);
+    }
+    if (flushRequested_.exchange(false)) LOGW("flush wasn't answered in time");
 }
 
 void IsoStream::run() {
@@ -149,39 +186,55 @@ void IsoStream::run() {
 }
 
 void IsoStream::fill(libusb_transfer* t) {
+    auto* transfer = static_cast<Transfer*>(t->user_data);
+    if (flushRequested_.exchange(false)) {
+        ring_.discard();
+        epoch_++;
+    }
+    transfer->epoch = epoch_;
+    transfer->realFrames = 0;
+    const bool paused = paused_.load(std::memory_order_acquire);
     uint8_t* out = t->buffer;
     int total = 0;
     for (int i = 0; i < t->num_iso_packets; i++) {
         phase_ += rateQ16_;
         size_t frames = std::min<size_t>(phase_ >> 16, maxFramesPerPacket_);
         phase_ &= 0xFFFF;
-        pull_(out, frames);
-        int bytes = static_cast<int>(frames * frameBytes_);
-        t->iso_packet_desc[i].length = bytes;
+        size_t bytes = frames * frameBytes_;
+        size_t real = 0;
+        if (!paused) {
+            // Whole frames only: the ring holds whole frames, so this is exact.
+            real = ring_.read(out, bytes);
+            if (real < bytes) underruns_++;
+        }
+        if (real < bytes) memset(out + real, 0, bytes - real);
+        transfer->realFrames += real / frameBytes_;
+        t->iso_packet_desc[i].length = static_cast<unsigned int>(bytes);
         out += bytes;
-        total += bytes;
+        total += static_cast<int>(bytes);
     }
     t->length = total;
 }
 
 void LIBUSB_CALL IsoStream::onData(libusb_transfer* t) {
-    auto* self = static_cast<IsoStream*>(t->user_data);
+    auto* transfer = static_cast<Transfer*>(t->user_data);
+    IsoStream* self = transfer->stream;
     if (self->stopping_ || t->status == LIBUSB_TRANSFER_CANCELLED || t->status == LIBUSB_TRANSFER_NO_DEVICE) {
         self->inflight_--;
         return;
     }
     self->transfersDone_++;
     for (int i = 0; i < t->num_iso_packets; i++) {
-        const libusb_iso_packet_descriptor& p = t->iso_packet_desc[i];
-        self->bytesSent_ += p.actual_length;
-        if (p.status != LIBUSB_TRANSFER_COMPLETED) {
+        if (t->iso_packet_desc[i].status != LIBUSB_TRANSFER_COMPLETED) {
             self->packetsBad_++;
-            if (self->errorLogs_++ < 5) LOGW("audio packet status %d", p.status);
+            if (self->errorLogs_++ < 5) LOGW("audio packet status %d", t->iso_packet_desc[i].status);
         }
     }
     if (t->status != LIBUSB_TRANSFER_COMPLETED && self->errorLogs_++ < 5) {
         LOGW("audio transfer status %d", t->status);
     }
+    // Frames from before a flush don't count: they're no longer in the player's timeline.
+    if (transfer->epoch == self->epoch_) self->playedFrames_ += transfer->realFrames;
     self->fill(t);
     if (libusb_submit_transfer(t) != 0) {
         self->inflight_--;

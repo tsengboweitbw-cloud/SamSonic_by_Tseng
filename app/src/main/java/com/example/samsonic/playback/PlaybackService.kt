@@ -13,16 +13,19 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.okhttp.OkHttpDataSource
 import androidx.media3.exoplayer.DefaultLoadControl
+import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
 import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionResult
+import com.example.samsonic.BuildConfig
 import com.example.samsonic.MainActivity
 import com.example.samsonic.SamSonicApplication
 import com.example.samsonic.locale.AppLanguages
 import com.example.samsonic.playback.dsd.DsdExtractorsFactory
+import com.example.samsonic.playback.usb.UsbRenderersFactory
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.coroutines.CoroutineScope
@@ -65,7 +68,9 @@ class PlaybackService : MediaSessionService() {
         // DSD (DSF/DFF) has no Android decoder; its extractor filters it into PCM itself.
         val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory, DsdExtractorsFactory())
 
-        val player = ExoPlayer.Builder(this)
+        // Until the Settings switch exists, builds other than release play through a plugged-in USB DAC.
+        val renderers = if (BuildConfig.BUILD_TYPE == "release") DefaultRenderersFactory(this) else UsbRenderersFactory(this, container.usbDacs)
+        val player = ExoPlayer.Builder(this, renderers)
             .setMediaSourceFactory(mediaSourceFactory)
             .setAudioAttributes(
                 AudioAttributes.Builder()
