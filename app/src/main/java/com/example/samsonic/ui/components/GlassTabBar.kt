@@ -228,13 +228,14 @@ fun GlassTabBar(
 
 /** The frosted pill a [GlassTabBar] sits on, for callers drawing it with `glass = false`. */
 @Composable
-fun Modifier.glassTabPill(hazeState: HazeState?): Modifier = glassSurface(
+fun Modifier.glassTabPill(hazeState: HazeState?, flatTint: Boolean = false): Modifier = glassSurface(
     shape = RoundedCornerShape(OneUiRadius.Pill),
     hazeState = hazeState,
     tint = MaterialTheme.colorScheme.surfaceContainerHigh,
     alpha = GlassAlpha.Nav,
     sheen = AccentSheen.Chrome,
     inputScale = LocalChromeBlurScale.current,
+    flatTint = flatTint,
 )
 
 @Composable

@@ -161,7 +161,7 @@ fun GlassNavRail(
         modifier = modifier
             .width(width)
             .height(NavRail.length(count, tabHeight))
-            .glassTabPill(hazeState)
+            .glassTabPill(hazeState, flatTint = true)
             .drawBehind {
                 val at = p()
                 drawTabIndicator(tabWeights(count, at), at, NavRail.Inset.toPx(), indicatorColors, vertical = true)

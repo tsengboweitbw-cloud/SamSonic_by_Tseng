@@ -26,6 +26,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -84,6 +85,10 @@ fun Modifier.glassSurface(
     // source. Skia shrinks what it blurs by a lot under a medium-strong blur, and a sharp edge
     // moving behind (a scrolling title) shimmers as it's shrunk.
     preBlurred: Boolean = false,
+    // True for a glass long in the direction of the gradient below (the nav rail, standing on
+    // end): the tint is then one flat density, the gradient's average, so it reads as dense
+    // as the same glass on a bar, where the gradient spans only the bar's thin height.
+    flatTint: Boolean = false,
 ): Modifier {
     // Scale by the user's global opacity preference, keeping each surface's
     // base alpha as its relative density.
@@ -104,12 +109,16 @@ fun Modifier.glassSurface(
     val filled = if (hazeState != null) {
         // Thinner tint up top so the blurred colors behind bloom through,
         // denser toward the bottom where content (text) must stay hidden.
-        val tintBrush = Brush.verticalGradient(
-            colors = listOf(
-                tint.copy(alpha = (alpha - 0.25f).coerceAtLeast(0f)),
-                tint.copy(alpha = (alpha + 0.1f).coerceAtMost(1f)),
-            ),
-        )
+        val tintBrush = if (flatTint) {
+            SolidColor(tint.copy(alpha = glassTintMean(alpha)))
+        } else {
+            Brush.verticalGradient(
+                colors = listOf(
+                    tint.copy(alpha = glassTintTop(alpha)),
+                    tint.copy(alpha = glassTintBottom(alpha)),
+                ),
+            )
+        }
         // The captured source content has no background of its own (Scaffold paints it
         // outside hazeSource), so without an opaque base the blurred layer is translucent
         // and the sharp original text shows straight through it.
@@ -174,6 +183,11 @@ fun Modifier.glassPreBlur(hazeState: HazeState): Modifier {
         performanceMode = HazePerformanceMode.Quality,
     )
 }
+
+/** The tint's alpha at the top and bottom of a glass of [alpha], and its mean down the glass. */
+fun glassTintTop(alpha: Float): Float = (alpha - 0.25f).coerceAtLeast(0f)
+fun glassTintBottom(alpha: Float): Float = (alpha + 0.1f).coerceAtMost(1f)
+fun glassTintMean(alpha: Float): Float = (glassTintTop(alpha) + glassTintBottom(alpha)) / 2f
 
 /** Haze's own grain texture, tiled over the glass at the screen's full size, at [alpha]. */
 @Composable

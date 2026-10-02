@@ -52,9 +52,13 @@ import com.example.samsonic.ui.components.PressIconButton
 import com.example.samsonic.ui.theme.AccentSheen
 import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.GlassRimWidth
+import com.example.samsonic.ui.theme.LocalChromeBlurScale
 import com.example.samsonic.ui.theme.LocalGlassSettings
 import com.example.samsonic.ui.theme.OneUiRadius
 import com.example.samsonic.ui.theme.glassRimBrush
+import com.example.samsonic.ui.theme.glassTintBottom
+import com.example.samsonic.ui.theme.glassTintMean
+import com.example.samsonic.ui.theme.glassTintTop
 import com.example.samsonic.ui.theme.glassSurface
 import dev.chrisbanes.haze.HazeState
 
@@ -138,11 +142,8 @@ internal fun LibraryTabsPanel(
     // included), open or closed.
     val tint = MaterialTheme.colorScheme.surfaceContainerHigh
     val glass = LocalGlassSettings.current
-    val pillAlpha = GlassAlpha.Nav * glass.opacityScale
-    // The glass's tint runs thin at the top to dense at the bottom of the full
-    // panel, so the pill (just its top strip) gets a little wash to match the
-    // standalone pill's average density; the open panel keeps it.
-    val wash = 0.2f * pillAlpha / GlassAlpha.Nav
+    val pillAlpha = (GlassAlpha.Nav * glass.opacityScale).coerceIn(0f, 1f)
+    val chromeBlurScale = LocalChromeBlurScale.current
     val blurRadius = glass.blurRadius
     val rimBrush = glassRimBrush()
     val cornerRadius = OneUiRadius.Card
@@ -222,8 +223,22 @@ internal fun LibraryTabsPanel(
                     rim = false,
                     // The tab bar's, as the nav bar's: it's chrome, open as a menu or not.
                     sheen = AccentSheen.Chrome,
+                    // The nav bar's blur, scaled copy and all.
+                    inputScale = chromeBlurScale,
                 )
-                .drawBehind { drawRect(tint, alpha = wash) },
+                .drawBehind {
+                    // The glass's tint runs thin at the top to dense at the bottom of the full
+                    // panel, so the pill (just its top strip) gets a wash that lifts its density
+                    // to the standalone pill's mean, whatever the panel's height; the open panel
+                    // keeps it.
+                    val pill = pillHeight[0].toFloat()
+                    if (pill > 0f && size.height > 0f) {
+                        val top = glassTintTop(pillAlpha)
+                        val atPill = top + (glassTintBottom(pillAlpha) - top) * (pill / 2f / size.height).coerceAtMost(1f)
+                        val wash = ((glassTintMean(pillAlpha) - atPill) / (1f - atPill)).coerceIn(0f, 1f)
+                        drawRect(tint, alpha = wash)
+                    }
+                },
             // No pointer modifier on the glass: closed, taps below the pill
             // (where the glass is laid out but clipped away) reach the content.
         ) {
