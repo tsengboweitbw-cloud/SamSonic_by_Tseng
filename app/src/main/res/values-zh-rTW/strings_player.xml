@@ -29,6 +29,7 @@
     <string name="player_repeat">重複播放</string>
     <string name="player_collapse">收合</string>
     <string name="player_remove">移除</string>
+    <string name="player_clear_queue">清除佇列</string>
     <string name="player_now_playing">正在播放</string>
     <string name="player_lyrics">歌詞</string>
     <string name="player_queue">播放佇列</string>

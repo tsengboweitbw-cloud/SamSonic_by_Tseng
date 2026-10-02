@@ -243,6 +243,25 @@ class PlayerState(
         c.removeMediaItem(index)
     }
 
+    /** Playing, drops every song but the current one; paused, it's all of them, and the
+     *  player goes away with them (see [stopAndClearQueue]). */
+    fun clearQueue() {
+        val c = controller ?: return
+        if (!isPlaying || currentIndex !in queue.indices) {
+            stopAndClearQueue()
+            return
+        }
+        val keep = currentIndex
+        if (keep + 1 < queue.size) {
+            queue.removeRange(keep + 1, queue.size)
+            c.removeMediaItems(keep + 1, c.mediaItemCount)
+        }
+        if (keep > 0) {
+            queue.removeRange(0, keep)
+            c.removeMediaItems(0, keep)
+        }
+    }
+
     fun playQueueIndex(index: Int) {
         val c = controller ?: return
         if (index !in queue.indices) return

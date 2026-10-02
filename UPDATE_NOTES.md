@@ -12,6 +12,7 @@
 - On a phone on its side, the navigation rail now uses the height the circular mini player frees: its tabs grow to fill the room between the status bar and the mini player (at most the normal tab height) instead of a fixed 32dp.
 - Now Playing's four audio info lines (format, output, device, device rate) are now one small capsule, the file's format (about 20dp tall, with a chevron). Tapping it opens a small window under it with the other three (output, device, device rate), each with its icon, name and value; tapping outside closes it. The window's text is short: units without spaces (96kHz, 24bit), stereo left unsaid, and the device rate as just the rate. Song info keeps the full wording.
 - On a phone on its side, the mini player under the rail is now just the cover in a circle, with the progress running round it; a tap opens Now Playing and a long press plays or pauses. There is no play/pause button in this layout.
+- The Up next card has a Clear queue button above the Auto DJ strip. While music plays, it removes every song but the current one; paused, it removes them all, stops playback and closes Now Playing and the mini player, like swiping the mini player away.
 
 Changes since 5dfb5ba.
 
