@@ -1,9 +1,13 @@
 package com.example.samsonic.ui.player
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.gestures.Orientation
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.draggable
 import androidx.compose.foundation.gestures.rememberDraggableState
 import androidx.compose.foundation.layout.Box
@@ -17,8 +21,12 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.lerp
@@ -49,6 +57,12 @@ import com.example.samsonic.ui.theme.glassSurface
 import kotlin.math.roundToInt
 
 private val PillMargin = 12.dp
+
+// The widest the rail's mini player grows to when swiped open into the phone's wide pill.
+private val WideRailPillMaxWidth = 520.dp
+// A swipe right this far, or a fling, opens the rail's mini player.
+private val RailOpenTravel = 28.dp
+private val RailOpenFling = 600.dp
 
 /**
  * How the mini player's pill is drawn off its place as it comes in ([coming], 1 to 0)
@@ -130,6 +144,14 @@ fun PlayerSheet(
     SideEffect { sheet.onDismiss = player::stopAndClearQueue }
     // Swiped away, the pill stays gone until music comes back.
     LaunchedEffect(song != null) { if (song != null) sheet.clearDismissal() }
+    // Beside a rail, a swipe right on the narrow mini player opens it into the phone's wide
+    // pill (0 narrow, 1 wide); a tap outside it, or back, shrinks it again.
+    val railMode = collapsedWidth != null
+    var railOpen by rememberSaveable { mutableStateOf(false) }
+    if (!railMode || song == null) SideEffect { railOpen = false }
+    val railOpenness = remember { Animatable(0f) }
+    LaunchedEffect(railOpen) { railOpenness.animateTo(if (railOpen) 1f else 0f, spring(dampingRatio = 1f, stiffness = 380f)) }
+    BackHandler(enabled = railOpen && !sheet.isExpanded) { railOpen = false }
     val morph = remember(sheet) { PlayerMorphState(progress = { sheet.progress }, active = { sheet.isMoving }) }
     val links = remember(sheet, onAlbumClick, onArtistClick) {
         PlayerLinks(
@@ -148,7 +170,14 @@ fun PlayerSheet(
                     val bottom = full.bottom - collapsedBottom.toPx()
                     val left = collapsedStart.toPx() + if (collapsedWidth == null) collapsedMargin.toPx() else 0f
                     val right = if (collapsedWidth == null) full.right - collapsedMargin.toPx() else left + collapsedWidth.toPx()
-                    Rect(left, bottom - collapsedHeight.toPx(), right, bottom)
+                    val rail = Rect(left, bottom - collapsedHeight.toPx(), right, bottom)
+                    val open = railOpenness.value
+                    if (railMode && open > 0f) {
+                        val wideRight = minOf(full.right - collapsedMargin.toPx(), left + WideRailPillMaxWidth.toPx())
+                        lerp(rail, Rect(left, bottom - OneUiChrome.BarHeight.toPx(), wideRight, bottom), open)
+                    } else {
+                        rail
+                    }
                 }
                 SideEffect {
                     sheet.travelPx = collapsed.top
@@ -178,7 +207,16 @@ fun PlayerSheet(
                         }
                     }
                 }
-                SheetSurface(sheet, song, collapsed, full, pile, pileWeight, pileOffset, entrance, compact = collapsedWidth != null, short = collapsedWidth != null && collapsedHeight < RailMiniPlayerHeight)
+                // Tapping anywhere else shrinks the opened pill back to the rail's.
+                if (railMode && railOpen && sheet.progress == 0f) {
+                    Box(Modifier.fillMaxSize().pointerInput(Unit) { detectTapGestures { railOpen = false } })
+                }
+                SheetSurface(
+                    sheet, song, collapsed, full, pile, pileWeight, pileOffset, entrance,
+                    compact = railMode && railOpenness.value < 0.5f,
+                    short = railMode && collapsedHeight < RailMiniPlayerHeight && railOpenness.value < 0.5f,
+                    onRailOpen = if (railMode && !railOpen) ({ railOpen = true }) else null,
+                )
                 // Above the sheet: the cover and progress line in flight.
                 PlayerMorphOverlay(morph, Modifier.fillMaxSize())
             }
@@ -200,6 +238,8 @@ private fun SheetSurface(
     // The rail's narrow mini player, rather than the wide one; [short], under a short rail.
     compact: Boolean,
     short: Boolean,
+    // Set on the rail's narrow pill: a swipe right on it opens it wide.
+    onRailOpen: (() -> Unit)?,
 ) {
     // Kept until fully open: its art and progress line are the morph's start points.
     // Gone once open, so its (invisible) pill can't catch Now Playing's taps.
@@ -290,6 +330,22 @@ private fun SheetSurface(
                 startDragImmediately = sheet.isMoving || sheet.isDismissing,
                 onDragStarted = { sheet.startDrag() },
                 onDragStopped = { velocity -> sheet.settle(velocity) },
+            )
+            .then(
+                if (onRailOpen != null) {
+                    val openPx = with(LocalDensity.current) { RailOpenTravel.toPx() }
+                    val flingPx = with(LocalDensity.current) { RailOpenFling.toPx() }
+                    val travelled = remember { floatArrayOf(0f) }
+                    Modifier.draggable(
+                        state = rememberDraggableState { travelled[0] += it },
+                        orientation = Orientation.Horizontal,
+                        enabled = atRest,
+                        onDragStarted = { travelled[0] = 0f },
+                        onDragStopped = { velocity -> if (travelled[0] > openPx || velocity > flingPx) onRailOpen() },
+                    )
+                } else {
+                    Modifier
+                },
             )
             .then(
                 if (swipes) {
