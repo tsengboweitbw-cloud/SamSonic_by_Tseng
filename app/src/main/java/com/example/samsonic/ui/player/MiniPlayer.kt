@@ -185,9 +185,6 @@ fun MiniPlayer(
 /** How tall the mini player is under the nav rail, as wide as the rail. */
 val RailMiniPlayerHeight = 176.dp
 
-/** Under a short rail, on a phone on its side. */
-val ShortRailMiniPlayerHeight = 116.dp
-
 /**
  * The mini player under the nav rail, as narrow as the rail and standing on end like
  * it: the art, set down from the capsule's round top so its corners keep clear of the
@@ -199,19 +196,46 @@ val ShortRailMiniPlayerHeight = 116.dp
 private fun RailMiniPlayer(song: Song, onExpand: () -> Unit, modifier: Modifier = Modifier, short: Boolean = false) {
     val player = LocalPlayerState.current
     val cornerRadius by LocalAppContainer.current.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
+    if (short) {
+        // A phone on its side: just the cover, round, with the progress running round it;
+        // a tap opens Now Playing, a long press plays or pauses.
+        Box(
+            modifier = modifier
+                .fillMaxSize()
+                .pressClickable(onExpand, pressedScale = 0.96f, onLongClick = { player.togglePlayPause() })
+                .playerMorphRoot(PlayerSurface.Mini),
+            contentAlignment = Alignment.Center,
+        ) {
+            ProgressRing(
+                progress = {
+                    if (song.durationSeconds > 0) (player.positionSeconds / song.durationSeconds).coerceIn(0f, 1f) else 0f
+                },
+                modifier = Modifier.size(58.dp),
+            )
+            MediaArt(
+                coverArt = song.coverArt,
+                colorSeed = song.id.artSeed(),
+                modifier = Modifier.playerMorphAnchor(PlayerElement.Art, PlayerSurface.Mini),
+                size = 46.dp,
+                cornerRadius = 23.dp,
+                shadowElevation = 0.dp,
+            )
+        }
+        return
+    }
     Column(
         modifier = modifier
             .fillMaxSize()
             .pressClickable(onExpand, pressedScale = 0.96f)
             .playerMorphRoot(PlayerSurface.Mini)
-            .padding(top = if (short) 14.dp else 30.dp, bottom = if (short) 10.dp else 16.dp),
+            .padding(top = 30.dp, bottom = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         MediaArt(
             coverArt = song.coverArt,
             colorSeed = song.id.artSeed(),
             modifier = Modifier.playerMorphAnchor(PlayerElement.Art, PlayerSurface.Mini),
-            size = if (short) 44.dp else 52.dp,
+            size = 52.dp,
             cornerRadius = cornerRadius,
             shadowElevation = 0.dp,
         )
@@ -222,9 +246,9 @@ private fun RailMiniPlayer(song: Song, onExpand: () -> Unit, modifier: Modifier 
                 progress = {
                     if (song.durationSeconds > 0) (player.positionSeconds / song.durationSeconds).coerceIn(0f, 1f) else 0f
                 },
-                modifier = Modifier.size(if (short) 46.dp else 56.dp),
+                modifier = Modifier.size(56.dp),
             )
-            PressIconButton(onClick = { player.togglePlayPause() }, size = if (short) 40.dp else 48.dp) {
+            PressIconButton(onClick = { player.togglePlayPause() }, size = 48.dp) {
                 Icon(
                     imageVector = if (player.isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
                     contentDescription = stringResource(if (player.isPlaying) R.string.player_pause else R.string.components_play),

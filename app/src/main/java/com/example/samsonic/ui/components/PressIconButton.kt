@@ -8,7 +8,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.draw.drawBehind
 import com.example.samsonic.ui.common.HoverGlowAlpha
 import com.example.samsonic.ui.common.hovered
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
@@ -54,7 +54,13 @@ fun PressIconButton(
  * it lights it faintly, within whatever shape it's clipped to before this.
  */
 @Composable
-fun Modifier.pressClickable(onClick: () -> Unit, pressedScale: Float = 0.85f, enabled: Boolean = true): Modifier {
+fun Modifier.pressClickable(
+    onClick: () -> Unit,
+    pressedScale: Float = 0.85f,
+    enabled: Boolean = true,
+    // A long press; none by default.
+    onLongClick: (() -> Unit)? = null,
+): Modifier {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val scale by animateFloatAsState(
@@ -69,7 +75,14 @@ fun Modifier.pressClickable(onClick: () -> Unit, pressedScale: Float = 0.85f, en
     )
     val glowColor = MaterialTheme.colorScheme.onSurface
     return drawBehind { if (glow > 0f) drawRect(glowColor, alpha = glow) }
-        .clickable(interactionSource = interaction, indication = null, enabled = enabled, role = Role.Button, onClick = onClick)
+        .combinedClickable(
+            interactionSource = interaction,
+            indication = null,
+            enabled = enabled,
+            role = Role.Button,
+            onLongClick = onLongClick,
+            onClick = onClick,
+        )
         .graphicsLayer {
             scaleX = scale
             scaleY = scale

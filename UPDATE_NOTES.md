@@ -8,6 +8,8 @@
 - Now Playing's pop-up panels (Lyrics, Up next, Song info, Auto DJ) take the Now Playing controls' blur and opacity settings, like the controls, rather than the menus' settings, and lose the accent sheen the menus have.
 - The Now Playing controls' opacity slider now runs from 50% to 130% like the other opacity settings, as a multiplier over the old 70% look (100% is what 70% was). Anyone who had changed it starts again at 100%.
 - Now Playing's pop-up panels (Up next and the rest) no longer stretch their glass on the bounce at the end of opening: the glass is laid out with room for the overshoot, so the slightly larger bounds show the real blur of what's behind them at every moment.
+- On a phone on its side, the navigation rail is narrower (68dp, not 88dp, widening only if a label needs it) and sits 8dp from the edge, not 16dp, so the pages beside it have more room on the left. It is shorter too, with smaller gaps around it, so it fits a 360dp-tall screen without crowding.
+- On a phone on its side, the mini player under the rail is now just the cover in a circle, with the progress running round it; a tap opens Now Playing and a long press plays or pauses. There is no play/pause button in this layout.
 
 Changes since 5dfb5ba.
 

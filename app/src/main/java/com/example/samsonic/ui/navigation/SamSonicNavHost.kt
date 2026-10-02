@@ -116,7 +116,6 @@ import com.example.samsonic.ui.library.LocalAddToPlaylist
 import com.example.samsonic.ui.library.rememberAddToPlaylistState
 import com.example.samsonic.ui.player.PlayerSheet
 import com.example.samsonic.ui.player.RailMiniPlayerHeight
-import com.example.samsonic.ui.player.ShortRailMiniPlayerHeight
 import com.example.samsonic.ui.player.rememberPlayerSheetState
 import com.example.samsonic.ui.search.SearchScreen
 import com.example.samsonic.ui.search.SearchSession
@@ -184,14 +183,15 @@ fun SamSonicNavHost(lastTab: LastTab) {
     val canEditPlaylists = remember { container.repository.canEditPlaylists }
     val chromeGuard = remember { ChromeGuard() }
     val navBarHeight = OneUiChrome.BarHeight
-    val navBarBottomInset = 16.dp
+    // A phone on its side is short: the rail's tabs and the mini player under it are shorter,
+    // and the gaps around them.
+    val phoneLandscape = LocalWindowLayout.current.phoneLandscape
+    val navBarBottomInset = if (phoneLandscape) 8.dp else 16.dp
+    val railMiniGap = if (phoneLandscape) 8.dp else RailMiniGap
     // In DeX the mini player under the rail sits higher, clear of the taskbar and the window's
     // bottom edge, where a mouse heading for it would otherwise be.
     val desktopChrome = LocalWindowLayout.current.desktop
     val railMiniLift = if (desktopChrome) DesktopMiniLift else 0.dp
-    // A phone on its side is short: the rail's tabs and the mini player under it are shorter.
-    val phoneLandscape = LocalWindowLayout.current.phoneLandscape
-    val railMiniHeight = if (phoneLandscape) ShortRailMiniPlayerHeight else RailMiniPlayerHeight
     val railTabHeight = when {
         desktopChrome -> NavRail.DesktopTabHeight
         phoneLandscape -> NavRail.ShortTabHeight
@@ -311,8 +311,11 @@ fun SamSonicNavHost(lastTab: LastTab) {
             val railStartInset = innerPadding.calculateStartPadding(layoutDirection)
             // As wide as its longest label needs (larger text in DeX), and the room beside it with it.
             val railLabels = bottomDestinations.map { stringResource(it.label) }
-            val railWidth = rememberNavRailWidth(railLabels)
-            val railReserve = if (onRail && !signingIn) railStartInset + NavRail.Margin + railWidth else 0.dp
+            val railWidth = rememberNavRailWidth(railLabels, if (phoneLandscape) NavRail.ShortWidth else NavRail.Width)
+            // On its side, the mini player is a circle as wide as the rail: the cover with the progress round it.
+            val railMiniHeight = if (phoneLandscape) railWidth else RailMiniPlayerHeight
+            val railMargin =if (phoneLandscape) NavRail.ShortMargin else NavRail.Margin
+            val railReserve = if (onRail && !signingIn) railStartInset + railMargin + railWidth else 0.dp
             // The live top of the highest bar, for what floats just above it (a page's docked
             // play buttons): the nav bar's, plus the mini player's rise above it while there's
             // a song, apart or piled, easing as it comes or goes and following a swipe away.
@@ -445,7 +448,7 @@ fun SamSonicNavHost(lastTab: LastTab) {
                     collapsedBottom = chromeBottomInset + navBarBottomInset +
                         if (onRail) railMiniLift else lerp(navBarHeight + 8.dp, 0.dp, stackAmount),
                     collapsedMargin = lerp(12.dp, 16.dp, stackAmount),
-                    collapsedStart = if (onRail) railStartInset + NavRail.Margin else 0.dp,
+                    collapsedStart = if (onRail) railStartInset + railMargin else 0.dp,
                     collapsedWidth = railWidth.takeIf { onRail },
                     collapsedHeight = if (onRail) railMiniHeight else OneUiChrome.BarHeight,
                     pile = chromePile.takeIf { pileShown },
@@ -547,7 +550,7 @@ fun SamSonicNavHost(lastTab: LastTab) {
                         // there's a song (it stays put as music starts and stops), or, as set
                         // in Settings, only while there's one, rising as it comes and settling
                         // back as it goes.
-                        val miniRoom = (systemBarInset + navBarBottomInset + railMiniLift + railMiniHeight + RailMiniGap).toPx()
+                        val miniRoom = (systemBarInset + navBarBottomInset + railMiniLift + railMiniHeight + railMiniGap).toPx()
                         val lift = if (railStaysPut) 1f else miniPresence.value * (1f - playerSheet.dismissal.coerceIn(0f, 1f))
                         // Centred between the status bar and the mini player, not the window's middle:
                         // a phone on its side has little height, and it reached under the status bar.
@@ -555,7 +558,7 @@ fun SamSonicNavHost(lastTab: LastTab) {
                         translationY = (topInset * lift - miniRoom * lift) / 2
                         alpha = 1f - progress
                     }
-                    .padding(start = railStartInset + NavRail.Margin),
+                    .padding(start = railStartInset + railMargin),
             ) {
                 FloatingNavRail(
                     destinations = bottomDestinations,

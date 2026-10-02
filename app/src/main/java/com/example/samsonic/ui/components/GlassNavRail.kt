@@ -70,6 +70,10 @@ object NavRail {
     /** Between the rail and the side of the screen (past any system bar there). */
     val Margin = 16.dp
 
+    // On a phone on its side, where the rail's room comes out of a short, not-so-wide screen.
+    val ShortWidth = 68.dp
+    val ShortMargin = 8.dp
+
     // The indicator's inset from the rail's edges, as the nav bar's.
     internal val Inset = 8.dp
 
@@ -81,7 +85,7 @@ object NavRail {
     val DesktopTabHeight = 92.dp
 
     // On a phone on its side, where the rail and the mini player under it share little height.
-    val ShortTabHeight = 40.dp
+    val ShortTabHeight = 32.dp
 
     // The tabs' icons, and in DeX, where the rail is taller, larger ones.
     val IconSize = 24.dp
@@ -100,13 +104,13 @@ object NavRail {
  * The nav host lays out beside it with the same width.
  */
 @Composable
-fun rememberNavRailWidth(labels: List<String>): Dp {
+fun rememberNavRailWidth(labels: List<String>, minWidth: Dp = NavRail.Width): Dp {
     val measurer = rememberTextMeasurer()
     val style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold)
     val density = LocalDensity.current
-    return remember(labels, style, density) {
+    return remember(labels, style, density, minWidth) {
         val widest = labels.maxOfOrNull { measurer.measure(it, style, maxLines = 1, softWrap = false).size.width } ?: 0
-        maxOf(NavRail.Width, with(density) { widest.toDp() } + NavRail.LabelSides)
+        maxOf(minWidth,with(density) { widest.toDp() } + NavRail.LabelSides)
     }
 }
 
