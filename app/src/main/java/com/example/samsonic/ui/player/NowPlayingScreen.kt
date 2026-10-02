@@ -479,7 +479,7 @@ internal fun Modifier.nowPlayingGlass(haze: HazeState?): Modifier {
         shape = RoundedCornerShape(OneUiRadius.Pill),
         hazeState = haze,
         tint = MaterialTheme.colorScheme.surfaceContainerHigh,
-        alpha = glass.playerOpacity,
+        alpha = glass.playerAlpha,
         blurRadius = glass.playerBlur,
         noiseFactor = 0.18f,
         scaleOpacity = false,

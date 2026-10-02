@@ -28,7 +28,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.ui.theme.AccentSheen
-import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.LocalGlassSettings
 import com.example.samsonic.ui.theme.OneUiRadius
 import com.example.samsonic.ui.theme.glassSurface
@@ -110,7 +109,7 @@ internal fun PanelCard(
                 tint = MaterialTheme.colorScheme.surfaceContainerHigh,
                 // Starts thin, like its button's glass; the wash below thickens it.
                 alpha = MorphGlassBase,
-                blurRadius = glass.panelBlur,
+                blurRadius = glass.playerBlur,
                 // Open and still, at full size: Now Playing's title and seek bar keep moving
                 // behind it.
                 downsample = !settled,
@@ -121,9 +120,9 @@ internal fun PanelCard(
                 rim = false,
             ),
             wash = MaterialTheme.colorScheme.surfaceContainerHigh,
-            // The menu settings, apart from the chrome's: a modal panel keeps
-            // its own look whatever the chrome's glass is set to.
-            washAlpha = washToReach(MorphGlassBase, 2f * GlassAlpha.Sheet * glass.panelOpacity),
+            // The player's own glass settings, like the controls it opens from, apart from
+            // the chrome's and the menus'.
+            washAlpha = washToReach(MorphGlassBase, glass.playerAlpha),
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight(CardHeight)

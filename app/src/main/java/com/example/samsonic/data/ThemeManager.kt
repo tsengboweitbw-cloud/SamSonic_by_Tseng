@@ -61,7 +61,7 @@ class ThemeManager(context: Context) {
     val panelBlur: StateFlow<Dp> = _panelBlur.asStateFlow()
 
     // Now Playing's capsules' own pair (the collapse button, the controls, the stack
-    // at the bottom). The opacity is their alpha itself, not a multiplier.
+    // at the bottom). The opacity is a multiplier over [PlayerGlassBaseAlpha].
     private val _playerGlassOpacity = MutableStateFlow(prefs.getFloat(KEY_PLAYER_GLASS_OPACITY, DefaultPlayerGlassOpacity))
     val playerGlassOpacity: StateFlow<Float> = _playerGlassOpacity.asStateFlow()
 
@@ -166,9 +166,9 @@ class ThemeManager(context: Context) {
         _panelBlur.value = radius
     }
 
-    fun setPlayerGlassOpacity(alpha: Float) {
-        prefs.edit().putFloat(KEY_PLAYER_GLASS_OPACITY, alpha).apply()
-        _playerGlassOpacity.value = alpha
+    fun setPlayerGlassOpacity(scale: Float) {
+        prefs.edit().putFloat(KEY_PLAYER_GLASS_OPACITY, scale).apply()
+        _playerGlassOpacity.value = scale
     }
 
     fun setPlayerGlassBlur(radius: Dp) {
@@ -204,7 +204,8 @@ class ThemeManager(context: Context) {
         private const val KEY_BACKDROP_BLUR = "backdrop_blur"
         private const val KEY_PANEL_OPACITY = "panel_opacity"
         private const val KEY_PANEL_BLUR = "panel_blur"
-        private const val KEY_PLAYER_GLASS_OPACITY = "player_glass_opacity"
+        // A new key: "player_glass_opacity" held an alpha, this holds a multiplier.
+        private const val KEY_PLAYER_GLASS_OPACITY = "player_glass_opacity_scale"
         private const val KEY_PLAYER_GLASS_BLUR = "player_glass_blur"
         private const val KEY_LIKES_ENABLED = "likes_enabled"
         private const val KEY_SHOW_AUDIO_FORMAT = "show_audio_format"
@@ -220,7 +221,8 @@ class ThemeManager(context: Context) {
         val DefaultBackdropBlur = 40.dp
         const val DefaultPanelOpacity = 1f
         val DefaultPanelBlur = 28.dp
-        const val DefaultPlayerGlassOpacity = 0.7f
+        const val DefaultPlayerGlassOpacity = 1f
+        const val PlayerGlassBaseAlpha = 0.7f
         val DefaultPlayerGlassBlur = 48.dp
     }
 }
