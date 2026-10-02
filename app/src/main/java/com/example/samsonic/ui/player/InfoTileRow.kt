@@ -46,7 +46,7 @@ internal sealed interface InfoTile {
 /**
  * One of Now Playing's small info lines: a [tile] naming what the line is about
  * ([description] says it for screen readers), then its [text]. [active] tints the
- * tile with the accent; off, it's a quiet grey (e.g. bit-perfect not in effect).
+ * tile with the accent; off, it's a quiet grey.
  */
 @Composable
 internal fun InfoTileRow(tile: InfoTile, description: String, text: String, active: Boolean = true) {

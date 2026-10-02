@@ -31,31 +31,6 @@
     <string name="settings_sleep_timer_hint">Pauses the music after this many minutes</string>
     <string name="settings_sleep_timer_minutes">%1$d min</string>
 
-    <!-- Exclusive USB output -->
-    <string name="settings_exclusive_usb">Exclusive USB output</string>
-    <string name="settings_exclusive_usb_hint_no_dac">Plug in a USB DAC to use it: music then plays through the DAC alone, bit-perfect where it takes the song as it is, resampled where not</string>
-    <string name="settings_exclusive_usb_hint_unsupported">%1$s doesn\'t offer exclusive mode on this phone</string>
-    <string name="settings_exclusive_usb_hint_on">%1$s · up to %2$s. Phone volume may not apply: start with the DAC turned down</string>
-    <string name="settings_exclusive_usb_hint_off">%1$s · up to %2$s</string>
-
-    <!-- DSD output -->
-    <string name="settings_dsd_output">DSD output</string>
-    <string name="settings_dsd_pcm">Convert to PCM</string>
-    <string name="settings_dsd_dop" translatable="false">DoP</string>
-    <string name="settings_dsd_native">Native DSD</string>
-    <string name="settings_dsd_hint_no_dac">Plug in a USB DAC to choose how DSD files go to it</string>
-    <string name="settings_dsd_hint_not_exclusive">Turn on Exclusive USB output to choose how DSD files go to the DAC</string>
-    <string name="settings_dsd_hint">How DSD files go to the USB DAC. DoP and native DSD need a DAC that decodes DSD</string>
-    <string name="settings_dsd_pcm_supporting">Filtered to 88.2 kHz PCM in the app. Plays anywhere</string>
-    <string name="settings_dsd_dop_what">DSD packed in PCM, for the DAC to unpack</string>
-    <string name="settings_dsd_native_what">Raw DSD, as Android offers it</string>
-    <string name="settings_dsd_needs_exclusive">Needs Exclusive USB output</string>
-    <string name="settings_dsd_no_dac">Plug in a DAC to check it</string>
-    <string name="settings_dsd_native_yes">%1$s takes it; DoP where it doesn\'t</string>
-    <string name="settings_dsd_native_no">%1$s doesn\'t take it; DoP instead</string>
-    <string name="settings_dsd_dop_max">%1$s · up to DSD%2$d</string>
-    <string name="settings_dsd_dop_no">%1$s doesn\'t take it; PCM instead</string>
-
     <!-- Library -->
     <string name="settings_album_artists_only">Album artists only</string>
     <string name="settings_album_artists_only_hint">The Artists tab lists album artists, not everyone credited on a song</string>

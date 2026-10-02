@@ -2,6 +2,7 @@
 
 ## 2.1.0 (in progress)
 
+- Bit-perfect USB output is gone, and with it the Exclusive USB output and DSD output settings: Android 14's bit-perfect mixer attributes (`AudioMixerAttributes`) never worked reliably, so the app no longer asks Android for them. The integer and native-DSD AudioTracks, the in-app resampler to the DAC's rate, DoP and native DSD packing, and the Exclusive line in Song info and Now Playing went with them, and the player is the stock one on every Android version again. DSD files (DSF, DSDIFF) still play, always filtered to PCM in the app. The `MODIFY_AUDIO_SETTINGS` permission is dropped. A bit-perfect driver of our own may come later.
 - The back button's glass now matches the nav bar and mini player: it takes the same accent sheen and the same chrome blur as the nav bar, where before it had only the blur and tint.
 - The Play, Shuffle and Queue buttons above a list take the navigation bar's opacity setting like the other capsules, rather than the denser card opacity.
 - Now Playing's pop-up panels (Lyrics, Up next, Song info, Auto DJ) take the Now Playing controls' blur and opacity settings, like the controls, rather than the menus' settings, and lose the accent sheen the menus have.

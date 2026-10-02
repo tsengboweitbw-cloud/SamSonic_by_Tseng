@@ -58,11 +58,10 @@ class PlaybackService : MediaSessionService() {
             upstream = httpFactory,
             direct = DefaultDataSource.Factory(this, httpFactory),
         )
-        // DSD (DSF/DFF) has no Android decoder; its extractor turns it into PCM itself, or packs
-        // it for a DAC that takes DSD (see BitPerfectOutput.dsdStreamFor).
-        val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory, DsdExtractorsFactory(container.bitPerfect::dsdStreamFor))
+        // DSD (DSF/DFF) has no Android decoder; its extractor filters it into PCM itself.
+        val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory, DsdExtractorsFactory())
 
-        val player = ExoPlayer.Builder(this, renderersFactory(this, container.bitPerfect))
+        val player = ExoPlayer.Builder(this)
             .setMediaSourceFactory(mediaSourceFactory)
             .setAudioAttributes(
                 AudioAttributes.Builder()
@@ -82,7 +81,6 @@ class PlaybackService : MediaSessionService() {
         // Application-scoped, so a scrobble sent just before the service stops still goes out.
         scrobbler = Scrobbler(player, { container.repository }, container.applicationScope)
         container.audioOutput.attach(player)
-        container.bitPerfect.attach(player)
         prefetcher = MusicPrefetcher(
             player = player,
             cache = container.musicCache.cache,
@@ -140,7 +138,6 @@ class PlaybackService : MediaSessionService() {
     override fun onDestroy() {
         (application as SamSonicApplication).container.run {
             audioOutput.detach()
-            bitPerfect.detach()
         }
         prefetcher?.release()
         prefetcher = null

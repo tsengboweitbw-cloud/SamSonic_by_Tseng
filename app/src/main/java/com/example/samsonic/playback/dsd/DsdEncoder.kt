@@ -2,8 +2,7 @@ package com.example.samsonic.playback.dsd
 
 /**
  * Turns DSD, as [DsdExtractor] reads it (one byte per channel per frame, channels
- * interleaved), into the float samples it hands the player: filtered to PCM ([DsdToPcm])
- * or packed untouched for DoP or native DSD ([DsdPacker]).
+ * interleaved), into the float samples it hands the player: filtered to PCM ([DsdToPcm]).
  */
 internal interface DsdEncoder {
     /** Bytes of each channel's DSD per output sample. */

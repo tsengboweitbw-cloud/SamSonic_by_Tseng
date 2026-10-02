@@ -31,30 +31,6 @@
     <string name="settings_sleep_timer_hint">經過設定的分鐘數後暫停音樂</string>
     <string name="settings_sleep_timer_minutes">%1$d 分鐘</string>
 
-    <!-- Exclusive USB output -->
-    <string name="settings_exclusive_usb">獨佔 USB 輸出</string>
-    <string name="settings_exclusive_usb_hint_no_dac">接上 USB DAC 即可使用：音樂只會透過 DAC 播放，DAC 支援歌曲原始格式時為 Bit-perfect，不支援時則重採樣</string>
-    <string name="settings_exclusive_usb_hint_unsupported">%1$s 在這支手機上不支援獨佔模式</string>
-    <string name="settings_exclusive_usb_hint_on">%1$s · 最高 %2$s。手機音量可能無效：請先將 DAC 音量調低</string>
-    <string name="settings_exclusive_usb_hint_off">%1$s · 最高 %2$s</string>
-
-    <!-- DSD output -->
-    <string name="settings_dsd_output">DSD 輸出</string>
-    <string name="settings_dsd_pcm">轉為 PCM</string>
-    <string name="settings_dsd_native">原生 DSD</string>
-    <string name="settings_dsd_hint_no_dac">接上 USB DAC 即可選擇 DSD 檔案的輸出方式</string>
-    <string name="settings_dsd_hint_not_exclusive">開啟「獨佔 USB 輸出」後，即可選擇 DSD 檔案輸出至 DAC 的方式</string>
-    <string name="settings_dsd_hint">DSD 檔案輸出至 USB DAC 的方式。DoP 與原生 DSD 需要支援 DSD 解碼的 DAC</string>
-    <string name="settings_dsd_pcm_supporting">在應用程式內濾波轉為 88.2 kHz PCM，任何 DAC 皆可播放</string>
-    <string name="settings_dsd_dop_what">將 DSD 封裝在 PCM 中，由 DAC 解開</string>
-    <string name="settings_dsd_native_what">依 Android 提供的方式輸出原始 DSD</string>
-    <string name="settings_dsd_needs_exclusive">需開啟獨佔 USB 輸出</string>
-    <string name="settings_dsd_no_dac">接上 DAC 以確認是否支援</string>
-    <string name="settings_dsd_native_yes">%1$s 支援；不支援的檔案改用 DoP</string>
-    <string name="settings_dsd_native_no">%1$s 不支援，改用 DoP</string>
-    <string name="settings_dsd_dop_max">%1$s · 最高 DSD%2$d</string>
-    <string name="settings_dsd_dop_no">%1$s 不支援，改用 PCM</string>
-
     <!-- Library -->
     <string name="settings_album_artists_only">僅顯示專輯歌手</string>
     <string name="settings_album_artists_only_hint">「歌手」分頁只列出專輯歌手，而非歌曲上列名的所有人</string>

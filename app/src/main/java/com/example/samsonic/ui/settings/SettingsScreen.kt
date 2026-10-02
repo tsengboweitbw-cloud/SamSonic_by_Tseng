@@ -127,7 +127,6 @@ fun SettingsScreen(
     val cacheLocationMenu = remember { PanelState(scope) }
     val cacheAllMenu = remember { PanelState(scope) }
     val clearCacheMenu = remember { PanelState(scope) }
-    val dsdMenu = remember { PanelState(scope) }
     val languageMenu = remember { PanelState(scope) }
     val listActionsMenu = remember { PanelState(scope) }
     val glassMenu = remember { PanelState(scope) }
@@ -163,7 +162,6 @@ fun SettingsScreen(
             CacheAllMenu(cacheAllMenu, haze, container.imageCacheSettings, onConfirm = container.coverArtPrefetcher::start)
             ClearCacheMenu(clearCacheMenu, haze, cacheUsage, container.coverArtPrefetcher)
             ClearMusicCacheMenu(clearMusicCacheMenu, haze, musicCacheUsage)
-            DsdOutputMenu(dsdMenu, haze, container.bitPerfect)
             LanguageMenu(languageMenu, haze)
             ListActionsMenu(listActionsMenu, haze)
             GlassMenu(glassMenu, haze, container.themeManager)
@@ -208,8 +206,6 @@ fun SettingsScreen(
                         onClick = { audioFormatMenu.open() },
                         modifier = Modifier.menuOrigin(audioFormatMenu),
                     )
-                    BitPerfectRow(container.bitPerfect)
-                    DsdOutputRow(container.bitPerfect, dsdMenu)
                 }
             },
             SettingsGroup(R.string.settings_group_library, Icons.AutoMirrored.Filled.LibraryBooks) {

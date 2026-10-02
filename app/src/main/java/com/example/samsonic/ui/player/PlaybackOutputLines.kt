@@ -10,7 +10,6 @@ import androidx.compose.material.icons.rounded.Speaker
 import androidx.compose.material.icons.rounded.Memory
 import androidx.compose.material.icons.rounded.Tv
 import androidx.compose.material.icons.rounded.Usb
-import androidx.compose.material.icons.rounded.HighQuality
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -22,16 +21,15 @@ import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.R
 import com.example.samsonic.model.Song
 import com.example.samsonic.playback.AudioOutput
-import com.example.samsonic.playback.BitPerfectTrack
 import com.example.samsonic.playback.describeEncoding
 import com.example.samsonic.playback.formatKilohertz
 
-internal enum class PlaybackDetailKind { Output, Device, DeviceRate, BitPerfect }
+internal enum class PlaybackDetailKind { Output, Device, DeviceRate }
 
 /**
  * One playback detail: [label] and [value] for Song info's rows; [line] is the same
- * without the label, for Now Playing, where the tile says what it is. [active] is
- * false only for bit-perfect not in effect.
+ * without the label, for Now Playing, where the tile says what it is. [active]
+ * is false for a detail that isn't in effect.
  */
 internal data class PlaybackDetail(
     val kind: PlaybackDetailKind,
@@ -50,26 +48,8 @@ internal data class PlaybackDetail(
 internal fun rememberPlaybackDetails(): List<PlaybackDetail> {
     val container = LocalAppContainer.current
     val output by container.audioOutput.output.collectAsStateWithLifecycle()
-    val track by container.bitPerfect.track.collectAsStateWithLifecycle()
-    val enabled by container.bitPerfect.enabled.collectAsStateWithLifecycle()
-    val dac by container.bitPerfect.dac.collectAsStateWithLifecycle()
     val resources = LocalResources.current
-    // The exclusive line always shows: when nothing's going to a DAC exclusively, it
-    // says why not, dimmed, rather than disappearing.
-    val bitPerfect = track ?: BitPerfectTrack(
-        on = false,
-        detail = resources.getString(
-            when {
-                !container.bitPerfect.available -> R.string.player_exclusive_unavailable
-                !enabled -> R.string.player_exclusive_switched_off
-                dac == null -> R.string.player_exclusive_no_dac
-                else -> R.string.playback_not_to_dac
-            },
-        ),
-    )
-    // Output and bit-perfect held together, so a stale bit-perfect line never sits
-    // under a live output (bit-perfect switched off clears it with a new track).
-    return rememberLastNonNull(output?.let { resources.playbackDetails(it, bitPerfect) }).orEmpty()
+    return rememberLastNonNull(output?.let { resources.playbackDetails(it) }).orEmpty()
 }
 
 /** [value], or while it's null the last non-null value it had (null if never). */
@@ -116,7 +96,6 @@ private fun songFormat(song: Song): Pair<InfoTile, String>? {
 private fun iconOf(detail: PlaybackDetail): ImageVector = when (detail.kind) {
     PlaybackDetailKind.Output -> Icons.Filled.GraphicEq
     PlaybackDetailKind.DeviceRate -> Icons.Rounded.Memory
-    PlaybackDetailKind.BitPerfect -> Icons.Rounded.HighQuality
     // Named by AudioOutputMonitor.describe: the kind of output comes first.
     PlaybackDetailKind.Device -> when {
         detail.value.startsWith("USB") -> Icons.Rounded.Usb
@@ -127,16 +106,16 @@ private fun iconOf(detail: PlaybackDetail): ImageVector = when (detail.kind) {
     }
 }
 
-// The most lines [playbackDetails] gives: Output, Device, Device rate, Exclusive.
-private const val PlaybackDetailCount = 4
+// The most lines [playbackDetails] gives: Output, Device, Device rate.
+private const val PlaybackDetailCount = 3
 
 /**
  * What's actually being played out, which can differ from the file (DSD decoded to
  * PCM, high-res PCM cut to 16-bit): the PCM handed to Android, the device it plays on,
  * the rate Android's mixer runs at where it says (the phone's own outputs, not USB or
- * Bluetooth), and whether it goes out exclusive (bit-perfect or resampled).
+ * Bluetooth).
  */
-private fun Resources.playbackDetails(output: AudioOutput, bitPerfect: BitPerfectTrack?): List<PlaybackDetail> = listOfNotNull(
+private fun Resources.playbackDetails(output: AudioOutput): List<PlaybackDetail> = listOfNotNull(
     PlaybackDetail(
         PlaybackDetailKind.Output,
         getString(R.string.player_output),
@@ -157,17 +136,6 @@ private fun Resources.playbackDetails(output: AudioOutput, bitPerfect: BitPerfec
             getString(R.string.player_device_rate),
             formatKilohertz(it),
             line = getString(R.string.player_device_at, formatKilohertz(it)),
-        )
-    },
-    // Exclusive mode's line: "Bit-perfect · 32-bit · 96 kHz" or "Resampled 32 → 64 kHz · 32-bit" when on,
-    // and why not ("Not exclusive · No USB DAC") when not.
-    bitPerfect?.let {
-        PlaybackDetail(
-            PlaybackDetailKind.BitPerfect,
-            getString(R.string.player_exclusive),
-            if (it.on) it.detail else getString(R.string.player_exclusive_off, it.detail),
-            line = if (it.on) it.detail else getString(R.string.player_not_exclusive, it.detail),
-            active = it.on,
         )
     },
 )
