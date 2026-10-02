@@ -5,6 +5,7 @@
 #include <cstdio>
 #include <memory>
 #include <mutex>
+#include <string>
 
 #include "iso_stream.h"
 #include "uac.h"
@@ -29,6 +30,46 @@ constexpr uint32_t kCandidateRates[] = {44100,  48000,  88200,  96000,  176400, 
 
 jstring text(JNIEnv* env, const std::string& s) { return env->NewStringUTF(s.c_str()); }
 
+// Logs the interfaces, endpoints and class-specific descriptors of [cfg].
+void logConfig(const libusb_config_descriptor* cfg) {
+    LOGI(" configuration %d: %d interface(s)", cfg->bConfigurationValue, cfg->bNumInterfaces);
+    for (int i = 0; i < cfg->bNumInterfaces; i++) {
+        for (int a = 0; a < cfg->interface[i].num_altsetting; a++) {
+            const libusb_interface_descriptor& alt = cfg->interface[i].altsetting[a];
+            LOGI("  intf %d alt %d: class %d subclass %d protocol %d, %d endpoint(s), %d extra byte(s)",
+                 alt.bInterfaceNumber, alt.bAlternateSetting, alt.bInterfaceClass, alt.bInterfaceSubClass,
+                 alt.bInterfaceProtocol, alt.bNumEndpoints, alt.extra_length);
+            std::string hex;
+            for (int b = 0; b < alt.extra_length && b < 96; b++) {
+                char byte[4];
+                snprintf(byte, sizeof(byte), "%02x ", alt.extra[b]);
+                hex += byte;
+            }
+            if (!hex.empty()) LOGI("    extra: %s", hex.c_str());
+            for (int e = 0; e < alt.bNumEndpoints; e++) {
+                const libusb_endpoint_descriptor& ep = alt.endpoint[e];
+                LOGI("    ep 0x%02x attributes 0x%02x max packet %d interval %d", ep.bEndpointAddress, ep.bmAttributes,
+                     ep.wMaxPacketSize, ep.bInterval);
+            }
+        }
+    }
+}
+
+// Logs every configuration of a device the parser rejected, the active one first.
+void logRejected(libusb_device* dev, const libusb_config_descriptor* active) {
+    libusb_device_descriptor desc{};
+    libusb_get_device_descriptor(dev, &desc);
+    LOGI("rejected %04x:%04x, device class %d, %d configuration(s), active is %d", desc.idVendor, desc.idProduct,
+         desc.bDeviceClass, desc.bNumConfigurations, active->bConfigurationValue);
+    logConfig(active);
+    for (int c = 0; c < desc.bNumConfigurations; c++) {
+        libusb_config_descriptor* cfg = nullptr;
+        if (libusb_get_config_descriptor(dev, static_cast<uint8_t>(c), &cfg) != 0) continue;
+        if (cfg->bConfigurationValue != active->bConfigurationValue) logConfig(cfg);
+        libusb_free_config_descriptor(cfg);
+    }
+}
+
 // Wraps [fd] and reads the active configuration. Returns an error text, or empty on success.
 std::string openDevice(int fd, libusb_device_handle** handle, UacDevice& out) {
     libusb_context* ctx = sharedUsbContext();
@@ -44,6 +85,7 @@ std::string openDevice(int fd, libusb_device_handle** handle, UacDevice& out) {
         return std::string("reading the configuration failed: ") + libusb_error_name(r);
     }
     bool ok = parseUac(dev, cfg, out);
+    if (!ok) logRejected(dev, cfg);
     libusb_free_config_descriptor(cfg);
     if (!ok) {
         libusb_close(*handle);
@@ -94,6 +136,17 @@ Java_com_example_samsonic_playback_usb_NativeUsb_open(JNIEnv* env, jobject /* th
          libusb_get_device_speed(libusb_get_device(s->handle)), describeUac(s->device).c_str());
     session = std::move(s);
     return text(env, "");
+}
+
+// Whether the DAC behind [fd] is one the driver understands. Reads its descriptors only: nothing is
+// claimed, so Android's own USB audio driver stays attached to a DAC that's turned down.
+extern "C" JNIEXPORT jboolean JNICALL
+Java_com_example_samsonic_playback_usb_NativeUsb_understands(JNIEnv* /* env */, jobject /* this */, jint fd) {
+    libusb_device_handle* handle = nullptr;
+    UacDevice device;
+    if (!openDevice(fd, &handle, device).empty()) return JNI_FALSE;
+    libusb_close(handle);
+    return JNI_TRUE;
 }
 
 // The alt settings that play audio, five ints each: index, channels, bytes per sample, bits, and the

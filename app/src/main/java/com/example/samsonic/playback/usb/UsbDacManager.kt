@@ -18,8 +18,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
-/** A USB audio device that's plugged in, and whether the app may open it yet. */
-data class UsbDac(val device: UsbDevice, val name: String, val hasPermission: Boolean)
+/**
+ * A USB audio device that's plugged in, whether the app may open it yet, and whether the driver can
+ * play to it ([usable] is false once it has turned the DAC down).
+ */
+data class UsbDac(val device: UsbDevice, val name: String, val hasPermission: Boolean, val usable: Boolean = true)
 
 /**
  * What the driver is sending a DAC: [rate] and [bits] (the sample slot) of PCM, or DSD of [dsdRate]
@@ -36,6 +39,10 @@ class UsbDacManager(context: Context) {
     private val appContext = context.applicationContext
     private val usbManager = appContext.getSystemService(UsbManager::class.java)
     private val asked = mutableSetOf<String>()
+
+    // DACs the driver looked at and can't play to (until they're unplugged), which Android plays to as usual.
+    // Declared before `init`, which calls refresh().
+    private val declined: MutableSet<String> = java.util.concurrent.ConcurrentHashMap.newKeySet()
     private val prefs = appContext.getSharedPreferences("samsonic_usb_dac", Context.MODE_PRIVATE)
     private val _enabled = MutableStateFlow(prefs.getBoolean(KEY_ENABLED, false))
     private val _nativeDsd = MutableStateFlow(prefs.getBoolean(KEY_NATIVE_DSD, false))
@@ -57,9 +64,11 @@ class UsbDacManager(context: Context) {
     }
 
     private fun refresh() {
-        _dacs.value = usbManager.deviceList.values
-            .filter { it.isAudioDevice() }
-            .map { UsbDac(it, it.productName ?: it.deviceName, usbManager.hasPermission(it)) }
+        val plugged = usbManager.deviceList.values.filter { it.isAudioDevice() }
+        declined.retainAll(plugged.map { it.deviceName }.toSet())
+        _dacs.value = plugged.map {
+            UsbDac(it, it.productName ?: it.deviceName, usbManager.hasPermission(it), it.deviceName !in declined)
+        }
         // With the driver on, each DAC's permission is asked for at once, once for each plug-in.
         if (_enabled.value) {
             val present = _dacs.value.map { it.device.deviceName }
@@ -80,7 +89,7 @@ class UsbDacManager(context: Context) {
     }
 
     /** The first plugged-in DAC the app may open, if the driver is on and there is one. */
-    fun readyDac(): UsbDac? = if (_enabled.value) _dacs.value.firstOrNull { it.hasPermission } else null
+    fun readyDac(): UsbDac? = if (_enabled.value) _dacs.value.firstOrNull { it.hasPermission && it.usable } else null
 
     /** Whether the driver plays to a plugged-in USB DAC itself, instead of Android's own output. */
     val enabled: StateFlow<Boolean> = _enabled.asStateFlow()
@@ -122,6 +131,15 @@ class UsbDacManager(context: Context) {
     fun open(dac: UsbDac): UsbDacConnection? {
         if (!usbManager.hasPermission(dac.device)) return null
         val connection = usbManager.openDevice(dac.device) ?: return null
+        // Claiming takes the DAC from Android, so first make sure the driver can play to it. Nothing is
+        // claimed until then: a DAC that's turned down is left exactly as Android had it.
+        if (!NativeUsb.understands(connection.fileDescriptor)) {
+            Log.w(TAG, "${dac.name} isn't a DAC the driver understands; Android keeps it")
+            connection.close()
+            declined += dac.device.deviceName
+            refresh()
+            return null
+        }
         val claimed = mutableListOf<UsbInterface>()
         for (i in 0 until dac.device.interfaceCount) {
             val intf = dac.device.getInterface(i)
@@ -140,6 +158,7 @@ class UsbDacManager(context: Context) {
         }
         return UsbDacConnection(dac.device, connection, claimed)
     }
+
 
     private fun UsbDevice.isAudioDevice(): Boolean = (0 until interfaceCount).any {
         val intf = getInterface(it)
