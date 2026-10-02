@@ -12,7 +12,8 @@ import android.hardware.usb.UsbInterface
 import android.hardware.usb.UsbManager
 import android.util.Log
 import androidx.core.content.ContextCompat
-import com.example.samsonic.BuildConfig
+import androidx.core.content.edit
+import com.example.samsonic.playback.dsd.DsdMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,6 +30,9 @@ class UsbDacManager(context: Context) {
     private val appContext = context.applicationContext
     private val usbManager = appContext.getSystemService(UsbManager::class.java)
     private val asked = mutableSetOf<String>()
+    private val prefs = appContext.getSharedPreferences("samsonic_usb_dac", Context.MODE_PRIVATE)
+    private val _enabled = MutableStateFlow(prefs.getBoolean(KEY_ENABLED, false))
+    private val _nativeDsd = MutableStateFlow(prefs.getBoolean(KEY_NATIVE_DSD, false))
     private val _dacs = MutableStateFlow<List<UsbDac>>(emptyList())
     val dacs: StateFlow<List<UsbDac>> = _dacs.asStateFlow()
 
@@ -50,8 +54,8 @@ class UsbDacManager(context: Context) {
         _dacs.value = usbManager.deviceList.values
             .filter { it.isAudioDevice() }
             .map { UsbDac(it, it.productName ?: it.deviceName, usbManager.hasPermission(it)) }
-        // Until the Settings switch exists, builds other than release ask for each DAC's permission at once.
-        if (BuildConfig.BUILD_TYPE != "release") {
+        // With the driver on, each DAC's permission is asked for at once, once for each plug-in.
+        if (_enabled.value) {
             val present = _dacs.value.map { it.device.deviceName }
             asked.retainAll(present.toSet())
             for (dac in _dacs.value) {
@@ -60,8 +64,34 @@ class UsbDacManager(context: Context) {
         }
     }
 
-    /** The first plugged-in DAC the app may open, if any. */
-    fun readyDac(): UsbDac? = _dacs.value.firstOrNull { it.hasPermission }
+    /** The first plugged-in DAC the app may open, if the driver is on and there is one. */
+    fun readyDac(): UsbDac? = if (_enabled.value) _dacs.value.firstOrNull { it.hasPermission } else null
+
+    /** Whether the driver plays to a plugged-in USB DAC itself, instead of Android's own output. */
+    val enabled: StateFlow<Boolean> = _enabled.asStateFlow()
+
+    fun setEnabled(enabled: Boolean) {
+        _enabled.value = enabled
+        prefs.edit { putBoolean(KEY_ENABLED, enabled) }
+        refresh()
+    }
+
+    /** Whether DSD goes to a DAC that takes it in its raw-data format, rather than as DoP. */
+    val nativeDsd: StateFlow<Boolean> = _nativeDsd.asStateFlow()
+
+    fun setNativeDsd(native: Boolean) {
+        _nativeDsd.value = native
+        prefs.edit { putBoolean(KEY_NATIVE_DSD, native) }
+    }
+
+    val preferNativeDsd: Boolean get() = _nativeDsd.value
+
+    /** Set by the player's audio sink: how DSD of a rate can go to the DAC as it is, or null. */
+    @Volatile
+    var dsdProbe: (Int) -> DsdMode? = { null }
+
+    /** Called from the loader's thread, when a DSD file is opened. */
+    fun dsdModeFor(dsdRate: Int): DsdMode? = dsdProbe(dsdRate)
 
     /** Shows Android's permission dialog; [dacs] updates when it's answered. */
     fun requestPermission(dac: UsbDac) {
@@ -103,6 +133,8 @@ class UsbDacManager(context: Context) {
 
     private companion object {
         const val TAG = "UsbDacManager"
+        const val KEY_ENABLED = "enabled"
+        const val KEY_NATIVE_DSD = "native_dsd"
         const val ACTION_PERMISSION = "com.example.samsonic.USB_PERMISSION"
         const val SUBCLASS_AUDIO_STREAMING = 2
     }

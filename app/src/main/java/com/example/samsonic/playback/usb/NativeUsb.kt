@@ -38,6 +38,13 @@ internal object NativeUsb {
     /** While paused the DAC gets silence and queued audio waits. */
     external fun setPaused(paused: Boolean)
 
+    /** What the DAC gets when there's nothing to play: [SILENCE_ZERO] (PCM), [SILENCE_DSD] or [SILENCE_DOP]. */
+    external fun setSilence(mode: Int)
+
+    const val SILENCE_ZERO = 0
+    const val SILENCE_DSD = 1
+    const val SILENCE_DOP = 2
+
     /** Drops the queued audio; returns once the driver has. */
     external fun flush()
 

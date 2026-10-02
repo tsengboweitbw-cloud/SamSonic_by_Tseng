@@ -33,7 +33,8 @@ internal class UsbRenderersFactory(context: Context, private val dacs: UsbDacMan
             .build(),
         usb = UsbDacSink { dacs.readyDac()?.let { dacs.open(it) } },
         usbReady = { dacs.readyDac() != null },
-    )
+        preferNativeDsd = { dacs.preferNativeDsd },
+    ).also { dacs.dsdProbe = it::dsdModeFor }
 
     override fun buildAudioRenderers(
         context: Context,

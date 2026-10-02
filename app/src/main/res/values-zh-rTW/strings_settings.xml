@@ -19,6 +19,11 @@
     <!-- Playback -->
     <string name="settings_like_button">愛心按鈕</string>
     <string name="settings_like_button_hint">用愛心按鈕標記喜愛的歌曲</string>
+    <string name="settings_usb_driver">USB DAC 驅動程式</string>
+    <string name="settings_usb_driver_hint">直接輸出至 USB DAC，位元完美並繞過 Android 混音器。實驗性功能</string>
+    <string name="settings_usb_native_dsd">原生 DSD</string>
+    <string name="settings_usb_native_dsd_hint">DAC 支援時以其原生格式傳送 DSD，而非 DoP</string>
+    <string name="settings_usb_native_dsd_needs_driver_hint">需要 USB DAC 驅動程式</string>
     <string name="settings_audio_format">音訊格式</string>
     <string name="settings_audio_format_hint">歌曲清單中每首歌曲格式的顯示方式</string>
     <string name="settings_audio_format_under_artist">顯示在歌手下方</string>

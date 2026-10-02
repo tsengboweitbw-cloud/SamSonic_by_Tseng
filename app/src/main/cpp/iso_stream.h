@@ -42,6 +42,13 @@ public:
     /** While paused the DAC gets silence and the ring keeps its audio. */
     void setPaused(bool paused) { paused_.store(paused, std::memory_order_release); }
 
+    /**
+     * What the DAC gets when there's no audio: 0 zeros (PCM), 1 DSD silence (native DSD), 2 DoP
+     * silence, which keeps the markers alternating. A DAC that is playing DSD must never see
+     * anything else, or it drops out of DSD mode with a pop.
+     */
+    void setSilence(int mode) { silence_.store(mode, std::memory_order_release); }
+
     /** Drops the queued audio; returns once the worker has, so [playedFrames] is settled. */
     void flush();
 
@@ -56,6 +63,7 @@ private:
     static void LIBUSB_CALL onData(libusb_transfer* t);
     static void LIBUSB_CALL onFeedback(libusb_transfer* t);
     void fill(libusb_transfer* t);
+    void fillSilence(uint8_t* out, size_t frames, int mode);
     void takeFeedback(libusb_transfer* t);
     void run();
 
@@ -93,6 +101,8 @@ private:
 
     std::atomic<uint64_t> playedFrames_{0};
     std::atomic<bool> paused_{false};
+    std::atomic<int> silence_{0};
+    uint8_t lastMarker_ = 0xFA;  // DoP: the marker of the last frame sent, real or silent (worker thread only)
     std::atomic<bool> flushRequested_{false};
     std::atomic<bool> stopping_{false};
     std::atomic<bool> running_{false};

@@ -61,6 +61,8 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.RoundedCorner
 import androidx.compose.material.icons.filled.Style
+import androidx.compose.material.icons.filled.Usb
+import androidx.compose.material.icons.filled.Waves
 import androidx.compose.material3.Icon
 //import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -118,6 +120,8 @@ fun SettingsScreen(
     val railStaysPut by container.themeManager.railStaysPut.collectAsStateWithLifecycle()
     val stackPlayerActions by container.themeManager.stackPlayerActions.collectAsStateWithLifecycle()
     val autoDjConfig by container.autoDjSettings.config.collectAsStateWithLifecycle()
+    val usbDriver by container.usbDacs.enabled.collectAsStateWithLifecycle()
+    val nativeDsd by container.usbDacs.nativeDsd.collectAsStateWithLifecycle()
     val audioFormatDisplay by container.themeManager.audioFormatDisplay.collectAsStateWithLifecycle()
     val albumArtistsOnly by container.libraryLayoutManager.albumArtistsOnly.collectAsStateWithLifecycle()
     val showFavourites by container.libraryLayoutManager.showFavourites.collectAsStateWithLifecycle()
@@ -200,6 +204,23 @@ fun SettingsScreen(
                     )
                     // The mini player's swipes, with the rest of how the player behaves.
                     SwipeGestureRows(container.themeManager)
+                    SwitchRow(
+                        icon = Icons.Filled.Usb,
+                        title = stringResource(R.string.settings_usb_driver),
+                        checked = usbDriver,
+                        onCheckedChange = container.usbDacs::setEnabled,
+                        hint = stringResource(R.string.settings_usb_driver_hint),
+                    )
+                    SwitchRow(
+                        icon = Icons.Filled.Waves,
+                        title = stringResource(R.string.settings_usb_native_dsd),
+                        checked = nativeDsd,
+                        onCheckedChange = container.usbDacs::setNativeDsd,
+                        hint = stringResource(
+                            if (usbDriver) R.string.settings_usb_native_dsd_hint else R.string.settings_usb_native_dsd_needs_driver_hint,
+                        ),
+                        enabled = usbDriver,
+                    )
                     // How every song list shows each song's format, or not at all.
                     NavRow(
                         icon = Icons.Filled.GraphicEq,

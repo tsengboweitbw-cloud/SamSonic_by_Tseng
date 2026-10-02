@@ -61,6 +61,8 @@ std::string IsoStream::start(libusb_context* ctx, libusb_device_handle* handle, 
     transfersDone_ = packetsBad_ = underruns_ = feedbackCount_ = 0;
     playedFrames_ = 0;
     paused_ = false;
+    silence_ = 0;
+    lastMarker_ = 0xFA;
     flushRequested_ = false;
     packetsPerUrb_ = std::max<int>(1, hz * kUrbMillis / 1000);
     // About half a second of audio.
@@ -207,13 +209,37 @@ void IsoStream::fill(libusb_transfer* t) {
             real = ring_.read(out, bytes);
             if (real < bytes) underruns_++;
         }
-        if (real < bytes) memset(out + real, 0, bytes - real);
+        const int mode = silence_.load(std::memory_order_acquire);
+        if (mode == 2 && real > 0) lastMarker_ = out[real - frameBytes_ + alt_.subslotBytes - 1];
+        if (real < bytes) fillSilence(out + real, (bytes - real) / frameBytes_, mode);
         transfer->realFrames += real / frameBytes_;
         t->iso_packet_desc[i].length = static_cast<unsigned int>(bytes);
         out += bytes;
         total += static_cast<int>(bytes);
     }
     t->length = total;
+}
+
+void IsoStream::fillSilence(uint8_t* out, size_t frames, int mode) {
+    const size_t slot = alt_.subslotBytes;
+    if (mode == 0) {
+        memset(out, 0, frames * frameBytes_);
+    } else if (mode == 1) {
+        memset(out, 0x69, frames * frameBytes_);  // 0x69 is a DSD byte of silence
+    } else {
+        for (size_t f = 0; f < frames; f++) {
+            lastMarker_ = lastMarker_ == 0x05 ? 0xFA : 0x05;
+            for (int c = 0; c < alt_.channels; c++) {
+                // The sample's top byte is the marker, the two below it are DSD silence.
+                uint8_t* s = out;
+                memset(s, 0, slot);
+                s[slot - 1] = lastMarker_;
+                s[slot - 2] = 0x69;
+                s[slot - 3] = 0x69;
+                out += slot;
+            }
+        }
+    }
 }
 
 void LIBUSB_CALL IsoStream::onData(libusb_transfer* t) {

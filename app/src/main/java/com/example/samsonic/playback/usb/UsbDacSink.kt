@@ -10,6 +10,8 @@ import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.audio.AudioSink
+import com.example.samsonic.playback.dsd.DsdMode
+import com.example.samsonic.playback.dsd.DsdStream
 import java.nio.ByteBuffer
 
 /**
@@ -54,9 +56,21 @@ internal class UsbDacSink(private val openDac: () -> UsbDacConnection?) : AudioS
 
     private fun planFor(format: Format): UsbPlan? {
         if (!isPcm(format)) return null
-        val dac = output ?: openDac()?.let { UsbDacOutput.open(it) }?.also { output = it } ?: return null
-        return dac.planFor(format.sampleRate, UsbPcmPipeline.sourceBits(format.pcmEncoding))
+        val dac = openOutput() ?: return null
+        val dsd = format.customData as? DsdStream
+            ?: return dac.planFor(format.sampleRate, UsbPcmPipeline.sourceBits(format.pcmEncoding))
+        // DSD only plays as it is: the rate and mode it was packed for, or not at all.
+        return dac.dsdPlan(dsd.mode, dsd.dsdRate)?.takeIf { it.rate == format.sampleRate }
     }
+
+    // The DAC is opened from whichever thread asks first: the player's, or the loader's when it
+    // asks how DSD can be sent.
+    @Synchronized
+    private fun openOutput(): UsbDacOutput? =
+        output ?: openDac()?.let { UsbDacOutput.open(it) }?.also { output = it }
+
+    /** How DSD of [dsdRate] could go to the DAC without being filtered to PCM; opens the DAC to find out. */
+    fun dsdModeFor(dsdRate: Int, preferNative: Boolean): DsdMode? = openOutput()?.dsdModeFor(dsdRate, preferNative)
 
     override fun setListener(listener: AudioSink.Listener) {
         this.listener = listener
@@ -208,6 +222,11 @@ internal class UsbDacSink(private val openDac: () -> UsbDacConnection?) : AudioS
         active = null
         pending = null
         pipeline = null
+        closeOutput()
+    }
+
+    @Synchronized
+    private fun closeOutput() {
         output?.close()
         output = null
     }

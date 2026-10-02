@@ -23,9 +23,12 @@ private const val DFF_READ_FRAMES = 4096
  * Plays DSD files, which no Android decoder handles: DSF (Sony) and DSDIFF (.dff, Philips;
  * uncompressed only, not DST). The DSD is filtered down to float PCM here as it's read
  * ([DsdToPcm]), so the player takes it as plain PCM, with seeking and a duration.
+ *
+ * When [passthrough] names a [DsdMode] for the file's DSD rate (a USB DAC that takes it), the DSD
+ * is packed for that mode instead, bit for bit, and the track is marked with a [DsdStream].
  */
 @UnstableApi
-class DsdExtractor : Extractor {
+class DsdExtractor(private val passthrough: (dsdRate: Int) -> DsdMode? = { null }) : Extractor {
     private enum class Layout { DSF, DFF }
 
     private lateinit var output: ExtractorOutput
@@ -43,6 +46,7 @@ class DsdExtractor : Extractor {
     private var blockSize = 0
 
     private var converter: DsdEncoder? = null
+    private var packMode: DsdMode? = null
     private var framesOut = 0L
 
     // Reused from read to read.
@@ -68,15 +72,30 @@ class DsdExtractor : Extractor {
             readHeader(input)
             headerRead = true
             val lsbFirst = layout == Layout.DSF
-            val converter = DsdToPcm(channels, dsdRate, lsbFirst).also { this.converter = it }
-            track.format(
-                Format.Builder()
-                    .setSampleMimeType(MimeTypes.AUDIO_RAW)
-                    .setPcmEncoding(C.ENCODING_PCM_FLOAT)
-                    .setChannelCount(channels)
-                    .setSampleRate(converter.outputRate)
-                    .build(),
-            )
+            val mode = if (channels == 2) passthrough(dsdRate) else null
+            packMode = mode
+            if (mode != null) {
+                converter = null
+                track.format(
+                    Format.Builder()
+                        .setSampleMimeType(MimeTypes.AUDIO_RAW)
+                        .setPcmEncoding(if (mode == DsdMode.DOP) C.ENCODING_PCM_24BIT else C.ENCODING_PCM_32BIT)
+                        .setChannelCount(2)
+                        .setSampleRate(mode.sampleRate(dsdRate))
+                        .setCustomData(DsdStream(mode, dsdRate))
+                        .build(),
+                )
+            } else {
+                val converter = DsdToPcm(channels, dsdRate, lsbFirst).also { this.converter = it }
+                track.format(
+                    Format.Builder()
+                        .setSampleMimeType(MimeTypes.AUDIO_RAW)
+                        .setPcmEncoding(C.ENCODING_PCM_FLOAT)
+                        .setChannelCount(channels)
+                        .setSampleRate(converter.outputRate)
+                        .build(),
+                )
+            }
             output.seekMap(DsdSeekMap())
             output.endTracks()
             return Extractor.RESULT_CONTINUE
@@ -104,10 +123,14 @@ class DsdExtractor : Extractor {
             Layout.DSF -> offset / (blockSize.toLong() * channels) * blockSize
             Layout.DFF -> offset / channels
         }
-        val converter = converter ?: return
-        converter.reset()
-        framesOut = bytesDone / converter.bytesPerOutput
+        converter?.reset()
+        framesOut = bytesDone / bytesPerOutput()
     }
+
+    /** Bytes of each channel's DSD in one output sample. */
+    private fun bytesPerOutput(): Int = packMode?.bytesPerSample() ?: converter?.bytesPerOutput ?: 1
+
+    private fun outputRate(): Int = packMode?.sampleRate(dsdRate) ?: converter?.outputRate ?: dsdRate
 
     override fun release() {}
 
@@ -230,6 +253,7 @@ class DsdExtractor : Extractor {
 
     /** Filters the [frames] in [interleaved] and hands the PCM to the track as one sample. */
     private fun writePcm(frames: Int) {
+        packMode?.let { return writePacked(frames, it) }
         val converter = converter ?: return
         val maxOut = frames / converter.bytesPerOutput + 1
         if (pcm.size < maxOut * channels) pcm = FloatArray(maxOut * channels)
@@ -244,6 +268,44 @@ class DsdExtractor : Extractor {
         framesOut += written
     }
 
+    /**
+     * Hands the [frames] in [interleaved] (two channels) to the track as they are, packed for [mode]:
+     * DSD's bytes in time order, first bit first. A last, partial sample is padded with DSD silence.
+     */
+    private fun writePacked(frames: Int, mode: DsdMode) {
+        val perSample = mode.bytesPerSample()
+        val samples = (frames + perSample - 1) / perSample
+        val sampleBytes = if (mode == DsdMode.DOP) 3 else 4
+        val size = samples * 2 * sampleBytes
+        if (pcmBytes.size < size) pcmBytes = ByteArray(size)
+        val lsbFirst = layout == Layout.DSF
+        fun dsd(index: Int, channel: Int): Int {
+            if (index >= frames) return 0x69
+            val b = interleaved[index * 2 + channel].toInt() and 0xFF
+            return if (lsbFirst) ReversedBits[b] else b
+        }
+        var at = 0
+        for (s in 0 until samples) {
+            for (channel in 0 until 2) {
+                val first = s * perSample
+                if (mode == DsdMode.DOP) {
+                    // 24-bit little-endian: the later byte, the earlier byte, then the marker on top.
+                    pcmBytes[at++] = dsd(first + 1, channel).toByte()
+                    pcmBytes[at++] = dsd(first, channel).toByte()
+                    pcmBytes[at++] = (if ((framesOut + s) % 2 == 0L) 0x05 else 0xFA).toByte()
+                } else {
+                    // The earliest byte first, as Linux's DSD_U32_BE has it, which XMOS-based DACs
+                    // like the iFi ones take (the PCM pipeline copies these bytes untouched).
+                    for (j in 0 until 4) pcmBytes[at++] = dsd(first + j, channel).toByte()
+                }
+            }
+        }
+        track.sampleData(ParsableByteArray(pcmBytes, size), size)
+        val timeUs = framesOut * C.MICROS_PER_SECOND / outputRate()
+        track.sampleMetadata(timeUs, C.BUFFER_FLAG_KEY_FRAME, size, 0, null)
+        framesOut += samples
+    }
+
     // ---- Seeking ----
 
     /**
@@ -256,7 +318,7 @@ class DsdExtractor : Extractor {
         override fun getDurationUs(): Long = bytesPerChannel * 8 * C.MICROS_PER_SECOND / dsdRate
 
         override fun getSeekPoints(timeUs: Long): SeekMap.SeekPoints {
-            val bytesPerOutput = converter?.bytesPerOutput ?: 1
+            val bytesPerOutput = bytesPerOutput()
             val step = if (layout == Layout.DSF) blockSize.toLong() else bytesPerOutput.toLong()
             val wanted = timeUs.coerceAtLeast(0) * dsdRate / 8 / C.MICROS_PER_SECOND
             val byte = (wanted / step * step).coerceIn(0, ((bytesPerChannel - 1) / step * step).coerceAtLeast(0))

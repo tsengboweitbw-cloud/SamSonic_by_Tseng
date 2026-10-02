@@ -96,7 +96,8 @@ Java_com_example_samsonic_playback_usb_NativeUsb_open(JNIEnv* env, jobject /* th
     return text(env, "");
 }
 
-// The alt settings that play audio, five ints each: index, channels, bytes per sample, bits, 1 if PCM.
+// The alt settings that play audio, five ints each: index, channels, bytes per sample, bits, and the
+// kind: 1 PCM, 2 raw data (native DSD, on DACs that take it), 0 anything else.
 extern "C" JNIEXPORT jintArray JNICALL
 Java_com_example_samsonic_playback_usb_NativeUsb_formats(JNIEnv* env, jobject /* this */) {
     std::lock_guard<std::mutex> guard(sessionLock);
@@ -104,7 +105,8 @@ Java_com_example_samsonic_playback_usb_NativeUsb_formats(JNIEnv* env, jobject /*
     if (session) {
         jint index = 0;
         for (const UacAlt& alt : session->device.alts) {
-            flat.insert(flat.end(), {index++, alt.channels, alt.subslotBytes, alt.bitResolution, alt.pcm ? 1 : 0});
+            flat.insert(flat.end(), {index++, alt.channels, alt.subslotBytes, alt.bitResolution,
+                        alt.pcm ? 1 : (alt.rawData ? 2 : 0)});
         }
     }
     jintArray result = env->NewIntArray(static_cast<jsize>(flat.size()));
@@ -167,6 +169,11 @@ Java_com_example_samsonic_playback_usb_NativeUsb_playedFrames(JNIEnv* /* env */,
 extern "C" JNIEXPORT void JNICALL
 Java_com_example_samsonic_playback_usb_NativeUsb_setPaused(JNIEnv* /* env */, jobject /* this */, jboolean paused) {
     if (session) session->stream.setPaused(paused);
+}
+
+extern "C" JNIEXPORT void JNICALL
+Java_com_example_samsonic_playback_usb_NativeUsb_setSilence(JNIEnv* /* env */, jobject /* this */, jint mode) {
+    if (session) session->stream.setSilence(mode);
 }
 
 extern "C" JNIEXPORT void JNICALL

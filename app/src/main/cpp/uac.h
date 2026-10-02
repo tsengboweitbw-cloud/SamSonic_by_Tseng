@@ -22,6 +22,7 @@ struct UacAlt {
     int subslotBytes = 0;
     int bitResolution = 0;
     bool pcm = false;
+    bool rawData = false;  // UAC2 TYPE_I_RAW_DATA: how DACs take native DSD
     uint8_t terminalLink = 0;
     uint8_t dataEp = 0;
     int dataMaxPacket = 0;

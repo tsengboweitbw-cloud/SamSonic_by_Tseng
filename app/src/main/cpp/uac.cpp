@@ -63,7 +63,9 @@ void parseFormat(const libusb_interface_descriptor& alt, UacAlt& out, int versio
         if (d[2] == AS_GENERAL) {
             out.terminalLink = d[3];
             if (version >= 2 && len >= 11) {
-                out.pcm = (le32(d + 6) & 1) != 0;
+                uint32_t formats = le32(d + 6);
+                out.pcm = (formats & 1) != 0;
+                out.rawData = (formats & 0x80000000u) != 0;
                 out.channels = d[10];
             } else if (version == 1 && len >= 7) {
                 out.pcm = le16(d + 5) == 1;  // wFormatTag PCM
@@ -208,7 +210,7 @@ std::string describeUac(const UacDevice& dev) {
     for (const UacAlt& a : dev.alts) {
         snprintf(line, sizeof(line),
                  "  intf %d alt %d: %s %dch %d-bit in %d byte(s), ep 0x%02x max %d interval %d sync %d, feedback ep 0x%02x\n",
-                 a.interfaceNumber, a.altSetting, a.pcm ? "PCM" : "non-PCM", a.channels, a.bitResolution,
+                 a.interfaceNumber, a.altSetting, a.pcm ? "PCM" : a.rawData ? "raw data" : "non-PCM", a.channels, a.bitResolution,
                  a.subslotBytes, a.dataEp, a.dataMaxPacket, a.dataInterval, a.syncType, a.feedbackEp);
         s += line;
         for (const UacRange& r : a.rates) {

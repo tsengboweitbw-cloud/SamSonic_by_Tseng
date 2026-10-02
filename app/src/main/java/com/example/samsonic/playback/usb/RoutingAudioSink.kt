@@ -11,6 +11,8 @@ import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.analytics.PlayerId
 import androidx.media3.exoplayer.audio.AudioOffloadSupport
 import androidx.media3.exoplayer.audio.AudioSink
+import com.example.samsonic.playback.dsd.DsdMode
+import com.example.samsonic.playback.dsd.DsdStream
 import java.nio.ByteBuffer
 
 /**
@@ -23,6 +25,7 @@ internal class RoutingAudioSink(
     private val default: AudioSink,
     private val usb: UsbDacSink,
     private val usbReady: () -> Boolean,
+    private val preferNativeDsd: () -> Boolean,
 ) : AudioSink {
     private var current: AudioSink = default
     private var playing = false
@@ -46,8 +49,15 @@ internal class RoutingAudioSink(
 
     override fun getFormatOffloadSupport(format: Format): AudioOffloadSupport = default.getFormatOffloadSupport(format)
 
+    /** How DSD of [dsdRate] can go to the DAC as it is, or null (no DAC, or one that can't take it). */
+    fun dsdModeFor(dsdRate: Int): DsdMode? = if (usbReady()) usb.dsdModeFor(dsdRate, preferNativeDsd()) else null
+
     override fun configure(inputFormat: Format, specifiedBufferSize: Int, outputChannels: IntArray?) {
         val target = if (usbReady() && usb.canPlay(inputFormat)) usb else default
+        // DSD packed for the DAC is noise to anything else: better to fail than to play it.
+        if (target === default && inputFormat.customData is DsdStream) {
+            throw AudioSink.ConfigurationException("This DSD can only play on the USB DAC it was prepared for", inputFormat)
+        }
         if (target !== current) {
             current.flush()
             current.reset()

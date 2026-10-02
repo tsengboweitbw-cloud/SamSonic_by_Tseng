@@ -19,6 +19,11 @@
     <!-- Playback -->
     <string name="settings_like_button">Like button</string>
     <string name="settings_like_button_hint">A heart button for liking songs</string>
+    <string name="settings_usb_driver">USB DAC driver</string>
+    <string name="settings_usb_driver_hint">Plays to a USB DAC directly, bit-perfect and past Android\'s mixer. Experimental</string>
+    <string name="settings_usb_native_dsd">Native DSD</string>
+    <string name="settings_usb_native_dsd_hint">Sends DSD to a DAC that takes it in its own format, rather than as DoP</string>
+    <string name="settings_usb_native_dsd_needs_driver_hint">Needs the USB DAC driver</string>
     <string name="settings_audio_format">Audio format</string>
     <string name="settings_audio_format_hint">How song lists show each song\'s format</string>
     <string name="settings_audio_format_under_artist">Under the artist</string>

@@ -15,11 +15,12 @@ import androidx.media3.extractor.text.SubtitleParser
 @UnstableApi
 class DsdExtractorsFactory(
     private val base: ExtractorsFactory = DefaultExtractorsFactory(),
+    private val passthrough: (dsdRate: Int) -> DsdMode? = { null },
 ) : ExtractorsFactory {
-    override fun createExtractors(): Array<Extractor> = arrayOf<Extractor>(DsdExtractor()) + base.createExtractors()
+    override fun createExtractors(): Array<Extractor> = arrayOf<Extractor>(DsdExtractor(passthrough)) + base.createExtractors()
 
     override fun createExtractors(uri: Uri, responseHeaders: Map<String, List<String>>): Array<Extractor> =
-        arrayOf<Extractor>(DsdExtractor()) + base.createExtractors(uri, responseHeaders)
+        arrayOf<Extractor>(DsdExtractor(passthrough)) + base.createExtractors(uri, responseHeaders)
 
     override fun experimentalSetTextTrackTranscodingEnabled(textTrackTranscodingEnabled: Boolean): ExtractorsFactory {
         base.experimentalSetTextTrackTranscodingEnabled(textTrackTranscodingEnabled)

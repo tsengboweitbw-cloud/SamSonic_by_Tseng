@@ -2,9 +2,18 @@ package com.example.samsonic.playback.usb
 
 import android.util.Log
 import com.example.samsonic.playback.Resampler
+import com.example.samsonic.playback.dsd.DsdMode
+import com.example.samsonic.playback.dsd.sampleRate
 
 /** How a song is fitted to the DAC: the alt setting it plays on, and the rate it plays at. */
-internal data class UsbPlan(val altIndex: Int, val subslotBytes: Int, val rate: Int, val channels: Int)
+internal data class UsbPlan(
+    val altIndex: Int,
+    val subslotBytes: Int,
+    val rate: Int,
+    val channels: Int,
+    /** Set when the "PCM" is DSD packed for this mode, which must reach the DAC untouched. */
+    val dsd: DsdMode? = null,
+)
 
 /**
  * A DAC the driver has open: what it takes, and how to fit a song to it. Closing it hands the
@@ -16,11 +25,36 @@ internal class UsbDacOutput private constructor(private val connection: UsbDacCo
 
     private val alts: List<Alt>
 
+    /** The raw-data alt settings with two channels and 32-bit samples, which take native DSD. */
+    private val rawAlts: List<Alt>
+
     init {
         val flat = NativeUsb.formats()
-        alts = (flat.indices step 5)
-            .filter { flat[it + 4] == 1 && flat[it + 1] == 2 }
+        fun altsOfKind(kind: Int) = (flat.indices step 5)
+            .filter { flat[it + 4] == kind && flat[it + 1] == 2 }
             .map { Alt(flat[it], flat[it + 2], flat[it + 3], NativeUsb.rates(flat[it])) }
+        alts = altsOfKind(1)
+        rawAlts = altsOfKind(2).filter { it.subslotBytes == 4 }
+    }
+
+    /**
+     * How DSD of [dsdRate] can be sent, or null if this DAC can't take it as it is. [preferNative]
+     * tries the DAC's raw-data format before DoP.
+     */
+    fun dsdModeFor(dsdRate: Int, preferNative: Boolean): DsdMode? {
+        val order = if (preferNative) listOf(DsdMode.NATIVE, DsdMode.DOP) else listOf(DsdMode.DOP, DsdMode.NATIVE)
+        return order.firstOrNull { dsdPlan(it, dsdRate) != null }
+    }
+
+    /** Where DSD of [dsdRate] plays in [mode]: the alt setting that takes its exact rate, or null. */
+    fun dsdPlan(mode: DsdMode, dsdRate: Int): UsbPlan? {
+        val rate = mode.sampleRate(dsdRate)
+        val alt = when (mode) {
+            DsdMode.NATIVE -> rawAlts.firstOrNull { rate in it.rates }
+            // DoP is 24-bit PCM, in the narrowest slot that holds it.
+            DsdMode.DOP -> alts.filter { it.subslotBytes >= 3 && rate in it.rates }.minByOrNull { it.subslotBytes }
+        } ?: return null
+        return UsbPlan(alt.index, alt.subslotBytes, rate, channels = 2, dsd = mode)
     }
 
     /**
@@ -37,7 +71,20 @@ internal class UsbDacOutput private constructor(private val connection: UsbDacCo
         return UsbPlan(alt.index, alt.subslotBytes, rate, channels = 2)
     }
 
-    fun start(plan: UsbPlan): String = NativeUsb.start(plan.altIndex, plan.rate)
+    fun start(plan: UsbPlan): String {
+        val error = NativeUsb.start(plan.altIndex, plan.rate)
+        // From here on the DAC must hear DSD-shaped silence when there's no audio, or it drops out of DSD.
+        if (error.isEmpty()) {
+            NativeUsb.setSilence(
+                when (plan.dsd) {
+                    DsdMode.NATIVE -> NativeUsb.SILENCE_DSD
+                    DsdMode.DOP -> NativeUsb.SILENCE_DOP
+                    null -> NativeUsb.SILENCE_ZERO
+                },
+            )
+        }
+        return error
+    }
 
     override fun close() {
         NativeUsb.close()
