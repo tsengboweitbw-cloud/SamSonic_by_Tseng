@@ -12,7 +12,9 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.R
+import com.example.samsonic.ui.theme.AccentSheen
 import com.example.samsonic.ui.theme.GlassAlpha
+import com.example.samsonic.ui.theme.LocalChromeBlurScale
 import com.example.samsonic.ui.theme.glassSurface
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
@@ -38,6 +40,8 @@ fun GlassBackButton(onClick: () -> Unit, hazeState: HazeState?, modifier: Modifi
                 hazeState = hazeState,
                 tint = MaterialTheme.colorScheme.surfaceContainerHigh,
                 alpha = GlassAlpha.Nav,
+                sheen = AccentSheen.Chrome,
+                inputScale = LocalChromeBlurScale.current,
             ),
     ) {
         Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = stringResource(R.string.components_back), modifier = Modifier.size(ChromeButtonIconSize))

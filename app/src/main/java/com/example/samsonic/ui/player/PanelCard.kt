@@ -27,7 +27,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.example.samsonic.ui.theme.AccentSheen
 import com.example.samsonic.ui.theme.LocalGlassSettings
 import com.example.samsonic.ui.theme.OneUiRadius
 import com.example.samsonic.ui.theme.glassSurface
@@ -115,7 +114,6 @@ internal fun PanelCard(
                 downsample = !settled,
                 // None either way, as while downsampled, so settling doesn't change its look.
                 noiseFactor = 0f,
-                sheen = AccentSheen.Menu,
                 scaleOpacity = false,
                 rim = false,
             ),

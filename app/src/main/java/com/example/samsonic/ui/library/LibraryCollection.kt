@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridState
+import androidx.compose.foundation.OverscrollEffect
+import androidx.compose.foundation.rememberOverscrollEffect
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.runtime.Composable
@@ -51,6 +53,8 @@ internal fun <T> LibraryCollection(
     header: (@Composable () -> Unit)? = null,
     // Room under the header for a page's FloatingListActions, with this much space under it.
     actionsSlot: Dp? = null,
+    // Shared with a page's FloatingListActions, so its row is pulled along as the grid is.
+    overscrollEffect: OverscrollEffect? = rememberOverscrollEffect(),
     modifier: Modifier = Modifier,
 ) {
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
@@ -71,6 +75,7 @@ internal fun <T> LibraryCollection(
             LazyVerticalGrid(
                 columns = if (grid) FittedColumns(effectiveColumns) else GridCells.Fixed(1),
                 state = gridState,
+                overscrollEffect = overscrollEffect,
                 contentPadding = if (grid) {
                     PaddingValues(start = 20.dp, end = 20.dp, top = padding.top, bottom = 16.dp + padding.bottom)
                 } else {

@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberOverscrollEffect
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -94,6 +95,7 @@ fun ArtistDetailScreen(
     val preview = LocalArtTransitions.current.preview<Artist>(ArtKeys.artist(artistId))
 
     val listState = rememberLazyListState()
+    val overscroll = rememberOverscrollEffect()
     val backHaze = rememberHazeState()
     Box(modifier = modifier.fillMaxSize().statusBarsPadding()) {
         if (state is UiState.Loading && preview != null) {
@@ -121,6 +123,7 @@ fun ArtistDetailScreen(
                 LazyColumn(
                     modifier = Modifier.fillMaxSize().scrollTopFade(listState).backButtonHazeSource(backHaze),
                     state = listState,
+                    overscrollEffect = overscroll,
                     contentPadding = PaddingValues(top = BackButtonClearance, bottom = contentPaddingBottom),
                 ) {
                     item(key = "header") {
@@ -142,7 +145,7 @@ fun ArtistDetailScreen(
                     floatingActionsEnd()
                     item(key = "end") { Spacer(Modifier.height(24.dp)) }
                 }
-                FloatingListActions(listState, haze = backHaze) {
+                FloatingListActions(listState, overscroll = overscroll, haze = backHaze) {
                     // Plays everything, not just the songs listed here.
                     PlayShuffleButtons(
                         key = artist.id,

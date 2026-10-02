@@ -2,6 +2,11 @@
 
 ## 2.1.0 (in progress)
 
+- The back button's glass now matches the nav bar and mini player: it takes the same accent sheen and the same chrome blur as the nav bar, where before it had only the blur and tint.
+- The Play, Shuffle and Queue buttons above a list take the navigation bar's opacity setting like the other capsules, rather than the denser card opacity.
+- Now Playing's pop-up panels (Lyrics, Up next, Song info, Auto DJ) take the Now Playing controls' blur and opacity settings, like the controls, rather than the menus' settings, and lose the accent sheen the menus have.
+- The Now Playing controls' opacity slider now runs from 50% to 130% like the other opacity settings, as a multiplier over the old 70% look (100% is what 70% was). Anyone who had changed it starts again at 100%.
+
 Changes since 5dfb5ba.
 
 
@@ -44,3 +49,5 @@ Changes since 5dfb5ba.
 - Library with a page open beside it (two panes, on a tablet or an open foldable held wide) keeps its own list or grid choice and column count, apart from when it has the whole screen. Before, the two shared one setting, so it could not be tuned for the side pane. This covers the Library's own tabs (Artists, Albums, Playlists); an artist's or genre's albums, which open beside it, keep the full-screen setting. The side pane also stopped taking in changes while a page was open beside it (it counted as hidden), so it kept showing the full-screen count; it now stays live while on screen.
 - In two columns, a menu open over one pane (the Library's view options) no longer leaves a dark bar along the foot of the other pane: the chrome's dim now sits only under the pane the menu dims, and the rail.
 - The Library view options slider in two columns follows the finger on its own and changes the column count only as it snaps to another step, so it can no longer stick.
+- Dragging a page down past its top now takes the Play buttons row along with the rest: the list's stretch is applied to the row too, so it no longer stays behind while the header and songs move.
+- With the Play buttons pinned at the top, their capsule now stands right beside the back button (level with it, to its right) instead of under it.
