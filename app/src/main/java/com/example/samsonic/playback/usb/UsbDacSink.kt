@@ -24,7 +24,11 @@ import java.nio.ByteBuffer
  * song before it can finish playing first.
  */
 @OptIn(UnstableApi::class)
-internal class UsbDacSink(private val openDac: () -> UsbDacConnection?) : AudioSink {
+internal class UsbDacSink(
+    private val openDac: () -> UsbDacConnection?,
+    /** Told what is going out to the DAC as each song starts (the plan and, for DSD, its rate), and null when nothing is. */
+    private val report: (UsbPlan?, dsdRate: Int) -> Unit = { _, _ -> },
+) : AudioSink {
     private class Config(val format: Format, val plan: UsbPlan)
 
     /** Where a song starts in the DAC's timeline: [frames] played by then, and its media time. */
@@ -150,6 +154,7 @@ internal class UsbDacSink(private val openDac: () -> UsbDacConnection?) : AudioS
         trimStartUs = delay * C.MICROS_PER_SECOND / format.sampleRate
         needAnchor = true
         active = config
+        report(config.plan, (format.customData as? DsdStream)?.dsdRate ?: 0)
         pending = null
         return true
     }
@@ -223,6 +228,7 @@ internal class UsbDacSink(private val openDac: () -> UsbDacConnection?) : AudioS
         pending = null
         pipeline = null
         closeOutput()
+        report(null, 0)
     }
 
     @Synchronized

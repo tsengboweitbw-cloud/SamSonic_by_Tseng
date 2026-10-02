@@ -46,6 +46,8 @@
     <string name="player_mono">Mono</string>
     <string name="player_stereo">Stereo</string>
     <string name="player_channel_count">%1$d channels</string>
+    <string name="player_dsd_dop">DoP</string>
+    <string name="player_dsd_native">Native</string>
     <string name="player_device">Device</string>
     <string name="player_device_rate">Device rate</string>
     <string name="player_info_title">Title</string>

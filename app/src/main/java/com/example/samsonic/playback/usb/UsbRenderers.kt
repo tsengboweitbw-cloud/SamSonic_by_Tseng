@@ -31,7 +31,12 @@ internal class UsbRenderersFactory(context: Context, private val dacs: UsbDacMan
             .setEnableFloatOutput(enableFloatOutput)
             .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
             .build(),
-        usb = UsbDacSink { dacs.readyDac()?.let { dacs.open(it) } },
+        usb = UsbDacSink(
+            openDac = { dacs.readyDac()?.let { dacs.open(it) } },
+            report = { plan, dsdRate ->
+                dacs.setOutput(plan?.let { UsbOutput(dacs.readyDac()?.name, it.rate, it.subslotBytes * 8, it.channels, it.dsd, dsdRate) })
+            },
+        ),
         usbReady = { dacs.readyDac() != null },
         preferNativeDsd = { dacs.preferNativeDsd },
     ).also { dacs.dsdProbe = it::dsdModeFor }

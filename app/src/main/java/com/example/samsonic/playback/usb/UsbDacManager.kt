@@ -22,6 +22,12 @@ import kotlinx.coroutines.flow.asStateFlow
 data class UsbDac(val device: UsbDevice, val name: String, val hasPermission: Boolean)
 
 /**
+ * What the driver is sending a DAC: [rate] and [bits] (the sample slot) of PCM, or DSD of [dsdRate]
+ * packed as [dsd] at [rate].
+ */
+data class UsbOutput(val device: String?, val rate: Int, val bits: Int, val channels: Int, val dsd: DsdMode?, val dsdRate: Int)
+
+/**
  * Keeps [dacs] up to date with the USB audio devices plugged in, asks for permission to use
  * them, and opens them for the native driver. Android's own USB audio driver is bound to
  * these devices; [open] takes them over, so nothing is opened until the driver needs one.
@@ -62,6 +68,15 @@ class UsbDacManager(context: Context) {
                 if (!dac.hasPermission && asked.add(dac.device.deviceName)) requestPermission(dac)
             }
         }
+    }
+
+    private val _output = MutableStateFlow<UsbOutput?>(null)
+
+    /** What's going out to a DAC now, or null when the driver isn't playing. */
+    val output: StateFlow<UsbOutput?> = _output.asStateFlow()
+
+    internal fun setOutput(output: UsbOutput?) {
+        _output.value = output
     }
 
     /** The first plugged-in DAC the app may open, if the driver is on and there is one. */
