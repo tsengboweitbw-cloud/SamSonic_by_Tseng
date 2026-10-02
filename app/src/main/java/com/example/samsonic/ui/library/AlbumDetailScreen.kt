@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberOverscrollEffect
+import com.example.samsonic.ui.components.rememberPullOverscroll
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.CircularProgressIndicator
@@ -95,7 +95,7 @@ fun AlbumDetailScreen(
             // Played in the order shown.
             val songs = remember(loaded, sort) { loaded.sortedFor(sort) }
             val listState = rememberLazyListState()
-            val overscroll = rememberOverscrollEffect()
+            val overscroll = rememberPullOverscroll()
             // A new sort starts over from the first song, if the list was past it.
             OnSortChange(sort) { if (listState.firstVisibleItemIndex > 2) listState.scrollToItem(2) }
             Box(Modifier.fillMaxSize()) {

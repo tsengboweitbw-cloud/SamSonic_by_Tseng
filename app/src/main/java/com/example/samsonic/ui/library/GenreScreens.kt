@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberOverscrollEffect
+import com.example.samsonic.ui.components.rememberPullOverscroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -69,7 +69,7 @@ fun GenreDetailScreen(
     }
 
     val listState = rememberLazyListState()
-    val overscroll = rememberOverscrollEffect()
+    val overscroll = rememberPullOverscroll()
     val backHaze = rememberHazeState()
     Box(modifier = modifier.fillMaxSize().statusBarsPadding()) {
         StateContent(state = state, modifier = Modifier.fillMaxSize()) { (albums, artists, songs) ->

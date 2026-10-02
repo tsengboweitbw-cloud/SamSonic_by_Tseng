@@ -10,7 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.rememberOverscrollEffect
+import com.example.samsonic.ui.components.rememberPullOverscroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
@@ -74,7 +74,7 @@ internal fun AlbumsPage(
     val container = LocalAppContainer.current
     val layouts by container.libraryLayoutManager.layouts.collectAsStateWithLifecycle()
     val gridState = rememberLazyGridState()
-    val overscroll = rememberOverscrollEffect()
+    val overscroll = rememberPullOverscroll()
     BackButtonPage(
         onBack,
         modifier,
@@ -149,7 +149,7 @@ internal fun SongsPage(
 ) {
     val player = LocalPlayerState.current
     val listState = rememberLazyListState()
-    val overscroll = rememberOverscrollEffect()
+    val overscroll = rememberPullOverscroll()
     BackButtonPage(onBack, modifier, overlay = { haze -> ListSortMenu(SortedList.SONGS, haze) }) { backHaze ->
         StateContent(state = state, modifier = Modifier.fillMaxSize()) { (owner, loaded) ->
             val sort = rememberListSort(SortedList.SONGS)

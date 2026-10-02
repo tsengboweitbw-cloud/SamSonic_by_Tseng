@@ -1,7 +1,5 @@
 package com.example.samsonic.ui.components
 
-import androidx.compose.foundation.OverscrollEffect
-import androidx.compose.foundation.overscroll
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Spacer
@@ -106,7 +104,7 @@ fun LazyGridScope.floatingActionsSlot(bottomSpacing: Dp = 0.dp) {
  * position is read as it's placed, never in composition, so scrolling recomposes nothing.
  */
 @Composable
-fun BoxScope.FloatingListActions(listState: LazyListState, overscroll: OverscrollEffect? = null, cornerEndOffset: Dp = 0.dp, haze: HazeState? = null, content: @Composable () -> Unit) {
+fun BoxScope.FloatingListActions(listState: LazyListState, overscroll: PullOverscrollEffect? = null, cornerEndOffset: Dp = 0.dp, haze: HazeState? = null, content: @Composable () -> Unit) {
     FloatingActions(
         restTop = {
             val info = listState.layoutInfo
@@ -123,7 +121,7 @@ fun BoxScope.FloatingListActions(listState: LazyListState, overscroll: Overscrol
 
 /** [FloatingListActions] over a grid. */
 @Composable
-fun BoxScope.FloatingListActions(gridState: LazyGridState, overscroll: OverscrollEffect? = null, cornerEndOffset: Dp = 0.dp, haze: HazeState? = null, content: @Composable () -> Unit) {
+fun BoxScope.FloatingListActions(gridState: LazyGridState, overscroll: PullOverscrollEffect? = null, cornerEndOffset: Dp = 0.dp, haze: HazeState? = null, content: @Composable () -> Unit) {
     FloatingActions(
         restTop = {
             val info = gridState.layoutInfo
@@ -215,7 +213,7 @@ private const val CornerLingerMillis = 450L
 private fun BoxScope.FloatingActions(
     restTop: () -> Int?,
     scrolledPast: () -> Boolean,
-    overscroll: OverscrollEffect?,
+    overscroll: PullOverscrollEffect?,
     cornerEndOffset: Dp,
     haze: HazeState?,
     content: @Composable () -> Unit,
@@ -226,25 +224,21 @@ private fun BoxScope.FloatingActions(
     val readMerge = remember(merge) { { merge.floatValue } }
     // Clipped to the page, so a row scrolling away doesn't draw up over the status bar.
     Box(Modifier.matchParentSize().clipToBounds()) {
-        // The list's own overscroll over the same bounds, so a pull past its top (a stretch
-        // the list draws, not a move) takes the row along with the rest.
-        Box(Modifier.matchParentSize().then(if (overscroll != null) Modifier.overscroll(overscroll) else Modifier)) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .layout { measurable, constraints ->
-                        val row = measurable.measure(constraints.copy(minHeight = 0))
-                        layout(row.width, row.height) { placeRow(row, restTop(), scrolledPast(), pin.value == ListActionsPin.TOP, merge) }
-                    },
-            ) {
-                CompositionLocalProvider(
-                    LocalListActionsMerge provides readMerge,
-                    // For its capsule, merged pinned at the top: the chrome's glass, blurring the list.
-                    LocalListActionsHaze provides haze,
-                    content = content,
-                )
-            }
-        }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .layout { measurable, constraints ->
+                    val row = measurable.measure(constraints.copy(minHeight = 0))
+                    layout(row.width, row.height) { placeRow(row, restTop(), scrolledPast(), pin.value == ListActionsPin.TOP, merge, pull = { overscroll?.pull ?: 0f }) }
+                },
+        ) {
+            CompositionLocalProvider(
+                LocalListActionsMerge provides readMerge,
+                // For its capsule, merged pinned at the top: the chrome's glass, blurring the list.
+                LocalListActionsHaze provides haze,
+                content = content,
+            )
+    }
         when (pin.value) {
             ListActionsPin.BOTTOM, ListActionsPin.SIDE ->
                 Dock(rememberRowGone(restTop, scrolledPast), side = pin.value == ListActionsPin.SIDE, haze, content)
@@ -414,6 +408,7 @@ private fun Placeable.PlacementScope.placeRow(
     past: Boolean,
     pinned: Boolean,
     merge: MutableFloatState,
+    pull: () -> Float,
 ) {
     val pinnedTop = PinnedTop.roundToPx()
     val top = when {
@@ -426,6 +421,8 @@ private fun Placeable.PlacementScope.placeRow(
     merge.floatValue = if (!pinned) 0f else if (rest == null) 1f else
         ((pinnedTop + MergeDistance.toPx() - rest) / MergeDistance.toPx()).coerceIn(0f, 1f)
     row.placeWithLayer(0, top) {
+        // Riding with the list, it follows a pull past the list's end (a move, see PullOverscrollEffect).
+        if (rest != null && rest >= pinnedTop) translationY = pull()
         if (!pinned) alpha = ((top + row.height / 2f) / FadeDistance.toPx()).coerceIn(0f, 1f)
     }
 }

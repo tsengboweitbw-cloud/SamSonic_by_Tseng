@@ -11,7 +11,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.OverscrollEffect
-import androidx.compose.foundation.rememberOverscrollEffect
+import com.example.samsonic.ui.components.rememberPullOverscroll
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.runtime.Composable
@@ -54,7 +54,7 @@ internal fun <T> LibraryCollection(
     // Room under the header for a page's FloatingListActions, with this much space under it.
     actionsSlot: Dp? = null,
     // Shared with a page's FloatingListActions, so its row is pulled along as the grid is.
-    overscrollEffect: OverscrollEffect? = rememberOverscrollEffect(),
+    overscrollEffect: OverscrollEffect? = rememberPullOverscroll(),
     modifier: Modifier = Modifier,
 ) {
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {

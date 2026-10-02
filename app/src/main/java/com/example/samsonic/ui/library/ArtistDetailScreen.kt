@@ -9,7 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberOverscrollEffect
+import com.example.samsonic.ui.components.rememberPullOverscroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -95,7 +95,7 @@ fun ArtistDetailScreen(
     val preview = LocalArtTransitions.current.preview<Artist>(ArtKeys.artist(artistId))
 
     val listState = rememberLazyListState()
-    val overscroll = rememberOverscrollEffect()
+    val overscroll = rememberPullOverscroll()
     val backHaze = rememberHazeState()
     Box(modifier = modifier.fillMaxSize().statusBarsPadding()) {
         if (state is UiState.Loading && preview != null) {

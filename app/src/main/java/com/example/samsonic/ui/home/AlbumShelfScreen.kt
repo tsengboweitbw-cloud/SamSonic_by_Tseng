@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.rememberOverscrollEffect
+import com.example.samsonic.ui.components.rememberPullOverscroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -61,7 +61,7 @@ fun AlbumShelfScreen(
     Box(modifier = modifier.fillMaxSize().statusBarsPadding()) {
         StateContent(state = state, modifier = Modifier.fillMaxSize()) { albums ->
             val listState = rememberLazyListState()
-            val overscroll = rememberOverscrollEffect()
+            val overscroll = rememberPullOverscroll()
             Box(Modifier.fillMaxSize()) {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize().scrollTopFade(listState).backButtonHazeSource(backHaze),
