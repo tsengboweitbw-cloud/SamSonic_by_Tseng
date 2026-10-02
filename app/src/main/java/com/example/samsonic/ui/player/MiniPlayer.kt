@@ -21,6 +21,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,8 +29,10 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.LocalAppContainer
@@ -122,25 +125,33 @@ fun MiniPlayer(
                         shadowElevation = 0.dp,
                     )
                     Spacer(Modifier.width(artTextSpacing))
-                    Column {
-                        // Only the song playing scrolls a line too long to fit; the ones
-                        // either side, seen only mid-swipe, are cut short.
-                        val scroll = if (isCurrent) Modifier.marqueeWhenLong() else Modifier
-                        Text(
-                            text = shown.title,
-                            style = MaterialTheme.typography.labelLarge,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = scroll,
-                        )
-                        Text(
-                            text = shown.artistName,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = scroll,
-                        )
+                    // The bar is a fixed height, so the text stops growing with the system
+                    // font size at a point where two lines still clear the progress line.
+                    val density = LocalDensity.current
+                    CompositionLocalProvider(
+                        LocalDensity provides Density(density.density, fontScale = minOf(density.fontScale, MaxTextFontScale)),
+                    ) {
+                        // Nudged up so the artist line clears the progress line.
+                        Column(Modifier.padding(bottom = 6.dp)) {
+                            // Only the song playing scrolls a line too long to fit; the ones
+                            // either side, seen only mid-swipe, are cut short.
+                            val scroll = if (isCurrent) Modifier.marqueeWhenLong() else Modifier
+                            Text(
+                                text = shown.title,
+                                style = MaterialTheme.typography.labelLarge,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = scroll,
+                            )
+                            Text(
+                                text = shown.artistName,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = scroll,
+                            )
+                        }
                     }
                 }
             }
@@ -173,7 +184,7 @@ fun MiniPlayer(
             // ends at the last button's midpoint, not the full width.
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .padding(bottom = 10.dp)
+                .padding(bottom = 7.dp)
                 .fillMaxWidth()
                 .padding(start = progressStart, end = progressEnd)
                 .playerMorphAnchor(PlayerElement.Progress, PlayerSurface.Mini)
@@ -181,6 +192,9 @@ fun MiniPlayer(
         )
     }
 }
+
+/** The largest font scale the mini player's text follows; past it the two lines would reach the progress line. */
+private const val MaxTextFontScale = 1.15f
 
 /** How tall the mini player is under the nav rail, as wide as the rail. */
 val RailMiniPlayerHeight = 176.dp
