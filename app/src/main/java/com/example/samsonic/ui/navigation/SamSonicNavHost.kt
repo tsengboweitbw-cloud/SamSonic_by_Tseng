@@ -88,6 +88,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalConfiguration
+import com.example.samsonic.ui.components.SelectedTabExtraWeight
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -560,13 +562,23 @@ fun SamSonicNavHost(lastTab: LastTab) {
                     }
                     .padding(start = railStartInset + railMargin),
             ) {
+                // On a phone on its side, the tabs take the height the mini player leaves
+                // (the rail's length is tabHeight * (count + extra) + inset * 2).
+                val tabHeight = if (phoneLandscape) {
+                    val room = LocalConfiguration.current.screenHeightDp.dp - innerPadding.calculateTopPadding() -
+                        systemBarInset - navBarBottomInset - railMiniLift - railMiniHeight - railMiniGap - 8.dp
+                    ((room - NavRail.Inset * 2) / (bottomDestinations.size + SelectedTabExtraWeight))
+                        .coerceIn(NavRail.ShortTabHeight, NavRail.TabHeight)
+                } else {
+                    railTabHeight
+                }
                 FloatingNavRail(
                     destinations = bottomDestinations,
                     tabs = tabs,
                     hazeState = hazeState,
                     width = railWidth,
                     // Taller in DeX, where a window has height to spare.
-                    tabHeight = railTabHeight,
+                    tabHeight = tabHeight,
                     iconSize = if (desktopChrome) NavRail.DesktopIconSize else NavRail.IconSize,
                 )
             }
