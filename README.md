@@ -19,8 +19,8 @@
   高度個人化的 **毛玻璃與動態採樣模糊** 介面。Obsidian 深色空間調色盤與半透明懸浮面板，帶有細緻的邊緣高光，並以 OKLCH 色彩空間衍生環境光暈與輔助強調色。底部優化懸浮導航列與大圓角卡片設計，極致單手操作體驗。長按任一設定選項即可查看說明提示。
 
 - **Audiophile Bit-Perfect & DSD Engine (Experimental) | 發燒級 Bit-Perfect 與 DSD 播放引擎 (測試中)**  
-  Native Android 14+ (API 34+) bit-perfect USB DAC routing that bypasses the system mixer, with a custom integer AudioTrack for loss-free 24-bit and 32-bit PCM. An in-app windowed-sinc polyphase resampler handles sample rates the DAC does not support. Full DSD playback via in-app DSD-to-PCM, DoP (DSD over PCM) or native DSD (`ENCODING_DSD`), with automatic fallback and mute protection whenever output is not routed to the DAC. Now Playing shows audio format and output tiles with the exact resolution and hardware status in real time.  
-  Android 14+ 原生 USB DAC Bit-Perfect 音訊直通（繞過系統混音器），自訂整數 AudioTrack 支援 24-bit / 32-bit PCM 無損輸出。內建高精度視窗 Sinc 多相重採樣，自動適配 DAC 不支援的採樣率。完整 DSD 輸出支援：PCM 轉換、DoP (DSD over PCM) 及原生 DSD，帶有備用降級鏈與旁路斷開靜音保護。播放畫面即時顯示音訊格式、輸出採樣率與硬體狀態。
+  Self-built bit-perfect USB DAC routing that bypasses the system mixer, with a custom integer AudioTrack for loss-free 24-bit and 32-bit PCM. An in-app windowed-sinc polyphase resampler handles sample rates the DAC does not support. Full DSD playback via in-app DSD-to-PCM, DoP (DSD over PCM) or native DSD (`ENCODING_DSD`), with automatic fallback and mute protection whenever output is not routed to the DAC. Now Playing shows audio format and output tiles with the exact resolution and hardware status in real time.  
+  USB DAC Bit-Perfect 音訊直通（繞過系統混音器），自訂整數 AudioTrack 支援 24-bit / 32-bit PCM 無損輸出。內建高精度視窗 Sinc 多相重採樣，自動適配 DAC 不支援的採樣率。完整 DSD 輸出支援：PCM 轉換、DoP (DSD over PCM) 及原生 DSD，帶有備用降級鏈與旁路斷開靜音保護。播放畫面即時顯示音訊格式、輸出採樣率與硬體狀態。
 
 - **Subsonic & Navidrome Compatibility | Subsonic & Navidrome 相容**  
   Native support for Subsonic / Navidrome REST API authentication and audio streaming. Supports albums, artists, playlists, random shuffle, search and dynamic synchronised lyrics.  
