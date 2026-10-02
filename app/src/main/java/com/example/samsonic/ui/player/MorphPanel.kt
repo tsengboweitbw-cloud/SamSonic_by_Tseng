@@ -31,7 +31,6 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
-import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.graphics.graphicsLayer
@@ -150,6 +149,9 @@ private val IconSize = 22.dp
 
 // How far open a panel from a glassless origin is when its glass is fully in (see MorphPanel).
 private const val OriginFade = 0.35f
+
+// How far past open (1 = open) the glass is laid out to reach, for the open's overshoot.
+private const val OvershootRoom = 1.2f
 
 /** Maps [value] from [start]..[end] onto 0..1, clamped. */
 private fun ramp(value: Float, start: Float, end: Float) = ((value - start) / (end - start)).coerceIn(0f, 1f)
@@ -271,12 +273,12 @@ internal fun MorphPanel(
         // The glass, by contrast, is always laid out at full size and never resizes: the
         // morph only moves a rounded clip over it, as the Library view options' glass does.
         // Resizing a blurred surface every frame rebuilds its blur each frame, which flickered.
-        // On the open's overshoot it stretches to the grown bounds instead, since its clip
-        // can't reach past its own edges.
-        // Nothing fades or layers the blur: with a graphicsLayer around it (even just for
-        // the stretch) or a fade on it (even the blur's own alpha), it dropped out about
+        // It is laid out with room for the open's overshoot, so the grown bounds show the
+        // real blur of what's behind them rather than a stretched copy of the edge.
+        // Nothing fades or layers the blur: with a graphicsLayer around it or a fade on it
+        // (even the blur's own alpha), it dropped out about
         // once a second, showing the page behind unblurred for a frame, even with the
-        // panel at rest (seen in screen recordings). So the clip and the stretch are done
+        // panel at rest (seen in screen recordings). So the clip is done
         // in draw, and the glass shows at full strength inside the window from the start,
         // taking over from the veil as the window grows.
         // It covers the button as well as this element: early on the shape still reaches
@@ -293,15 +295,19 @@ internal fun MorphPanel(
                     val height = maxOf(constraints.maxHeight, room[0])
                     val origin = panel.origin
                     val at = panel.placedAt
+                    val full = Rect(0f, 0f, width.toFloat(), height.toFloat())
                     val area = if (origin == Rect.Zero || !at.isSpecified) {
-                        Rect(0f, 0f, width.toFloat(), height.toFloat())
+                        full
                     } else {
                         val button = origin.translate(-at.x, -at.y)
+                        // Also the room the open's overshoot grows into, so the glass there
+                        // is the real blur of what's behind it rather than a stretched edge.
+                        val grown = lerp(button, full, OvershootRoom)
                         Rect(
-                            minOf(0f, button.left),
-                            minOf(0f, button.top),
-                            maxOf(width.toFloat(), button.right),
-                            maxOf(height.toFloat(), button.bottom),
+                            minOf(0f, button.left, grown.left),
+                            minOf(0f, button.top, grown.top),
+                            maxOf(width.toFloat(), button.right, grown.right),
+                            maxOf(height.toFloat(), button.bottom, grown.bottom),
                         )
                     }
                     val left = floor(area.left).toInt()
@@ -318,40 +324,24 @@ internal fun MorphPanel(
                 .drawWithContent {
                     // This element's bounds and the shape, in the glass's coordinates.
                     val shift = Offset(-glassAt[0], -glassAt[1])
-                    val own = Rect(shift, Size(placed[2], placed[3]))
-                    val (bounds, corner) = bounds(own.size)
+                    val (bounds, corner) = bounds(Size(placed[2], placed[3]))
                     val rect = bounds.translate(shift)
-                    if (panel.progress > 1f && own.width > 0f && own.height > 0f) {
-                        // This element's part of the glass, stretched onto the grown bounds
-                        // and clipped to its own edges.
-                        withTransform({
-                            translate(rect.left, rect.top)
-                            scale(rect.width / own.width, rect.height / own.height, pivot = Offset.Zero)
-                            translate(-own.left, -own.top)
-                        }) {
-                            clipPath(morphClip(RoundRect(own, CornerRadius(corner)))) {
-                                this@drawWithContent.drawContent()
-                                drawRect(wash, own.topLeft, own.size, alpha = washAlpha)
-                            }
-                        }
-                    } else {
-                        // A glassless origin's fade. Only near the origin, as a brief layer in
-                        // draw: a lasting fade on the glass drops its blur out (see above), but
-                        // here the shape is small and nearly gone by then.
-                        val fade = glassAlpha()
-                        if (fade < 1f) drawContext.canvas.saveLayer(rect, FadePaint.apply { alpha = fade })
-                        clipPath(morphClip(RoundRect(rect, CornerRadius(corner)))) {
-                            this@drawWithContent.drawContent()
-                            // Thickens the glass as it grows, in draw: a fade on the glass
-                            // itself would drop the blur out (see above).
-                            drawRect(wash, rect.topLeft, rect.size, alpha = washAlpha * ramp(panel.progress, 0f, 0.8f))
-                            // The button's light veil over the glass, fading out: the glass paints
-                            // an opaque base, so the veil under it was hidden and the shape turned
-                            // dark the moment it left the button, as if its glass had gone.
-                            drawRect(veil, rect.topLeft, rect.size, alpha = veil.alpha * (1f - ramp(panel.progress, 0f, 0.6f)))
-                        }
-                        if (fade < 1f) drawContext.canvas.restore()
+                    // A glassless origin's fade. Only near the origin, as a brief layer in
+                    // draw: a lasting fade on the glass drops its blur out (see above), but
+                    // here the shape is small and nearly gone by then.
+                    val fade = glassAlpha()
+                    if (fade < 1f) drawContext.canvas.saveLayer(rect, FadePaint.apply { alpha = fade })
+                    clipPath(morphClip(RoundRect(rect, CornerRadius(corner)))) {
+                        this@drawWithContent.drawContent()
+                        // Thickens the glass as it grows, in draw: a fade on the glass
+                        // itself would drop the blur out (see above).
+                        drawRect(wash, rect.topLeft, rect.size, alpha = washAlpha * ramp(panel.progress, 0f, 0.8f))
+                        // The button's light veil over the glass, fading out: the glass paints
+                        // an opaque base, so the veil under it was hidden and the shape turned
+                        // dark the moment it left the button, as if its glass had gone.
+                        drawRect(veil, rect.topLeft, rect.size, alpha = veil.alpha * (1f - ramp(panel.progress, 0f, 0.6f)))
                     }
+                    if (fade < 1f) drawContext.canvas.restore()
                     // The rim along the shape, as the button has, all the way open.
                     val inset = rimWidthPx / 2
                     drawRoundRect(

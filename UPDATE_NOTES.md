@@ -7,6 +7,7 @@
 - The Play, Shuffle and Queue buttons above a list take the navigation bar's opacity setting like the other capsules, rather than the denser card opacity.
 - Now Playing's pop-up panels (Lyrics, Up next, Song info, Auto DJ) take the Now Playing controls' blur and opacity settings, like the controls, rather than the menus' settings, and lose the accent sheen the menus have.
 - The Now Playing controls' opacity slider now runs from 50% to 130% like the other opacity settings, as a multiplier over the old 70% look (100% is what 70% was). Anyone who had changed it starts again at 100%.
+- Now Playing's pop-up panels (Up next and the rest) no longer stretch their glass on the bounce at the end of opening: the glass is laid out with room for the overshoot, so the slightly larger bounds show the real blur of what's behind them at every moment.
 
 Changes since 5dfb5ba.
 
