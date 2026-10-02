@@ -17,6 +17,9 @@ internal object NativeUsb {
     /** Wraps the usbfs descriptor [fd] and reads the DAC; "" on success, otherwise what went wrong. Doesn't close [fd]. */
     external fun open(fd: Int): String
 
+    /** Whether the DAC behind the usbfs descriptor [fd] is one the driver understands. Claims nothing and doesn't close [fd]. */
+    external fun understands(fd: Int): Boolean
+
     /** The DAC's alt settings that play audio, five ints each: index, channels, bytes per sample, bits, 1 if PCM. */
     external fun formats(): IntArray
 
