@@ -14,6 +14,7 @@ import com.example.samsonic.data.LibraryLayoutManager
 import com.example.samsonic.data.ThemeManager
 import com.example.samsonic.data.device.DeviceLibrary
 import com.example.samsonic.playback.AudioOutputMonitor
+import com.example.samsonic.playback.PlaybackStore
 import com.example.samsonic.playback.PlayerState
 import com.example.samsonic.playback.autodj.AutoDj
 import kotlinx.coroutines.CoroutineScope
@@ -47,6 +48,9 @@ class AppContainer(context: Context) {
 
     val themeManager = ThemeManager(appContext)
 
+    /** The queue and playback position, kept for the next time the app or its media controls start. */
+    val playbackStore = PlaybackStore(appContext)
+
     val libraryLayoutManager = LibraryLayoutManager(appContext)
 
     val imageCacheSettings = ImageCacheSettings(appContext)
@@ -73,7 +77,7 @@ class AppContainer(context: Context) {
     private var startedAutoDj: AutoDj? = null
 
     val playerState: PlayerState by lazy {
-        PlayerState(appContext, { repository }, applicationScope).also { player ->
+        PlayerState(appContext, { repository }, applicationScope, playbackStore).also { player ->
             player.connect()
             // Watches the queue from the start, whether or not anything shows it.
             startedAutoDj = AutoDj(player, { repository }, autoDjSettings, applicationScope).also { it.start() }
