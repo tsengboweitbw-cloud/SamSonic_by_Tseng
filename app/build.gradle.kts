@@ -17,6 +17,18 @@ android {
         versionName = "2.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // The USB DAC driver is native code; every phone it targets is 64-bit ARM.
+        ndk {
+            abiFilters += "arm64-v8a"
+        }
+    }
+    ndkVersion = "28.2.13676358"
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+            version = "3.22.1"
+        }
     }
     buildTypes {
         release {

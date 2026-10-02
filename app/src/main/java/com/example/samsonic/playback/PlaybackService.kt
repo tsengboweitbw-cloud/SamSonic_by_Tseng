@@ -23,6 +23,7 @@ import com.example.samsonic.MainActivity
 import com.example.samsonic.SamSonicApplication
 import com.example.samsonic.locale.AppLanguages
 import com.example.samsonic.playback.dsd.DsdExtractorsFactory
+import com.example.samsonic.playback.usb.UsbRenderersFactory
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.coroutines.CoroutineScope
@@ -62,10 +63,15 @@ class PlaybackService : MediaSessionService() {
             upstream = httpFactory,
             direct = DefaultDataSource.Factory(this, httpFactory),
         )
-        // DSD (DSF/DFF) has no Android decoder; its extractor filters it into PCM itself.
-        val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory, DsdExtractorsFactory())
-
-        val player = ExoPlayer.Builder(this)
+        // DSD (DSF/DFF) has no Android decoder; its extractor filters it into PCM itself, unless
+        // the USB DAC can take the DSD as it is.
+        val mediaSourceFactory = DefaultMediaSourceFactory(
+            dataSourceFactory,
+            DsdExtractorsFactory(passthrough = container.usbDacs::dsdModeFor),
+        )
+        // Plays through a plugged-in USB DAC when the Settings switch is on, and as usual otherwise.
+        val renderers = UsbRenderersFactory(this, container.usbDacs)
+        val player = ExoPlayer.Builder(this, renderers)
             .setMediaSourceFactory(mediaSourceFactory)
             .setAudioAttributes(
                 AudioAttributes.Builder()

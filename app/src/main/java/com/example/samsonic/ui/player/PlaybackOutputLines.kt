@@ -22,7 +22,9 @@ import com.example.samsonic.R
 import com.example.samsonic.model.Song
 import com.example.samsonic.playback.AudioOutput
 import com.example.samsonic.playback.describeEncoding
+import com.example.samsonic.playback.dsd.DsdMode
 import com.example.samsonic.playback.formatKilohertz
+import com.example.samsonic.playback.usb.UsbOutput
 
 internal enum class PlaybackDetailKind { Output, Device, DeviceRate }
 
@@ -48,8 +50,45 @@ internal data class PlaybackDetail(
 internal fun rememberPlaybackDetails(): List<PlaybackDetail> {
     val container = LocalAppContainer.current
     val output by container.audioOutput.output.collectAsStateWithLifecycle()
+    val usbOutput by container.usbDacs.output.collectAsStateWithLifecycle()
     val resources = LocalResources.current
-    return rememberLastNonNull(output?.let { resources.playbackDetails(it) }).orEmpty()
+    // The driver plays without an audio track, so when it's playing it's the whole story.
+    val details = usbOutput?.let { resources.usbDetails(it) } ?: output?.let { resources.playbackDetails(it) }
+    return rememberLastNonNull(details).orEmpty()
+}
+
+/** What the USB driver sends: PCM's rate and sample size, or DSD's rate and how it's packed; the DAC it goes to. */
+private fun Resources.usbDetails(output: UsbOutput): List<PlaybackDetail> {
+    val rate = formatKilohertz(output.rate)
+    val dsd = output.dsd
+    val value = if (dsd != null) {
+        listOf(
+            "DSD${output.dsdRate / 44_100}",
+            getString(if (dsd == DsdMode.DOP) R.string.player_dsd_dop else R.string.player_dsd_native),
+        ).joinToString(" · ")
+    } else {
+        listOfNotNull(rate, "${output.bits}-bit", output.channels.takeIf { it != 2 }?.let { channelsOf(it) }).joinToString(" · ")
+    }
+    return listOf(
+        PlaybackDetail(
+            PlaybackDetailKind.Output,
+            getString(R.string.player_output),
+            value,
+            line = value.replace(" kHz", "kHz").replace("-bit", "bit"),
+        ),
+        PlaybackDetail(
+            PlaybackDetailKind.Device,
+            getString(R.string.player_device),
+            output.device?.let { "USB · $it" } ?: "USB",
+        ),
+        // For DSD, the rate the DAC's clock runs at: the PCM rate it's carried at.
+        PlaybackDetail(
+            PlaybackDetailKind.DeviceRate,
+            getString(R.string.player_device_rate),
+            rate,
+            line = rate.replace(" kHz", "kHz"),
+        ),
+    )
 }
 
 /** [value], or while it's null the last non-null value it had (null if never). */

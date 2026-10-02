@@ -43,6 +43,8 @@
     <string name="player_mono">單聲道</string>
     <string name="player_stereo">立體聲</string>
     <string name="player_channel_count">%1$d 聲道</string>
+    <string name="player_dsd_dop">DoP</string>
+    <string name="player_dsd_native">原生</string>
     <string name="player_device">裝置</string>
     <string name="player_device_rate">裝置取樣率</string>
     <string name="player_info_title">標題</string>
