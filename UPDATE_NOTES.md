@@ -17,6 +17,7 @@
 - Beside the navigation rail, sliding a finger along it now fades the page with it: the page fades out as the indicator leaves a tab and the next fades in as it arrives, rather than nothing moving until you let go.
 - Two new Library settings, Album names and Album artist names, hide the name or the artist under each album's cover in the Albums tab and the album pages opened from it (grid and list). Both are on by default.
 - Sliding a finger along the nav bar (and the rail) now holds each tab's label fully open and opaque for a stretch as the indicator passes (from 60% of the way in to the centre), with a shorter edge fade, so a swipe that doesn't stop on a tab no longer shows its label always fading in or out.
+- The frosted glass's grain is thinner on a big screen: 50% as strong on a tablet and 30% in DeX, where the grain, a tile of device pixels, read as coarse speckle rather than fine frosting.
 
 Changes since 5dfb5ba.
 

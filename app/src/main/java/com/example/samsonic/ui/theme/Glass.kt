@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.example.samsonic.ui.common.LocalWindowLayout
 import com.example.samsonic.ui.components.MediaArtFill
 import dev.chrisbanes.haze.HazeInput
 import dev.chrisbanes.haze.HazePerformanceMode
@@ -83,6 +84,14 @@ fun Modifier.glassSurface(
     // base alpha as its relative density.
     val opacityScale = if (scaleOpacity) LocalGlassSettings.current.opacityScale else 1f
     val alpha = (alpha * opacityScale).coerceIn(0f, 1f)
+    // The grain is a tile of device pixels: on a big or far-off screen (a tablet, DeX on a
+    // monitor) it reads as coarse speckle rather than fine frosting, so it's thinned there.
+    val window = LocalWindowLayout.current
+    val noiseFactor = noiseFactor * when {
+        window.desktop -> 0.3f
+        window.isTablet -> 0.5f
+        else -> 1f
+    }
     val clipped = clip(shape)
     // Blurred from a smaller copy, Haze's grain would be drawn at that copy's size too and
     // stretched into blotches; it's drawn over the glass at full size instead ([fullSizeGrain]).
