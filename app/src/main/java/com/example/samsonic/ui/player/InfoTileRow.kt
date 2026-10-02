@@ -1,12 +1,6 @@
 package com.example.samsonic.ui.player
 
 import androidx.compose.foundation.background
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.MutableTransitionState
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.scaleIn
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,17 +9,33 @@ import androidx.compose.material.icons.rounded.ExpandMore
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.MutableIntState
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.TransformOrigin
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.IntRect
-import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.LayoutDirection
-import androidx.compose.ui.window.Popup
-import androidx.compose.ui.window.PopupPositionProvider
-import androidx.compose.ui.window.PopupProperties
 import com.example.samsonic.ui.components.pressClickable
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.layout.onGloballyPositioned
+import com.example.samsonic.playback.LocalPlayerState
+import com.example.samsonic.ui.theme.LocalGlassSettings
+import com.example.samsonic.ui.theme.OneUiRadius
+import com.example.samsonic.ui.theme.glassSurface
+import dev.chrisbanes.haze.HazeState
+import kotlin.math.roundToInt
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.heightIn
@@ -74,107 +84,160 @@ internal data class InfoCapsule(
     val active: Boolean = true,
 )
 
+/** The audio info capsule's window ([PlayerSheetState.format]), for the capsule to open; null where there's none. */
+internal val LocalInfoPanel = compositionLocalOf<PanelState?> { null }
+
 /**
- * Now Playing's info: the first of [capsules] alone in one line, and the rest in a small
- * window under it that a tap on it opens. Holds one line's height even when empty, so the
- * page doesn't jump as a song loads.
+ * Now Playing's info: the first of [capsules] alone in one line, and a tap on it opens a
+ * small window, growing out of it, with them all. Holds one line's height even when
+ * empty, so the page doesn't jump as a song loads.
  */
 @Composable
 internal fun InfoCapsuleRow(capsules: List<InfoCapsule>) {
-    var open by remember { mutableStateOf(false) }
+    val panel = LocalInfoPanel.current
     val first = capsules.firstOrNull()
-    val rest = capsules.drop(1)
-    // Nothing left to show: close, so the window isn't there when details arrive later.
-    if (rest.isEmpty() && open) open = false
+    val expandable = panel != null && capsules.size > 1
+    var bounds by remember { mutableStateOf(Rect.Zero) }
     Box(Modifier.heightIn(min = CapsuleHeight.toDp())) {
         if (first != null) {
             InfoCapsuleItem(
                 first,
-                expandable = rest.isNotEmpty(),
-                modifier = if (rest.isNotEmpty()) Modifier.pressClickable(onClick = { open = !open }, pressedScale = 0.94f) else Modifier,
+                expandable = expandable,
+                modifier = Modifier
+                    .onGloballyPositioned { bounds = it.boundsInRoot() }
+                    // Gone under its window as that grows, back as it folds.
+                    .graphicsLayer { alpha = 1f - ((panel?.progress ?: 0f) * 4f).coerceAtMost(1f) }
+                    .then(
+                        if (expandable) {
+                            Modifier.pressClickable(
+                                onClick = {
+                                    panel?.origin = bounds
+                                    panel?.open()
+                                },
+                                pressedScale = 0.94f,
+                            )
+                        } else {
+                            Modifier
+                        },
+                    ),
             )
-            if (open) InfoWindow(rest, onDismiss = { open = false })
         }
     }
 }
 
-/** The rest of the info capsules as a small floating window, under the first capsule (above it if there's no room). */
+/**
+ * The info capsule's window: a small glass card with a row for each of the capsule's
+ * lines (the format, the output, the device, the device rate), like the panels over a
+ * dimmed Now Playing. It grows out of the capsule and sits where it is (kept inside the
+ * screen); tapping outside it or back folds it into the capsule again.
+ */
 @Composable
-private fun InfoWindow(capsules: List<InfoCapsule>, onDismiss: () -> Unit) {
-    val density = LocalDensity.current
-    val position = remember(density) { BelowAnchor(gap = with(density) { 4.dp.roundToPx() }, margin = with(density) { 12.dp.roundToPx() }) }
-    val shape = RoundedCornerShape(16.dp)
-    val visible = remember { MutableTransitionState(false).apply { targetState = true } }
-    Popup(
-        popupPositionProvider = position,
-        onDismissRequest = onDismiss,
-        properties = PopupProperties(focusable = true),
+internal fun InfoCapsulePanel(panel: PanelState, haze: HazeState) {
+    val song = LocalPlayerState.current.currentSong ?: return
+    val capsules = rememberInfoCapsules(song)
+    val showing by remember(panel) { derivedStateOf { panel.progress > 0f } }
+    if (!showing) return
+    val shape = RoundedCornerShape(OneUiRadius.Card)
+    val dim = dialogDimAmount()
+    val glass = LocalGlassSettings.current
+    val settled by remember(panel) { derivedStateOf { panel.isSettled } }
+    val margin = with(LocalDensity.current) { 16.dp.roundToPx() }
+    val tileWidth = remember { mutableIntStateOf(0) }
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .drawBehind { drawRect(Color.Black.copy(alpha = dim * panel.progress)) }
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                enabled = panel.isOpen,
+                onClick = { panel.close() },
+            ),
     ) {
-        AnimatedVisibility(
-            visibleState = visible,
-            enter = fadeIn(tween(120)) + scaleIn(tween(160), initialScale = 0.85f, transformOrigin = TransformOrigin(0f, 0f)),
+        MorphPanel(
+            panel = panel,
+            icon = null,
+            surface = Modifier.glassSurface(
+                shape = shape,
+                hazeState = haze,
+                tint = MaterialTheme.colorScheme.surfaceContainerHigh,
+                alpha = MorphGlassBase,
+                blurRadius = glass.playerBlur,
+                downsample = !settled,
+                noiseFactor = 0f,
+                scaleOpacity = false,
+                rim = false,
+            ),
+            wash = MaterialTheme.colorScheme.surfaceContainerHigh,
+            washAlpha = washToReach(MorphGlassBase, glass.playerAlpha),
+            modifier = Modifier
+                // Its top-left at the capsule's, as far as the screen allows.
+                .layout { measurable, constraints ->
+                    val placeable = measurable.measure(
+                        constraints.copy(minWidth = 0, minHeight = 0, maxWidth = (constraints.maxWidth - margin * 2).coerceAtLeast(0)),
+                    )
+                    layout(constraints.maxWidth, constraints.maxHeight) {
+                        val x = panel.origin.left.roundToInt().coerceIn(margin, (constraints.maxWidth - placeable.width - margin).coerceAtLeast(margin))
+                        val y = panel.origin.top.roundToInt().coerceIn(margin, (constraints.maxHeight - placeable.height - margin).coerceAtLeast(margin))
+                        placeable.place(x, y)
+                    }
+                }
+                // Swallows taps so only the space around the card dismisses.
+                .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {},
+            radius = OneUiRadius.Card,
+            // Next to its capsule, with nothing to pull down from.
+            dragToClose = false,
         ) {
             Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier
-                    // Room for the shadow to spread inside the popup's window.
-                    .padding(12.dp)
-                    .shadow(8.dp, shape)
-                    .background(MaterialTheme.colorScheme.surfaceContainerHighest, shape)
-                    .border(1.dp, MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f), shape)
-                    .padding(horizontal = 14.dp, vertical = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.width(IntrinsicSize.Max).padding(horizontal = 20.dp, vertical = 16.dp),
             ) {
-                capsules.forEach { InfoWindowRow(it) }
+                capsules.forEach { InfoWindowRow(it, tileWidth) }
             }
         }
     }
 }
 
+/** One of the window's rows: the capsule's icon (or the format's label), its name, then its value. */
 @Composable
-private fun InfoWindowRow(capsule: InfoCapsule) {
+private fun InfoWindowRow(capsule: InfoCapsule, tileWidth: MutableIntState) {
     val content = if (capsule.active) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-    Row(verticalAlignment = Alignment.CenterVertically) {
-        val tile = capsule.tile
-        if (tile is InfoTile.Glyph) {
-            Icon(
-                tile.icon,
-                contentDescription = null,
-                tint = content,
-                modifier = Modifier
-                    .size(24.dp)
-                    .background(content.copy(alpha = if (capsule.active) 0.16f else 0.12f), CircleShape)
-                    .padding(5.dp),
-            )
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .height(24.dp)
+                .widthIn(min = maxOf(24.dp, with(LocalDensity.current) { tileWidth.intValue.toDp() }))
+                // Every row's tile as wide as the widest (the format's label, usually).
+                .onSizeChanged { if (it.width > tileWidth.intValue) tileWidth.intValue = it.width }
+                .background(content.copy(alpha = if (capsule.active) 0.16f else 0.12f), CircleShape),
+        ) {
+            when (val tile = capsule.tile) {
+                is InfoTile.Glyph -> Icon(tile.icon, contentDescription = null, tint = content, modifier = Modifier.size(14.dp))
+                is InfoTile.Label -> Text(
+                    text = tile.text,
+                    color = content,
+                    style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold),
+                    maxLines = 1,
+                    softWrap = false,
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                )
+            }
         }
-        Spacer(Modifier.width(10.dp))
+        Spacer(Modifier.width(12.dp))
         Text(
             text = capsule.description,
-            style = MaterialTheme.typography.labelMedium,
+            style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Spacer(Modifier.width(16.dp))
+        Spacer(Modifier.widthIn(min = 20.dp).weight(1f))
         Text(
             text = capsule.text,
-            style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.SemiBold),
+            style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 1,
             softWrap = false,
         )
-    }
-}
-
-/** Under the anchor, left edges together and kept [margin] inside the screen; above it if it won't fit below. */
-private class BelowAnchor(private val gap: Int, private val margin: Int) : PopupPositionProvider {
-    override fun calculatePosition(
-        anchorBounds: IntRect,
-        windowSize: IntSize,
-        layoutDirection: LayoutDirection,
-        popupContentSize: IntSize,
-    ): IntOffset {
-        val x = (anchorBounds.left - margin).coerceIn(0, (windowSize.width - popupContentSize.width).coerceAtLeast(0))
-        val below = anchorBounds.bottom + gap - margin
-        val y = if (below + popupContentSize.height <= windowSize.height) below else anchorBounds.top - gap - popupContentSize.height + margin
-        return IntOffset(x, y.coerceAtLeast(0))
     }
 }
 

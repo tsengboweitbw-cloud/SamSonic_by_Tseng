@@ -69,12 +69,17 @@ internal fun <T : Any> rememberLastNonNull(value: T?): T? {
  */
 @Composable
 internal fun NowPlayingInfoRows(song: Song) {
+    InfoCapsuleRow(rememberInfoCapsules(song))
+}
+
+/** [song]'s format and the playback details as info capsules; also what the capsule's window lists. */
+@Composable
+internal fun rememberInfoCapsules(song: Song): List<InfoCapsule> {
     val format = rememberLastNonNull(songFormat(song))
     val formatDescription = stringResource(R.string.player_format)
     val details = rememberPlaybackDetails()
-    val capsules = listOfNotNull(format?.let { InfoCapsule(it.first, formatDescription, it.second) }) +
+    return listOfNotNull(format?.let { InfoCapsule(it.first, formatDescription, it.second) }) +
         details.map { InfoCapsule(InfoTile.Glyph(iconOf(it)), it.label, it.line, it.active) }
-    InfoCapsuleRow(capsules)
 }
 
 /** The format tile (the codec, or a file icon when unknown) and the quality beside it; null if nothing's known. */

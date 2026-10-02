@@ -108,9 +108,10 @@ fun NowPlayingScreen(
     // While a panel is out, Now Playing's glass goes flat: dimmed under the panel, over
     // art already blurred, its blur doesn't show, but the panel's own blur of Now
     // Playing would redo it every frame of the panel's growing.
-    val panelOut by remember(lyrics, queue, info, autoDj, addToPlaylist) {
+    val format = LocalInfoPanel.current
+    val panelOut by remember(lyrics, queue, info, autoDj, addToPlaylist, format) {
         derivedStateOf {
-            listOfNotNull(lyrics, queue, info, autoDj, addToPlaylist?.panel).any { it.progress > 0f }
+            listOfNotNull(lyrics, queue, info, autoDj, format, addToPlaylist?.panel).any { it.progress > 0f }
         }
     }
     val glassHaze = stackHaze.takeUnless { panelOut }

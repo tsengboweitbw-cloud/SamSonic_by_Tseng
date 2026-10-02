@@ -56,8 +56,11 @@ class PlayerSheetState internal constructor(scope: CoroutineScope) {
     val info = PanelState(scope)
     val autoDj = PanelState(scope)
 
+    /** The small window the audio info capsule opens, at the capsule's own place. */
+    val format = PanelState(scope)
+
     /** Whether a panel covers Now Playing, or is heading there. */
-    val hasPanelOpen: Boolean get() = lyrics.isOpen || queue.isOpen || info.isOpen || autoDj.isOpen
+    val hasPanelOpen: Boolean get() = lyrics.isOpen || queue.isOpen || info.isOpen || autoDj.isOpen || format.isOpen
 
     /** Pixels the sheet's top travels between collapsed and expanded; set by the layout. */
     internal var travelPx: Float
@@ -143,7 +146,7 @@ class PlayerSheetState internal constructor(scope: CoroutineScope) {
     // Null [velocityPx]: carry on at the speed of any settle under way (see SpringTrack.animateTo).
     private fun settleTo(target: Float, velocityPx: Float? = null) {
         isExpanded = target == 1f
-        if (target == 0f) listOf(lyrics, queue, info, autoDj).forEach { it.reset() }
+        if (target == 0f) listOf(lyrics, queue, info, autoDj, format).forEach { it.reset() }
         track.animateTo(target, velocityPx)
     }
 

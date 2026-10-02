@@ -52,7 +52,7 @@ internal fun PlayerPages(sheet: PlayerSheetState) {
     val columns = rememberNowPlayingColumns()
     val panelStart = if (columns == NowPlayingColumns.Two) LocalWindowLayout.current.width / 2 else 0.dp
     Box(Modifier.fillMaxSize()) {
-        CompositionLocalProvider(LocalMarqueeRunning provides live) {
+        CompositionLocalProvider(LocalMarqueeRunning provides live, LocalInfoPanel provides sheet.format) {
         NowPlayingScreen(
             modifier = Modifier.graphicsLayer().hazeSource(haze),
             onCollapse = { sheet.collapse() },
@@ -72,6 +72,7 @@ internal fun PlayerPages(sheet: PlayerSheetState) {
             QueueScreen()
         }
         SongInfoPanel(sheet.info, haze)
+        InfoCapsulePanel(sheet.format, haze)
         PanelCard(sheet.autoDj, AutoDjIcon, title = stringResource(R.string.auto_dj_title), haze = haze) {
             AutoDjPanel(Modifier.fillMaxSize())
         }
@@ -87,7 +88,7 @@ internal fun PlayerPages(sheet: PlayerSheetState) {
  */
 @Composable
 internal fun PlayerSheetBackHandling(sheet: PlayerSheetState) {
-    val panel = listOf(sheet.autoDj, sheet.info, sheet.queue, sheet.lyrics).firstOrNull { it.isOpen }
+    val panel = listOf(sheet.format, sheet.autoDj, sheet.info, sheet.queue, sheet.lyrics).firstOrNull { it.isOpen }
     // Each shrinks from wherever it is when the gesture starts (still opening, even),
     // not from fully open, so backing out of an opening sheet or panel doesn't jump.
     PredictiveBackHandler(enabled = sheet.isExpanded && panel != null) { events ->

@@ -47,7 +47,7 @@ internal val LocalPanelStart = compositionLocalOf { 0.dp }
  * no amount of its own, so it is the platform dialog theme's.
  */
 @Composable
-private fun dialogDimAmount(): Float {
+internal fun dialogDimAmount(): Float {
     val context = LocalContext.current
     return remember(context) {
         val value = TypedValue()
