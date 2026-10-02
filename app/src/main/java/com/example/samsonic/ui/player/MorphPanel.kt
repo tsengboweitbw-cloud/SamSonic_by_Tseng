@@ -80,6 +80,12 @@ class PanelState internal constructor(scope: CoroutineScope) {
     var isOpen by mutableStateOf(false)
         private set
 
+    /**
+     * Fully open and at rest, not growing, shrinking or dragged: its glass then blurs at
+     * full size (see glassSurface's downsample).
+     */
+    internal val isSettled: Boolean get() = isOpen && track.position == 1f
+
     private var originState by mutableStateOf(Rect.Zero)
     private var travelMeasured = false
 

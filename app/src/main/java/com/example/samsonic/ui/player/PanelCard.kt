@@ -84,6 +84,7 @@ internal fun PanelCard(
     val shape = RoundedCornerShape(OneUiRadius.Card)
     val dim = dialogDimAmount()
     val glass = LocalGlassSettings.current
+    val settled by remember(panel) { derivedStateOf { panel.isSettled } }
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -110,7 +111,11 @@ internal fun PanelCard(
                 // Starts thin, like its button's glass; the wash below thickens it.
                 alpha = MorphGlassBase,
                 blurRadius = glass.panelBlur,
-                downsample = true,
+                // Open and still, at full size: Now Playing's title and seek bar keep moving
+                // behind it.
+                downsample = !settled,
+                // None either way, as while downsampled, so settling doesn't change its look.
+                noiseFactor = 0f,
                 sheen = AccentSheen.Menu,
                 scaleOpacity = false,
                 rim = false,

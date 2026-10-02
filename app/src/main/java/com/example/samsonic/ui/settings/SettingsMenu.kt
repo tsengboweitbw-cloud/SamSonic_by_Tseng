@@ -95,6 +95,7 @@ internal fun SettingsMenu(
     val showing by remember(panel) { derivedStateOf { panel.progress > 0f } }
     if (!showing) return
     val glass = LocalGlassSettings.current
+    val settled by remember(panel) { derivedStateOf { panel.isSettled } }
     // Over a page with the floating chrome, that can't be used either: a tap on it closes the menu.
     val bottomInset = LocalMenuBottomInset.current
     val matchOrigin = LocalMenuMatchesOrigin.current
@@ -129,7 +130,10 @@ internal fun SettingsMenu(
                 // Starts thin; the wash thickens it to the panel's density.
                 alpha = MorphGlassBase,
                 blurRadius = glass.panelBlur,
-                downsample = true,
+                // Open and still, at full size, so what moves behind it doesn't flicker through.
+                downsample = !settled,
+                // None either way, as while downsampled, so settling doesn't change its look.
+                noiseFactor = 0f,
                 sheen = AccentSheen.Menu,
                 scaleOpacity = false,
                 rim = false,

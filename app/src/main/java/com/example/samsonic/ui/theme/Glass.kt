@@ -30,12 +30,12 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.ui.components.MediaArtFill
-import dev.chrisbanes.haze.ExperimentalHazeApi
-import dev.chrisbanes.haze.HazeInputScale
+import dev.chrisbanes.haze.HazeInput
+import dev.chrisbanes.haze.HazePerformanceMode
 import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.HazeStyle
-import dev.chrisbanes.haze.HazeTint
-import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.blur.HazeBlurStyle
+import dev.chrisbanes.haze.blur.HazeColorEffect
+import dev.chrisbanes.haze.blur.hazeBlur
 
 /**
  * Shared [HazeState] for the current NavHost content Box, so floating glass
@@ -51,7 +51,6 @@ val LocalHazeState = staticCompositionLocalOf<HazeState?> { null }
  * when no haze source is available (e.g. API < 31, where the underlying
  * RenderEffect blur silently no-ops).
  */
-@OptIn(ExperimentalHazeApi::class)
 @Composable
 fun Modifier.glassSurface(
     shape: Shape,
@@ -68,8 +67,10 @@ fun Modifier.glassSurface(
     // False for a caller that draws [glassRimBrush] along its own (e.g.
     // animated) outline instead of this surface's full bounds.
     rim: Boolean = true,
-    // True for a big panel that grows and shrinks (see the hazeEffect below); a small bar's
-    // lighter blur shows the smaller copy it blurs as blocks.
+    // True for a big panel while it grows and shrinks (see the hazeBlur below); a small bar's
+    // lighter blur shows the smaller copy it blurs as blocks. Only while it moves: in the
+    // smaller copy anything moving behind (a scrolling title, the seek bar) jumps from pixel
+    // to pixel and flickers through the glass.
     downsample: Boolean = false,
     // Blurs a copy this much smaller (0.5 = half across) for glass always on screen over
     // scrolling content, redrawn every frame: a strong blur looks the same, at a fraction
@@ -95,30 +96,34 @@ fun Modifier.glassSurface(
                 tint.copy(alpha = (alpha + 0.1f).coerceAtMost(1f)),
             ),
         )
-        clipped.hazeEffect(
-            state = hazeState,
-            style = HazeStyle(
-                // The captured source content has no background of its own
-                // (Scaffold paints it outside hazeSource), so without an
-                // opaque base the blurred layer is translucent and the sharp
-                // original text shows straight through it.
-                backgroundColor = MaterialTheme.colorScheme.background,
-                tint = HazeTint(tintBrush),
-                blurRadius = blurRadius,
-                // The smaller copy a downsampled glass blurs would stretch the grain into blotches.
-                noiseFactor = if (downsample || scaledCopy) 0f else noiseFactor,
-            ),
-        ) {
-            // Blurs a smaller copy of what's behind (a third across, for all but a faint
-            // blur), which looks the same under a blur this strong at a fraction of the
-            // cost: at full size, a panel's glass redrawn every frame of its growing
-            // (by the morph's moving clip) blurred the whole card each frame, and stuttered.
-            if (downsample) {
-                this.inputScale = HazeInputScale.Auto
-            } else if (inputScale != null) {
-                this.inputScale = HazeInputScale.Fixed(inputScale)
+        // The captured source content has no background of its own (Scaffold paints it
+        // outside hazeSource), so without an opaque base the blurred layer is translucent
+        // and the sharp original text shows straight through it.
+        val base = MaterialTheme.colorScheme.background
+        // The smaller copy a downsampled glass blurs would stretch the grain into blotches.
+        val grain = if (downsample || scaledCopy) 0f else noiseFactor
+        val style = remember(base, tintBrush, blurRadius, grain) {
+            HazeBlurStyle {
+                backgroundColor(base)
+                colorEffects(listOf(HazeColorEffect.tint(tintBrush)))
+                blurRadius(blurRadius)
+                noiseFactor(grain)
             }
         }
+        clipped.hazeBlur(
+            input = HazeInput.Sources(hazeState),
+            style = style,
+            // Blurs a smaller copy of what's behind (half across, the least Haze goes to),
+            // which looks the same under a blur this strong at a fraction of the cost: at
+            // full size, a panel's glass redrawn every frame of its growing (by the morph's
+            // moving clip) blurred the whole card each frame, and stuttered. Fixed, never
+            // left to Haze to pick, which re-picked as the card grew and shimmered each time.
+            performanceMode = when {
+                downsample -> HazePerformanceMode.Performance
+                inputScale != null -> performanceModeFor(inputScale)
+                else -> HazePerformanceMode.Quality
+            },
+        )
     } else {
         clipped.background(tint.copy(alpha = alpha))
     }
@@ -135,7 +140,7 @@ fun Modifier.glassSurface(
 /** Haze's own grain texture, tiled over the glass at the screen's full size, at [alpha]. */
 @Composable
 private fun Modifier.fullSizeGrain(alpha: Float): Modifier {
-    val tile = ImageBitmap.imageResource(dev.chrisbanes.haze.R.drawable.haze_noise)
+    val tile = ImageBitmap.imageResource(dev.chrisbanes.haze.blur.R.drawable.haze_noise)
     return drawWithCache {
         val brush = ShaderBrush(ImageShader(tile, TileMode.Repeated, TileMode.Repeated))
         onDrawBehind { drawRect(brush, alpha = alpha) }
@@ -179,6 +184,13 @@ private fun Modifier.accentSheen(strength: Float): Modifier {
 }
 
 val GlassRimWidth = 1.5.dp
+
+/**
+ * The Haze profile blurring a copy [scale] across (1 = full size): Haze sizes its copy by
+ * the square root of 0.25 + 0.75 x its quality, so from half across up.
+ */
+private fun performanceModeFor(scale: Float): HazePerformanceMode =
+    HazePerformanceMode.Fixed(((scale * scale - 0.25f) / 0.75f).coerceIn(0f, 1f))
 
 /** The [glassSurface] inputScale of the chrome (the nav bar and mini player), always on screen. */
 const val ChromeBlurScale = 0.5f

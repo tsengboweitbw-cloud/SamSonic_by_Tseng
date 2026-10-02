@@ -90,6 +90,7 @@ dependencies {
     implementation(libs.coil.network.okhttp)
 
     implementation(libs.haze)
+    implementation(libs.haze.blur)
 
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
