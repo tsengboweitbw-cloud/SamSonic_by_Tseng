@@ -71,5 +71,7 @@ internal fun FloatingNavRail(
         width = width,
         tabHeight = tabHeight,
         iconSize = iconSize,
+        onSwipe = tabs::swipeFade,
+        onSwipeEnd = tabs::settleFade,
     )
 }

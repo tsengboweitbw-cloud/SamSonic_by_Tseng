@@ -18,6 +18,7 @@ import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /**
@@ -127,6 +128,27 @@ internal class MainTabs(
     fun swipeTo(position: Float) {
         val page = position.roundToInt().coerceIn(routes.indices)
         scope.launch { pager.scrollToPage(page, (position - page).coerceIn(-0.5f, 0.5f)) }
+    }
+
+    /**
+     * Beside the rail, a finger at [position] (in tabs) fades the tab out as it leaves one,
+     * and the next in as it nears it: the page changes where the two meet, unseen.
+     */
+    fun swipeFade(position: Float) {
+        val page = position.roundToInt().coerceIn(routes.indices)
+        scope.launch {
+            if (page != pager.currentPage) pager.scrollToPage(page)
+            fade.snapTo((1f - 2f * abs(position - page)).coerceIn(0f, 1f))
+        }
+    }
+
+    /** Lands on [index] after a swipe along the rail lets go, fading it in the rest of the way. */
+    fun settleFade(index: Int) {
+        scope.launch {
+            fadingTo = null
+            if (pager.currentPage != index) pager.scrollToPage(index)
+            fade.animateTo(1f, tween(TabFadeInMillis))
+        }
     }
 
     /** Settles the pages on [index] after a swipe along the nav bar lets go. */

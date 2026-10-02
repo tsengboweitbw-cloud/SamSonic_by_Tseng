@@ -136,6 +136,11 @@ fun GlassNavRail(
     tabHeight: Dp = NavRail.TabHeight,
     // The tabs' icons: larger in DeX.
     iconSize: Dp = NavRail.IconSize,
+    // The finger's position (in tabs) as it slides along the rail, for a caller whose
+    // pages follow it; the rail still carries its own indicator under the finger.
+    onSwipe: ((Float) -> Unit)? = null,
+    // The tab a swipe let go on. Without it, a new tab goes to [onSelect].
+    onSwipeEnd: ((Int) -> Unit)? = null,
 ) {
     val animated = remember { Animatable(selectedIndex.toFloat()) }
     LaunchedEffect(selectedIndex) {
@@ -169,12 +174,13 @@ fun GlassNavRail(
                 vertical = true,
                 onSwipe = { at ->
                     finger[0] = at
+                    onSwipe?.invoke(at)
                     if (follow == null) follow = scope.launch { animated.followSwipe(target = { finger[0] }) }
                 },
                 onSwipeEnd = { index ->
                     follow?.cancel()
                     follow = null
-                    if (index != selectedIndex) onSelect(index)
+                    if (onSwipeEnd != null) onSwipeEnd(index) else if (index != selectedIndex) onSelect(index)
                     scope.launch { animated.animateTo(index.toFloat(), TabIndicatorSpring) }
                 },
             )
