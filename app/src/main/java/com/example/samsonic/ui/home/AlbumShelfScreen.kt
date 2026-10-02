@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import com.example.samsonic.ui.components.rememberPullOverscroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -60,10 +61,12 @@ fun AlbumShelfScreen(
     Box(modifier = modifier.fillMaxSize().statusBarsPadding()) {
         StateContent(state = state, modifier = Modifier.fillMaxSize()) { albums ->
             val listState = rememberLazyListState()
+            val overscroll = rememberPullOverscroll()
             Box(Modifier.fillMaxSize()) {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize().scrollTopFade(listState).backButtonHazeSource(backHaze),
                     state = listState,
+                    overscrollEffect = overscroll,
                     contentPadding = PaddingValues(top = BackButtonClearance, bottom = contentPaddingBottom),
                 ) {
                     item {
@@ -84,7 +87,7 @@ fun AlbumShelfScreen(
                     floatingActionsEnd()
                     item { Spacer(Modifier.height(24.dp)) }
                 }
-                FloatingListActions(listState, haze = backHaze) {
+                FloatingListActions(listState, overscroll = overscroll, haze = backHaze) {
                     PlayShuffleButtons(
                         key = albums,
                         loadSongs = { repository.getAlbumsSongs(albums) },

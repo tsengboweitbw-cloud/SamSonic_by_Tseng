@@ -85,7 +85,7 @@ fun MediaArt(
             shape = RoundedCornerShape(cornerRadius),
             shadowElevation = shadowElevation,
             fit = fit,
-            sizePx = pixelSize,
+            sizePx = CoverArtSizes.decodeStep(pixelSize),
         )
     }
 }
@@ -158,8 +158,19 @@ private fun ArtSurface(
     val fallback = fallbackUrl?.let { rememberAsyncImagePainter(it) }
     val fallbackState = fallback?.state?.collectAsState()?.value
     val mainLoaded = state is AsyncImagePainter.State.Success
-    val shown = if (!mainLoaded && fallbackState is AsyncImagePainter.State.Success) fallback else painter
-    val loaded = mainLoaded || shown === fallback
+    // The art as last loaded here, kept while the same art loads again at another size (the
+    // screen switched, folding or unfolding, and the art is laid out larger or smaller):
+    // the image cache keeps each size apart, and the placeholder showed for a frame or two.
+    val lastLoaded = remember(url) { arrayOfNulls<Painter>(1) }
+    (state as? AsyncImagePainter.State.Success)?.let { lastLoaded[0] = it.painter }
+    val stale = if (!mainLoaded) lastLoaded[0] else null
+    val shown = when {
+        mainLoaded -> painter
+        stale != null -> stale
+        fallbackState is AsyncImagePainter.State.Success -> fallback!!
+        else -> painter
+    }
+    val loaded = mainLoaded || stale != null || shown === fallback
     // Until the art is in, the placeholder fills the whole square.
     val ratio = if (fit && loaded) shown.intrinsicSize.aspectRatioOrNull() else null
     ArtBox(url, shown, loaded, ratio, colorSeed, icon, iconSize, shape, shadowElevation, fit)

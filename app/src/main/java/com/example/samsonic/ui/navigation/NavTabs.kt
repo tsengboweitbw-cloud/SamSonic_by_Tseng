@@ -1,17 +1,24 @@
 package com.example.samsonic.ui.navigation
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.pager.PagerState
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.setValue
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /**
@@ -47,35 +54,66 @@ internal class MainTabs(
         }
     }
 
+    /**
+     * Whether a switch fades the new tab in over the last rather than sliding over to it:
+     * beside the nav rail, whose tabs run up and down. Set by the nav host.
+     */
+    var fades by mutableStateOf(false)
+        internal set
+
+    /** The tabs' opacity: 1, but for a moment as a switch fades from one tab to another. */
+    val fade = Animatable(1f)
+
+    // The tab a fading switch is heading for, until it's there.
+    private var fadingTo by mutableStateOf<Int?>(null)
+
     /** The tab showing, or the one a switch is heading for. */
-    val current: Int get() = pager.targetPage
+    val current: Int get() = fadingTo ?: pager.targetPage
+
+    /** Goes over to the tab at [index]: sliding, or beside the rail fading ([fades]). */
+    private suspend fun goTo(index: Int) {
+        if (!fades) {
+            pager.animateScrollToPage(index)
+            return
+        }
+        if (index == pager.currentPage && fadingTo == null) return
+        fadingTo = index
+        try {
+            fade.animateTo(0f, tween(TabFadeOutMillis))
+            pager.scrollToPage(index)
+            fade.animateTo(1f, tween(TabFadeInMillis))
+        } finally {
+            // A switch to another tab meanwhile has taken over, and clears it as it lands.
+            if (fadingTo == index) fadingTo = null
+        }
+    }
 
     val currentRoute: String get() = routes[current]
 
     fun controller(route: String): NavHostController = controllers[routes.indexOf(route)]
 
     /**
-     * Tapping another tab slides over to it, as it was left. Tapping the tab you're
-     * already on returns it to its first page: sliding would do nothing there.
+     * Tapping another tab goes over to it ([goTo]), as it was left. Tapping the tab you're
+     * already on returns it to its first page: going over would do nothing there.
      */
     fun select(index: Int) {
-        if (index == pager.currentPage && !pager.isScrollInProgress) {
+        if (index == pager.currentPage && !pager.isScrollInProgress && fadingTo == null) {
             controllers[index].popBackStack(routes[index], inclusive = false)
         } else {
-            scope.launch { pager.animateScrollToPage(index) }
+            scope.launch { goTo(index) }
         }
     }
 
-    /** Opens the tab at [route], sliding over to it. */
-    fun select(route: String) = scope.launch { pager.animateScrollToPage(routes.indexOf(route)) }
+    /** Opens the tab at [route], going over to it. */
+    fun select(route: String) = scope.launch { goTo(routes.indexOf(route)) }
 
     /**
-     * Slides over to [tab] and opens [page] there, once its pages are up (a tab not
+     * Goes over to [tab] and opens [page] there, once its pages are up (a tab not
      * yet visited has nothing to open a page on until then). A page already on top
      * there is just revealed, not stacked again.
      */
     fun open(tab: String, page: String) = scope.launch {
-        pager.animateScrollToPage(routes.indexOf(tab))
+        goTo(routes.indexOf(tab))
         val controller = controller(tab)
         if (controller.currentBackStackEntry?.routeWithArgs() != page) controller.navigate(page)
     }
@@ -90,6 +128,27 @@ internal class MainTabs(
     fun swipeTo(position: Float) {
         val page = position.roundToInt().coerceIn(routes.indices)
         scope.launch { pager.scrollToPage(page, (position - page).coerceIn(-0.5f, 0.5f)) }
+    }
+
+    /**
+     * Beside the rail, a finger at [position] (in tabs) fades the tab out as it leaves one,
+     * and the next in as it nears it: the page changes where the two meet, unseen.
+     */
+    fun swipeFade(position: Float) {
+        val page = position.roundToInt().coerceIn(routes.indices)
+        scope.launch {
+            if (page != pager.currentPage) pager.scrollToPage(page)
+            fade.snapTo((1f - 2f * abs(position - page)).coerceIn(0f, 1f))
+        }
+    }
+
+    /** Lands on [index] after a swipe along the rail lets go, fading it in the rest of the way. */
+    fun settleFade(index: Int) {
+        scope.launch {
+            fadingTo = null
+            if (pager.currentPage != index) pager.scrollToPage(index)
+            fade.animateTo(1f, tween(TabFadeInMillis))
+        }
     }
 
     /** Settles the pages on [index] after a swipe along the nav bar lets go. */
@@ -113,4 +172,16 @@ internal fun rememberMainTabs(routes: List<String>, initialRoute: String?): Main
  */
 class LastTab {
     var route: String? = null
+
+    companion object {
+        /** Kept through the activity starting over, so a source switch after that still stays in Settings. */
+        val Saver: Saver<LastTab, String> = Saver(
+            save = { it.route },
+            restore = { LastTab().apply { route = it } },
+        )
+    }
 }
+
+// Beside the rail, a switch fades the last tab out quickly and the new one in.
+private const val TabFadeOutMillis = 90
+private const val TabFadeInMillis = 180

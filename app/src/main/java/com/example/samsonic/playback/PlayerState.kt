@@ -43,7 +43,9 @@ class PlayerState(
     // The active source's library, read at each use: it changes when the user switches sources.
     private val repository: () -> MusicLibrary,
     private val scope: CoroutineScope,
+    private val store: PlaybackStore,
 ) {
+    private var saveJob: Job? = null
     private var controller: MediaController? = null
     private var songById: Map<String, Song> = emptyMap()
     private var sleepTimerJob: Job? = null
@@ -107,6 +109,7 @@ class PlayerState(
             currentIndex = controller?.currentMediaItemIndex ?: -1
             refreshPlayOrder()
             _changes.value++
+            saveQueue()
         }
 
         override fun onRepeatModeChanged(mode: Int) {
@@ -130,6 +133,7 @@ class PlayerState(
         future.addListener({
             val c = future.get()
             controller = c
+            restoreQueue(c)
             c.addListener(playerListener)
             isPlaying = c.isPlaying
             shuffle = c.shuffleModeEnabled
@@ -138,6 +142,30 @@ class PlayerState(
             isReady = true
             _changes.value++
         }, MoreExecutors.directExecutor())
+    }
+
+    /** Remembers the queue shortly after it settles; the playback service remembers the place in it. */
+    private fun saveQueue() {
+        saveJob?.cancel()
+        saveJob = scope.launch {
+            delay(500)
+            val c = controller ?: return@launch
+            if (c.mediaItemCount != queue.size) return@launch
+            store.saveSongs(queue.toList())
+        }
+    }
+
+    /** Shows the queue the service brought back from last time, if the songs saved with it still match. */
+    private fun restoreQueue(c: MediaController) {
+        if (queue.isNotEmpty() || c.mediaItemCount == 0) return
+        val songs = store.loadSongs()
+        if (songs.size != c.mediaItemCount) return
+        if (songs.indices.any { songs[it].id != c.getMediaItemAt(it).mediaId }) return
+        songById = songs.associateBy { it.id }
+        queue.addAll(songs)
+        currentIndex = c.currentMediaItemIndex
+        currentSong = songs.getOrNull(currentIndex)
+        positionSeconds = c.currentPosition / 1000f
     }
 
     /**
@@ -243,16 +271,42 @@ class PlayerState(
         c.removeMediaItem(index)
     }
 
+    /** Playing, drops every song but the current one; paused, it's all of them, and the
+     *  player goes away with them (see [stopAndClearQueue]). */
+    fun clearQueue() {
+        val c = controller ?: return
+        if (!isPlaying || currentIndex !in queue.indices) {
+            stopAndClearQueue()
+            return
+        }
+        val keep = currentIndex
+        if (keep + 1 < queue.size) {
+            queue.removeRange(keep + 1, queue.size)
+            c.removeMediaItems(keep + 1, c.mediaItemCount)
+        }
+        if (keep > 0) {
+            queue.removeRange(0, keep)
+            c.removeMediaItems(0, keep)
+        }
+    }
+
     fun playQueueIndex(index: Int) {
         val c = controller ?: return
         if (index !in queue.indices) return
         c.seekTo(index, 0L)
+        if (c.playbackState == Player.STATE_IDLE) c.prepare()
         c.play()
     }
 
     fun togglePlayPause() {
         val c = controller ?: return
-        if (c.isPlaying) c.pause() else c.play()
+        if (c.isPlaying) {
+            c.pause()
+        } else {
+            // A queue brought back from last time is loaded but not yet prepared.
+            if (c.playbackState == Player.STATE_IDLE) c.prepare()
+            c.play()
+        }
     }
 
     fun skipNext() {

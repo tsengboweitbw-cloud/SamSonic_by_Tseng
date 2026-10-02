@@ -5,8 +5,9 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.Saver
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.CoroutineScope
 
@@ -48,15 +49,18 @@ class PlayerSheetState internal constructor(scope: CoroutineScope) {
 
     /** Whether the sheet is expanded or heading there (drives back handling). */
     var isExpanded by mutableStateOf(false)
-        private set
+        internal set
 
     val lyrics = PanelState(scope)
     val queue = PanelState(scope)
     val info = PanelState(scope)
     val autoDj = PanelState(scope)
 
+    /** The small window the audio info capsule opens, at the capsule's own place. */
+    val format = PanelState(scope)
+
     /** Whether a panel covers Now Playing, or is heading there. */
-    val hasPanelOpen: Boolean get() = lyrics.isOpen || queue.isOpen || info.isOpen || autoDj.isOpen
+    val hasPanelOpen: Boolean get() = lyrics.isOpen || queue.isOpen || info.isOpen || autoDj.isOpen || format.isOpen
 
     /** Pixels the sheet's top travels between collapsed and expanded; set by the layout. */
     internal var travelPx: Float
@@ -142,7 +146,7 @@ class PlayerSheetState internal constructor(scope: CoroutineScope) {
     // Null [velocityPx]: carry on at the speed of any settle under way (see SpringTrack.animateTo).
     private fun settleTo(target: Float, velocityPx: Float? = null) {
         isExpanded = target == 1f
-        if (target == 0f) listOf(lyrics, queue, info, autoDj).forEach { it.reset() }
+        if (target == 0f) listOf(lyrics, queue, info, autoDj, format).forEach { it.reset() }
         track.animateTo(target, velocityPx)
     }
 
@@ -165,8 +169,26 @@ class PlayerSheetState internal constructor(scope: CoroutineScope) {
 /** What a drag on the sheet moves: the sheet, the mini player away, or nothing. */
 private enum class DragTarget { Sheet, Dismiss, None }
 
+/**
+ * Kept through the activity starting over (the system closing it in the background, the
+ * phone switching dark mode): Now Playing, if it was open, opens again at once, without
+ * its panels.
+ * With no song by then, the sheet folds itself away (see PlayerSheet).
+ */
+private fun playerSheetSaver(scope: CoroutineScope) = Saver<PlayerSheetState, Boolean>(
+    save = { it.isExpanded },
+    restore = { expanded ->
+        PlayerSheetState(scope).apply {
+            if (expanded) {
+                snapTo(1f)
+                isExpanded = true
+            }
+        }
+    },
+)
+
 @Composable
 fun rememberPlayerSheetState(): PlayerSheetState {
     val scope = rememberCoroutineScope()
-    return remember(scope) { PlayerSheetState(scope) }
+    return rememberSaveable(scope, saver = playerSheetSaver(scope)) { PlayerSheetState(scope) }
 }

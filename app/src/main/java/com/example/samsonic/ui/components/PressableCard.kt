@@ -1,5 +1,6 @@
 package com.example.samsonic.ui.components
 
+import com.example.samsonic.ui.common.onSecondaryClick
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -36,7 +37,7 @@ fun PressableCard(
 ) {
     val interaction = remember { MutableInteractionSource() }
     Box(
-        modifier.combinedClickable(
+        modifier.onSecondaryClick(onLongClick).combinedClickable(
             interactionSource = interaction,
             indication = null,
             onClick = onClick,

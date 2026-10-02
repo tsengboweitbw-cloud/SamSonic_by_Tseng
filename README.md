@@ -6,9 +6,9 @@
 [![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-M3-purple.svg)](https://developer.android.com/jetpack/compose)
 [![Licence: GPL v3](https://img.shields.io/badge/Licence-GPLv3-blue.svg)](LICENSE)
 
-**Samsonic** is a native Android music streaming player tailored for self-hosted Subsonic and Navidrome servers, featuring a **Samsung One UI 9.0 spatial visual style (Glassmorphism)** and audiophile-grade **Bit-Perfect / Exclusive USB DAC audio output**.
+**Samsonic** is a native Android music streaming player tailored for self-hosted Subsonic and Navidrome servers, featuring a **Samsung One UI 9.0 spatial visual style (Glassmorphism)**.
 
-**Samsonic** 是一款專為 Android 打造、採用 **三星 One UI 9.0 空間視覺風格 (Glassmorphism)** 並支援發燒級 **Bit-Perfect / USB DAC 獨佔模式** 的 Subsonic / Navidrome 自建音樂伺服器串流播放器。
+**Samsonic** 是一款專為 Android 打造、採用 **三星 One UI 9.0 空間視覺風格 (Glassmorphism)** 的 Subsonic / Navidrome 自建音樂伺服器串流播放器。
 
 ---
 

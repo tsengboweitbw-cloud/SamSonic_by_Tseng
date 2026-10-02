@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import com.example.samsonic.ui.components.rememberPullOverscroll
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.IconButton
@@ -102,12 +103,14 @@ fun PlaylistDetailScreen(
             // Played in the order shown.
             val songs = remember(loaded, sort) { loaded.sortedFor(sort) }
             val listState = rememberLazyListState()
+            val overscroll = rememberPullOverscroll()
             // A new sort starts over from the first song, if the list was past it.
             OnSortChange(sort) { if (listState.firstVisibleItemIndex > 2) listState.scrollToItem(2) }
             Box(Modifier.fillMaxSize()) {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize().scrollTopFade(listState).backButtonHazeSource(backHaze),
                     state = listState,
+                    overscrollEffect = overscroll,
                     contentPadding = PaddingValues(top = BackButtonClearance, bottom = contentPaddingBottom),
                 ) {
                     item { PlaylistHeader(playlist, songs.size, cornerRadius, actions = null) }
@@ -127,7 +130,7 @@ fun PlaylistDetailScreen(
                     item { Spacer(Modifier.height(24.dp)) }
                 }
                 // Its corner button goes beside the sort button.
-                FloatingListActions(listState, cornerEndOffset = ChromeButtonSize + 8.dp, haze = backHaze) { PlayShuffleButtons(songs = songs, playlistTitle = playlist.name) }
+                FloatingListActions(listState, overscroll = overscroll, cornerEndOffset = ChromeButtonSize + 8.dp, haze = backHaze) { PlayShuffleButtons(songs = songs, playlistTitle = playlist.name) }
             }
         }
         // Floats over the list: rows scroll up under it and fade out at the status bar.

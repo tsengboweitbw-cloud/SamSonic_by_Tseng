@@ -44,6 +44,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.example.samsonic.ui.common.HoverGlowAlpha
+import com.example.samsonic.ui.common.hovered
 import com.example.samsonic.ui.theme.OneUiRadius
 import kotlin.math.roundToInt
 
@@ -74,7 +76,7 @@ fun IconLabelTab(
         label = "tabPressScale",
     )
     val pressGlow by animateFloatAsState(
-        targetValue = if (pressed) 0.08f else 0f,
+        targetValue = if (pressed) 0.08f else if (hovered(interactionSource)) HoverGlowAlpha else 0f,
         animationSpec = tween(if (pressed) 90 else 260),
         label = "tabPressGlow",
     )
@@ -124,10 +126,12 @@ fun IconLabelTab(
             Text(
                 text = label,
                 modifier = Modifier
-                    .revealWidth(emphasis, edgeFade = 20.dp)
-                    // Fades in and out as it opens and closes, easing at both ends.
+                    .revealWidth({ (emphasis() / LabelFullAt).coerceAtMost(1f) }, edgeFade = 10.dp)
+                    // Fades in and out as it opens and closes, easing at both ends; fully
+                    // opaque by the time the tab is half open, so a swipe racing past still
+                    // shows the letters rather than a faint smear.
                     .graphicsLayer {
-                        val t = ((emphasis() - 0.1f) / 0.9f).coerceIn(0f, 1f)
+                        val t = ((emphasis() - 0.02f) / (LabelFullAt - 0.02f)).coerceIn(0f, 1f)
                         alpha = t * t * (3 - 2 * t)
                     }
                     .padding(start = 8.dp),
@@ -171,3 +175,10 @@ private fun Modifier.revealWidth(fraction: () -> Float, edgeFade: Dp): Modifier 
             layout(width, placeable.height) { placeable.placeRelative(0, 0) }
         }
 }
+
+/**
+ * How near the indicator ([IconLabelTab]'s emphasis) a tab's label is fully open and opaque:
+ * from here to the indicator's centre it holds, so a swipe passing over a tab still gives
+ * the label a stretch of showing in full, rather than always fading in or out.
+ */
+internal const val LabelFullAt = 0.6f

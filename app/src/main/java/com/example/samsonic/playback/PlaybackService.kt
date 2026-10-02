@@ -7,6 +7,7 @@ import android.os.Bundle
 import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
+import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultDataSource
@@ -28,6 +29,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
  * Hosts the real ExoPlayer + MediaSession so playback, the notification, and lock-screen
@@ -45,6 +48,7 @@ class PlaybackService : MediaSessionService() {
     private var mediaSession: MediaSession? = null
     private var scrobbler: Scrobbler? = null
     private var prefetcher: MusicPrefetcher? = null
+    private var saveCursorNow: (() -> Unit)? = null
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     @OptIn(UnstableApi::class) // Media3's extractor API, for DSD.
@@ -58,11 +62,10 @@ class PlaybackService : MediaSessionService() {
             upstream = httpFactory,
             direct = DefaultDataSource.Factory(this, httpFactory),
         )
-        // DSD (DSF/DFF) has no Android decoder; its extractor turns it into PCM itself, or packs
-        // it for a DAC that takes DSD (see BitPerfectOutput.dsdStreamFor).
-        val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory, DsdExtractorsFactory(container.bitPerfect::dsdStreamFor))
+        // DSD (DSF/DFF) has no Android decoder; its extractor filters it into PCM itself.
+        val mediaSourceFactory = DefaultMediaSourceFactory(dataSourceFactory, DsdExtractorsFactory())
 
-        val player = ExoPlayer.Builder(this, renderersFactory(this, container.bitPerfect))
+        val player = ExoPlayer.Builder(this)
             .setMediaSourceFactory(mediaSourceFactory)
             .setAudioAttributes(
                 AudioAttributes.Builder()
@@ -74,15 +77,58 @@ class PlaybackService : MediaSessionService() {
             .setHandleAudioBecomingNoisy(true)
             .setLoadControl(streamingLoadControl())
             .build()
+        // The queue from last time, ready (not loading) until play is pressed here or in the media controls.
+        val store = container.playbackStore
+        val saved = store.loadSongs()
+        if (saved.isNotEmpty()) {
+            val cursor = store.loadCursor()
+            player.setMediaItems(
+                saved.map { it.toMediaItem(container.repository) },
+                cursor.index.coerceIn(0, saved.lastIndex),
+                cursor.positionMs,
+            )
+            player.repeatMode = cursor.repeatMode
+            player.shuffleModeEnabled = cursor.shuffle
+            if (cursor.shuffle) player.reshuffleFromCurrent()
+        }
+        val saveCursor = {
+            if (player.mediaItemCount > 0) {
+                store.saveCursor(
+                    PlaybackCursor(
+                        index = player.currentMediaItemIndex,
+                        positionMs = player.currentPosition,
+                        shuffle = player.shuffleModeEnabled,
+                        repeatMode = player.repeatMode,
+                    ),
+                )
+            }
+        }
+        saveCursorNow = saveCursor
         player.addListener(object : Player.Listener {
             override fun onShuffleModeEnabledChanged(shuffleModeEnabled: Boolean) {
                 if (shuffleModeEnabled) player.reshuffleFromCurrent()
+                saveCursor()
             }
+
+            override fun onRepeatModeChanged(repeatMode: Int) = saveCursor()
+            override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) = saveCursor()
+            override fun onIsPlayingChanged(isPlaying: Boolean) = saveCursor()
+            override fun onPositionDiscontinuity(
+                oldPosition: Player.PositionInfo,
+                newPosition: Player.PositionInfo,
+                reason: Int,
+            ) = saveCursor()
         })
+        // Where playback is, a few seconds at a time, so a kill loses little.
+        serviceScope.launch {
+            while (true) {
+                delay(5_000)
+                if (player.isPlaying) saveCursor()
+            }
+        }
         // Application-scoped, so a scrobble sent just before the service stops still goes out.
         scrobbler = Scrobbler(player, { container.repository }, container.applicationScope)
         container.audioOutput.attach(player)
-        container.bitPerfect.attach(player)
         prefetcher = MusicPrefetcher(
             player = player,
             cache = container.musicCache.cache,
@@ -120,6 +166,25 @@ class PlaybackService : MediaSessionService() {
                 .build()
         }
 
+        /** Play pressed in the media controls with nothing loaded (the service had stopped): brings back the last queue. */
+        @OptIn(UnstableApi::class)
+        override fun onPlaybackResumption(
+            mediaSession: MediaSession,
+            controller: MediaSession.ControllerInfo,
+        ): ListenableFuture<MediaSession.MediaItemsWithStartPosition> {
+            val container = (application as SamSonicApplication).container
+            val songs = container.playbackStore.loadSongs()
+            if (songs.isEmpty()) return super.onPlaybackResumption(mediaSession, controller)
+            val cursor = container.playbackStore.loadCursor()
+            return Futures.immediateFuture(
+                MediaSession.MediaItemsWithStartPosition(
+                    songs.map { it.toMediaItem(container.repository) },
+                    cursor.index.coerceIn(0, songs.lastIndex),
+                    cursor.positionMs,
+                ),
+            )
+        }
+
         override fun onCustomCommand(
             session: MediaSession,
             controller: MediaSession.ControllerInfo,
@@ -135,12 +200,19 @@ class PlaybackService : MediaSessionService() {
         }
     }
 
+    // Swiping the app away leaves the service alone when paused; the place is kept either way.
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        saveCursorNow?.invoke()
+        super.onTaskRemoved(rootIntent)
+    }
+
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = mediaSession
 
     override fun onDestroy() {
+        saveCursorNow?.invoke()
+        saveCursorNow = null
         (application as SamSonicApplication).container.run {
             audioOutput.detach()
-            bitPerfect.detach()
         }
         prefetcher?.release()
         prefetcher = null

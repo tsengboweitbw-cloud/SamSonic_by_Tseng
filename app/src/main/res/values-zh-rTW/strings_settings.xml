@@ -31,33 +31,13 @@
     <string name="settings_sleep_timer_hint">經過設定的分鐘數後暫停音樂</string>
     <string name="settings_sleep_timer_minutes">%1$d 分鐘</string>
 
-    <!-- Exclusive USB output -->
-    <string name="settings_exclusive_usb">獨佔 USB 輸出</string>
-    <string name="settings_exclusive_usb_hint_no_dac">接上 USB DAC 即可使用：音樂只會透過 DAC 播放，DAC 支援歌曲原始格式時為 Bit-perfect，不支援時則重採樣</string>
-    <string name="settings_exclusive_usb_hint_unsupported">%1$s 在這支手機上不支援獨佔模式</string>
-    <string name="settings_exclusive_usb_hint_on">%1$s · 最高 %2$s。手機音量可能無效：請先將 DAC 音量調低</string>
-    <string name="settings_exclusive_usb_hint_off">%1$s · 最高 %2$s</string>
-
-    <!-- DSD output -->
-    <string name="settings_dsd_output">DSD 輸出</string>
-    <string name="settings_dsd_pcm">轉為 PCM</string>
-    <string name="settings_dsd_native">原生 DSD</string>
-    <string name="settings_dsd_hint_no_dac">接上 USB DAC 即可選擇 DSD 檔案的輸出方式</string>
-    <string name="settings_dsd_hint_not_exclusive">開啟「獨佔 USB 輸出」後，即可選擇 DSD 檔案輸出至 DAC 的方式</string>
-    <string name="settings_dsd_hint">DSD 檔案輸出至 USB DAC 的方式。DoP 與原生 DSD 需要支援 DSD 解碼的 DAC</string>
-    <string name="settings_dsd_pcm_supporting">在應用程式內濾波轉為 88.2 kHz PCM，任何 DAC 皆可播放</string>
-    <string name="settings_dsd_dop_what">將 DSD 封裝在 PCM 中，由 DAC 解開</string>
-    <string name="settings_dsd_native_what">依 Android 提供的方式輸出原始 DSD</string>
-    <string name="settings_dsd_needs_exclusive">需開啟獨佔 USB 輸出</string>
-    <string name="settings_dsd_no_dac">接上 DAC 以確認是否支援</string>
-    <string name="settings_dsd_native_yes">%1$s 支援；不支援的檔案改用 DoP</string>
-    <string name="settings_dsd_native_no">%1$s 不支援，改用 DoP</string>
-    <string name="settings_dsd_dop_max">%1$s · 最高 DSD%2$d</string>
-    <string name="settings_dsd_dop_no">%1$s 不支援，改用 PCM</string>
-
     <!-- Library -->
     <string name="settings_album_artists_only">僅顯示專輯歌手</string>
     <string name="settings_album_artists_only_hint">「歌手」分頁只列出專輯歌手，而非歌曲上列名的所有人</string>
+    <string name="settings_show_album_names">專輯名稱</string>
+    <string name="settings_show_album_names_hint">在「音樂庫」中，於每張專輯封面下方顯示專輯名稱</string>
+    <string name="settings_show_album_artists">專輯歌手名稱</string>
+    <string name="settings_show_album_artists_hint">在「音樂庫」中，於每張專輯封面下方顯示專輯歌手</string>
     <string name="settings_favourites_playlist">「我的最愛」播放清單</string>
     <string name="settings_favourites_playlist_hint">你喜愛的歌曲，列在「播放清單」分頁的最前面</string>
     <string name="settings_list_actions">播放按鈕</string>
@@ -85,8 +65,13 @@
     <string name="settings_accent_apply">套用</string>
     <string name="settings_stack_chrome">堆疊導覽列與迷你播放器</string>
     <string name="settings_stack_chrome_hint">像「正在播放」底部的膠囊一樣疊在同一處，向上滑動即可切換到另一個。在螢幕這麼低的位置滑動，可能會觸發三星的單手模式</string>
+    <string name="settings_stack_chrome_phone_only_hint">僅限手機：在較寬的螢幕上，導覽列會改為側邊的直向導覽列，迷你播放器則單獨位於底部</string>
+    <string name="settings_rail_stays_put">固定側邊導覽列位置</string>
+    <string name="settings_rail_stays_put_hint">音樂開始或停止時，側邊導覽列都保持原位，下方預留迷你播放器的空間。關閉時，播放期間導覽列會上移，保持在迷你播放器上方的中央</string>
+    <string name="settings_rail_stays_put_wide_only_hint">僅限較寬的螢幕，導覽列會改為側邊的直向導覽列</string>
     <string name="settings_stack_player_actions">堆疊「正在播放」按鈕</string>
     <string name="settings_stack_player_actions_hint">將歌詞、播放佇列、歌曲資訊、自動 DJ 與加入播放清單疊成「正在播放」底部的膠囊，向上滑動即可切換到下一個。關閉後改以圓形按鈕排成一列</string>
+    <string name="settings_stack_player_actions_dex_hint">DeX 中不適用：使用滑鼠時，正在播放會顯示一排按鈕</string>
     <string name="settings_album_art_roundness">專輯封面圓角</string>
     <string name="settings_album_art_roundness_hint">封面邊角的圓潤程度</string>
     <string name="settings_glass">毛玻璃</string>

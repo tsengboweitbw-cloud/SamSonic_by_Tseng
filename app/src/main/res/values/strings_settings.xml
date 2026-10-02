@@ -31,34 +31,13 @@
     <string name="settings_sleep_timer_hint">Pauses the music after this many minutes</string>
     <string name="settings_sleep_timer_minutes">%1$d min</string>
 
-    <!-- Exclusive USB output -->
-    <string name="settings_exclusive_usb">Exclusive USB output</string>
-    <string name="settings_exclusive_usb_hint_no_dac">Plug in a USB DAC to use it: music then plays through the DAC alone, bit-perfect where it takes the song as it is, resampled where not</string>
-    <string name="settings_exclusive_usb_hint_unsupported">%1$s doesn\'t offer exclusive mode on this phone</string>
-    <string name="settings_exclusive_usb_hint_on">%1$s · up to %2$s. Phone volume may not apply: start with the DAC turned down</string>
-    <string name="settings_exclusive_usb_hint_off">%1$s · up to %2$s</string>
-
-    <!-- DSD output -->
-    <string name="settings_dsd_output">DSD output</string>
-    <string name="settings_dsd_pcm">Convert to PCM</string>
-    <string name="settings_dsd_dop" translatable="false">DoP</string>
-    <string name="settings_dsd_native">Native DSD</string>
-    <string name="settings_dsd_hint_no_dac">Plug in a USB DAC to choose how DSD files go to it</string>
-    <string name="settings_dsd_hint_not_exclusive">Turn on Exclusive USB output to choose how DSD files go to the DAC</string>
-    <string name="settings_dsd_hint">How DSD files go to the USB DAC. DoP and native DSD need a DAC that decodes DSD</string>
-    <string name="settings_dsd_pcm_supporting">Filtered to 88.2 kHz PCM in the app. Plays anywhere</string>
-    <string name="settings_dsd_dop_what">DSD packed in PCM, for the DAC to unpack</string>
-    <string name="settings_dsd_native_what">Raw DSD, as Android offers it</string>
-    <string name="settings_dsd_needs_exclusive">Needs Exclusive USB output</string>
-    <string name="settings_dsd_no_dac">Plug in a DAC to check it</string>
-    <string name="settings_dsd_native_yes">%1$s takes it; DoP where it doesn\'t</string>
-    <string name="settings_dsd_native_no">%1$s doesn\'t take it; DoP instead</string>
-    <string name="settings_dsd_dop_max">%1$s · up to DSD%2$d</string>
-    <string name="settings_dsd_dop_no">%1$s doesn\'t take it; PCM instead</string>
-
     <!-- Library -->
     <string name="settings_album_artists_only">Album artists only</string>
     <string name="settings_album_artists_only_hint">The Artists tab lists album artists, not everyone credited on a song</string>
+    <string name="settings_show_album_names">Album names</string>
+    <string name="settings_show_album_names_hint">Show each album\'s name under its cover in the Library</string>
+    <string name="settings_show_album_artists">Album artist names</string>
+    <string name="settings_show_album_artists_hint">Show each album\'s artist under its cover in the Library</string>
     <string name="settings_favourites_playlist">Favourites playlist</string>
     <string name="settings_favourites_playlist_hint">Your liked songs, first in the Playlists tab</string>
     <string name="settings_list_actions">Play buttons</string>
@@ -86,8 +65,13 @@
     <string name="settings_accent_apply">Apply</string>
     <string name="settings_stack_chrome">Stack nav bar and mini player</string>
     <string name="settings_stack_chrome_hint">Pile them in one place, like the capsules in Now Playing: swipe up to bring the other forward. Swiping this low on the screen may set off Samsung\'s One-handed mode</string>
+    <string name="settings_stack_chrome_phone_only_hint">Only on phones: on a wider screen the nav bar is a rail at the side, with the mini player on its own at the foot</string>
+    <string name="settings_rail_stays_put">Keep nav rail still</string>
+    <string name="settings_rail_stays_put_hint">The rail stays where it is as music starts and stops, with room below it for the mini player. Off, it moves up to stay centred above the mini player while something plays</string>
+    <string name="settings_rail_stays_put_wide_only_hint">Only on wider screens, where the nav bar is a rail at the side</string>
     <string name="settings_stack_player_actions">Stack Now Playing buttons</string>
     <string name="settings_stack_player_actions_hint">Pile lyrics, the queue, song info, Auto DJ and Add to playlist as capsules at the bottom of Now Playing: swipe up to bring the next forward. Turned off, they sit in a row as round buttons</string>
+    <string name="settings_stack_player_actions_dex_hint">Not in DeX: with a mouse, Now Playing shows a row of buttons</string>
     <string name="settings_album_art_roundness">Album art roundness</string>
     <string name="settings_album_art_roundness_hint">How round the corners of covers are</string>
     <!-- The row opening every glass blur and opacity setting -->

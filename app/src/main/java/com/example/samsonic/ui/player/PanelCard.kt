@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -26,10 +27,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
-import com.example.samsonic.ui.theme.AccentSheen
-import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.LocalGlassSettings
 import com.example.samsonic.ui.theme.OneUiRadius
+import com.example.samsonic.ui.theme.glassPreBlur
 import com.example.samsonic.ui.theme.glassSurface
 import dev.chrisbanes.haze.HazeState
 
@@ -37,11 +37,18 @@ import dev.chrisbanes.haze.HazeState
 private const val CardHeight = 0.88f
 
 /**
+ * Where the panel cards' room starts across Now Playing: at its side, or in two columns
+ * at the controls' column, so a card opens beside the cover rather than over it. Set by
+ * PlayerPages.
+ */
+internal val LocalPanelStart = compositionLocalOf { 0.dp }
+
+/**
  * How much a platform dialog dims the screen behind it: Compose's Dialog sets
  * no amount of its own, so it is the platform dialog theme's.
  */
 @Composable
-private fun dialogDimAmount(): Float {
+internal fun dialogDimAmount(): Float {
     val context = LocalContext.current
     return remember(context) {
         val value = TypedValue()
@@ -76,6 +83,7 @@ internal fun PanelCard(
     val shape = RoundedCornerShape(OneUiRadius.Card)
     val dim = dialogDimAmount()
     val glass = LocalGlassSettings.current
+    val settled by remember(panel) { derivedStateOf { panel.isSettled } }
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -86,6 +94,8 @@ internal fun PanelCard(
                 enabled = panel.isOpen,
                 onClick = { panel.close() },
             )
+            // In two columns, over the controls' side only, leaving the cover in view.
+            .padding(start = LocalPanelStart.current)
             .systemBarsPadding()
             .padding(horizontal = 28.dp, vertical = 24.dp),
         contentAlignment = Alignment.Center,
@@ -99,16 +109,21 @@ internal fun PanelCard(
                 tint = MaterialTheme.colorScheme.surfaceContainerHigh,
                 // Starts thin, like its button's glass; the wash below thickens it.
                 alpha = MorphGlassBase,
-                blurRadius = glass.panelBlur,
-                downsample = true,
-                sheen = AccentSheen.Menu,
+                blurRadius = glass.playerBlur,
+                // Open and still, at full size: Now Playing's title and seek bar keep moving
+                // behind it.
+                downsample = !settled,
+                preBlurred = settled,
+                // None either way, as while downsampled, so settling doesn't change its look.
+                noiseFactor = 0f,
                 scaleOpacity = false,
                 rim = false,
             ),
+            smoothing = if (settled) Modifier.glassPreBlur(haze) else null,
             wash = MaterialTheme.colorScheme.surfaceContainerHigh,
-            // The menu settings, apart from the chrome's: a modal panel keeps
-            // its own look whatever the chrome's glass is set to.
-            washAlpha = washToReach(MorphGlassBase, 2f * GlassAlpha.Sheet * glass.panelOpacity),
+            // The player's own glass settings, like the controls it opens from, apart from
+            // the chrome's and the menus'.
+            washAlpha = washToReach(MorphGlassBase, glass.playerAlpha),
             modifier = Modifier
                 .fillMaxWidth()
                 .fillMaxHeight(CardHeight)

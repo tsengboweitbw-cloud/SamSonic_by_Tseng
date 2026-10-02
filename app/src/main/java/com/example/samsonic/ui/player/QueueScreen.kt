@@ -21,6 +21,7 @@ import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -137,6 +138,12 @@ fun QueueScreen(modifier: Modifier = Modifier) {
                     }
                 }
             }
+        }
+        TextButton(
+            onClick = player::clearQueue,
+            modifier = Modifier.align(Alignment.End).padding(horizontal = 12.dp),
+        ) {
+            Text(stringResource(R.string.player_clear_queue))
         }
         AutoDjStrip()
     }

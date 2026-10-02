@@ -12,7 +12,9 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.R
+import com.example.samsonic.ui.theme.AccentSheen
 import com.example.samsonic.ui.theme.GlassAlpha
+import com.example.samsonic.ui.theme.LocalChromeBlurScale
 import com.example.samsonic.ui.theme.glassSurface
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
@@ -38,6 +40,8 @@ fun GlassBackButton(onClick: () -> Unit, hazeState: HazeState?, modifier: Modifi
                 hazeState = hazeState,
                 tint = MaterialTheme.colorScheme.surfaceContainerHigh,
                 alpha = GlassAlpha.Nav,
+                sheen = AccentSheen.Chrome,
+                inputScale = LocalChromeBlurScale.current,
             ),
     ) {
         Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = stringResource(R.string.components_back), modifier = Modifier.size(ChromeButtonIconSize))
@@ -51,10 +55,10 @@ fun GlassBackButton(onClick: () -> Unit, hazeState: HazeState?, modifier: Modifi
 fun Modifier.backButtonHazeSource(state: HazeState): Modifier = graphicsLayer().hazeSource(state)
 
 /** The size of the round glass buttons at a page's top, back and collapse alike, so they match. */
-val ChromeButtonSize = 42.dp
+val ChromeButtonSize = 48.dp
 
 /** Their arrows' size, in proportion. */
-val ChromeButtonIconSize = 30.dp
+val ChromeButtonIconSize = 34.dp
 
 /** Room a list leaves at its top so its first row starts below a floating [GlassBackButton]. */
 val BackButtonClearance = 8.dp + ChromeButtonSize

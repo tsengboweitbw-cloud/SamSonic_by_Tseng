@@ -16,10 +16,31 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.util.lerp
+import androidx.compose.animation.core.Spring
+import kotlin.math.roundToInt
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.runtime.saveable.rememberSaveableStateHolder
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.calculateStartPadding
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
@@ -32,6 +53,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import com.example.samsonic.ui.theme.LocalChromeBlurScale
 import com.example.samsonic.ui.theme.ChromeBlurScale
 import androidx.compose.runtime.snapshotFlow
@@ -43,12 +65,15 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.lerp
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.playback.LocalPlayerState
+import com.example.samsonic.ui.components.NavRail
+import com.example.samsonic.ui.components.rememberNavRailWidth
 import com.example.samsonic.ui.components.pileCard
 import com.example.samsonic.ui.components.pileSwipe
 import com.example.samsonic.ui.components.rememberCardPileState
@@ -63,6 +88,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.platform.LocalConfiguration
+import com.example.samsonic.ui.components.SelectedTabExtraWeight
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -73,8 +100,10 @@ import com.example.samsonic.R
 import com.example.samsonic.ui.auth.LoginScreen
 import com.example.samsonic.ui.common.ArtTransitions
 import com.example.samsonic.ui.common.ChromeGuard
+import com.example.samsonic.ui.common.ChromeGuardArea
 import com.example.samsonic.ui.common.ChromeGuardLayer
 import com.example.samsonic.ui.common.LocalChromeGuard
+import com.example.samsonic.ui.common.LocalWindowLayout
 import com.example.samsonic.ui.common.LocalArtTransitions
 import com.example.samsonic.ui.common.LocalSharedTransitionScope
 import com.example.samsonic.ui.home.HomeShelf
@@ -88,6 +117,7 @@ import com.example.samsonic.ui.library.LibraryScreen
 import com.example.samsonic.ui.library.LocalAddToPlaylist
 import com.example.samsonic.ui.library.rememberAddToPlaylistState
 import com.example.samsonic.ui.player.PlayerSheet
+import com.example.samsonic.ui.player.RailMiniPlayerHeight
 import com.example.samsonic.ui.player.rememberPlayerSheetState
 import com.example.samsonic.ui.search.SearchScreen
 import com.example.samsonic.ui.search.SearchSession
@@ -114,6 +144,12 @@ private val AddServerEasing = CubicBezierEasing(0.2f, 0f, 0f, 1f)
 @OptIn(ExperimentalSharedTransitionApi::class)
 // After starting, how long before the tabs not yet shown are built, so it's out of the way of the first screen.
 private const val TabWarmUpDelayMillis = 1500L
+
+// Between the nav rail and the mini player under it, at least.
+private val RailMiniGap = 12.dp
+
+// How much higher the mini player under the rail sits in DeX.
+private val DesktopMiniLift = 24.dp
 
 // The mini player rising into the stacked pile: unhurried, settling without a bounce.
 // No overshoot either: coming back under 1 would flash the nav bar whole behind it.
@@ -143,27 +179,55 @@ fun SamSonicNavHost(lastTab: LastTab) {
     // The query and results stay through tab switches (which also keep Search's scroll and
     // any page opened from it) until the app closes, Home is pulled to refresh, or the
     // source changes and rebuilds this.
-    val searchSession = remember { SearchSession() }
+    val searchSession = rememberSaveable(saver = SearchSession.Saver) { SearchSession() }
     // Offered only where there are playlists to add to; the host is rebuilt with the source.
     val addToPlaylist = rememberAddToPlaylistState()
     val canEditPlaylists = remember { container.repository.canEditPlaylists }
     val chromeGuard = remember { ChromeGuard() }
     val navBarHeight = OneUiChrome.BarHeight
-    val navBarBottomInset = 16.dp
+    // A phone on its side is short: the rail's tabs and the mini player under it are shorter,
+    // and the gaps around them.
+    val phoneLandscape = LocalWindowLayout.current.phoneLandscape
+    val navBarBottomInset = if (phoneLandscape) 8.dp else 16.dp
+    val railMiniGap = if (phoneLandscape) 8.dp else RailMiniGap
+    // In DeX the mini player under the rail sits higher, clear of the taskbar and the window's
+    // bottom edge, where a mouse heading for it would otherwise be.
+    val desktopChrome = LocalWindowLayout.current.desktop
+    val railMiniLift = if (desktopChrome) DesktopMiniLift else 0.dp
+    val railTabHeight = when {
+        desktopChrome -> NavRail.DesktopTabHeight
+        phoneLandscape -> NavRail.ShortTabHeight
+        else -> NavRail.TabHeight
+    }
+    // Wider than a phone, the nav bar is a rail at the side, the mini player on its own at
+    // the foot of the screen; tabs fade from one to the next rather than sliding.
+    val onRail by rememberUpdatedState(LocalWindowLayout.current.usesRail)
+    SideEffect { tabs.fades = onRail }
     // Stacked, the nav bar (card 0) and the mini player share one place, piled; only
-    // while there's a song, else the nav bar is on its own.
-    val stackChrome by container.themeManager.stackChrome.collectAsStateWithLifecycle()
+    // while there's a song, else the nav bar is on its own. Not beside a rail: there's no
+    // nav bar at the foot of the screen to pile onto.
+    val stackSetting by container.themeManager.stackChrome.collectAsStateWithLifecycle()
+    val stackChrome by remember { derivedStateOf { stackSetting && !onRail } }
+    val railStaysPut by container.themeManager.railStaysPut.collectAsStateWithLifecycle()
     // Changing only as music starts or stops, not with each new song.
     val player = LocalPlayerState.current
     val hasSong by remember(player) { derivedStateOf { player.currentSong != null } }
     // Switched between the two, the mini player glides down behind the nav bar into the
-    // pile, or rises out of it back to its place above: 0 apart, 1 piled.
-    val stackAmount by animateFloatAsState(
-        targetValue = if (stackChrome) 1f else 0f,
-        // No overshoot: past either end it would pile or part for a frame.
-        animationSpec = spring(dampingRatio = 1f, stiffness = 300f),
-        label = "stackChrome",
-    )
+    // pile, or rises out of it back to its place above: 0 apart, 1 piled. Switching screens
+    // (the rail coming or going as a foldable folds or opens) it's simply in its place.
+    val stackTarget = if (stackChrome) 1f else 0f
+    val stackAnimation = remember { Animatable(stackTarget) }
+    val railWas = remember { booleanArrayOf(onRail) }
+    LaunchedEffect(stackTarget, onRail) {
+        if (railWas[0] != onRail) {
+            railWas[0] = onRail
+            stackAnimation.snapTo(stackTarget)
+        } else {
+            // No overshoot: past either end it would pile or part for a frame.
+            stackAnimation.animateTo(stackTarget, spring(dampingRatio = 1f, stiffness = 300f))
+        }
+    }
+    val stackAmount by stackAnimation.asState()
     // 1 while there's a song (the mini player up), 0 without, easing between as music
     // starts or stops: for what floats above the chrome to follow it (ChromeGuard.top).
     val miniPresence = animateFloatAsState(
@@ -227,26 +291,45 @@ fun SamSonicNavHost(lastTab: LastTab) {
             // The chrome keeps its resting spot while it animates out, so these ignore showChrome.
             val chromeBottomInset = innerPadding.calculateBottomPadding()
             val systemBarInset = if (showChrome) chromeBottomInset else 0.dp
-            val navBarReserve = if (showChrome) navBarHeight + navBarBottomInset else 0.dp
+            // Beside a rail, nothing is at the foot but its gap: the mini player is under the rail.
+            val navBarReserve = when {
+                !showChrome -> 0.dp
+                onRail -> navBarBottomInset
+                else -> navBarHeight + navBarBottomInset
+            }
             // Stacked, nothing rises above the nav bar: the card behind peeks out below it,
             // into the gap over the screen's edge. Straight to the new layout's, not animated
             // with it: the padding reaches every tab's pages, and changing it each frame would
             // rebuild them all.
             val miniPlayerReserve = when {
                 !showChrome -> 0.dp
-                stackChrome -> 0.dp
+                stackChrome || onRail -> 0.dp
                 else -> OneUiChrome.BarHeight + 8.dp
             }
             val contentPaddingBottom = systemBarInset + navBarReserve + miniPlayerReserve
+            // The rail's room at the side, past any system bar or cutout there: the tabs'
+            // pages are laid out beside it, and the mini player sits under it.
+            val layoutDirection = LocalLayoutDirection.current
+            val railStartInset = innerPadding.calculateStartPadding(layoutDirection)
+            // As wide as its longest label needs (larger text in DeX), and the room beside it with it.
+            val railLabels = bottomDestinations.map { stringResource(it.label) }
+            val railWidth = rememberNavRailWidth(railLabels, if (phoneLandscape) NavRail.ShortWidth else NavRail.Width)
+            // On its side, the mini player is a circle as wide as the rail: the cover with the progress round it.
+            val railMiniHeight = if (phoneLandscape) railWidth else RailMiniPlayerHeight
+            val railMargin =if (phoneLandscape) NavRail.ShortMargin else NavRail.Margin
+            val railReserve = if (onRail && !signingIn) railStartInset + railMargin + railWidth else 0.dp
             // The live top of the highest bar, for what floats just above it (a page's docked
             // play buttons): the nav bar's, plus the mini player's rise above it while there's
             // a song, apart or piled, easing as it comes or goes and following a swipe away.
+            // Beside a rail, just the foot's gap: the mini player is at the side, under the rail.
             val density = LocalDensity.current
             SideEffect {
                 chromeGuard.top = {
                     with(density) {
                         if (!showChrome) {
                             0f
+                        } else if (onRail) {
+                            (systemBarInset + navBarBottomInset).toPx()
                         } else {
                             val nav = (systemBarInset + navBarBottomInset + navBarHeight).toPx()
                             // Piled, the card behind peeks out below, so the front card's top is the top.
@@ -305,7 +388,11 @@ fun SamSonicNavHost(lastTab: LastTab) {
                     }
                     HorizontalPager(
                         state = tabs.pager,
-                        modifier = Modifier.fillMaxSize(),
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(start = railReserve)
+                            // Beside the rail, a switch fades one tab out and the next in.
+                            .graphicsLayer { alpha = tabs.fade.value },
                         userScrollEnabled = false,
                         // Every tab stays composed; only what's on screen is drawn.
                         beyondViewportPageCount = tabRoutes.size - 1,
@@ -358,9 +445,14 @@ fun SamSonicNavHost(lastTab: LastTab) {
                 val openFromPlayer = remember(tabs) { { route: String -> tabs.open(Routes.LIBRARY, route); Unit } }
                 PlayerSheet(
                     sheet = playerSheet,
-                    // Stacked, in the nav bar's own place and width.
-                    collapsedBottom = chromeBottomInset + navBarBottomInset + lerp(navBarHeight + 8.dp, 0.dp, stackAmount),
+                    // Stacked, in the nav bar's own place and width. Beside a rail, under the
+                    // rail at the foot of the screen, as narrow as the rail and standing on end.
+                    collapsedBottom = chromeBottomInset + navBarBottomInset +
+                        if (onRail) railMiniLift else lerp(navBarHeight + 8.dp, 0.dp, stackAmount),
                     collapsedMargin = lerp(12.dp, 16.dp, stackAmount),
+                    collapsedStart = if (onRail) railStartInset + railMargin else 0.dp,
+                    collapsedWidth = railWidth.takeIf { onRail },
+                    collapsedHeight = if (onRail) railMiniHeight else OneUiChrome.BarHeight,
                     pile = chromePile.takeIf { pileShown },
                     pileWeight = { stackAmount },
                     entrance = { stackEntrance.value },
@@ -371,8 +463,11 @@ fun SamSonicNavHost(lastTab: LastTab) {
                 )
             }
 
-            // Sinks below the screen edge in step with the player sheet opening.
-            AnimatedVisibility(
+            // Sinks below the screen edge in step with the player sheet opening. Beside a
+            // rail it isn't there. Composed only for a phone's layout, so switching screens
+            // (folding shut, a window narrowing) shows it in place at once, not sliding in:
+            // it slides only as signing in comes and goes.
+            if (!onRail) AnimatedVisibility(
                 visible = showChrome,
                 enter = slideInVertically { it } + fadeIn(),
                 exit = slideOutVertically { it } + fadeOut(),
@@ -440,8 +535,71 @@ fun SamSonicNavHost(lastTab: LastTab) {
                 )
             }
 
+            // On wider screens, the nav bar as a rail at the side; it slides out past the
+            // screen's side in step with the player sheet opening, as the nav bar sinks.
+            // Composed only beside a rail, as the nav bar only without, so it too is simply
+            // there as the screen switches.
+            if (onRail) AnimatedVisibility(
+                visible = showChrome,
+                enter = slideInHorizontally { -it } + fadeIn(),
+                exit = slideOutHorizontally { -it } + fadeOut(),
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .graphicsLayer {
+                        val progress = playerSheet.progress
+                        translationX = -progress * railReserve.toPx()
+                        // Centred in the room above the mini player's place: whether or not
+                        // there's a song (it stays put as music starts and stops), or, as set
+                        // in Settings, only while there's one, rising as it comes and settling
+                        // back as it goes.
+                        val miniRoom = (systemBarInset + navBarBottomInset + railMiniLift + railMiniHeight + railMiniGap).toPx()
+                        val lift = if (railStaysPut) 1f else miniPresence.value * (1f - playerSheet.dismissal.coerceIn(0f, 1f))
+                        // Centred between the status bar and the mini player, not the window's middle:
+                        // a phone on its side has little height, and it reached under the status bar.
+                        val topInset = innerPadding.calculateTopPadding().toPx()
+                        translationY = (topInset * lift - miniRoom * lift) / 2
+                        alpha = 1f - progress
+                    }
+                    .padding(start = railStartInset + railMargin),
+            ) {
+                // On a phone on its side, the tabs take the height the mini player leaves
+                // (the rail's length is tabHeight * (count + extra) + inset * 2).
+                val tabHeight = if (phoneLandscape) {
+                    val room = LocalConfiguration.current.screenHeightDp.dp - innerPadding.calculateTopPadding() -
+                        systemBarInset - navBarBottomInset - railMiniLift - railMiniHeight - railMiniGap - 8.dp
+                    ((room - NavRail.Inset * 2) / (bottomDestinations.size + SelectedTabExtraWeight))
+                        .coerceIn(NavRail.ShortTabHeight, NavRail.TabHeight)
+                } else {
+                    railTabHeight
+                }
+                FloatingNavRail(
+                    destinations = bottomDestinations,
+                    tabs = tabs,
+                    hazeState = hazeState,
+                    width = railWidth,
+                    // Taller in DeX, where a window has height to spare.
+                    tabHeight = tabHeight,
+                    iconSize = if (desktopChrome) NavRail.DesktopIconSize else NavRail.IconSize,
+                )
+            }
+
             // While a menu is open over a page, the chrome can't be used: a tap on it closes the menu.
-            ChromeGuardLayer(chromeGuard, contentPaddingBottom, Modifier.align(Alignment.BottomCenter))
+            // At least as far up as the bottom fade, which fades a page's own dim out with the
+            // page: beside a rail, where nothing is at the foot, the fade reaches past it.
+            val guardHeight = maxOf(contentPaddingBottom, bottomFadeHeight)
+            ChromeGuardLayer(
+                chromeGuard,
+                guardHeight,
+                Modifier.align(Alignment.BottomCenter),
+                alwaysDimWidth = if (onRail && showChrome) railReserve else 0.dp,
+            )
+            if (onRail && showChrome) {
+                // Down to the foot's layer, not over it: two dims there would darken it twice.
+                ChromeGuardArea(
+                    chromeGuard,
+                    Modifier.align(Alignment.TopStart).padding(bottom = guardHeight).fillMaxHeight().width(railReserve),
+                )
+            }
 
             // Over everything, the nav bar included; it grows out of the long-pressed song row.
             if (canEditPlaylists) AddToPlaylistMenu(addToPlaylist, hazeState)
@@ -453,6 +611,13 @@ fun SamSonicNavHost(lastTab: LastTab) {
 /**
  * One tab's pages: its first page ([route]) and those opened from it, with their
  * own back stack ([navController]), so each tab keeps what it had open.
+ *
+ * In landscape on a tablet or an open foldable (LocalWindowLayout.twoPane), Home, Library
+ * and Search keep their first page at the side and open pages beside it, where the back stack's pages
+ * show in turn; picking another item on the first page replaces what's open beside it.
+ * The back stack is the same either way, so turning or folding the screen keeps what's
+ * open, and the first page keeps its own state (how far it's scrolled) moving between
+ * its place at the side and the whole screen. Settings has two columns of its own.
  */
 @Composable
 private fun TabHost(
@@ -463,30 +628,81 @@ private fun TabHost(
     onAddServer: () -> Unit,
     contentPaddingBottom: Dp,
 ) {
-    NavHost(
-        navController = navController,
-        startDestination = route,
-        modifier = Modifier.fillMaxSize(),
-        enterTransition = NavTransitions.enter,
-        exitTransition = NavTransitions.exit,
-        popEnterTransition = NavTransitions.popEnter,
-        popExitTransition = NavTransitions.popExit,
-    ) {
-        when (route) {
-            Routes.HOME -> {
-                screen(Routes.HOME) {
-                    HomeScreen(
-                        onAlbumClick = { navController.navigate(Routes.album(it.id)) },
-                        onShelfClick = { navController.navigate(Routes.shelf(it.key)) },
-                        // A refresh starts Search over too: the query, and whatever was
-                        // opened from its results.
-                        onRefresh = {
-                            searchSession.clear()
-                            tabs.reset(Routes.SEARCH)
-                        },
-                        contentPaddingBottom = contentPaddingBottom,
-                    )
-                }
+    val desktop = LocalWindowLayout.current.desktop
+    val twoPane = LocalWindowLayout.current.twoPane && route != Routes.SETTINGS
+    // Opens a page from the tab's first page: beside it in two panes, in place of whatever
+    // was open there, else over it.
+    val openFromRoot: (String) -> Unit = remember(navController, twoPane) {
+        { page ->
+            if (twoPane) {
+                navController.navigate(page) { popUpTo(route) }
+            } else {
+                navController.navigate(page)
+            }
+        }
+    }
+    // The first page's own state, whichever place it's shown in (see ListPane).
+    val rootState = rememberSaveableStateHolder()
+    val root: @Composable () -> Unit = {
+        rootState.SaveableStateProvider(route) {
+            RootPage(route, openFromRoot, tabs, searchSession, onAddServer, contentPaddingBottom)
+        }
+    }
+    // In two panes, how far a page is open beside the first: 0 with nothing open (the first
+    // page has the whole width), 1 open (the first page at the side). Easing between as a
+    // page opens or the last one closes; straight to where it should be as the layout
+    // switches (turning, folding), so what was open simply shows in its new place.
+    val current by navController.currentBackStackEntryAsState()
+    val detailOpen = twoPane && current?.destination?.route.let { it != null && it != route }
+    val layoutManager = LocalAppContainer.current.libraryLayoutManager
+    // The Library keeps its own columns as the side pane. Only the Library's own host says so:
+    // every tab stays composed, and another tab's would overwrite it.
+    if (route == Routes.LIBRARY) SideEffect { layoutManager.setDetailOpen(detailOpen) }
+    val split = remember { Animatable(if (detailOpen) 1f else 0f) }
+    val twoPaneWas = remember { booleanArrayOf(twoPane) }
+    LaunchedEffect(detailOpen, twoPane) {
+        val target = if (detailOpen) 1f else 0f
+        if (twoPaneWas[0] != twoPane) {
+            twoPaneWas[0] = twoPane
+            split.snapTo(target)
+        } else {
+            split.animateTo(target, SplitSpring)
+        }
+    }
+    // Clipped: with nothing open, the pages beside the first wait just past its far edge.
+    BoxWithConstraints(Modifier.fillMaxSize().clipToBounds()) {
+        val fullPx = constraints.maxWidth
+        // In DeX a window may be very wide: the two panes as even as a page beside a list
+        // reads well there, rather than a narrow list against a very wide page.
+        val sideWidth = if (desktop) {
+            (maxWidth * DesktopListPaneShare).coerceAtLeast(ListPaneMinWidth)
+        } else {
+            (maxWidth * ListPaneShare).coerceIn(ListPaneMinWidth, ListPaneMaxWidth)
+        }
+        val sidePx = with(LocalDensity.current) { sideWidth.roundToPx() }
+        // The first page's width now: all of it, narrowing to its side as a page opens.
+        val listPx = { lerp(fullPx.toFloat(), sidePx.toFloat(), split.value).roundToInt() }
+        NavHost(
+            navController = navController,
+            startDestination = route,
+            modifier = if (twoPane) {
+                // Its own width throughout (not squeezed as it comes), sliding in from the
+                // far side beside the first page as that narrows.
+                Modifier
+                    .fillMaxHeight()
+                    .width(maxWidth - sideWidth)
+                    .offset { IntOffset(listPx(), 0) }
+            } else {
+                Modifier.fillMaxSize()
+            },
+            enterTransition = NavTransitions.enter,
+            exitTransition = NavTransitions.exit,
+            popEnterTransition = NavTransitions.popEnter,
+            popExitTransition = NavTransitions.popExit,
+        ) {
+            // In two panes the first page is drawn at the side (ListPane); here, nothing.
+            screen(route) { if (!twoPane) root() }
+            if (route == Routes.HOME) {
                 screen(Routes.SHELF) { entry ->
                     val shelf = entry.arguments?.getString("shelfType")?.let(HomeShelf::fromKey) ?: return@screen
                     // A shelf page is only opened from Home, so Home's entry is below it in the stack.
@@ -513,30 +729,97 @@ private fun TabHost(
                     )
                 }
             }
-            Routes.LIBRARY -> screen(Routes.LIBRARY) {
-                LibraryScreen(
-                    onArtistClick = { navController.navigate(Routes.artist(it.id)) },
-                    onAlbumClick = { navController.navigate(Routes.album(it.id)) },
-                    onPlaylistClick = { navController.navigate(Routes.playlist(it.id)) },
-                    onGenreClick = { navController.navigate(Routes.genre(it.name)) },
-                    contentPaddingBottom = contentPaddingBottom,
-                )
-            }
-            Routes.SEARCH -> screen(Routes.SEARCH) {
-                SearchScreen(
-                    session = searchSession,
-                    onArtistClick = { navController.navigate(Routes.artist(it.id)) },
-                    onAlbumClick = { navController.navigate(Routes.album(it.id)) },
-                    contentPaddingBottom = contentPaddingBottom,
-                )
-            }
-            Routes.SETTINGS -> screen(Routes.SETTINGS) {
-                SettingsScreen(
-                    onAddServer = onAddServer,
-                    contentPaddingBottom = contentPaddingBottom,
-                )
-            }
+            detailScreens(navController, contentPaddingBottom = contentPaddingBottom)
         }
-        detailScreens(navController, contentPaddingBottom = contentPaddingBottom)
+        if (twoPane) {
+            ListPane(
+                navController,
+                route,
+                Modifier
+                    .fillMaxHeight()
+                    .layout { measurable, constraints ->
+                        val width = listPx()
+                        val placeable = measurable.measure(constraints.copy(minWidth = width, maxWidth = width))
+                        layout(width, placeable.height) { placeable.place(0, 0) }
+                    },
+                root,
+            )
+        }
     }
 }
+
+// In two panes, the first page takes this share of the width, within these.
+private const val ListPaneShare = 0.42f
+private val ListPaneMinWidth = 340.dp
+private val ListPaneMaxWidth = 480.dp
+private const val DesktopListPaneShare = 0.5f
+
+/**
+ * A tab's first page, and what opens pages from it ([open]): at the side in two panes,
+ * else as the first page of the tab's own pages.
+ */
+@Composable
+private fun RootPage(
+    route: String,
+    open: (String) -> Unit,
+    tabs: MainTabs,
+    searchSession: SearchSession,
+    onAddServer: () -> Unit,
+    contentPaddingBottom: Dp,
+) {
+    when (route) {
+        Routes.HOME -> HomeScreen(
+            onAlbumClick = { open(Routes.album(it.id)) },
+            onShelfClick = { open(Routes.shelf(it.key)) },
+            // A refresh starts Search over too: the query, and whatever was
+            // opened from its results.
+            onRefresh = {
+                searchSession.clear()
+                tabs.reset(Routes.SEARCH)
+            },
+            contentPaddingBottom = contentPaddingBottom,
+        )
+        Routes.LIBRARY -> LibraryScreen(
+            onArtistClick = { open(Routes.artist(it.id)) },
+            onAlbumClick = { open(Routes.album(it.id)) },
+            onPlaylistClick = { open(Routes.playlist(it.id)) },
+            onGenreClick = { open(Routes.genre(it.name)) },
+            contentPaddingBottom = contentPaddingBottom,
+        )
+        Routes.SEARCH -> SearchScreen(
+            session = searchSession,
+            onArtistClick = { open(Routes.artist(it.id)) },
+            onAlbumClick = { open(Routes.album(it.id)) },
+            contentPaddingBottom = contentPaddingBottom,
+        )
+        Routes.SETTINGS -> SettingsScreen(
+            onAddServer = onAddServer,
+            contentPaddingBottom = contentPaddingBottom,
+        )
+    }
+}
+
+/**
+ * The tab's first page at the side, in two panes: drawn apart from the tab's pages, but as
+ * their first page ([route]'s back stack entry), so it keeps its view models and what it
+ * loaded. Nothing until that entry is there, as the pages are first set up.
+ */
+@Composable
+private fun ListPane(navController: NavHostController, route: String, modifier: Modifier, content: @Composable () -> Unit) {
+    val stack by navController.currentBackStack.collectAsStateWithLifecycle()
+    val entry = stack.firstOrNull { it.destination.route == route } ?: return
+    // The entry's own view models, but the tab's lifecycle: with a page open beside it the
+    // entry is stopped, though the first page is still on screen, and what it collects
+    // (its column counts among them) would stop coming.
+    val lifecycle = LocalLifecycleOwner.current
+    CompositionLocalProvider(
+        LocalViewModelStoreOwner provides entry,
+        LocalLifecycleOwner provides lifecycle,
+    ) {
+        Box(modifier) { content() }
+    }
+}
+
+
+// A page opening beside the first, or the last closing: unhurried, without a bounce.
+private val SplitSpring = spring<Float>(dampingRatio = 1f, stiffness = Spring.StiffnessMediumLow)

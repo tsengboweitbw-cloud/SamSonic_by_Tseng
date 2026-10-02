@@ -7,18 +7,22 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridState
+import androidx.compose.foundation.OverscrollEffect
+import com.example.samsonic.ui.components.rememberPullOverscroll
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.data.LibraryLayout
 import com.example.samsonic.data.LibraryViewMode
+import com.example.samsonic.data.defaultColumnsForWidth
 import com.example.samsonic.ui.common.StateContent
 import com.example.samsonic.ui.common.UiState
 import com.example.samsonic.ui.components.floatingActionsEnd
@@ -49,46 +53,73 @@ internal fun <T> LibraryCollection(
     header: (@Composable () -> Unit)? = null,
     // Room under the header for a page's FloatingListActions, with this much space under it.
     actionsSlot: Dp? = null,
+    // Shared with a page's FloatingListActions, so its row is pulled along as the grid is.
+    overscrollEffect: OverscrollEffect? = rememberPullOverscroll(),
     modifier: Modifier = Modifier,
 ) {
-    StateContent(state = state, modifier = Modifier.fillMaxSize()) { items ->
-        val grid = layout.mode == LibraryViewMode.GRID
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val containerWidth = maxWidth.value
+        val effectiveColumns = if (layout.isDefault) {
+            defaultColumnsForWidth(containerWidth)
+        } else {
+            layout.columns
+        }
+        val grid = layout.mode == LibraryViewMode.GRID && effectiveColumns > 1
         // Tighter gutters as columns get narrower, so covers keep most of the width.
-        val gutter = when (layout.columns) {
+        val gutter = when (effectiveColumns) {
             2 -> 16.dp
             3 -> 12.dp
             else -> 10.dp
         }
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(if (grid) layout.columns else 1),
-            state = gridState,
-            contentPadding = if (grid) {
-                PaddingValues(start = 20.dp, end = 20.dp, top = padding.top, bottom = 16.dp + padding.bottom)
-            } else {
-                // List rows carry their own side padding.
-                PaddingValues(top = padding.top, bottom = 16.dp + padding.bottom)
-            },
-            verticalArrangement = Arrangement.spacedBy(if (grid) gutter + 4.dp else 0.dp),
-            horizontalArrangement = Arrangement.spacedBy(if (grid) gutter else 0.dp),
-            modifier = modifier.fillMaxSize(),
-        ) {
-            // Spans the grid; in grid view the content padding already insets it 20dp, as rows are.
-            if (header != null) {
-                item(span = { GridItemSpan(maxLineSpan) }) {
-                    Box(Modifier.padding(horizontal = if (grid) 0.dp else 20.dp)) { header() }
-                }
-            }
-            if (actionsSlot != null) floatingActionsSlot(bottomSpacing = actionsSlot)
-            items(items, key = key) { item ->
-                if (grid) {
-                    BoxWithConstraints(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
-                        card(item, maxWidth)
-                    }
+        StateContent(state = state, modifier = Modifier.fillMaxSize()) { items ->
+            LazyVerticalGrid(
+                columns = if (grid) FittedColumns(effectiveColumns) else GridCells.Fixed(1),
+                state = gridState,
+                overscrollEffect = overscrollEffect,
+                contentPadding = if (grid) {
+                    PaddingValues(start = 20.dp, end = 20.dp, top = padding.top, bottom = 16.dp + padding.bottom)
                 } else {
-                    row(item)
+                    // List rows carry their own side padding.
+                    PaddingValues(top = padding.top, bottom = 16.dp + padding.bottom)
+                },
+                verticalArrangement = Arrangement.spacedBy(if (grid) gutter + 4.dp else 0.dp),
+                horizontalArrangement = Arrangement.spacedBy(if (grid) gutter else 0.dp),
+                modifier = modifier.fillMaxSize(),
+            ) {
+                // Spans the grid; in grid view the content padding already insets it 20dp, as rows are.
+                if (header != null) {
+                    item(span = { GridItemSpan(maxLineSpan) }) {
+                        Box(Modifier.padding(horizontal = if (grid) 0.dp else 20.dp)) { header() }
+                    }
                 }
+                if (actionsSlot != null) floatingActionsSlot(bottomSpacing = actionsSlot)
+                items(items, key = key) { item ->
+                    if (grid) {
+                        BoxWithConstraints(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
+                            card(item, maxWidth)
+                        }
+                    } else {
+                        row(item)
+                    }
+                }
+                if (actionsSlot != null) floatingActionsEnd()
             }
-            if (actionsSlot != null) floatingActionsEnd()
         }
     }
+}
+
+/**
+ * [count] columns, or as many as fit where there's less room: at the
+ * side of two panes, the grid is far narrower than the screen its count was set for.
+ */
+private class FittedColumns(private val count: Int) : GridCells {
+    override fun Density.calculateCrossAxisCellSizes(availableSize: Int, spacing: Int): List<Int> {
+        val columns = count
+        val width = (availableSize - spacing * (columns - 1)).coerceAtLeast(0)
+        return List(columns) { i -> width / columns + if (i < width % columns) 1 else 0 }
+    }
+
+    override fun equals(other: Any?) = other is FittedColumns && other.count == count
+
+    override fun hashCode() = count
 }

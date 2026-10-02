@@ -45,13 +45,14 @@ fun OneUiSlider(
     // Snaps to this many stops between the ends (no tick marks are drawn).
     steps: Int = 0,
     onValueChangeFinished: (() -> Unit)? = null,
+    enabled: Boolean = true,
     // Applied to the drawn line only (not the touch area), e.g. to morph it as a shared element.
     trackModifier: Modifier = Modifier,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val dragged by interactionSource.collectIsDraggedAsState()
     val pressed by interactionSource.collectIsPressedAsState()
-    val active = dragged || pressed
+    val active = (dragged || pressed) && enabled
 
     val activeColor = MaterialTheme.colorScheme.primary
     val palette = MaterialTheme.accentPalette
@@ -66,6 +67,7 @@ fun OneUiSlider(
         onValueChangeFinished = onValueChangeFinished,
         valueRange = valueRange,
         steps = steps,
+        enabled = enabled,
         modifier = modifier,
         interactionSource = interactionSource,
         colors = SliderDefaults.colors(

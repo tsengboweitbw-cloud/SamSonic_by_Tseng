@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import com.example.samsonic.ui.components.rememberPullOverscroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -61,10 +62,12 @@ fun SongShelfScreen(
     Box(modifier = modifier.fillMaxSize().statusBarsPadding()) {
         StateContent(state = state, modifier = Modifier.fillMaxSize()) { songs ->
             val listState = rememberLazyListState()
+            val overscroll = rememberPullOverscroll()
             Box(Modifier.fillMaxSize()) {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize().scrollTopFade(listState).backButtonHazeSource(backHaze),
                     state = listState,
+                    overscrollEffect = overscroll,
                     contentPadding = PaddingValues(top = BackButtonClearance, bottom = contentPaddingBottom),
                 ) {
                     item {
@@ -88,7 +91,7 @@ fun SongShelfScreen(
                     floatingActionsEnd()
                     item { Spacer(Modifier.height(24.dp)) }
                 }
-                FloatingListActions(listState, haze = backHaze) { PlayShuffleButtons(songs = songs, modifier = Modifier.padding(horizontal = 24.dp)) }
+                FloatingListActions(listState, overscroll = overscroll, haze = backHaze) { PlayShuffleButtons(songs = songs, modifier = Modifier.padding(horizontal = 24.dp)) }
             }
         }
         // Floats over the list: rows scroll up under it and fade out at the status bar.

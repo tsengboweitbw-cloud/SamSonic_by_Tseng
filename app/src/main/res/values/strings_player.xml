@@ -32,6 +32,7 @@
     <string name="player_repeat">Repeat</string>
     <string name="player_collapse">Collapse</string>
     <string name="player_remove">Remove</string>
+    <string name="player_clear_queue">Clear queue</string>
     <string name="player_now_playing">Now playing</string>
     <string name="player_lyrics">Lyrics</string>
     <string name="player_queue">Queue</string>
@@ -47,14 +48,6 @@
     <string name="player_channel_count">%1$d channels</string>
     <string name="player_device">Device</string>
     <string name="player_device_rate">Device rate</string>
-    <string name="player_device_at">Device at %1$s</string>
-    <string name="player_exclusive">Exclusive</string>
-    <string name="player_exclusive_off">Off · %1$s</string>
-    <string name="player_not_exclusive">Not exclusive · %1$s</string>
-    <!-- Why the exclusive line says not exclusive when nothing went to a DAC -->
-    <string name="player_exclusive_no_dac">No USB DAC</string>
-    <string name="player_exclusive_switched_off">Switched off in Settings</string>
-    <string name="player_exclusive_unavailable">Needs Android 14</string>
     <string name="player_info_title">Title</string>
     <string name="player_info_artist">Artist</string>
     <string name="player_info_album">Album</string>

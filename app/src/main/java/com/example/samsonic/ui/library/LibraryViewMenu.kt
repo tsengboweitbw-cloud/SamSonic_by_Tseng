@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -171,6 +172,9 @@ internal fun LibraryTabsPanel(
             modifier = Modifier
                 // Same side margins as the floating nav bar.
                 .padding(horizontal = 16.dp)
+                // No wider than a side pane at most, so the bar looks the same with a page open
+                // beside it or not.
+                .widthIn(max = 448.dp)
                 .fillMaxWidth()
                 // The window stays between the pill and the full glass, so neither overshoot
                 // can show through it. Open's stretches the whole panel down from the top;

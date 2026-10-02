@@ -115,7 +115,7 @@ fun GlassSliderRows(themeManager: ThemeManager) {
         hint = stringResource(R.string.settings_player_glass_opacity_hint),
         valueLabel = "${(playerGlassOpacity * 100).roundToInt()}%",
         value = playerGlassOpacity,
-        valueRange = 0.3f..1f,
+        valueRange = 0.5f..1.3f,
         onValueChange = themeManager::setPlayerGlassOpacity,
     )
     SliderRow(

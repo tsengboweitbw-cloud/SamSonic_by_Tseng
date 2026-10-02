@@ -193,7 +193,7 @@ private fun PlayShuffleRow(
             shape = CircleShape,
             hazeState = null,
             tint = MaterialTheme.colorScheme.surfaceContainerHigh,
-            alpha = GlassAlpha.Card,
+            alpha = GlassAlpha.Nav,
         )
     val merge = LocalListActionsMerge.current
     // A tap on any of them also tells a corner capsule holding them to fold back up.
@@ -247,6 +247,9 @@ private fun PlayShuffleRow(
 private val MergedButtonSize = 44.dp
 private val MergedGap = 2.dp
 private val CapsulePadding = 4.dp
+
+// Pinned at the top, the capsule's left edge: past the back button (16dp in, 48dp wide) and a gap.
+private val PinnedCapsuleStart = 16.dp + ChromeButtonSize + 8.dp
 
 /**
  * The buttons in a centred row that, as [merge] goes from 0 to 1 (a floating row
@@ -311,7 +314,17 @@ private fun MergingRow(merge: () -> Float, modifier: Modifier, content: @Composa
             }
             content()
         },
-        modifier = modifier
+        modifier = Modifier
+            // Pinning, the capsule moves from the middle to stand beside the back button.
+            .graphicsLayer {
+                val m = merge()
+                if (m > 0f && count[0] > 0) {
+                    val span = count[0] * MergedButtonSize.toPx() + (count[0] - 1) * MergedGap.toPx()
+                    val capsuleLeft = (size.width - span) / 2 - CapsulePadding.toPx()
+                    translationX = m * (PinnedCapsuleStart.toPx() - capsuleLeft)
+                }
+            }
+            .then(modifier)
             .fillMaxWidth()
             .then(
                 if (haze != null) {

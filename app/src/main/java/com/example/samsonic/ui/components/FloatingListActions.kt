@@ -70,8 +70,9 @@ import com.example.samsonic.LocalAppContainer
 
 private const val SlotKey = "floatingActions"
 
-// Pinned, the row sits just under the back button, where a thumb still reaches it.
-private val PinnedTop = BackButtonClearance + 8.dp
+// Pinned, the row's capsule sits level with the back button (their centres line up),
+// and beside it (see PinnedCapsuleStart).
+private val PinnedTop = 8.dp + (ChromeButtonSize - ListActionButtonSize) / 2
 
 // Scrolling away (not pinned), it fades out over the list's own top fade, as rows do.
 private val FadeDistance = 32.dp
@@ -103,7 +104,7 @@ fun LazyGridScope.floatingActionsSlot(bottomSpacing: Dp = 0.dp) {
  * position is read as it's placed, never in composition, so scrolling recomposes nothing.
  */
 @Composable
-fun BoxScope.FloatingListActions(listState: LazyListState, cornerEndOffset: Dp = 0.dp, haze: HazeState? = null, content: @Composable () -> Unit) {
+fun BoxScope.FloatingListActions(listState: LazyListState, overscroll: PullOverscrollEffect? = null, cornerEndOffset: Dp = 0.dp, haze: HazeState? = null, content: @Composable () -> Unit) {
     FloatingActions(
         restTop = {
             val info = listState.layoutInfo
@@ -111,6 +112,7 @@ fun BoxScope.FloatingListActions(listState: LazyListState, cornerEndOffset: Dp =
         },
         // The slot is always just under the header, the list's first item.
         scrolledPast = { listState.firstVisibleItemIndex > 0 },
+        overscroll = overscroll,
         cornerEndOffset = cornerEndOffset,
         haze = haze,
         content = content,
@@ -119,13 +121,14 @@ fun BoxScope.FloatingListActions(listState: LazyListState, cornerEndOffset: Dp =
 
 /** [FloatingListActions] over a grid. */
 @Composable
-fun BoxScope.FloatingListActions(gridState: LazyGridState, cornerEndOffset: Dp = 0.dp, haze: HazeState? = null, content: @Composable () -> Unit) {
+fun BoxScope.FloatingListActions(gridState: LazyGridState, overscroll: PullOverscrollEffect? = null, cornerEndOffset: Dp = 0.dp, haze: HazeState? = null, content: @Composable () -> Unit) {
     FloatingActions(
         restTop = {
             val info = gridState.layoutInfo
             info.visibleItemsInfo.firstOrNull { it.key == SlotKey }?.let { it.offset.y - info.viewportStartOffset }
         },
         scrolledPast = { gridState.firstVisibleItemIndex > 0 },
+        overscroll = overscroll,
         cornerEndOffset = cornerEndOffset,
         haze = haze,
         content = content,
@@ -210,6 +213,7 @@ private const val CornerLingerMillis = 450L
 private fun BoxScope.FloatingActions(
     restTop: () -> Int?,
     scrolledPast: () -> Boolean,
+    overscroll: PullOverscrollEffect?,
     cornerEndOffset: Dp,
     haze: HazeState?,
     content: @Composable () -> Unit,
@@ -225,7 +229,7 @@ private fun BoxScope.FloatingActions(
                 .fillMaxWidth()
                 .layout { measurable, constraints ->
                     val row = measurable.measure(constraints.copy(minHeight = 0))
-                    layout(row.width, row.height) { placeRow(row, restTop(), scrolledPast(), pin.value == ListActionsPin.TOP, merge) }
+                    layout(row.width, row.height) { placeRow(row, restTop(), scrolledPast(), pin.value == ListActionsPin.TOP, merge, pull = { overscroll?.pull ?: 0f }) }
                 },
         ) {
             CompositionLocalProvider(
@@ -234,7 +238,7 @@ private fun BoxScope.FloatingActions(
                 LocalListActionsHaze provides haze,
                 content = content,
             )
-        }
+    }
         when (pin.value) {
             ListActionsPin.BOTTOM, ListActionsPin.SIDE ->
                 Dock(rememberRowGone(restTop, scrolledPast), side = pin.value == ListActionsPin.SIDE, haze, content)
@@ -404,6 +408,7 @@ private fun Placeable.PlacementScope.placeRow(
     past: Boolean,
     pinned: Boolean,
     merge: MutableFloatState,
+    pull: () -> Float,
 ) {
     val pinnedTop = PinnedTop.roundToPx()
     val top = when {
@@ -416,6 +421,8 @@ private fun Placeable.PlacementScope.placeRow(
     merge.floatValue = if (!pinned) 0f else if (rest == null) 1f else
         ((pinnedTop + MergeDistance.toPx() - rest) / MergeDistance.toPx()).coerceIn(0f, 1f)
     row.placeWithLayer(0, top) {
+        // Riding with the list, it follows a pull past the list's end (a move, see PullOverscrollEffect).
+        if (rest != null && rest >= pinnedTop) translationY = pull()
         if (!pinned) alpha = ((top + row.height / 2f) / FadeDistance.toPx()).coerceIn(0f, 1f)
     }
 }

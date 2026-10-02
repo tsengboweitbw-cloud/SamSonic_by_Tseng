@@ -143,3 +143,7 @@ fun describeEncoding(resources: Resources, encoding: Int): String = when (encodi
     C.ENCODING_PCM_FLOAT -> resources.getString(R.string.playback_encoding_float)
     else -> resources.getString(R.string.playback_encoding_compressed)
 }
+
+/** "44.1 kHz", "96 kHz". */
+fun formatKilohertz(hertz: Int): String =
+    if (hertz % 1000 == 0) "${hertz / 1000} kHz" else "%.1f kHz".format(java.util.Locale.ROOT, hertz / 1000f)

@@ -1,5 +1,8 @@
 package com.example.samsonic.ui.settings
 
+import kotlin.math.roundToInt
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.layout.layout
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -31,6 +34,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.ui.common.GuardChrome
+import com.example.samsonic.ui.common.LocalChromeGuard
 import com.example.samsonic.ui.common.pageScrim
 import com.example.samsonic.ui.player.MorphPanel
 import com.example.samsonic.ui.player.PanelState
@@ -48,6 +52,19 @@ import dev.chrisbanes.haze.HazeState
  * for a [SettingsMenu] to keep its card clear of: set by the page the menus are over.
  */
 internal val LocalMenuBottomInset = staticCompositionLocalOf { 0.dp }
+
+/**
+ * Whether a [SettingsMenu]'s card is a little narrower than the row it grows from, centred on it
+ * (Settings' own rows, a full card's width), rather than across the page less a margin
+ * (Add to playlist, from a song row or a grid's album card). Set by the page.
+ */
+internal val LocalMenuMatchesOrigin = staticCompositionLocalOf { false }
+
+// A card not matching its row keeps this far from the page's sides.
+private val MenuSideMargin = 20.dp
+
+// A card matching its row is this much narrower each side, centred on it.
+private val MenuInsetFromRow = 6.dp
 
 // The same dim as the Library view options' scrim.
 private const val ScrimAlpha = 0.32f
@@ -78,13 +95,17 @@ internal fun SettingsMenu(
     val showing by remember(panel) { derivedStateOf { panel.progress > 0f } }
     if (!showing) return
     val glass = LocalGlassSettings.current
+    val settled by remember(panel) { derivedStateOf { panel.isSettled } }
     // Over a page with the floating chrome, that can't be used either: a tap on it closes the menu.
     val bottomInset = LocalMenuBottomInset.current
+    val matchOrigin = LocalMenuMatchesOrigin.current
     GuardChrome(active = bottomInset > 0.dp, dim = { ScrimAlpha * panel.progress }, onDismiss = { if (panel.isOpen) panel.close() })
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .pageScrim(clearBottom = bottomInset) { ScrimAlpha * panel.progress }
+            // Down to where the chrome's own dim takes over (ChromeGuardLayer), not the page's
+            // room for the chrome: those differ beside the rail, and a strip was dimmed twice.
+            .pageScrim(clearBottom = if (bottomInset > 0.dp) LocalChromeGuard.current?.height ?: bottomInset else 0.dp) { ScrimAlpha * panel.progress }
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
@@ -95,7 +116,7 @@ internal fun SettingsMenu(
             // field's keyboard, whichever reaches higher, so the card is centred in the
             // page between them and the title.
             .windowInsetsPadding(WindowInsets.ime.union(WindowInsets(bottom = bottomInset)))
-            .padding(horizontal = 20.dp, vertical = 16.dp),
+            .padding(vertical = 16.dp),
         contentAlignment = Alignment.Center,
     ) {
         MorphPanel(
@@ -109,7 +130,10 @@ internal fun SettingsMenu(
                 // Starts thin; the wash thickens it to the panel's density.
                 alpha = MorphGlassBase,
                 blurRadius = glass.panelBlur,
-                downsample = true,
+                // Open and still, at full size, so what moves behind it doesn't flicker through.
+                downsample = !settled,
+                // None either way, as while downsampled, so settling doesn't change its look.
+                noiseFactor = 0f,
                 sheen = AccentSheen.Menu,
                 scaleOpacity = false,
                 rim = false,
@@ -117,7 +141,31 @@ internal fun SettingsMenu(
             wash = MaterialTheme.colorScheme.surfaceContainerHigh,
             washAlpha = washToReach(MorphGlassBase, GlassAlpha.Panel * glass.panelOpacity),
             modifier = Modifier
-                .fillMaxWidth()
+                // As wide as its row and in line with it (see LocalMenuMatchesOrigin), else
+                // across the page less a margin either side.
+                .layout { measurable, constraints ->
+                    val room = constraints.maxWidth
+                    val margin = MenuSideMargin.roundToPx()
+                    val origin = panel.origin
+                    val match = matchOrigin && origin.width > 0f
+                    val width = if (match) {
+                        (origin.width - MenuInsetFromRow.toPx() * 2).roundToInt().coerceIn(0, room)
+                    } else {
+                        (room - margin * 2).coerceAtLeast(0)
+                    }
+                    val placeable = measurable.measure(constraints.copy(minWidth = width, maxWidth = width))
+                    layout(room, placeable.height) {
+                        // Centred on its row, which is centred on its card: where this room
+                        // starts across the screen is known only as it's placed.
+                        val x = if (match) {
+                            val left = coordinates?.positionInRoot()?.x ?: 0f
+                            (origin.center.x - left - width / 2f).roundToInt().coerceIn(0, room - width)
+                        } else {
+                            margin
+                        }
+                        placeable.place(x, 0)
+                    }
+                }
                 // Swallows taps so only the space around the card dismisses.
                 .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {},
             radius = OneUiRadius.Card,

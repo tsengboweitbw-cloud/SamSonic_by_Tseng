@@ -8,6 +8,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -45,6 +51,13 @@ class ChromeGuard {
     var top: () -> Float = { 0f }
         internal set
 
+    /**
+     * The window x-range of the page the open menu is dimming, set as its scrim draws (see
+     * pageScrim): beside another pane, the chrome under that one stays undimmed.
+     */
+    var dimSpan: ClosedFloatingPointRange<Float>? = null
+        internal set
+
     /** The open menu's dim over the page (read at draw time) and how to close it. */
     internal class Claim(val dim: () -> Float, val dismiss: () -> Unit)
 }
@@ -74,14 +87,41 @@ fun GuardChrome(active: Boolean, dim: () -> Float, onDismiss: () -> Unit) {
  * the page under it and takes every touch, a tap closing the menu.
  */
 @Composable
-fun ChromeGuardLayer(guard: ChromeGuard, height: Dp, modifier: Modifier = Modifier) {
+fun ChromeGuardLayer(guard: ChromeGuard, height: Dp, modifier: Modifier = Modifier, alwaysDimWidth: Dp = 0.dp) {
     SideEffect { guard.height = height }
+    ChromeGuardArea(guard, modifier.fillMaxWidth().height(height), followPage = true, alwaysDimWidth = alwaysDimWidth)
+}
+
+/**
+ * Laid over floating chrome elsewhere than the foot of the screen (the nav rail at its
+ * side), [modifier] placing and sizing it: while a menu has claimed [guard], dims what's
+ * under it as the page is dimmed and takes every touch, a tap closing the menu.
+ */
+@Composable
+fun ChromeGuardArea(
+    guard: ChromeGuard,
+    modifier: Modifier = Modifier,
+    // Dims only under the page the menu dims, plus [alwaysDimWidth] at the start (the rail's).
+    followPage: Boolean = false,
+    alwaysDimWidth: Dp = 0.dp,
+) {
     val claim = guard.claim ?: return
+    var left by remember { mutableFloatStateOf(0f) }
     Box(
         modifier = modifier
-            .fillMaxWidth()
-            .height(height)
-            .drawBehind { drawRect(Color.Black.copy(alpha = claim.dim().coerceIn(0f, 1f))) }
+            .onGloballyPositioned { left = it.positionInWindow().x }
+            .drawBehind {
+                val color = Color.Black.copy(alpha = claim.dim().coerceIn(0f, 1f))
+                val span = guard.dimSpan
+                if (!followPage || span == null) {
+                    drawRect(color)
+                } else {
+                    val start = (span.start - left).coerceIn(0f, size.width)
+                    val end = (span.endInclusive - left).coerceIn(start, size.width)
+                    drawRect(color, topLeft = Offset(start, 0f), size = Size(end - start, size.height))
+                    drawRect(color, size = Size(minOf(alwaysDimWidth.toPx(), start), size.height))
+                }
+            }
             .dismissOnTap(claim),
     )
 }

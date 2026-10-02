@@ -3,7 +3,12 @@ package com.example.samsonic.ui.components
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.clickable
+import androidx.compose.animation.core.tween
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.ui.draw.drawBehind
+import com.example.samsonic.ui.common.HoverGlowAlpha
+import com.example.samsonic.ui.common.hovered
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
@@ -45,10 +50,17 @@ fun PressIconButton(
 /**
  * Makes this element a button that answers a tap by shrinking briefly and springing
  * back, with no ripple or pressed background. Everything chained after it (and the
- * content) shrinks; what comes before it, like a glass surface, stays put.
+ * content) shrinks; what comes before it, like a glass surface, stays put. A mouse over
+ * it lights it faintly, within whatever shape it's clipped to before this.
  */
 @Composable
-fun Modifier.pressClickable(onClick: () -> Unit, pressedScale: Float = 0.85f, enabled: Boolean = true): Modifier {
+fun Modifier.pressClickable(
+    onClick: () -> Unit,
+    pressedScale: Float = 0.85f,
+    enabled: Boolean = true,
+    // A long press; none by default.
+    onLongClick: (() -> Unit)? = null,
+): Modifier {
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
     val scale by animateFloatAsState(
@@ -56,7 +68,21 @@ fun Modifier.pressClickable(onClick: () -> Unit, pressedScale: Float = 0.85f, en
         animationSpec = spring(dampingRatio = 0.55f, stiffness = Spring.StiffnessMedium),
         label = "pressScale",
     )
-    return clickable(interactionSource = interaction, indication = null, enabled = enabled, role = Role.Button, onClick = onClick)
+    val glow by animateFloatAsState(
+        targetValue = if (enabled && hovered(interaction)) HoverGlowAlpha else 0f,
+        animationSpec = tween(160),
+        label = "hoverGlow",
+    )
+    val glowColor = MaterialTheme.colorScheme.onSurface
+    return drawBehind { if (glow > 0f) drawRect(glowColor, alpha = glow) }
+        .combinedClickable(
+            interactionSource = interaction,
+            indication = null,
+            enabled = enabled,
+            role = Role.Button,
+            onLongClick = onLongClick,
+            onClick = onClick,
+        )
         .graphicsLayer {
             scaleX = scale
             scaleY = scale

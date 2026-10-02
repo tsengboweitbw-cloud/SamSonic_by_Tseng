@@ -49,7 +49,6 @@ import com.example.samsonic.ui.theme.glassSurface
 import kotlin.math.roundToInt
 
 private val PillMargin = 12.dp
-private val PillRadius = OneUiChrome.BarHeight / 2
 
 /**
  * How the mini player's pill is drawn off its place as it comes in ([coming], 1 to 0)
@@ -97,7 +96,8 @@ private fun ramp(value: Float, start: Float, end: Float) = ((value - start) / (e
  * stack at the foot of Now Playing.
  *
  * [collapsedBottom] is the gap between the pill and the bottom of the screen, and
- * [collapsedMargin] that at each side. Given a [pile], the pill is its card
+ * [collapsedMargin] that at each side, past [collapsedStart] at the start; it's no wider
+ * than [collapsedMaxWidth]. Given a [pile], the pill is its card
  * [MiniPlayerCard], piled with the nav bar: a swipe up at rest sends it to the back
  * (or does nothing while it's behind) instead of opening Now Playing, which a tap does.
  * [onAlbumClick] and [onArtistClick] open those pages from Now Playing, after the sheet folds away.
@@ -110,6 +110,13 @@ fun PlayerSheet(
     onArtistClick: (artistId: String) -> Unit,
     modifier: Modifier = Modifier,
     collapsedMargin: Dp = PillMargin,
+    // Room kept free at the start before the pill's margin. Given a [collapsedWidth], the
+    // pill is that wide from there instead of reaching across the screen, and stands
+    // [collapsedHeight] tall: under the nav rail, as narrow as the rail, and the mini
+    // player inside it is the rail's compact one.
+    collapsedStart: Dp = 0.dp,
+    collapsedWidth: Dp? = null,
+    collapsedHeight: Dp = OneUiChrome.BarHeight,
     pile: CardPileState? = null,
     pileWeight: () -> Float = { 1f },
     pileOffset: () -> Float = { 0f },
@@ -139,7 +146,9 @@ fun PlayerSheet(
                 val full = Rect(0f, 0f, constraints.maxWidth.toFloat(), constraints.maxHeight.toFloat())
                 val collapsed = with(density) {
                     val bottom = full.bottom - collapsedBottom.toPx()
-                    Rect(collapsedMargin.toPx(), bottom - OneUiChrome.BarHeight.toPx(), full.right - collapsedMargin.toPx(), bottom)
+                    val left = collapsedStart.toPx() + if (collapsedWidth == null) collapsedMargin.toPx() else 0f
+                    val right = if (collapsedWidth == null) full.right - collapsedMargin.toPx() else left + collapsedWidth.toPx()
+                    Rect(left, bottom - collapsedHeight.toPx(), right, bottom)
                 }
                 SideEffect {
                     sheet.travelPx = collapsed.top
@@ -169,7 +178,7 @@ fun PlayerSheet(
                         }
                     }
                 }
-                SheetSurface(sheet, song, collapsed, full, pile, pileWeight, pileOffset, entrance)
+                SheetSurface(sheet, song, collapsed, full, pile, pileWeight, pileOffset, entrance, compact = collapsedWidth != null, short = collapsedWidth != null && collapsedHeight < RailMiniPlayerHeight)
                 // Above the sheet: the cover and progress line in flight.
                 PlayerMorphOverlay(morph, Modifier.fillMaxSize())
             }
@@ -188,6 +197,9 @@ private fun SheetSurface(
     pileWeight: () -> Float,
     pileOffset: () -> Float,
     entrance: () -> Float,
+    // The rail's narrow mini player, rather than the wide one; [short], under a short rail.
+    compact: Boolean,
+    short: Boolean,
 ) {
     // Kept until fully open: its art and progress line are the morph's start points.
     // Gone once open, so its (invisible) pill can't catch Now Playing's taps.
@@ -195,7 +207,8 @@ private fun SheetSurface(
     val atRest by remember(sheet) { derivedStateOf { sheet.progress == 0f } }
     val pillBlurs by remember(sheet) { derivedStateOf { sheet.progress < 0.15f } }
     val dragState = rememberDraggableState { sheet.dragBy(it) }
-    val radiusPx = with(LocalDensity.current) { PillRadius.toPx() }
+    // A capsule however it's shaped: round across its narrower side.
+    val radiusPx = minOf(collapsed.width, collapsed.height) / 2
     // Piled and at rest, a swipe up goes to the pile, and carried on up opens Now Playing;
     // one down still swipes the pill away. Drawn in the pile as it comes together, but
     // swiped only once it has. The pile's gesture stays on through the opening it hands
@@ -298,7 +311,7 @@ private fun SheetSurface(
                 .fillMaxSize()
                 .graphicsLayer { alpha = 1f - ramp(sheet.progress, 0.3f, 0.6f) }
                 .glassSurface(
-                    shape = RoundedCornerShape(PillRadius),
+                    shape = RoundedCornerShape(percent = 50),
                     // Only near rest: the frame grows every frame of the morph, and a blur
                     // of a new size each frame costs, while Now Playing fades in over it.
                     hazeState = LocalHazeState.current.takeIf { pillBlurs },
@@ -345,7 +358,7 @@ private fun SheetSurface(
                         alpha = (1f - ramp(sheet.progress, 0f, 0.25f)) * piledAlpha
                     },
             ) {
-                MiniPlayer(song = song, onExpand = { sheet.expand() })
+                MiniPlayer(song = song, onExpand = { sheet.expand() }, compact = compact, short = short)
             }
         }
     }

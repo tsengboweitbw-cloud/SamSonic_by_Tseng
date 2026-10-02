@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import com.example.samsonic.ui.components.rememberPullOverscroll
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.items
@@ -72,7 +73,10 @@ internal fun AlbumsPage(
 ) {
     val container = LocalAppContainer.current
     val layouts by container.libraryLayoutManager.layouts.collectAsStateWithLifecycle()
+    val showAlbumNames by container.libraryLayoutManager.showAlbumNames.collectAsStateWithLifecycle()
+    val showAlbumArtists by container.libraryLayoutManager.showAlbumArtists.collectAsStateWithLifecycle()
     val gridState = rememberLazyGridState()
+    val overscroll = rememberPullOverscroll()
     BackButtonPage(
         onBack,
         modifier,
@@ -87,18 +91,19 @@ internal fun AlbumsPage(
                 LibraryCollection(
                     state = UiState.Success(albums),
                     gridState = gridState,
+                    overscrollEffect = overscroll,
                     layout = layouts.getValue(section),
                     padding = LibraryPadding(top = BackButtonClearance, bottom = contentPaddingBottom),
                     key = { it.id },
-                    card = { album, size -> AlbumCard(album, onClick = { onAlbumClick(album) }, artSize = size) },
-                    row = { album -> AlbumRow(album, onClick = { onAlbumClick(album) }) },
+                    card = { album, size -> AlbumCard(album, onClick = { onAlbumClick(album) }, artSize = size, showTitle = showAlbumNames, showArtist = showAlbumArtists) },
+                    row = { album -> AlbumRow(album, onClick = { onAlbumClick(album) }, showTitle = showAlbumNames, showArtist = showAlbumArtists) },
                     header = { PageHeader(owner = owner, title = title, bottomSpacing = 0.dp) },
                     // Play and shuffle float over the grid ([FloatingListActions]); this keeps their place.
                     actionsSlot = 12.dp,
                     modifier = Modifier.scrollTopFade(gridState).backButtonHazeSource(backHaze),
                 )
                 // Its corner button goes beside the view button (48dp), when the page has one.
-                FloatingListActions(gridState, cornerEndOffset = if (ownView) 56.dp else 0.dp, haze = backHaze) {
+                FloatingListActions(gridState, overscroll = overscroll, cornerEndOffset = if (ownView) 56.dp else 0.dp, haze = backHaze) {
                     PlayShuffleButtons(key = albums, loadSongs = { container.repository.getAlbumsSongs(albums) })
                 }
             }
@@ -146,6 +151,7 @@ internal fun SongsPage(
 ) {
     val player = LocalPlayerState.current
     val listState = rememberLazyListState()
+    val overscroll = rememberPullOverscroll()
     BackButtonPage(onBack, modifier, overlay = { haze -> ListSortMenu(SortedList.SONGS, haze) }) { backHaze ->
         StateContent(state = state, modifier = Modifier.fillMaxSize()) { (owner, loaded) ->
             val sort = rememberListSort(SortedList.SONGS)
@@ -156,6 +162,7 @@ internal fun SongsPage(
                 LazyColumn(
                     modifier = Modifier.fillMaxSize().scrollTopFade(listState).backButtonHazeSource(backHaze),
                     state = listState,
+                    overscrollEffect = overscroll,
                     contentPadding = PaddingValues(top = BackButtonClearance, bottom = contentPaddingBottom),
                 ) {
                     item { PageHeader(owner = owner, title = title, modifier = Modifier.padding(horizontal = 20.dp), bottomSpacing = 0.dp) }
@@ -172,7 +179,7 @@ internal fun SongsPage(
                     item { Spacer(Modifier.height(24.dp)) }
                 }
                 // Its corner button goes beside the sort button.
-                FloatingListActions(listState, cornerEndOffset = ChromeButtonSize + 8.dp, haze = backHaze) { PlayShuffleButtons(songs = songs) }
+                FloatingListActions(listState, overscroll = overscroll, cornerEndOffset = ChromeButtonSize + 8.dp, haze = backHaze) { PlayShuffleButtons(songs = songs) }
             }
         }
     }

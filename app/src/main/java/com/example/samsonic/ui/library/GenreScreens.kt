@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import com.example.samsonic.ui.components.rememberPullOverscroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -68,6 +69,7 @@ fun GenreDetailScreen(
     }
 
     val listState = rememberLazyListState()
+    val overscroll = rememberPullOverscroll()
     val backHaze = rememberHazeState()
     Box(modifier = modifier.fillMaxSize().statusBarsPadding()) {
         StateContent(state = state, modifier = Modifier.fillMaxSize()) { (albums, artists, songs) ->
@@ -75,6 +77,7 @@ fun GenreDetailScreen(
                 LazyColumn(
                     modifier = Modifier.fillMaxSize().scrollTopFade(listState).backButtonHazeSource(backHaze),
                     state = listState,
+                    overscrollEffect = overscroll,
                     contentPadding = PaddingValues(top = BackButtonClearance, bottom = contentPaddingBottom),
                 ) {
                     item(key = "header") {
@@ -105,7 +108,7 @@ fun GenreDetailScreen(
                     floatingActionsEnd()
                     item(key = "end") { Spacer(Modifier.height(24.dp)) }
                 }
-                FloatingListActions(listState, haze = backHaze) {
+                FloatingListActions(listState, overscroll = overscroll, haze = backHaze) {
                     // Plays the whole genre, not just the songs listed here.
                     PlayShuffleButtons(key = genre, loadSongs = { repository.getGenreSongs(genre) })
                 }

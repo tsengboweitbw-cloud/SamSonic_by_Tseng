@@ -1,5 +1,7 @@
 package com.example.samsonic.model
 
+import kotlinx.serialization.Serializable
+
 /**
  * Domain models for the UI layer, populated from a Subsonic/OpenSubsonic server
  * (see data/remote for the wire format and data/SubsonicRepository for the mapping).
@@ -27,6 +29,7 @@ data class Album(
     val genres: List<String> = emptyList(),
 )
 
+@Serializable
 data class Song(
     val id: String,
     val title: String,
@@ -119,4 +122,5 @@ data class GenreContents(
 )
 
 /** One artist credited on a song; [id] is null when the server gave none, so it can't be opened. */
+@Serializable
 data class ArtistCredit(val id: String?, val name: String)

@@ -40,15 +40,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
-import androidx.compose.ui.Alignment
+// import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.samsonic.LocalAppContainer
-import com.example.samsonic.R
-import com.example.samsonic.data.LibrarySection
 import com.example.samsonic.data.LibrarySort
 import com.example.samsonic.data.LibraryViewMode
 import com.example.samsonic.data.newestFirst
@@ -56,6 +51,11 @@ import com.example.samsonic.model.Album
 import com.example.samsonic.model.Artist
 import com.example.samsonic.model.Genre
 import com.example.samsonic.model.Playlist
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.samsonic.LocalAppContainer
+import com.example.samsonic.R
+import com.example.samsonic.data.LibrarySection
 import com.example.samsonic.model.favouritesPlaylist
 import com.example.samsonic.model.isFavourites
 import com.example.samsonic.ui.common.StateContent
@@ -112,6 +112,8 @@ fun LibraryScreen(
     val layouts by layoutManager.layouts.collectAsStateWithLifecycle()
     val albumArtistsOnly by layoutManager.albumArtistsOnly.collectAsStateWithLifecycle()
     val showFavourites by layoutManager.showFavourites.collectAsStateWithLifecycle()
+    val showAlbumNames by layoutManager.showAlbumNames.collectAsStateWithLifecycle()
+    val showAlbumArtists by layoutManager.showAlbumArtists.collectAsStateWithLifecycle()
     val sorts by layoutManager.sorts.collectAsStateWithLifecycle()
     val artistSort = sorts.getValue(LibrarySection.ARTISTS)
     val albumSort = sorts.getValue(LibrarySection.ALBUMS)
@@ -282,9 +284,9 @@ fun LibraryScreen(
                         layout = layouts.getValue(LibrarySection.ALBUMS),
                         padding = padding,
                         key = { it.id },
-                        card = { album, size -> AlbumCard(album, onClick = { onAlbumClick(album) }, artSize = size) },
+                        card = { album, size -> AlbumCard(album, onClick = { onAlbumClick(album) }, artSize = size, showTitle = showAlbumNames, showArtist = showAlbumArtists) },
                         // Sideways swipes here change tabs, so no swipe actions.
-                        row = { album -> AlbumRow(album, onClick = { onAlbumClick(album) }, swipeActions = false) },
+                        row = { album -> AlbumRow(album, onClick = { onAlbumClick(album) }, swipeActions = false, showTitle = showAlbumNames, showArtist = showAlbumArtists) },
                     )
                     2 -> LibraryCollection(
                         state = playlists,
