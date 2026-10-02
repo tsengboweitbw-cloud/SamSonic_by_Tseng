@@ -69,7 +69,7 @@ class ThemeManager(context: Context) {
     val playerGlassBlur: StateFlow<Dp> = _playerGlassBlur.asStateFlow()
 
     // Whether the heart (like/unlike) buttons are shown at all.
-    private val _likesEnabled = MutableStateFlow(prefs.getBoolean(KEY_LIKES_ENABLED, true))
+    private val _likesEnabled = MutableStateFlow(prefs.getBoolean(KEY_LIKES_ENABLED, false))
     val likesEnabled: StateFlow<Boolean> = _likesEnabled.asStateFlow()
 
     // How song rows show each song's audio format, if at all. Off until chosen.
@@ -86,7 +86,7 @@ class ThemeManager(context: Context) {
             return AudioFormatDisplay.entries.find { it.name == saved } ?: AudioFormatDisplay.OFF
         }
         // The earlier on/off switch: on becomes the nearest layout.
-        return if (prefs.getBoolean(KEY_SHOW_AUDIO_FORMAT, false)) AudioFormatDisplay.UNDER_ARTIST else AudioFormatDisplay.OFF
+        return if (prefs.getBoolean(KEY_SHOW_AUDIO_FORMAT, false)) AudioFormatDisplay.UNDER_ARTIST else AudioFormatDisplay.QUIET_HEART
     }
 
     // Swiping the mini player sideways changes song: left for the next, right for the previous.
@@ -215,14 +215,14 @@ class ThemeManager(context: Context) {
         private const val KEY_RAIL_STAYS_PUT = "rail_stays_put"
         private const val KEY_STACK_PLAYER_ACTIONS = "stack_player_actions"
         val DefaultAccent = Color(0xFF8875FF)
-        val DefaultAlbumArtCornerRadius = 2.dp
+        val DefaultAlbumArtCornerRadius = 3.dp
         const val DefaultGlassOpacity = 1f
         val DefaultGlassBlur = 16.dp
-        val DefaultBackdropBlur = 40.dp
+        val DefaultBackdropBlur = 16.dp
         const val DefaultPanelOpacity = 1f
-        val DefaultPanelBlur = 28.dp
+        val DefaultPanelBlur = 16.dp
         const val DefaultPlayerGlassOpacity = 1f
         const val PlayerGlassBaseAlpha = 0.7f
-        val DefaultPlayerGlassBlur = 48.dp
+        val DefaultPlayerGlassBlur = 16.dp
     }
 }

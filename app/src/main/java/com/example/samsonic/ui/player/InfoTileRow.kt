@@ -1,6 +1,8 @@
 package com.example.samsonic.ui.player
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -233,13 +235,16 @@ private fun InfoWindowRow(capsule: InfoCapsule, tileWidth: MutableIntState) {
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Spacer(Modifier.widthIn(min = 20.dp).weight(1f))
+        Spacer(Modifier.width(20.dp))
+        // Right-aligned; a value too long for the window (a USB DAC's name) scrolls as a marquee.
         Text(
             text = capsule.text,
             style = MaterialTheme.typography.labelLarge.copy(fontWeight = FontWeight.SemiBold),
             color = MaterialTheme.colorScheme.onSurface,
+            textAlign = TextAlign.End,
             maxLines = 1,
             softWrap = false,
+            modifier = Modifier.weight(1f).basicMarquee(iterations = Int.MAX_VALUE),
         )
     }
 }

@@ -276,7 +276,7 @@ class LibraryLayoutManager(
     }
 
     // Where a page's Play / Shuffle / Queue buttons go once its header scrolls away.
-    private val _listActionsPin = MutableStateFlow(prefs.getEnum(KEY_LIST_ACTIONS_PIN, ListActionsPin.OFF))
+    private val _listActionsPin = MutableStateFlow(prefs.getEnum(KEY_LIST_ACTIONS_PIN, ListActionsPin.TOP))
     val listActionsPin: StateFlow<ListActionsPin> = _listActionsPin.asStateFlow()
 
     fun setListActionsPin(pin: ListActionsPin) {
