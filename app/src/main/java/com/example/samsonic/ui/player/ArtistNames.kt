@@ -3,6 +3,7 @@ package com.example.samsonic.ui.player
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.AnnotatedString
@@ -13,6 +14,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withLink
+import androidx.compose.ui.unit.dp
 import com.example.samsonic.model.ArtistCredit
 import com.example.samsonic.model.Song
 import com.example.samsonic.ui.components.marqueeWhenLong
@@ -42,7 +44,8 @@ internal fun ArtistNames(
     marquee: Boolean = false,
 ) {
     val credits = song.artistCredits
-    val scroll = if (marquee && maxLines == 1) Modifier.marqueeWhenLong() else Modifier
+    // Room inside the marquee's clip, or the descenders (g, y) of a tight line are cut off.
+    val scroll = if (marquee && maxLines == 1) Modifier.marqueeWhenLong().padding(vertical = 3.dp) else Modifier
     if (credits.size == 1) {
         val id = credits.single().id
         Text(
