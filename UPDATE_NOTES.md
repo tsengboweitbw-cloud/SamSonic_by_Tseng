@@ -25,6 +25,7 @@
 - The frosted glass's grain is thinner on a big screen: 50% as strong on a tablet and 30% in DeX, where the grain, a tile of device pixels, read as coarse speckle rather than fine frosting.
 - On a phone on its side, Now Playing's collapse button sits in a column of its own on the far left instead of a row above the cover, and the gap above and below the cover and the controls beside it is 8dp, not 24dp, so they get about 100dp more height and the controls are less often pushed into scrolling.
 - README: the version badge now reads v2.1.0, the Kotlin badge 2.4 and the target SDK 37. The audiophile feature is now the USB DAC driver (the bit-perfect mixer routing is gone), and the device-support feature is no longer marked in development.
+- On a phone on its side that is at least 800dp wide, Home, Library, Search and Settings now go in two panes like a tablet's: the list at the side and the page opened from it beside it, instead of one column with pages opening over the list. Narrower phones keep one column.
 
 Changes since 5dfb5ba.
 
