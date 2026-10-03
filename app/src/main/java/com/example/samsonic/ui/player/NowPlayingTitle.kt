@@ -3,6 +3,7 @@ package com.example.samsonic.ui.player
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,10 +25,10 @@ internal fun NowPlayingTitle(song: Song, modifier: Modifier = Modifier) {
             text = song.title,
             style = MaterialTheme.typography.headlineMedium,
             maxLines = 1,
-            modifier = Modifier.marqueeWhenLong(),
+            modifier = Modifier.marqueeWhenLong().padding(vertical = 3.dp),
         )
         if (song.albumTitle.isNotBlank()) {
-            Spacer(Modifier.height(6.dp))
+            Spacer(Modifier.height(9.dp))
             SubLine(
                 text = song.albumTitle,
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
@@ -35,7 +36,7 @@ internal fun NowPlayingTitle(song: Song, modifier: Modifier = Modifier) {
                 onClick = song.albumId?.let { id -> { links.openAlbum(id) } },
             )
         }
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(9.dp))
         ArtistNames(
             song = song,
             // The artist takes the accent, so it stands out under the title and reads as tappable.
@@ -46,7 +47,7 @@ internal fun NowPlayingTitle(song: Song, modifier: Modifier = Modifier) {
         )
         // Always laid out, and keeping the last details until the next song's arrive
         // (blank only before the first), so nothing blinks or shifts as a song loads.
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(12.dp))
         NowPlayingInfoRows(song)
     }
 }
@@ -64,6 +65,6 @@ private fun SubLine(
         style = style,
         color = color,
         maxLines = 1,
-        modifier = (if (onClick != null) Modifier.pressClickable(onClick, pressedScale = 0.95f) else Modifier).marqueeWhenLong(),
+        modifier = (if (onClick != null) Modifier.pressClickable(onClick, pressedScale = 0.95f) else Modifier).marqueeWhenLong().padding(vertical = 3.dp),
     )
 }

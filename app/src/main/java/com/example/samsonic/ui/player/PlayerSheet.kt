@@ -245,7 +245,7 @@ private fun SheetSurface(
     // Gone once open, so its (invisible) pill can't catch Now Playing's taps.
     val miniShowing by remember(sheet) { derivedStateOf { sheet.progress < 0.999f } }
     val atRest by remember(sheet) { derivedStateOf { sheet.progress == 0f } }
-    val pillBlurs by remember(sheet) { derivedStateOf { sheet.progress < 0.15f } }
+    val pillBlurs by remember(sheet) { derivedStateOf { sheet.progress < 0.45f } }
     val dragState = rememberDraggableState { sheet.dragBy(it) }
     // A capsule however it's shaped: round across its narrower side.
     val radiusPx = minOf(collapsed.width, collapsed.height) / 2

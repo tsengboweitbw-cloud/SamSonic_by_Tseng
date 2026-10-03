@@ -2,6 +2,13 @@
 
 ## 2.1.1 (in progress)
 
+- Expanding the mini player slowly into Now Playing no longer drops its blur and opacity to nothing before Now Playing's background arrives: the pill's blur now stays until Now Playing's backdrop has covered it, so the two blend smoothly.
+- Now Playing's one-column layout (a phone upright) shares its spare height evenly: the cover is as large as the width allows (or the height, where that's less), and what is left over is split between the gaps below the collapse button, around the cover and above the actions (each gap at least 24dp, 28dp and 16dp), instead of all of it pooling above the cover and leaving the controls crowded at the foot.
+- Now Playing in two columns (a tablet, a foldable's inner screen, a phone on its side) now lays the song, seek bar, transport and actions out the way the tablet always did: spread evenly over exactly the cover's height, starting and ending level with it. A foldable's controls had been a fixed 480dp tall and no longer lined up with its cover; a phone on its side packed them from the top with fixed gaps. Where they need more height than the cover has (a phone on its side), the gaps shrink to 12dp and the column grows past the cover, scrolling only if even that doesn't fit.
+- On a phone held upright, Now Playing's actions sit 36dp above the bottom (the gesture bar's room aside), up from 20dp.
+- Now Playing's four lines of text (title, album, artist and audio format) are a little further apart: 15dp between each, up from 6dp, 8dp and 8dp.
+- Now Playing's title, album and artist lines no longer cut off the tails of letters like g and y: each scrolling line has 3dp of room above and below its text inside the clip, and the gaps between the lines are reduced by the same amount, so they look the same.
+- Now Playing's stacked action capsules now take no more height than the row of buttons does: the capsules peeking out behind the front one are drawn below it, in the bottom padding, instead of adding their own room. The controls above are no longer pushed up and crowded when the actions are stacked.
 - Surround music (3 to 8 channels, such as 5.1) now plays: it is folded down to stereo (ITU-R BS.775: the centre and the back and side channels join their side at -3dB, the LFE is left out) before it goes to the speaker, headphones or a USB DAC. The stock output had no downmix, so a 5.1 stream depended on the output taking six channels, and the USB DAC driver only took mono and stereo.
 
 ## 2.1.0 (in progress)

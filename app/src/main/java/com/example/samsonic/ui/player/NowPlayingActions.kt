@@ -36,7 +36,6 @@ import com.example.samsonic.R
 import com.example.samsonic.model.Song
 import com.example.samsonic.ui.autodj.AutoDjIcon
 import com.example.samsonic.ui.components.CardPileState
-import com.example.samsonic.ui.components.pileExtent
 import com.example.samsonic.ui.components.contentAlpha
 import com.example.samsonic.ui.components.pickThresholdPx
 import com.example.samsonic.ui.components.pileCard
@@ -140,8 +139,8 @@ internal fun NowPlayingActions(
     Box(modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
         Box(
             modifier = Modifier
-                // Room below for the capsules peeking out behind.
-                .padding(bottom = pileExtent(count))
+                // The capsules peeking out behind are drawn below it, past its bounds, in the
+                // bottom padding: the stack takes no more height than the row of buttons does.
                 .size(CapsuleWidth, CapsuleHeight)
                 .onGloballyPositioned { coordinates ->
                     // Every panel grows out of the stack.
