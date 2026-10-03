@@ -367,7 +367,9 @@ private fun SheetSurface(
                 .fillMaxSize()
                 .graphicsLayer { alpha = 1f - ramp(sheet.progress, 0.3f, 0.6f) }
                 .glassSurface(
-                    shape = RoundedCornerShape(percent = 50),
+                    // The pill's own radius, held as the frame grows (a percentage of the
+                    // growing frame would round its glass's corners ever wider than the clip's).
+                    shape = RoundedCornerShape(radiusPx),
                     // Only near rest: the frame grows every frame of the morph, and a blur
                     // of a new size each frame costs, while Now Playing fades in over it.
                     hazeState = LocalHazeState.current.takeIf { pillBlurs },
