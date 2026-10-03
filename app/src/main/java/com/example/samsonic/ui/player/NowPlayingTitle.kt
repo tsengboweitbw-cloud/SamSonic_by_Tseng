@@ -28,7 +28,7 @@ internal fun NowPlayingTitle(song: Song, modifier: Modifier = Modifier) {
             modifier = Modifier.marqueeWhenLong().padding(vertical = 3.dp),
         )
         if (song.albumTitle.isNotBlank()) {
-            Spacer(Modifier.height(9.dp))
+            Spacer(Modifier.height(4.dp))
             SubLine(
                 text = song.albumTitle,
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
@@ -36,7 +36,7 @@ internal fun NowPlayingTitle(song: Song, modifier: Modifier = Modifier) {
                 onClick = song.albumId?.let { id -> { links.openAlbum(id) } },
             )
         }
-        Spacer(Modifier.height(9.dp))
+        Spacer(Modifier.height(4.dp))
         ArtistNames(
             song = song,
             // The artist takes the accent, so it stands out under the title and reads as tappable.
@@ -47,7 +47,7 @@ internal fun NowPlayingTitle(song: Song, modifier: Modifier = Modifier) {
         )
         // Always laid out, and keeping the last details until the next song's arrive
         // (blank only before the first), so nothing blinks or shifts as a song loads.
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(7.dp))
         NowPlayingInfoRows(song)
     }
 }
