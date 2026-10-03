@@ -82,7 +82,8 @@ data class WindowLayout(
     /**
      * A phone on its side (a foldable's cover screen too): too short for the nav bar and
      * mini player along the foot, so a short rail at the side holds both, and Now Playing
-     * sets its cover beside the controls; its pages keep a phone's one column.
+     * sets its cover beside the controls; its pages go in two panes once it is
+     * [WindowBreakpoints.TwoPaneMinWidth] wide ([twoPane]), else keep a phone's one column.
      *
      * A [LayoutClass.Phone] window at least [WindowBreakpoints.PhoneMaxWidth] wide can only
      * be a phone because it is too short, so no separate landscape check is needed.
@@ -99,10 +100,12 @@ data class WindowLayout(
     /**
      * Whether pages go in two columns side by side (a list and what's opened from it, and
      * Settings' groups beside the one picked): wide enough and tall enough. Held tall, a
-     * tablet or an open foldable keeps the two columns too, with the rail.
+     * tablet or an open foldable keeps the two columns too, with the rail. A phone on its
+     * side has the width but not the height, so it gets them from its width alone.
      */
     val twoPane: Boolean
-        get() = layoutClass == LayoutClass.Wide && width >= WindowBreakpoints.TwoPaneMinWidth
+        get() = width >= WindowBreakpoints.TwoPaneMinWidth &&
+            (layoutClass == LayoutClass.Wide || phoneLandscape)
 
     /**
      * How much larger text is than on a phone: a size up in DeX (a monitor, further off
