@@ -1,5 +1,9 @@
 # Update notes
 
+## 2.1.1 (in progress)
+
+- Surround music (3 to 8 channels, such as 5.1) now plays: it is folded down to stereo (ITU-R BS.775: the centre and the back and side channels join their side at -3dB, the LFE is left out) before it goes to the speaker, headphones or a USB DAC. The stock output had no downmix, so a 5.1 stream depended on the output taking six channels, and the USB DAC driver only took mono and stereo.
+
 ## 2.1.0 (in progress)
 
 - Bit-perfect USB output is gone, and with it the Exclusive USB output and DSD output settings: Android 14's bit-perfect mixer attributes (`AudioMixerAttributes`) never worked reliably, so the app no longer asks Android for them. The integer and native-DSD AudioTracks, the in-app resampler to the DAC's rate, DoP and native DSD packing, and the Exclusive line in Song info and Now Playing went with them, and the player is the stock one on every Android version again. DSD files (DSF, DSDIFF) still play, always filtered to PCM in the app. The `MODIFY_AUDIO_SETTINGS` permission is dropped. A bit-perfect driver of our own may come later.

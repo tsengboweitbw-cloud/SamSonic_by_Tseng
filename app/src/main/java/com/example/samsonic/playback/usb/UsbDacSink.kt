@@ -10,6 +10,7 @@ import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.exoplayer.audio.AudioSink
+import com.example.samsonic.playback.Downmix
 import com.example.samsonic.playback.dsd.DsdMode
 import com.example.samsonic.playback.dsd.DsdStream
 import java.nio.ByteBuffer
@@ -259,7 +260,7 @@ internal class UsbDacSink(
     private fun isPcm(format: Format): Boolean =
         // Raw audio only: a compressed track (FLAC...) also carries a PCM encoding, but isn't PCM yet.
         format.sampleMimeType == MimeTypes.AUDIO_RAW && format.pcmEncoding in UsbPcmPipeline.SUPPORTED &&
-            format.channelCount in 1..2 && format.sampleRate > 0
+            (format.channelCount in 1..2 || Downmix.canDownmix(format.channelCount)) && format.sampleRate > 0
 }
 
 private const val TAG = "UsbDacSink"

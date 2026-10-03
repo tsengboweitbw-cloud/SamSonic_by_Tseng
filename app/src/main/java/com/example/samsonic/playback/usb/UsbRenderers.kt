@@ -15,6 +15,7 @@ import androidx.media3.exoplayer.audio.DefaultAudioSink
 import androidx.media3.exoplayer.audio.MediaCodecAudioRenderer
 import androidx.media3.exoplayer.mediacodec.MediaCodecAdapter
 import androidx.media3.exoplayer.mediacodec.MediaCodecSelector
+import com.example.samsonic.playback.DownmixAudioProcessor
 
 /**
  * The stock renderers, with the audio sink replaced by one that plays to a USB DAC through the
@@ -30,6 +31,7 @@ internal class UsbRenderersFactory(context: Context, private val dacs: UsbDacMan
         default = DefaultAudioSink.Builder(context)
             .setEnableFloatOutput(enableFloatOutput)
             .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
+            .setAudioProcessors(arrayOf(DownmixAudioProcessor()))
             .build(),
         usb = UsbDacSink(
             openDac = { dacs.readyDac()?.let { dacs.open(it) } },

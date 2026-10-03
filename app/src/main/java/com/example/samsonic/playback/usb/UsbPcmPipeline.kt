@@ -1,6 +1,7 @@
 package com.example.samsonic.playback.usb
 
 import androidx.media3.common.C
+import com.example.samsonic.playback.Downmix
 import com.example.samsonic.playback.Resampler
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
@@ -20,7 +21,13 @@ internal class UsbPcmPipeline(
 ) {
     private val inBytes = bytesPerSample(inEncoding)
     private val outSlot = plan.subslotBytes
-    private val resampler = if (inRate == plan.rate) null else Resampler(inRate, plan.rate, inChannels, plan.channels)
+    // Surround is folded to stereo first, so the rest of the pipeline only ever sees one or two channels.
+    private val surround = Downmix.canDownmix(inChannels)
+    private val gains = if (surround) Downmix.gains(inChannels) else FloatArray(0)
+    private val frame = FloatArray(inChannels)
+    private val mixed = FloatArray(2)
+    private val stageChannels = if (surround) 2 else inChannels
+    private val resampler = if (inRate == plan.rate) null else Resampler(inRate, plan.rate, stageChannels, plan.channels)
     private var out: ByteBuffer = ByteBuffer.allocateDirect(0).order(ByteOrder.nativeOrder())
     private var floats = FloatArray(0)
 
@@ -43,26 +50,47 @@ internal class UsbPcmPipeline(
 
     private fun pass(source: ByteBuffer, frames: Int): ByteBuffer {
         prepare(frames)
-        for (frame in 0 until frames) {
+        if (surround) {
+            for (n in 0 until frames) {
+                mixFrame(source)
+                put(scale(mixed[0]))
+                put(scale(mixed[1]))
+            }
+            return finish(frames)
+        }
+        for (n in 0 until frames) {
             var left = 0
             for (channel in 0 until plan.channels) {
                 // Mono is copied to both channels.
                 if (channel < inChannels) left = readInt(source)
                 put(left)
             }
-            // Input channels past the plan's two don't occur: the sink only takes mono and stereo.
         }
         return finish(frames)
     }
 
     private fun resample(source: ByteBuffer, frames: Int, resampler: Resampler): ByteBuffer {
-        val samples = frames * inChannels
+        val samples = frames * stageChannels
         if (floats.size < samples) floats = FloatArray(samples)
-        for (i in 0 until samples) floats[i] = readFloat(source)
+        if (surround) {
+            for (n in 0 until frames) {
+                mixFrame(source)
+                floats[n * 2] = mixed[0]
+                floats[n * 2 + 1] = mixed[1]
+            }
+        } else {
+            for (i in 0 until samples) floats[i] = readFloat(source)
+        }
         val written = resampler.process(floats, frames)
         prepare(written)
         for (i in 0 until written * plan.channels) put(scale(resampler.output[i]))
         return finish(written)
+    }
+
+    /** Reads one surround frame from [source] and folds it to stereo in [mixed]. */
+    private fun mixFrame(source: ByteBuffer) {
+        for (channel in 0 until inChannels) frame[channel] = readFloat(source)
+        Downmix.mix(gains, inChannels, frame, mixed)
     }
 
     private fun prepare(frames: Int) {
