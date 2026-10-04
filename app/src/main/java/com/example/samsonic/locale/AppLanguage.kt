@@ -1,5 +1,6 @@
 package com.example.samsonic.locale
 
+import androidx.core.content.edit
 import android.app.Activity
 import android.app.LocaleManager
 import android.content.Context
@@ -43,7 +44,7 @@ object AppLanguages {
                 language.tag?.let { LocaleList.forLanguageTags(it) } ?: LocaleList.getEmptyLocaleList()
             return
         }
-        prefs(activity).edit().putString(KEY, language.tag).apply()
+        prefs(activity).edit { putString(KEY, language.tag) }
         activity.recreate()
     }
 

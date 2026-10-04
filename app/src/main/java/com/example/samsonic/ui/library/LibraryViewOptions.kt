@@ -42,12 +42,12 @@ internal fun ViewOptionsPanel(
     sectionName: String?,
     layout: LibraryLayout,
     onLayoutChange: (LibraryLayout) -> Unit,
-    modifier: Modifier = Modifier.padding(24.dp),
+    modifier: Modifier = Modifier,
     sort: LibrarySort? = null,
     onSortChange: (LibrarySort) -> Unit = {},
     footer: (@Composable () -> Unit)? = null,
 ) {
-    Column(modifier = Modifier.fillMaxWidth().then(modifier)) {
+    Column(modifier = Modifier.fillMaxWidth().padding(24.dp).then(modifier)) {
         if (sectionName != null) {
             Text(text = stringResource(R.string.library_section_view, sectionName), style = MaterialTheme.typography.titleLarge)
             Spacer(Modifier.height(20.dp))

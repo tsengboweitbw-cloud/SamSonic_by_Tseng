@@ -50,12 +50,12 @@ internal fun <T> LibraryCollection(
     key: (T) -> Any,
     card: @Composable (item: T, artSize: Dp) -> Unit,
     row: @Composable (item: T) -> Unit,
+    modifier: Modifier = Modifier,
     header: (@Composable () -> Unit)? = null,
     // Room under the header for a page's FloatingListActions, with this much space under it.
     actionsSlot: Dp? = null,
     // Shared with a page's FloatingListActions, so its row is pulled along as the grid is.
     overscrollEffect: OverscrollEffect? = rememberPullOverscroll(),
-    modifier: Modifier = Modifier,
 ) {
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val containerWidth = maxWidth.value

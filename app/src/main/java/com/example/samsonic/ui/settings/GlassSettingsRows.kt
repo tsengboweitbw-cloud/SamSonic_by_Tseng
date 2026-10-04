@@ -155,11 +155,11 @@ internal fun SliderRow(
     value: Float,
     valueRange: ClosedFloatingPointRange<Float>,
     onValueChange: (Float) -> Unit,
+    modifier: Modifier = Modifier,
     onValueChangeFinished: (() -> Unit)? = null,
     steps: Int = 0,
     // Shown on a long press of the title line (see RowHint).
     hint: String? = null,
-    modifier: Modifier = Modifier,
 ) {
     val hintState = rememberRowHint()
     val showHint = hintLongPress(hintState, hint)
