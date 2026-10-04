@@ -435,7 +435,7 @@ private fun DuplicatesPrompt(
 }
 
 @Composable
-private fun NewPlaylistForm(saving: Boolean, onCancel: () -> Unit, onCreate: (String) -> Unit) {
+internal fun NewPlaylistForm(saving: Boolean, onCancel: () -> Unit, onCreate: (String) -> Unit) {
     var name by remember { mutableStateOf("") }
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { focus.requestFocus() }

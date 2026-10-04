@@ -1,6 +1,11 @@
 package com.example.samsonic.ui.library
 
 import androidx.compose.material.icons.Icons
+import com.example.samsonic.ui.settings.menuOrigin
+import com.example.samsonic.ui.player.PanelState
+import com.example.samsonic.ui.components.GlassIconButton
+import androidx.compose.ui.Alignment
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.Category
@@ -125,6 +130,7 @@ fun LibraryScreen(
     // Each tab loads on its first visit and then keeps its data while on this
     // page, so switching back shows the list at once, right where it was left.
     // A tab counts as visited as soon as a swipe brings it on screen.
+    val newPlaylistMenu = remember { PanelState(scope) }
     val visited = remember { mutableStateListOf(pagerState.currentPage) }
     LaunchedEffect(pagerState) {
         snapshotFlow { pagerState.layoutInfo.visiblePagesInfo.map { it.index } }
@@ -245,6 +251,27 @@ fun LibraryScreen(
                     )
                 },
             )
+            // A new playlist, from the playlists tab: a glass button like the back button's, over the nav bar's corner.
+            if (repository.canEditPlaylists) {
+                Box(Modifier.fillMaxSize()) {
+                    AnimatedVisibility(
+                        visible = pagerState.targetPage == 2 && !viewOptions.targetState,
+                        enter = fadeIn() + scaleIn(initialScale = 0.8f),
+                        exit = fadeOut() + scaleOut(targetScale = 0.8f),
+                        modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = contentPaddingBottom + 8.dp),
+                    ) {
+                        GlassIconButton(
+                            icon = Icons.Filled.Add,
+                            contentDescription = stringResource(R.string.library_new_playlist),
+                            onClick = newPlaylistMenu::open,
+                            hazeState = hazeState,
+                            modifier = Modifier.menuOrigin(newPlaylistMenu),
+                            iconSize = 28.dp,
+                        )
+                    }
+                }
+                NewPlaylistMenu(newPlaylistMenu, hazeState, onCreated = refreshes[2]::refresh)
+            }
         },
     ) { topPadding ->
         val padding = LibraryPadding(top = topPadding, bottom = contentPaddingBottom)
