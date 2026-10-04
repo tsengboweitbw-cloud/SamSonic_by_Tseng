@@ -68,6 +68,7 @@ internal class RoutingAudioSink(
     }
 
     override fun getCurrentPositionUs(sourceEnded: Boolean): Long = current.getCurrentPositionUs(sourceEnded)
+    override fun getAudioTrackBufferSizeUs(): Long = current.audioTrackBufferSizeUs
 
     override fun play() {
         playing = true

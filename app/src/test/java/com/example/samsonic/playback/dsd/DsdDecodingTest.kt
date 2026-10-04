@@ -228,8 +228,9 @@ class DsdDecodingTest {
         override fun sampleData(input: DataReader, length: Int, allowEndOfInput: Boolean, sampleDataPart: Int): Int =
             throw UnsupportedOperationException()
         override fun sampleData(data: ParsableByteArray, length: Int, sampleDataPart: Int) {
-            val bytes = ByteArray(length)
-            data.readBytes(bytes, 0, length)
+            // Not readBytes: Media3 1.11 inspects the caller for it, which fails outside a device.
+            val bytes = data.data.copyOfRange(data.position, data.position + length)
+            data.skipBytes(length)
             this.data.write(bytes)
         }
         override fun sampleMetadata(timeUs: Long, flags: Int, size: Int, offset: Int, cryptoData: TrackOutput.CryptoData?) {

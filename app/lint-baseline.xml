@@ -46,50 +46,6 @@
     </issue>
 
     <issue
-        id="GradleDependency"
-        message="A newer version of androidx.media3:media3-common than 1.5.1 is available: 1.11.1"
-        errorLine1="media3 = &quot;1.5.1&quot;"
-        errorLine2="         ~~~~~~~">
-        <location
-            file="$HOME/AndroidStudioProjects/SamSonic/gradle/libs.versions.toml"
-            line="16"
-            column="10"/>
-    </issue>
-
-    <issue
-        id="GradleDependency"
-        message="A newer version of androidx.media3:media3-datasource-okhttp than 1.5.1 is available: 1.11.1"
-        errorLine1="media3 = &quot;1.5.1&quot;"
-        errorLine2="         ~~~~~~~">
-        <location
-            file="$HOME/AndroidStudioProjects/SamSonic/gradle/libs.versions.toml"
-            line="16"
-            column="10"/>
-    </issue>
-
-    <issue
-        id="GradleDependency"
-        message="A newer version of androidx.media3:media3-exoplayer than 1.5.1 is available: 1.11.1"
-        errorLine1="media3 = &quot;1.5.1&quot;"
-        errorLine2="         ~~~~~~~">
-        <location
-            file="$HOME/AndroidStudioProjects/SamSonic/gradle/libs.versions.toml"
-            line="16"
-            column="10"/>
-    </issue>
-
-    <issue
-        id="GradleDependency"
-        message="A newer version of androidx.media3:media3-session than 1.5.1 is available: 1.11.1"
-        errorLine1="media3 = &quot;1.5.1&quot;"
-        errorLine2="         ~~~~~~~">
-        <location
-            file="$HOME/AndroidStudioProjects/SamSonic/gradle/libs.versions.toml"
-            line="16"
-            column="10"/>
-    </issue>
-
-    <issue
         id="NewerVersionAvailable"
         message="A newer version of com.squareup.retrofit2:converter-kotlinx-serialization than 2.11.0 is available: 3.0.0"
         errorLine1="retrofit = &quot;2.11.0&quot;"
@@ -356,45 +312,12 @@
     <issue
         id="UnsafeOptInUsageError"
         message="This declaration is opt-in and its usage should be marked with `@androidx.media3.common.util.UnstableApi` or `@OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)`"
-        errorLine1="    C.ENCODING_PCM_8BIT -> &quot;8-bit&quot;"
-        errorLine2="      ~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/example/samsonic/playback/AudioOutputMonitor.kt"
-            line="139"
-            column="7"/>
-    </issue>
-
-    <issue
-        id="UnsafeOptInUsageError"
-        message="This declaration is opt-in and its usage should be marked with `@androidx.media3.common.util.UnstableApi` or `@OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)`"
-        errorLine1="    C.ENCODING_PCM_16BIT, C.ENCODING_PCM_16BIT_BIG_ENDIAN -> &quot;16-bit&quot;"
-        errorLine2="      ~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/example/samsonic/playback/AudioOutputMonitor.kt"
-            line="140"
-            column="7"/>
-    </issue>
-
-    <issue
-        id="UnsafeOptInUsageError"
-        message="This declaration is opt-in and its usage should be marked with `@androidx.media3.common.util.UnstableApi` or `@OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)`"
         errorLine1="    C.ENCODING_PCM_16BIT, C.ENCODING_PCM_16BIT_BIG_ENDIAN -> &quot;16-bit&quot;"
         errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/example/samsonic/playback/AudioOutputMonitor.kt"
             line="140"
             column="29"/>
-    </issue>
-
-    <issue
-        id="UnsafeOptInUsageError"
-        message="This declaration is opt-in and its usage should be marked with `@androidx.media3.common.util.UnstableApi` or `@OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)`"
-        errorLine1="    C.ENCODING_PCM_24BIT, C.ENCODING_PCM_24BIT_BIG_ENDIAN -> &quot;24-bit&quot;"
-        errorLine2="      ~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/example/samsonic/playback/AudioOutputMonitor.kt"
-            line="141"
-            column="7"/>
     </issue>
 
     <issue
@@ -412,33 +335,11 @@
         id="UnsafeOptInUsageError"
         message="This declaration is opt-in and its usage should be marked with `@androidx.media3.common.util.UnstableApi` or `@OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)`"
         errorLine1="    C.ENCODING_PCM_32BIT, C.ENCODING_PCM_32BIT_BIG_ENDIAN -> &quot;32-bit&quot;"
-        errorLine2="      ~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/example/samsonic/playback/AudioOutputMonitor.kt"
-            line="142"
-            column="7"/>
-    </issue>
-
-    <issue
-        id="UnsafeOptInUsageError"
-        message="This declaration is opt-in and its usage should be marked with `@androidx.media3.common.util.UnstableApi` or `@OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)`"
-        errorLine1="    C.ENCODING_PCM_32BIT, C.ENCODING_PCM_32BIT_BIG_ENDIAN -> &quot;32-bit&quot;"
         errorLine2="                            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/example/samsonic/playback/AudioOutputMonitor.kt"
             line="142"
             column="29"/>
-    </issue>
-
-    <issue
-        id="UnsafeOptInUsageError"
-        message="This declaration is opt-in and its usage should be marked with `@androidx.media3.common.util.UnstableApi` or `@OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)`"
-        errorLine1="    C.ENCODING_PCM_FLOAT -> resources.getString(R.string.playback_encoding_float)"
-        errorLine2="      ~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/example/samsonic/playback/AudioOutputMonitor.kt"
-            line="143"
-            column="7"/>
     </issue>
 
     <issue
@@ -527,160 +428,6 @@
             file="src/main/java/com/example/samsonic/playback/SongMediaItem.kt"
             line="20"
             column="10"/>
-    </issue>
-
-    <issue
-        id="UnsafeOptInUsageError"
-        message="This declaration is opt-in and its usage should be marked with `@androidx.media3.common.util.UnstableApi` or `@OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)`"
-        errorLine1="        C.ENCODING_PCM_16BIT -> source.getShort().toInt() shl 16"
-        errorLine2="          ~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/example/samsonic/playback/usb/UsbPcmPipeline.kt"
-            line="110"
-            column="11"/>
-    </issue>
-
-    <issue
-        id="UnsafeOptInUsageError"
-        message="This declaration is opt-in and its usage should be marked with `@androidx.media3.common.util.UnstableApi` or `@OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)`"
-        errorLine1="        C.ENCODING_PCM_24BIT -> {"
-        errorLine2="          ~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/example/samsonic/playback/usb/UsbPcmPipeline.kt"
-            line="111"
-            column="11"/>
-    </issue>
-
-    <issue
-        id="UnsafeOptInUsageError"
-        message="This declaration is opt-in and its usage should be marked with `@androidx.media3.common.util.UnstableApi` or `@OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)`"
-        errorLine1="        C.ENCODING_PCM_32BIT -> source.getInt()"
-        errorLine2="          ~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/example/samsonic/playback/usb/UsbPcmPipeline.kt"
-            line="115"
-            column="11"/>
-    </issue>
-
-    <issue
-        id="UnsafeOptInUsageError"
-        message="This declaration is opt-in and its usage should be marked with `@androidx.media3.common.util.UnstableApi` or `@OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)`"
-        errorLine1="        C.ENCODING_PCM_16BIT -> source.getShort() / 32_768f"
-        errorLine2="          ~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/example/samsonic/playback/usb/UsbPcmPipeline.kt"
-            line="120"
-            column="11"/>
-    </issue>
-
-    <issue
-        id="UnsafeOptInUsageError"
-        message="This declaration is opt-in and its usage should be marked with `@androidx.media3.common.util.UnstableApi` or `@OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)`"
-        errorLine1="        C.ENCODING_PCM_24BIT -> readInt(source) / 2_147_483_648f"
-        errorLine2="          ~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/example/samsonic/playback/usb/UsbPcmPipeline.kt"
-            line="121"
-            column="11"/>
-    </issue>
-
-    <issue
-        id="UnsafeOptInUsageError"
-        message="This declaration is opt-in and its usage should be marked with `@androidx.media3.common.util.UnstableApi` or `@OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)`"
-        errorLine1="        C.ENCODING_PCM_32BIT -> (source.getInt() / 2_147_483_648.0).toFloat()"
-        errorLine2="          ~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/example/samsonic/playback/usb/UsbPcmPipeline.kt"
-            line="122"
-            column="11"/>
-    </issue>
-
-    <issue
-        id="UnsafeOptInUsageError"
-        message="This declaration is opt-in and its usage should be marked with `@androidx.media3.common.util.UnstableApi` or `@OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)`"
-        errorLine1="        val SUPPORTED = setOf(C.ENCODING_PCM_16BIT, C.ENCODING_PCM_24BIT, C.ENCODING_PCM_32BIT, C.ENCODING_PCM_FLOAT)"
-        errorLine2="                                ~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/example/samsonic/playback/usb/UsbPcmPipeline.kt"
-            line="137"
-            column="33"/>
-    </issue>
-
-    <issue
-        id="UnsafeOptInUsageError"
-        message="This declaration is opt-in and its usage should be marked with `@androidx.media3.common.util.UnstableApi` or `@OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)`"
-        errorLine1="        val SUPPORTED = setOf(C.ENCODING_PCM_16BIT, C.ENCODING_PCM_24BIT, C.ENCODING_PCM_32BIT, C.ENCODING_PCM_FLOAT)"
-        errorLine2="                                                      ~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/example/samsonic/playback/usb/UsbPcmPipeline.kt"
-            line="137"
-            column="55"/>
-    </issue>
-
-    <issue
-        id="UnsafeOptInUsageError"
-        message="This declaration is opt-in and its usage should be marked with `@androidx.media3.common.util.UnstableApi` or `@OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)`"
-        errorLine1="        val SUPPORTED = setOf(C.ENCODING_PCM_16BIT, C.ENCODING_PCM_24BIT, C.ENCODING_PCM_32BIT, C.ENCODING_PCM_FLOAT)"
-        errorLine2="                                                                            ~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/example/samsonic/playback/usb/UsbPcmPipeline.kt"
-            line="137"
-            column="77"/>
-    </issue>
-
-    <issue
-        id="UnsafeOptInUsageError"
-        message="This declaration is opt-in and its usage should be marked with `@androidx.media3.common.util.UnstableApi` or `@OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)`"
-        errorLine1="        val SUPPORTED = setOf(C.ENCODING_PCM_16BIT, C.ENCODING_PCM_24BIT, C.ENCODING_PCM_32BIT, C.ENCODING_PCM_FLOAT)"
-        errorLine2="                                                                                                  ~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/example/samsonic/playback/usb/UsbPcmPipeline.kt"
-            line="137"
-            column="99"/>
-    </issue>
-
-    <issue
-        id="UnsafeOptInUsageError"
-        message="This declaration is opt-in and its usage should be marked with `@androidx.media3.common.util.UnstableApi` or `@OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)`"
-        errorLine1="            C.ENCODING_PCM_16BIT -> 2"
-        errorLine2="              ~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/example/samsonic/playback/usb/UsbPcmPipeline.kt"
-            line="140"
-            column="15"/>
-    </issue>
-
-    <issue
-        id="UnsafeOptInUsageError"
-        message="This declaration is opt-in and its usage should be marked with `@androidx.media3.common.util.UnstableApi` or `@OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)`"
-        errorLine1="            C.ENCODING_PCM_24BIT -> 3"
-        errorLine2="              ~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/example/samsonic/playback/usb/UsbPcmPipeline.kt"
-            line="141"
-            column="15"/>
-    </issue>
-
-    <issue
-        id="UnsafeOptInUsageError"
-        message="This declaration is opt-in and its usage should be marked with `@androidx.media3.common.util.UnstableApi` or `@OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)`"
-        errorLine1="            C.ENCODING_PCM_16BIT -> 16"
-        errorLine2="              ~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/example/samsonic/playback/usb/UsbPcmPipeline.kt"
-            line="147"
-            column="15"/>
-    </issue>
-
-    <issue
-        id="UnsafeOptInUsageError"
-        message="This declaration is opt-in and its usage should be marked with `@androidx.media3.common.util.UnstableApi` or `@OptIn(markerClass = androidx.media3.common.util.UnstableApi.class)`"
-        errorLine1="            C.ENCODING_PCM_32BIT -> 32"
-        errorLine2="              ~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/example/samsonic/playback/usb/UsbPcmPipeline.kt"
-            line="148"
-            column="15"/>
     </issue>
 
     <issue
