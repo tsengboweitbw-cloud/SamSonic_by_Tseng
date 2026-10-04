@@ -139,7 +139,7 @@ fun <T> rememberScreenLoad(
  * again, and [isRefreshing] holds until they're done.
  */
 @Stable
-class ScreenRefresh {
+class ScreenRefresh(private val onRefresh: () -> Unit = {}) {
     internal var requests by mutableIntStateOf(0)
         private set
 
@@ -149,6 +149,7 @@ class ScreenRefresh {
     fun refresh() {
         if (isRefreshing) return
         isRefreshing = true
+        onRefresh()
         requests++
     }
 }

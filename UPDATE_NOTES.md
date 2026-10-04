@@ -2,6 +2,7 @@
 
 ## 2.1.1 (in progress)
 
+- The Library's big listings (artists, album artists, albums, playlists and genres of a server) are now kept on the phone: opening the Library shows them at once, even right after the app starts, and they can still be browsed when the server can't be reached. A listing is asked for again once it is ten minutes old, or at once on a pull-to-refresh or after changing a playlist, and Home's shelves always stay fresh. What's saved for a server goes when the server is removed, and the system may clear it at any time.
 - A song now counts as played (the scrobble sent to the server) once 40% of it has been listened to, up from 10%. "Now playing" is still sent as soon as the song starts.
 - A song that fails to play no longer leaves the player stuck: a network error gets one retry, and after that (or for a corrupt or unsupported file) the song is skipped and a message says so. If every song in the queue fails, or it was the last one, playback stops with a message.
 - The HTTP log (which printed stream and cover URLs, with their login token) is now debug builds only, with the token, salt and password blanked. The saved servers' encrypted file is excluded from Android's backups and device transfers, as its Keystore key doesn't come across and a restored copy couldn't be read.

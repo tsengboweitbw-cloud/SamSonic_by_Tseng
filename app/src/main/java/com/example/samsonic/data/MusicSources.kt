@@ -1,7 +1,11 @@
 package com.example.samsonic.data
 
 import com.example.samsonic.data.SessionManager.Companion.DEVICE_SOURCE_ID
+import com.example.samsonic.data.cache.CachedLibrary
+import com.example.samsonic.data.cache.LibraryCacheStore
 import com.example.samsonic.data.device.DeviceLibrary
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -28,6 +32,8 @@ class MusicSources(
     private val sessionManager: SessionManager,
     private val subsonic: SubsonicRepository,
     private val device: DeviceLibrary,
+    cacheStore: LibraryCacheStore,
+    private val scope: CoroutineScope,
 ) {
     val servers: StateFlow<List<SavedServer>> = sessionManager.servers
 
@@ -35,13 +41,23 @@ class MusicSources(
     /** Null until the user signs in to a server or picks the music on this phone. */
     val active: StateFlow<ActiveSource?> = _active.asStateFlow()
 
+    /** The server's library with its big listings kept on disk; see [CachedLibrary]. */
+    private val cachedSubsonic = CachedLibrary(
+        inner = subsonic,
+        store = cacheStore,
+        serverKey = { (_active.value as? ActiveSource.Server)?.server?.id },
+    )
+
+    /** A pull-to-refresh: the saved listings count as old, so the next load asks the server. */
+    fun refreshLibrary() = cachedSubsonic.invalidate()
+
     init {
         subsonic.configure((_active.value as? ActiveSource.Server)?.server?.credentials)
     }
 
     /** The library of the [active] source. */
     val library: MusicLibrary
-        get() = if (_active.value is ActiveSource.Device) device else subsonic
+        get() = if (_active.value is ActiveSource.Device) device else cachedSubsonic
 
     private fun resolve(id: String?): ActiveSource? = when (id) {
         null -> null
@@ -64,6 +80,7 @@ class MusicSources(
     /** Forgets a saved server; if it was in use, no source is left chosen (back to sign in). */
     fun removeServer(id: String) {
         sessionManager.removeServer(id)
+        scope.launch { cachedSubsonic.forget(id) }
         if ((_active.value as? ActiveSource.Server)?.server?.id == id) activate(null)
     }
 

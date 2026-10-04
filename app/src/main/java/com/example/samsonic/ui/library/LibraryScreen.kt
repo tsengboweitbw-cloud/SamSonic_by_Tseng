@@ -132,7 +132,8 @@ fun LibraryScreen(
     }
     val repository = LocalAppContainer.current.repository
     // A pull-to-refresh per tab, reloading just that tab while its list stays up.
-    val refreshes = remember { List(tabs.size) { ScreenRefresh() } }
+    val sources = LocalAppContainer.current.sources
+    val refreshes = remember { List(tabs.size) { ScreenRefresh(onRefresh = sources::refreshLibrary) } }
     // Each tab loads in the order its sort starts from, then is sorted here, so a sort
     // that only needs what's already loaded re-sorts it at once, with no reload.
     val loadedArtists = if (0 in visited) {
