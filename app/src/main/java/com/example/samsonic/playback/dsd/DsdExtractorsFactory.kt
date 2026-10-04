@@ -1,6 +1,8 @@
 package com.example.samsonic.playback.dsd
 
 import android.net.Uri
+import androidx.annotation.OptIn
+import androidx.media3.common.util.ExperimentalApi
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.extractor.DefaultExtractorsFactory
 import androidx.media3.extractor.Extractor
@@ -22,6 +24,7 @@ class DsdExtractorsFactory(
     override fun createExtractors(uri: Uri, responseHeaders: Map<String, List<String>>): Array<Extractor> =
         arrayOf<Extractor>(DsdExtractor(passthrough)) + base.createExtractors(uri, responseHeaders)
 
+    @OptIn(ExperimentalApi::class)
     override fun experimentalSetTextTrackTranscodingEnabled(textTrackTranscodingEnabled: Boolean): ExtractorsFactory {
         base.experimentalSetTextTrackTranscodingEnabled(textTrackTranscodingEnabled)
         return this
