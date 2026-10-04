@@ -36,10 +36,12 @@ import dev.chrisbanes.haze.HazeState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.DownloadForOffline
 import androidx.compose.ui.res.pluralStringResource
 import com.example.samsonic.data.offline.OfflineDownloader
 import com.example.samsonic.data.offline.OfflineStore
+import com.example.samsonic.data.offline.OfflineOnlySetting
 
 /** What the songs kept for offline take, measured off the main thread, for the Offline music row. */
 @Stable
@@ -116,4 +118,17 @@ internal fun RemoveOfflineMusicMenu(panel: PanelState, haze: HazeState, store: O
             }
         }
     }
+}
+
+/** The switch for showing only the songs kept for offline, in every page and list. */
+@Composable
+internal fun OfflineOnlyRow(setting: OfflineOnlySetting) {
+    val on by setting.enabled.collectAsStateWithLifecycle()
+    SwitchRow(
+        icon = Icons.Filled.CloudOff,
+        title = stringResource(R.string.settings_offline_only),
+        checked = on,
+        onCheckedChange = setting::set,
+        hint = stringResource(R.string.settings_offline_only_hint),
+    )
 }

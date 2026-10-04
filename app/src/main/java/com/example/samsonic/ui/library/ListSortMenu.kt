@@ -22,7 +22,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -158,21 +157,6 @@ private fun SortKey.icon(list: SortedList): ImageVector = when (this) {
     SortKey.ALBUM -> Icons.Filled.Album
     SortKey.YEAR -> Icons.Filled.CalendarMonth
     SortKey.DURATION -> Icons.Filled.Schedule
-}
-
-/**
- * [loaded] in [sort]'s order, and, with the Offline only filter on, just the songs kept for
- * offline. What a song list plays and shows.
- */
-@Composable
-internal fun rememberShownSongs(loaded: List<Song>, sort: ListSort): List<Song> {
-    val offline = LocalAppContainer.current.offlineMusic
-    val onlyOffline by offline.onlyOffline.collectAsStateWithLifecycle()
-    val kept by offline.keptIds.collectAsStateWithLifecycle()
-    val filter = onlyOffline && offline.available
-    return remember(loaded, sort, filter, kept) {
-        loaded.sortedFor(sort).let { sorted -> if (filter) sorted.filter { it.id in kept } else sorted }
-    }
 }
 
 /** These songs in [sort]'s order. */

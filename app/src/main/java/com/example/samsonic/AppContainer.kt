@@ -15,6 +15,7 @@ import com.example.samsonic.data.SubsonicRepository
 import com.example.samsonic.data.cache.LibraryCacheStore
 import com.example.samsonic.data.offline.OfflineDownloader
 import com.example.samsonic.data.offline.OfflineMusic
+import com.example.samsonic.data.offline.OfflineOnlySetting
 import com.example.samsonic.data.offline.OfflineStore
 import com.example.samsonic.data.scrobble.ScrobbleQueue
 import androidx.media3.datasource.okhttp.OkHttpDataSource
@@ -73,6 +74,9 @@ class AppContainer(context: Context) {
     /** The songs kept on the phone for offline; the music cache leaves them alone. */
     val offlineStore = OfflineStore(File(appContext.filesDir, "offline.json"))
 
+    /** Whether only the songs kept for offline are shown. */
+    val offlineOnly = OfflineOnlySetting(appContext)
+
     /** Streamed songs kept on the phone, so a poor connection doesn't stop the music. */
     val musicCache = MusicCache(appContext, imageCacheSettings, pinned = offlineStore::cacheKeys)
 
@@ -90,7 +94,7 @@ class AppContainer(context: Context) {
     val sources: MusicSources = MusicSources(
         sessionManager, subsonic, DeviceLibrary(appContext),
         LibraryCacheStore(File(appContext.cacheDir, "library")), scrobbleQueue,
-        offlineStore, applicationScope,
+        offlineStore, offlineOnly.enabled, applicationScope,
     )
 
     /** Caches every cover of the signed-in server; the music on this phone has its art on hand. */

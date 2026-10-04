@@ -139,6 +139,7 @@ class MainActivity : ComponentActivity() {
             val playerGlassOpacity by container.themeManager.playerGlassOpacity.collectAsStateWithLifecycle()
             val playerGlassBlur by container.themeManager.playerGlassBlur.collectAsStateWithLifecycle()
             val activeSource by container.sources.active.collectAsStateWithLifecycle()
+            val offlineOnly by container.offlineOnly.enabled.collectAsStateWithLifecycle()
             val artCornerRadius by container.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
             val likesEnabled by container.themeManager.likesEnabled.collectAsStateWithLifecycle()
             val audioFormat by container.themeManager.audioFormatDisplay.collectAsStateWithLifecycle()
@@ -191,7 +192,7 @@ class MainActivity : ComponentActivity() {
                         // page, cache or back stack entry carries over the old library,
                         // but on the tab you switched from (Settings), not Home.
                         Box(Modifier.fillMaxSize().graphicsLayer { alpha = languageFade.alpha }) {
-                            key(activeSource?.key) {
+                            key(activeSource?.key, offlineOnly) {
                                 SamSonicNavHost(lastTab)
                             }
                         }

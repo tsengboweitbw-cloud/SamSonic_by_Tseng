@@ -4,6 +4,7 @@ import com.example.samsonic.data.SessionManager.Companion.DEVICE_SOURCE_ID
 import com.example.samsonic.data.cache.CachedLibrary
 import com.example.samsonic.data.cache.LibraryCacheStore
 import com.example.samsonic.data.device.DeviceLibrary
+import com.example.samsonic.data.offline.OfflineOnlyLibrary
 import com.example.samsonic.data.offline.OfflineStore
 import com.example.samsonic.data.scrobble.ScrobbleQueue
 import kotlinx.coroutines.CoroutineScope
@@ -39,6 +40,7 @@ class MusicSources(
     cacheStore: LibraryCacheStore,
     private val scrobbleQueue: ScrobbleQueue,
     private val offlineStore: OfflineStore,
+    private val offlineOnly: StateFlow<Boolean>,
     private val scope: CoroutineScope,
 ) {
     val servers: StateFlow<List<SavedServer>> = sessionManager.servers
@@ -51,6 +53,13 @@ class MusicSources(
     private val cachedSubsonic = CachedLibrary(
         inner = subsonic,
         store = cacheStore,
+        serverKey = { (_active.value as? ActiveSource.Server)?.server?.id },
+    )
+
+    /** The server's library cut down to the songs kept for offline, for the Offline only setting. */
+    private val offlineOnlySubsonic = OfflineOnlyLibrary(
+        inner = cachedSubsonic,
+        store = offlineStore,
         serverKey = { (_active.value as? ActiveSource.Server)?.server?.id },
     )
 
@@ -69,7 +78,11 @@ class MusicSources(
 
     /** The library of the [active] source. */
     val library: MusicLibrary
-        get() = if (_active.value is ActiveSource.Device) device else cachedSubsonic
+        get() = when {
+            _active.value is ActiveSource.Device -> device
+            offlineOnly.value -> offlineOnlySubsonic
+            else -> cachedSubsonic
+        }
 
     private fun resolve(id: String?): ActiveSource? = when (id) {
         null -> null

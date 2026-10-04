@@ -4,10 +4,8 @@ import com.example.samsonic.data.MusicLibrary
 import com.example.samsonic.model.Song
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 
@@ -33,15 +31,6 @@ class OfflineMusic(
     val keptIds: StateFlow<Set<String>> = combine(store.entries, serverKeys) { entries, key ->
         if (key == null) emptySet() else entries.filter { it.serverKey == key }.mapTo(HashSet()) { it.song.id }
     }.stateIn(scope, SharingStarted.Eagerly, emptySet())
-
-    private val _onlyOffline = MutableStateFlow(false)
-
-    /** Whether song lists show only the songs kept (the filter in their sort menu); it lasts until the app closes. */
-    val onlyOffline: StateFlow<Boolean> = _onlyOffline.asStateFlow()
-
-    fun setOnlyOffline(only: Boolean) {
-        _onlyOffline.value = only
-    }
 
     /** Keeps [songs] on the phone and starts saving them; those already kept are left as they are. */
     suspend fun keep(songs: List<Song>) {
