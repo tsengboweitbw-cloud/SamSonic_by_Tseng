@@ -2,6 +2,7 @@
 
 ## 2.1.1 (in progress)
 
+- A song now counts as played (the scrobble sent to the server) once 40% of it has been listened to, up from 10%. "Now playing" is still sent as soon as the song starts.
 - A song that fails to play no longer leaves the player stuck: a network error gets one retry, and after that (or for a corrupt or unsupported file) the song is skipped and a message says so. If every song in the queue fails, or it was the last one, playback stops with a message.
 - The HTTP log (which printed stream and cover URLs, with their login token) is now debug builds only, with the token, salt and password blanked. The saved servers' encrypted file is excluded from Android's backups and device transfers, as its Keystore key doesn't come across and a restored copy couldn't be read.
 - The release build now has R8 keep rules (`app/proguard-rules.pro`), and a GitHub Actions workflow runs the unit tests, lint and a release build.

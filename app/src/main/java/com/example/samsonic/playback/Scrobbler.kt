@@ -12,13 +12,13 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 
 /** Share of a song that has to be listened to before it counts as played. */
-private const val SubmitFraction = 0.1
+private const val SubmitFraction = 0.4
 private const val TickMillis = 1_000L
 
 /**
  * Reports what [player] plays to the server: "now playing" (submission=false) as soon as
- * a song starts playing, then a play (submission=true) once 10% of it has been listened
- * to. Time is counted while it actually plays, so seeking past 10% doesn't count as a
+ * a song starts playing, then a play (submission=true) once 40% of it has been listened
+ * to. Time is counted while it actually plays, so seeking past 40% doesn't count as a
  * listen. A song played again (repeat, or picked again) is reported again.
  *
  * Runs on the player's (main) thread. Scrobbles are best-effort: a failed one is dropped.

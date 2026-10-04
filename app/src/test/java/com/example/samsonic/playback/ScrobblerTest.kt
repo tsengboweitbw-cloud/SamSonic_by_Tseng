@@ -72,17 +72,17 @@ class ScrobblerTest {
     }
 
     @Test
-    fun aPlayIsSubmittedOnceTenPercentHasBeenListenedTo() = runTest {
+    fun aPlayIsSubmittedOnceFortyPercentHasBeenListenedTo() = runTest {
         val library = Recorder()
         val player = FakePlayer("a", durationMs = 100_000)
         scrobbler(player, library)
         player.playing(true)
-        advanceTimeBy(9_000)
+        advanceTimeBy(39_000)
         assertEquals(listOf("a" to false), library.sent)
         advanceTimeBy(3_000)
         assertEquals(listOf("a" to false, "a" to true), library.sent)
         // Not again as it plays on.
-        advanceTimeBy(30_000)
+        advanceTimeBy(60_000)
         assertEquals(2, library.sent.size)
     }
 
@@ -97,7 +97,7 @@ class ScrobblerTest {
         advanceTimeBy(60_000)
         assertEquals(listOf("a" to false), library.sent)
         player.playing(true)
-        advanceTimeBy(7_000)
+        advanceTimeBy(38_000)
         assertEquals(listOf("a" to false, "a" to true), library.sent)
     }
 
@@ -107,12 +107,12 @@ class ScrobblerTest {
         val player = FakePlayer("a", durationMs = 100_000, speed = 2f)
         scrobbler(player, library)
         player.playing(true)
-        advanceTimeBy(6_000)
+        advanceTimeBy(22_000)
         assertEquals(listOf("a" to false, "a" to true), library.sent)
     }
 
     @Test
-    fun skippingBeforeTenPercentSubmitsNothing() = runTest {
+    fun skippingBeforeFortyPercentSubmitsNothing() = runTest {
         val library = Recorder()
         val player = FakePlayer("a")
         scrobbler(player, library)
@@ -129,9 +129,9 @@ class ScrobblerTest {
         val player = FakePlayer("a", durationMs = 10_000)
         scrobbler(player, library)
         player.playing(true)
-        advanceTimeBy(2_000)
+        advanceTimeBy(5_000)
         player.play("a")
-        advanceTimeBy(2_000)
+        advanceTimeBy(5_000)
         assertEquals(listOf("a" to false, "a" to true, "a" to false, "a" to true), library.sent)
     }
 
@@ -154,7 +154,7 @@ class ScrobblerTest {
         advanceTimeBy(2_000)
         library.fail = false
         player.play("b")
-        advanceTimeBy(2_000)
+        advanceTimeBy(5_000)
         assertEquals(listOf("b" to false, "b" to true), library.sent)
     }
 
