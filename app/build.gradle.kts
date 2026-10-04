@@ -33,6 +33,10 @@ android {
     buildTypes {
         release {
             optimization {
+                keepRules {
+                    files.add(getDefaultProguardFile("proguard-android-optimize.txt"))
+                    files.add(file("proguard-rules.pro"))
+                }
                 enable = true
             }
         }
@@ -61,6 +65,10 @@ android {
     // language setting, from the values-* folders and res/resources.properties.
     androidResources {
         generateLocaleConfig = true
+    }
+    testOptions {
+        // Media3's exception classes read the clock, which android.jar stubs out.
+        unitTests.isReturnDefaultValues = true
     }
     buildFeatures {
         compose = true
