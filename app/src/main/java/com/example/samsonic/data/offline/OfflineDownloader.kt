@@ -28,6 +28,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -125,6 +127,8 @@ class OfflineDownloader(
 
     init {
         runCatching { connectivity.registerDefaultNetworkCallback(networkCallback) }
+        // Turning Wi-Fi only off lets what was held back for it start at once, not at the next network change.
+        scope.launch { wifiOnly.drop(1).filter { !it }.collect { start() } }
     }
 
     /** Saves what's kept and not yet saved, if a run isn't already under way. Call it on the main thread. */
