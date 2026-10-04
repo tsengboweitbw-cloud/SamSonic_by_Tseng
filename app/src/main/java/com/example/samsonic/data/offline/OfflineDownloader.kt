@@ -5,6 +5,7 @@ import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
+import android.widget.Toast
 import androidx.annotation.OptIn
 import androidx.core.content.ContextCompat
 import androidx.media3.common.C
@@ -14,6 +15,7 @@ import androidx.media3.datasource.DataSpec
 import androidx.media3.datasource.cache.Cache
 import androidx.media3.datasource.cache.CacheWriter
 import androidx.media3.datasource.cache.ContentMetadata
+import com.example.samsonic.R
 import com.example.samsonic.data.MusicLibrary
 import com.example.samsonic.playback.cacheDataSourceFactory
 import kotlinx.coroutines.CancellationException
@@ -24,6 +26,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 /** How far saving the songs kept for offline has got: [done] of [total] songs, [current] being saved. */
 data class OfflineProgress(val total: Int, val done: Int, val current: String?)
@@ -53,6 +56,10 @@ class OfflineDownloader(
     private val upstreamFactory = upstream
     private val connectivity = context.getSystemService(ConnectivityManager::class.java)
     private var job: Job? = null
+
+    // Songs the server refused this launch, left out of the runs after, and whether the lack of room has been said.
+    private val refused = HashSet<String>()
+    private var toldOutOfSpace = false
 
     @Volatile
     private var writer: CacheWriter? = null
@@ -116,9 +123,22 @@ class OfflineDownloader(
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                // Cancelled, or the connection dropped: carries on from here at the next start.
-                return
+                when (saveFailureOf(e)) {
+                    // One the server won't give out must not hold up the rest; it's tried again at the next launch.
+                    SaveFailure.SkipSong -> refused += entry.cacheKey
+                    // Cancelled, or the connection dropped: carries on from here at the next start.
+                    SaveFailure.Stop -> return
+                    SaveFailure.OutOfSpace -> {
+                        if (!toldOutOfSpace) {
+                            toldOutOfSpace = true
+                            withContext(Dispatchers.Main) { Toast.makeText(context, R.string.offline_out_of_space, Toast.LENGTH_LONG).show() }
+                        }
+                        return
+                    }
+                }
+                continue
             }
+            toldOutOfSpace = false
             done++
         }
     }
@@ -126,7 +146,7 @@ class OfflineDownloader(
     /** The songs kept for the server in use and not saved whole yet. */
     private fun pending(): List<OfflineEntry> {
         val server = serverKey() ?: return emptyList()
-        return store.entries.value.filter { it.serverKey == server && !isComplete(it.cacheKey) }
+        return store.entries.value.filter { it.serverKey == server && it.cacheKey !in refused && !isComplete(it.cacheKey) }
     }
 
     /** Whether the cache holds every byte of the song under [key]. */

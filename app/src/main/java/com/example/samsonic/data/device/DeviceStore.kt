@@ -57,6 +57,15 @@ internal class DeviceStore(context: Context) {
         return true
     }
 
+    /** Changes playlist [id] by [change], now; false if there's no such playlist. */
+    @Synchronized
+    fun editPlaylist(id: String, nowMs: Long = System.currentTimeMillis(), change: (DevicePlaylist) -> DevicePlaylist): Boolean {
+        val all = playlists()
+        if (all.none { it.id == id }) return false
+        write(KEY_PLAYLISTS, all.map { if (it.id == id) change(it).copy(changedMs = nowMs) else it })
+        return true
+    }
+
     /** Deletes playlist [id]. */
     @Synchronized
     fun deletePlaylist(id: String) {

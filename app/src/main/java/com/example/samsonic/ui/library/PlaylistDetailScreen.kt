@@ -20,6 +20,50 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.layout.offset
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.ui.unit.IntOffset
+import com.example.samsonic.ui.common.LocalChromeGuard
+import com.example.samsonic.ui.components.GlassIconButton
+import kotlin.math.roundToInt
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.animation.core.snap
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.SizeTransform
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.togetherWith
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.draw.alpha
+import com.example.samsonic.ui.player.PanelState
+import com.example.samsonic.ui.settings.menuOrigin
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
+import kotlinx.coroutines.launch
 import com.example.samsonic.data.SortedList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -89,6 +133,8 @@ fun PlaylistDetailScreen(
     val preview = LocalArtTransitions.current.preview<Playlist>(ArtKeys.playlist(playlistId))
 
     val backHaze = rememberHazeState()
+    // What the back button does while a playlist is being edited; null when it is not.
+    var editBack by remember { mutableStateOf<(() -> Unit)?>(null) }
     Box(modifier = modifier.fillMaxSize().statusBarsPadding()) {
         if (state is UiState.Loading && preview != null) {
             // Just where the loaded list puts its header, so the two swap unseen.
@@ -122,44 +168,213 @@ fun PlaylistDetailScreen(
                     refresh.refresh()
                 }
             }
+            // Editing renames the playlist and moves its songs about, in the order the server lists them
+            // (not the sort); a reload, such as after saving, ends it.
+            val editable = repository.canEditPlaylists && !offlineOnly && playlistId != FAVOURITES_PLAYLIST_ID
+            var isEditing by remember(loaded) { mutableStateOf(false) }
+            var draftName by remember(loaded) { mutableStateOf(playlist.name) }
+            val draft = remember(loaded) { mutableStateListOf<DraftSong>() }
+            var saving by remember(loaded) { mutableStateOf(false) }
+            val scope = rememberCoroutineScope()
+            val context = LocalContext.current
+            val changedElsewhere = stringResource(R.string.library_playlist_changed_elsewhere)
+            val saveFailure = stringResource(R.string.library_save_playlist_error)
+            val newName = draftName.trim()
+            val order = draft.map { it.song.id }
+            val canSave = newName.isNotEmpty() && (newName != playlist.name || order != loaded.map { it.id })
+            fun save() {
+                saving = true
+                scope.launch {
+                    runCatching {
+                        // As it is now: if it was edited elsewhere since this page loaded, its order isn't ours to overwrite.
+                        val current = repository.getPlaylist(playlistId).second.map { it.id }
+                        if (current != loaded.map { it.id }) {
+                            refresh.refresh()
+                            throw IllegalStateException(changedElsewhere)
+                        }
+                        if (order != current) repository.reorderPlaylist(playlistId, order)
+                        if (newName != playlist.name) repository.renamePlaylist(playlistId, newName)
+                        refresh.refresh()
+                    }.onFailure { Toast.makeText(context, it.message ?: saveFailure, Toast.LENGTH_LONG).show() }
+                    saving = false
+                }
+            }
+            // Going back while editing leaves editing, not the page: at once if nothing was changed, else after
+            // asking whether to save. The back button above the list does the same, so it is told how.
+            val leavePanel = remember { PanelState(scope) }
+            val hasChanges = newName != playlist.name || order != loaded.map { it.id }
+            fun leaveEditing() {
+                if (saving) return
+                if (hasChanges) leavePanel.open() else isEditing = false
+            }
+            val currentLeave by rememberUpdatedState(::leaveEditing)
+            BackHandler(enabled = isEditing) { currentLeave() }
+            DisposableEffect(isEditing) {
+                if (isEditing) editBack = { currentLeave() }
+                onDispose { editBack = null }
+            }
             val sort = rememberListSort(SortedList.PLAYLIST_SONGS)
             // Played in the order shown.
             val songs = remember(loaded, sort) { loaded.sortedFor(sort) }
             val listState = rememberLazyListState()
             val overscroll = rememberPullOverscroll()
+            val density = LocalDensity.current
+            val drag = remember(loaded, density) {
+                // The finger scrolls the list from 64dp inside its visible edge, at up to 14dp a frame.
+                PlaylistDragState(listState, draft, edgePx = with(density) { 64.dp.toPx() }, maxStepPx = with(density) { 14.dp.toPx() })
+            }
+            LaunchedEffect(drag, isEditing) { if (isEditing) drag.scrollNearEdges() }
+            // Entering editing moves nothing above the songs: the header and the room for Play and Shuffle keep
+            // their height (the buttons just fade), and the rows dip out and the other kind dips in, with no
+            // placement animation until they have settled.
+            val actionsFade by animateFloatAsState(if (isEditing) 0f else 1f, tween(200), label = "playlistActions")
+            val rowsAlpha = remember { Animatable(1f) }
+            var rowsEditing by remember { mutableStateOf(false) }
+            var rowsSettled by remember { mutableStateOf(true) }
+            LaunchedEffect(isEditing) {
+                if (isEditing != rowsEditing) {
+                    rowsSettled = false
+                    rowsAlpha.animateTo(0f, tween(110))
+                    rowsEditing = isEditing
+                }
+                rowsAlpha.animateTo(1f, tween(180))
+                rowsSettled = true
+            }
             // A new sort starts over from the first song, if the list was past it.
             OnSortChange(sort) { if (listState.firstVisibleItemIndex > 2) listState.scrollToItem(2) }
             CompositionLocalProvider(LocalSongRemoval provides removal) {
             Box(Modifier.fillMaxSize()) {
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize().scrollTopFade(listState).backButtonHazeSource(backHaze),
+                    modifier = Modifier.fillMaxSize().scrollTopFade(listState).backButtonHazeSource(backHaze)
+                        .onGloballyPositioned { drag.listBounds = it.boundsInRoot() },
                     state = listState,
                     overscrollEffect = overscroll,
                     contentPadding = PaddingValues(top = BackButtonClearance, bottom = contentPaddingBottom),
                 ) {
-                    item { PlaylistHeader(playlist, songs.size, cornerRadius, actions = null) }
-                    // Play and shuffle float over the list ([FloatingListActions]); this keeps their place.
-                    floatingActionsSlot(bottomSpacing = 8.dp)
-                    // By place as well as song: a playlist can hold the same song more than once.
-                    itemsIndexed(songs, key = { i, s -> "${s.id}#$i" }) { _, song ->
-                        SongRow(
-                            song = song,
-                            isCurrent = player.currentSong?.id == song.id,
-                            liked = player.isLiked(song),
-                            onToggleLike = { player.toggleLike(song) },
-                            onClick = { player.play(song, songs) },
+                    item(key = "header") {
+                        PlaylistHeader(
+                            playlist, songs.size, cornerRadius, actions = null,
+                            editing = if (isEditing) ({
+                                PlaylistNameField(name = draftName, onNameChange = { draftName = it }, enabled = !saving)
+                            }) else null,
                         )
                     }
-                    floatingActionsEnd()
+                    // Play and shuffle float over the list ([FloatingListActions]); this keeps their place.
+                    // Editing has no use for them, so the songs start right under the header.
+                    floatingActionsSlot(bottomSpacing = 8.dp)
+                    if (rowsEditing) {
+                        items(draft, key = { drag.key(it) }) { item ->
+                            // The one being dragged follows the finger; the others slide out of its way.
+                            EditSongRow(
+                                item = item,
+                                cornerRadius = cornerRadius,
+                                drag = drag,
+                                enabled = !saving,
+                                modifier = Modifier
+                                    .graphicsLayer { alpha = rowsAlpha.value }
+                                    .then(if (!rowsSettled || drag.draggedUid == item.uid) Modifier else Modifier.animateItem()),
+                            )
+                        }
+                    } else {
+                        // By place as well as song: a playlist can hold the same song more than once.
+                        itemsIndexed(songs, key = { i, s -> "${s.id}#$i" }) { _, song ->
+                            SongRow(
+                                song = song,
+                                isCurrent = player.currentSong?.id == song.id,
+                                liked = player.isLiked(song),
+                                onToggleLike = { player.toggleLike(song) },
+                                onClick = { player.play(song, songs) },
+                                modifier = Modifier.graphicsLayer { alpha = rowsAlpha.value },
+                            )
+                        }
+                        floatingActionsEnd()
+                    }
                     item { Spacer(Modifier.height(24.dp)) }
                 }
                 // Its corner button goes beside the sort button.
-                FloatingListActions(listState, overscroll = overscroll, cornerEndOffset = ChromeButtonSize + 8.dp, haze = backHaze) { PlayShuffleButtons(songs = songs, playlistTitle = playlist.name) }
+                if (actionsFade > 0f) {
+                    Box(Modifier.fillMaxSize().graphicsLayer { alpha = actionsFade }) {
+                    FloatingListActions(listState, overscroll = overscroll, cornerEndOffset = ChromeButtonSize + 8.dp, haze = backHaze) { PlayShuffleButtons(songs = songs, playlistTitle = playlist.name) }
+                    }
+                }
+                // Edit, where the Library's new playlist button is: a glass button over the nav bar's corner.
+                if (editable) {
+                    val chromeTop = LocalChromeGuard.current?.top ?: { 0f }
+                    AnimatedVisibility(
+                        visible = !isEditing,
+                        enter = fadeIn() + scaleIn(initialScale = 0.8f),
+                        exit = fadeOut() + scaleOut(targetScale = 0.8f),
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(end = 16.dp)
+                            .offset { IntOffset(0, -(chromeTop() + 12.dp.toPx()).roundToInt()) },
+                    ) {
+                        GlassIconButton(
+                            icon = Icons.Filled.Edit,
+                            tint = MaterialTheme.colorScheme.primary,
+                            contentDescription = stringResource(R.string.library_edit_playlist),
+                            onClick = {
+                                draftName = playlist.name
+                                draft.clear()
+                                draft.addAll(loaded.mapIndexed { i, s -> DraftSong(i.toLong(), s) })
+                                isEditing = true
+                            },
+                            hazeState = backHaze,
+                            iconSize = 24.dp,
+                        )
+                    }
+                    // While editing, Cancel and Save take its place.
+                    AnimatedVisibility(
+                        visible = isEditing,
+                        enter = fadeIn() + scaleIn(initialScale = 0.8f),
+                        exit = fadeOut() + scaleOut(targetScale = 0.8f),
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(end = 16.dp)
+                            .offset { IntOffset(0, -(chromeTop() + 12.dp.toPx()).roundToInt()) },
+                    ) {
+                        val canSaveNow = canSave && !saving
+                        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            GlassIconButton(
+                                icon = Icons.Filled.Close,
+                                tint = MaterialTheme.colorScheme.error,
+                                contentDescription = stringResource(R.string.library_cancel),
+                                onClick = { if (!saving) isEditing = false },
+                                hazeState = backHaze,
+                                modifier = Modifier.alpha(if (saving) 0.4f else 1f),
+                                iconSize = 24.dp,
+                            )
+                            GlassIconButton(
+                                icon = Icons.Filled.Check,
+                                tint = if (MaterialTheme.colorScheme.background.luminance() < 0.5f) Color(0xFF5FD38D) else Color(0xFF1E8E4E),
+                                contentDescription = stringResource(R.string.library_save),
+                                onClick = { if (canSaveNow) save() },
+                                hazeState = backHaze,
+                                modifier = Modifier.menuOrigin(leavePanel).alpha(if (canSaveNow) 1f else 0.4f),
+                                iconSize = 24.dp,
+                            )
+                        }
+                    }
+                }
+                SaveChangesMenu(
+                    panel = leavePanel,
+                    haze = backHaze,
+                    playlistName = playlist.name,
+                    onSave = {
+                        leavePanel.close()
+                        // A blank name can not be saved: stay in editing, to give it one.
+                        if (canSave) save()
+                    },
+                    onDiscard = {
+                        leavePanel.close()
+                        isEditing = false
+                    },
+                )
             }
             }
         }
         // Floats over the list: rows scroll up under it and fade out at the status bar.
-        GlassBackButton(onClick = onBack, hazeState = backHaze, modifier = Modifier.padding(start = 16.dp, top = 8.dp))
+        GlassBackButton(onClick = { editBack?.invoke() ?: onBack() }, hazeState = backHaze, modifier = Modifier.padding(start = 16.dp, top = 8.dp))
         ListSortMenu(SortedList.PLAYLIST_SONGS, backHaze)
     }
 }
@@ -170,7 +385,13 @@ fun PlaylistDetailScreen(
  * shuffle), or none while it's loading.
  */
 @Composable
-private fun PlaylistHeader(playlist: Playlist, songCount: Int, cornerRadius: Dp, actions: (@Composable () -> Unit)?) {
+private fun PlaylistHeader(
+    playlist: Playlist,
+    songCount: Int,
+    cornerRadius: Dp,
+    actions: (@Composable () -> Unit)?,
+    editing: (@Composable () -> Unit)? = null,
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -185,7 +406,25 @@ private fun PlaylistHeader(playlist: Playlist, songCount: Int, cornerRadius: Dp,
             modifier = Modifier.sharedArt(ArtKeys.playlist(playlist.id)),
         )
         Spacer(Modifier.height(16.dp))
-        Text(text = playlist.name, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
+        // The name becomes a field and back in a place as tall as the field, so the page below doesn't move.
+        val lastEditing = remember { arrayOfNulls<@Composable () -> Unit>(1) }
+        if (editing != null) lastEditing[0] = editing
+        AnimatedContent(
+            targetState = editing != null,
+            modifier = Modifier.fillMaxWidth().heightIn(min = NameFieldHeight),
+            transitionSpec = {
+                (fadeIn(tween(200, delayMillis = 60)) togetherWith fadeOut(tween(120)))
+                    .using(SizeTransform(clip = false) { _, _ -> snap() })
+            },
+            contentAlignment = Alignment.Center,
+            label = "playlistName",
+        ) { isEditing ->
+            if (isEditing) {
+                lastEditing[0]?.invoke()
+            } else {
+                Text(text = playlist.name, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
+            }
+        }
         if (playlist.description.isNotBlank()) {
             Spacer(Modifier.height(4.dp))
             Text(
@@ -208,3 +447,6 @@ private fun PlaylistHeader(playlist: Playlist, songCount: Int, cornerRadius: Dp,
         }
     }
 }
+
+/** The height of the playlist's name field, which its name's place in the header keeps in both modes. */
+private val NameFieldHeight = 56.dp

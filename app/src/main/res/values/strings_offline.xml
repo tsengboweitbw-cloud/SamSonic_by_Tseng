@@ -23,4 +23,5 @@
         <item quantity="other">%1$d offline songs will be removed from this phone. They stay on your server.</item>
     </plurals>
     <string name="settings_offline_remove">Remove</string>
+    <string name="offline_out_of_space">There is no room left on the phone to save songs for offline</string>
 </resources>

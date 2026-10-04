@@ -128,6 +128,15 @@
     <string name="library_delete_playlist_body">%1$s will be deleted. Its songs stay in your library.</string>
     <string name="library_delete_playlist_error">Couldn\'t delete the playlist</string>
     <string name="library_creating">Creating…</string>
+    <string name="library_edit_playlist">Edit</string>
+    <string name="library_save">Save</string>
+    <string name="library_discard">Discard</string>
+    <string name="library_save_changes_title">Save changes?</string>
+    <string name="library_save_changes_body">Your changes to %1$s have not been saved.</string>
+    <string name="library_saving">Saving…</string>
+    <string name="library_drag_to_move">Drag to move</string>
+    <string name="library_save_playlist_error">Couldn\'t save the playlist</string>
+    <string name="library_playlist_changed_elsewhere">The playlist was changed elsewhere and has been reloaded, so edit it again</string>
     <string name="library_add_anyway">Add anyway</string>
     <string name="library_skip">Skip</string>
     <string name="library_skip_duplicates">Skip duplicates</string>

@@ -185,6 +185,35 @@ class SubsonicRepositoryTest {
     }
 
     @Test
+    fun renamingAPlaylistSendsItsIdAndTheNewName() = runTest {
+        ok()
+        repository.renamePlaylist("p1", "Late night")
+        val request = server.takeRequest()
+        assertEquals("/rest/updatePlaylist.view", request.requestUrl?.encodedPath)
+        assertEquals("p1", request.param("playlistId"))
+        assertEquals("Late night", request.param("name"))
+        assertEquals(emptyList<String>(), request.requestUrl?.queryParameterValues("songIdToAdd"))
+    }
+
+    @Test
+    fun reorderingAPlaylistSendsEverySongInTheNewOrder() = runTest {
+        ok()
+        repository.reorderPlaylist("p1", listOf("s3", "s1", "s2", "s1"))
+        val request = server.takeRequest()
+        assertEquals("/rest/createPlaylist.view", request.requestUrl?.encodedPath)
+        assertEquals("p1", request.param("playlistId"))
+        assertEquals(null, request.param("name"))
+        assertEquals(listOf("s3", "s1", "s2", "s1"), request.requestUrl?.queryParameterValues("songId"))
+    }
+
+    @Test
+    fun anEmptyOrderIsNeverSentSoThePlaylistIsNotEmptied() = runTest {
+        val failed = runCatching { repository.reorderPlaylist("p1", emptyList()) }.isFailure
+        assertTrue(failed)
+        assertEquals(0, server.requestCount)
+    }
+
+    @Test
     fun streamUrlsPointAtTheServerWithTokenAuth() {
         val url = repository.streamUrl("song 1")
         assertTrue(url, url.startsWith(server.url("/rest/stream.view").toString()))

@@ -212,6 +212,14 @@ class DeviceLibrary(context: Context) : MusicLibrary {
         check(store.removeFromPlaylist(playlistId, songIndex)) { appContext.getString(R.string.data_playlist_not_found) }
     }
 
+    override suspend fun renamePlaylist(id: String, name: String) {
+        check(store.editPlaylist(id) { it.copy(name = name) }) { appContext.getString(R.string.data_playlist_not_found) }
+    }
+
+    override suspend fun reorderPlaylist(id: String, songIds: List<String>) {
+        check(store.editPlaylist(id) { it.copy(songIds = songIds) }) { appContext.getString(R.string.data_playlist_not_found) }
+    }
+
     override suspend fun deletePlaylist(id: String) = store.deletePlaylist(id)
 
     override suspend fun getTopSongs(artistName: String, count: Int): List<Song> = index().topSongs(artistName).take(count)
