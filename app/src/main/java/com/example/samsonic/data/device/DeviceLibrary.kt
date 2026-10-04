@@ -208,6 +208,10 @@ class DeviceLibrary(context: Context) : MusicLibrary {
 
     override suspend fun createPlaylist(name: String, songIds: List<String>) = store.createPlaylist(name, songIds)
 
+    override suspend fun removeFromPlaylist(playlistId: String, songIndex: Int) {
+        check(store.removeFromPlaylist(playlistId, songIndex)) { appContext.getString(R.string.data_playlist_not_found) }
+    }
+
     override suspend fun deletePlaylist(id: String) = store.deletePlaylist(id)
 
     override suspend fun getTopSongs(artistName: String, count: Int): List<Song> = index().topSongs(artistName).take(count)

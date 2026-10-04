@@ -35,6 +35,8 @@ import com.example.samsonic.model.FAVOURITES_PLAYLIST_ID
 import com.example.samsonic.model.Playlist
 import com.example.samsonic.model.favouritesPlaylist
 import com.example.samsonic.model.Song
+import com.example.samsonic.ui.common.ScreenRefresh
+import androidx.compose.runtime.CompositionLocalProvider
 import com.example.samsonic.model.artSeed
 import com.example.samsonic.playback.LocalPlayerState
 import com.example.samsonic.ui.common.StateContent
@@ -69,7 +71,10 @@ fun PlaylistDetailScreen(
     val cornerRadius by LocalAppContainer.current.themeManager.albumArtCornerRadius.collectAsStateWithLifecycle()
 
     val favouritesName = stringResource(R.string.data_favourites)
-    val state = rememberScreenLoad(playlistId, errorMessage = stringResource(R.string.library_playlist_load_error)) {
+    // Loads the playlist again once a song has been taken out of it.
+    val refresh = remember { ScreenRefresh() }
+    val offlineOnly by LocalAppContainer.current.offlineOnly.enabled.collectAsStateWithLifecycle()
+    val state = rememberScreenLoad(playlistId, errorMessage = stringResource(R.string.library_playlist_load_error), refresh = refresh) {
         if (playlistId == FAVOURITES_PLAYLIST_ID) {
             val liked = repository.getLikedSongs()
             favouritesPlaylist(liked, favouritesName) to liked
@@ -99,6 +104,15 @@ fun PlaylistDetailScreen(
             // The preview above stands in for the spinner.
             loading = if (preview != null) ({}) else null,
         ) { (playlist, loaded) ->
+            // A song's place in the playlist as the server lists it, which its removal goes by; not in
+            // Favourites (its hearts do that) or with Offline only on (the list is cut down, so places differ).
+            val removal: ((Song) -> SongRemoval?)? = if (!repository.canEditPlaylists || offlineOnly || playlistId == FAVOURITES_PLAYLIST_ID) null else { song ->
+                val place = loaded.indexOfFirst { it === song }
+                if (place < 0) null else SongRemoval {
+                    repository.removeFromPlaylist(playlistId, place)
+                    refresh.refresh()
+                }
+            }
             val sort = rememberListSort(SortedList.PLAYLIST_SONGS)
             // Played in the order shown.
             val songs = remember(loaded, sort) { loaded.sortedFor(sort) }
@@ -106,6 +120,7 @@ fun PlaylistDetailScreen(
             val overscroll = rememberPullOverscroll()
             // A new sort starts over from the first song, if the list was past it.
             OnSortChange(sort) { if (listState.firstVisibleItemIndex > 2) listState.scrollToItem(2) }
+            CompositionLocalProvider(LocalSongRemoval provides removal) {
             Box(Modifier.fillMaxSize()) {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize().scrollTopFade(listState).backButtonHazeSource(backHaze),
@@ -131,6 +146,7 @@ fun PlaylistDetailScreen(
                 }
                 // Its corner button goes beside the sort button.
                 FloatingListActions(listState, overscroll = overscroll, cornerEndOffset = ChromeButtonSize + 8.dp, haze = backHaze) { PlayShuffleButtons(songs = songs, playlistTitle = playlist.name) }
+            }
             }
         }
         // Floats over the list: rows scroll up under it and fade out at the status bar.

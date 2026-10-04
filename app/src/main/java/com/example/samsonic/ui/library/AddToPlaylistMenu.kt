@@ -33,6 +33,7 @@ import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.OfflinePin
+import androidx.compose.material.icons.filled.RemoveCircleOutline
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -98,6 +99,15 @@ internal fun Song.toPlaylistItems() = PlaylistItems(title) { listOf(this) }
 
 internal fun Album.toPlaylistItems() = PlaylistItems(title) { library -> library.getAlbum(id).second }
 
+/** Taking a song out of the playlist it's in: [remove] does it, and the page then loads again. */
+class SongRemoval(val remove: suspend () -> Unit)
+
+/**
+ * Set by a playlist's page: for a song of its list, how to take it out of the playlist,
+ * so that long-pressing it offers that; null elsewhere.
+ */
+val LocalSongRemoval = staticCompositionLocalOf<((Song) -> SongRemoval?)?> { null }
+
 /** What the Add to playlist menu is open for, and the menu's panel. */
 class AddToPlaylistState internal constructor(scope: CoroutineScope) {
     internal val panel = PanelState(scope)
@@ -112,6 +122,10 @@ class AddToPlaylistState internal constructor(scope: CoroutineScope) {
     internal var originRadius by mutableStateOf<Dp?>(OneUiRadius.Art)
         private set
 
+    /** How the menu also offers to take the song out of the playlist it was long-pressed in; null elsewhere. */
+    internal var removal by mutableStateOf<SongRemoval?>(null)
+        private set
+
     /** Whether the menu also offers to add to the queue: not for the song already playing. */
     internal var offersQueue by mutableStateOf(true)
         private set
@@ -121,8 +135,9 @@ class AddToPlaylistState internal constructor(scope: CoroutineScope) {
      * cover with [originRadius] corners, or with null a round glass button. With
      * [offersQueue], it offers Add to queue above the playlists.
      */
-    fun open(items: PlaylistItems, from: Rect, originRadius: Dp?, offersQueue: Boolean = true) {
+    fun open(items: PlaylistItems, from: Rect, originRadius: Dp?, offersQueue: Boolean = true, removal: SongRemoval? = null) {
         this.items = items
+        this.removal = removal
         this.originRadius = originRadius
         this.offersQueue = offersQueue
         panel.origin = from
@@ -149,7 +164,7 @@ class AddToPlaylistLongPress(val origin: Modifier, val onLongClick: (() -> Unit)
 /** For a song row, which the menu grows out of. */
 @Composable
 fun rememberAddToPlaylistLongPress(song: Song): AddToPlaylistLongPress =
-    rememberAddToPlaylistLongPress(OneUiRadius.Art) { song.toPlaylistItems() }
+    rememberAddToPlaylistLongPress(OneUiRadius.Art, removal = LocalSongRemoval.current?.let { forSong -> { forSong(song) } }) { song.toPlaylistItems() }
 
 /** For an album, whose [origin][AddToPlaylistLongPress.origin] has [originRadius] corners (its cover, or its row). */
 @Composable
@@ -157,11 +172,16 @@ fun rememberAddToPlaylistLongPress(album: Album, originRadius: Dp): AddToPlaylis
     rememberAddToPlaylistLongPress(originRadius) { album.toPlaylistItems() }
 
 @Composable
-private fun rememberAddToPlaylistLongPress(originRadius: Dp, items: () -> PlaylistItems): AddToPlaylistLongPress {
+private fun rememberAddToPlaylistLongPress(
+    originRadius: Dp,
+    removal: (() -> SongRemoval?)? = null,
+    items: () -> PlaylistItems,
+): AddToPlaylistLongPress {
     val state = LocalAddToPlaylist.current
     val haptics = LocalHapticFeedback.current
     val currentItems by rememberUpdatedState(items)
     val currentRadius by rememberUpdatedState(originRadius)
+    val currentRemoval by rememberUpdatedState(removal)
     // A plain holder, so scrolling doesn't recompose. Only the row's coordinates are kept
     // as it's placed; its bounds are worked out on the long press, not on every scroll frame.
     val coordinates = remember { arrayOfNulls<LayoutCoordinates>(1) }
@@ -173,7 +193,7 @@ private fun rememberAddToPlaylistLongPress(originRadius: Dp, items: () -> Playli
             onLongClick = {
                 haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                 val bounds = coordinates[0]?.takeIf { it.isAttached }?.boundsInRoot() ?: Rect.Zero
-                state.open(currentItems(), bounds, currentRadius)
+                state.open(currentItems(), bounds, currentRadius, removal = currentRemoval?.invoke())
             },
             label = label,
         )
@@ -311,6 +331,19 @@ fun AddToPlaylistMenu(state: AddToPlaylistState, haze: HazeState) {
                         },
                     )
                     Step.Pick -> {
+                        state.removal?.let { removal ->
+                            MenuOption(
+                                icon = Icons.Filled.RemoveCircleOutline,
+                                label = stringResource(R.string.library_remove_from_playlist),
+                                selected = false,
+                                onClick = {
+                                    if (saving == null) work("remove") {
+                                        removal.remove()
+                                        done(resources.getString(R.string.library_removed_from_playlist, items.title))
+                                    }
+                                },
+                            )
+                        }
                         if (state.offersQueue) {
                             MenuOption(
                                 icon = Icons.AutoMirrored.Filled.PlaylistAdd,

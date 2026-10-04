@@ -104,6 +104,8 @@
     <string name="library_playlist_name">名稱</string>
     <string name="library_cancel">取消</string>
     <string name="library_create">建立</string>
+    <string name="library_remove_from_playlist">從此播放清單移除</string>
+    <string name="library_removed_from_playlist">已將「%1$s」從播放清單移除</string>
     <string name="library_delete">刪除</string>
     <string name="library_delete_playlist_title">刪除播放清單</string>
     <string name="library_delete_playlist_body">「%1$s」將被刪除，其中的歌曲仍保留在你的音樂庫中。</string>

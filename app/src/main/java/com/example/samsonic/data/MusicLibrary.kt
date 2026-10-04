@@ -95,6 +95,10 @@ interface MusicLibrary {
     suspend fun createPlaylist(name: String, songIds: List<String>): Unit =
         throw UnsupportedOperationException("This library has no playlists")
 
+    /** Takes the song at place [songIndex] (from 0, as [getPlaylist] lists them) out of playlist [playlistId]. */
+    suspend fun removeFromPlaylist(playlistId: String, songIndex: Int): Unit =
+        throw UnsupportedOperationException("This library has no playlists")
+
     /** Deletes playlist [id]; its songs stay in the library. */
     suspend fun deletePlaylist(id: String): Unit =
         throw UnsupportedOperationException("This library has no playlists")

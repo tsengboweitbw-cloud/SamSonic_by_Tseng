@@ -338,6 +338,11 @@ class SubsonicRepository(
         requireApi().createPlaylist(authParams() + ("name" to name), songIds).response.requireOk()
     }
 
+    override suspend fun removeFromPlaylist(playlistId: String, songIndex: Int) {
+        val params = authParams() + mapOf("playlistId" to playlistId, "songIndexToRemove" to songIndex.toString())
+        requireApi().updatePlaylist(params, emptyList()).response.requireOk()
+    }
+
     override suspend fun deletePlaylist(id: String) {
         requireApi().deletePlaylist(authParams() + ("id" to id)).response.requireOk()
     }
