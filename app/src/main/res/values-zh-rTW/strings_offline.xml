@@ -4,6 +4,7 @@
     <string name="offline_remove_option">移除離線</string>
     <string name="offline_kept">「%1$s」將儲存為離線</string>
     <string name="offline_removed">已移除「%1$s」的離線</string>
+    <string name="offline_only_option">只看離線</string>
     <string name="offline_mark_description">已儲存為離線</string>
     <string name="offline_channel_name">離線音樂</string>
     <string name="offline_notification_title">正在儲存離線音樂</string>

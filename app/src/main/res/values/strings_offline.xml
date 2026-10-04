@@ -5,6 +5,7 @@
     <string name="offline_remove_option">Remove from offline</string>
     <string name="offline_kept">%1$s will be saved for offline</string>
     <string name="offline_removed">%1$s removed from offline</string>
+    <string name="offline_only_option">Offline only</string>
     <string name="offline_mark_description">Saved for offline</string>
     <string name="offline_channel_name">Offline music</string>
     <string name="offline_notification_title">Saving music for offline</string>

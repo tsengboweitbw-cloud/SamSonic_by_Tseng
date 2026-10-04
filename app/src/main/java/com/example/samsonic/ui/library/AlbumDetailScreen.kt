@@ -93,7 +93,7 @@ fun AlbumDetailScreen(
         ) { (album, loaded) ->
             val sort = rememberListSort(SortedList.ALBUM_TRACKS)
             // Played in the order shown.
-            val songs = remember(loaded, sort) { loaded.sortedFor(sort) }
+            val songs = rememberShownSongs(loaded, sort)
             val listState = rememberLazyListState()
             val overscroll = rememberPullOverscroll()
             // A new sort starts over from the first song, if the list was past it.

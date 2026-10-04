@@ -156,7 +156,7 @@ internal fun SongsPage(
         StateContent(state = state, modifier = Modifier.fillMaxSize()) { (owner, loaded) ->
             val sort = rememberListSort(SortedList.SONGS)
             // Played in the order shown.
-            val songs = remember(loaded, sort) { loaded.sortedFor(sort) }
+            val songs = rememberShownSongs(loaded, sort)
             OnSortChange(sort) { if (listState.firstVisibleItemIndex > 2) listState.scrollToItem(2) }
             Box(Modifier.fillMaxSize()) {
                 LazyColumn(
