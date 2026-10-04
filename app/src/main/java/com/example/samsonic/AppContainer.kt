@@ -1,6 +1,7 @@
 package com.example.samsonic
 
 import android.content.Context
+import java.io.File
 import android.util.Log
 import androidx.compose.runtime.compositionLocalOf
 import com.example.samsonic.data.AutoDjSettings
@@ -11,6 +12,7 @@ import com.example.samsonic.data.MusicLibrary
 import com.example.samsonic.data.MusicSources
 import com.example.samsonic.data.SessionManager
 import com.example.samsonic.data.SubsonicRepository
+import com.example.samsonic.data.cache.LibraryCacheStore
 import com.example.samsonic.data.LibraryLayoutManager
 import com.example.samsonic.data.ThemeManager
 import com.example.samsonic.data.device.DeviceLibrary
@@ -74,7 +76,10 @@ class AppContainer(context: Context) {
 
     private val subsonic = SubsonicRepository(okHttpClient, appContext)
 
-    val sources = MusicSources(sessionManager, subsonic, DeviceLibrary(appContext))
+    val sources = MusicSources(
+        sessionManager, subsonic, DeviceLibrary(appContext),
+        LibraryCacheStore(File(appContext.cacheDir, "library")), applicationScope,
+    )
 
     /** Caches every cover of the signed-in server; the music on this phone has its art on hand. */
     val coverArtPrefetcher = CoverArtPrefetcher(appContext, subsonic, applicationScope)

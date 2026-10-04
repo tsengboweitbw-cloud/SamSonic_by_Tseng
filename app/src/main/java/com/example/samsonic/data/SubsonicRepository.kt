@@ -2,29 +2,25 @@ package com.example.samsonic.data
 
 import android.content.Context
 import com.example.samsonic.R
-import com.example.samsonic.data.remote.AlbumDetailDto
 import com.example.samsonic.data.remote.AlbumDto
-import com.example.samsonic.data.remote.ArtistDetailDto
-import com.example.samsonic.data.remote.ArtistDto
-import com.example.samsonic.data.remote.ItemGenreDto
-import com.example.samsonic.data.remote.PlaylistDetailDto
-import com.example.samsonic.data.remote.PlaylistDto
 import com.example.samsonic.data.remote.SongDto
 import com.example.samsonic.data.remote.SubsonicApi
 import com.example.samsonic.data.remote.SubsonicAuth
 import com.example.samsonic.data.remote.SubsonicResponseBody
+import com.example.samsonic.data.remote.toDomain
 import com.example.samsonic.model.Album
 import com.example.samsonic.model.Artist
-import com.example.samsonic.model.ArtistCredit
 import com.example.samsonic.model.Genre
 import com.example.samsonic.model.GenreContents
 import com.example.samsonic.model.LyricLine
 import com.example.samsonic.model.Playlist
 import com.example.samsonic.model.SearchResults
 import com.example.samsonic.model.Song
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.serialization.json.Json
@@ -109,12 +105,15 @@ class SubsonicRepository(
         return SubsonicAuth.params(creds.username, creds.password)
     }
 
+    // Mapping and sorting thousands of entries is CPU work, and callers are on the main thread.
     override suspend fun getArtists(): List<Artist> {
         val body = requireApi().getArtists(authParams()).response
-        return body.artists?.index.orEmpty()
-            .flatMap { it.artist }
-            .map { it.toDomain() }
-            .sortedBy { it.name.lowercase() }
+        return withContext(Dispatchers.Default) {
+            body.artists?.index.orEmpty()
+                .flatMap { it.artist }
+                .map { it.toDomain() }
+                .sortedBy { it.name.lowercase() }
+        }
     }
 
     /**
@@ -126,7 +125,9 @@ class SubsonicRepository(
      */
     override suspend fun getAlbumArtists(): List<Artist> = coroutineScope {
         val covers = async { artistCovers() }
-        albumArtistsOf(allAlbums(mapOf("type" to "alphabeticalByArtist")), covers.await())
+        val albums = allAlbums(mapOf("type" to "alphabeticalByArtist"))
+        val coverById = covers.await()
+        withContext(Dispatchers.Default) { albumArtistsOf(albums, coverById) }
     }
 
     /**
@@ -137,22 +138,28 @@ class SubsonicRepository(
         val songs = async { if (songCount > 0) getGenreSongs(genre, songCount) else emptyList() }
         val covers = async { artistCovers() }
         val albums = allAlbums(mapOf("type" to "byGenre", "genre" to genre))
-        GenreContents(
-            albums = albums.map { it.toDomain() }.sortedWith(newestFirst { it.year }),
-            artists = albumArtistsOf(albums, covers.await()),
-            songs = songs.await(),
-        )
+        val coverById = covers.await()
+        withContext(Dispatchers.Default) {
+            GenreContents(
+                albums = albums.map { it.toDomain() }.sortedWith(newestFirst { it.year }),
+                artists = albumArtistsOf(albums, coverById),
+                songs = songs.await(),
+            )
+        }
     }
 
     /** Up to [count] of [genre]'s songs, newest first; getSongsByGenre pages at 500. */
-    override suspend fun getGenreSongs(genre: String, count: Int): List<Song> = buildList {
-        do {
-            val size = minOf(SONG_PAGE_SIZE, count - this.size)
-            val params = authParams() + mapOf("genre" to genre, "count" to "$size", "offset" to "${this.size}")
-            val page = requireApi().getSongsByGenre(params).response.songsByGenre?.song.orEmpty()
-            addAll(page.map { it.toDomain() })
-        } while (page.size == size && this.size < count)
-    }.distinctBy { it.id }.sortedWith(newestFirst { it.year })
+    override suspend fun getGenreSongs(genre: String, count: Int): List<Song> {
+        val songs = buildList {
+            do {
+                val size = minOf(SONG_PAGE_SIZE, count - this.size)
+                val params = authParams() + mapOf("genre" to genre, "count" to "$size", "offset" to "${this.size}")
+                val page = requireApi().getSongsByGenre(params).response.songsByGenre?.song.orEmpty()
+                addAll(withContext(Dispatchers.Default) { page.map { it.toDomain() } })
+            } while (page.size == size && this.size < count)
+        }
+        return withContext(Dispatchers.Default) { songs.distinctBy { it.id }.sortedWith(newestFirst { it.year }) }
+    }
 
     /** Every album getAlbumList2 lists for [query] (its type and filters), page after page. */
     private suspend fun allAlbums(query: Map<String, String>): List<AlbumDto> = buildList {
@@ -452,87 +459,4 @@ class SubsonicRepository(
         val query = params.entries.joinToString("&") { (k, v) -> "$k=${URLEncoder.encode(v, "UTF-8")}" }
         return "${creds.serverUrl}rest/${path.removePrefix("rest/")}?$query"
     }
-
-    private fun ArtistDto.toDomain() = Artist(id = id, name = name, albumCount = albumCount, coverArt = coverArt)
-
-    private fun ArtistDetailDto.toDomain() = Artist(id = id, name = name, albumCount = albumCount, coverArt = coverArt)
-
-    private fun AlbumDto.toDomain() = Album(
-        id = id,
-        title = name,
-        artistId = artistId,
-        artistName = artist ?: "Unknown Artist",
-        year = year,
-        genre = genre,
-        trackCount = songCount,
-        durationSeconds = duration,
-        coverArt = coverArt,
-        genres = genres.names(),
-    )
-
-    private fun AlbumDetailDto.toDomain() = Album(
-        id = id,
-        title = name,
-        artistId = artistId,
-        artistName = artist ?: "Unknown Artist",
-        year = year,
-        genre = genre,
-        trackCount = songCount,
-        durationSeconds = duration,
-        coverArt = coverArt,
-        genres = genres.names(),
-    )
-
-    private fun List<ItemGenreDto>.names() = map { it.name }.filter { it.isNotBlank() }
-
-    private fun SongDto.toDomain() = Song(
-        id = id,
-        title = title,
-        artistId = artistId,
-        artistName = artist ?: "Unknown Artist",
-        albumId = albumId,
-        albumTitle = album ?: "",
-        trackNumber = track ?: 0,
-        durationSeconds = duration,
-        coverArt = coverArt,
-        liked = starred != null,
-        suffix = suffix,
-        bitRate = bitRate,
-        samplingRate = samplingRate,
-        bitDepth = bitDepth,
-        year = year,
-        genre = genre,
-        discNumber = discNumber,
-        sizeBytes = size,
-        contentType = contentType,
-        path = path,
-        playCount = playCount,
-        channelCount = channelCount,
-        created = created,
-        played = played,
-        artists = artists.mapNotNull { ref -> ref.name?.takeIf { it.isNotBlank() }?.let { ArtistCredit(ref.id, it) } },
-        albumArtistId = albumArtists.firstOrNull()?.id,
-        albumArtistName = displayAlbumArtist?.takeIf { it.isNotBlank() } ?: albumArtists.firstOrNull()?.name,
-        genres = genres.names(),
-    )
-
-    private fun PlaylistDto.toDomain() = Playlist(
-        id = id,
-        name = name,
-        description = comment ?: "",
-        songCount = songCount,
-        durationSeconds = duration,
-        coverArt = coverArt,
-        changed = changed,
-    )
-
-    private fun PlaylistDetailDto.toDomain() = Playlist(
-        id = id,
-        name = name,
-        description = comment ?: "",
-        songCount = songCount,
-        durationSeconds = duration,
-        coverArt = coverArt,
-        changed = changed,
-    )
 }

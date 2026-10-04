@@ -7,6 +7,7 @@ import kotlinx.serialization.Serializable
  * (see data/remote for the wire format and data/SubsonicRepository for the mapping).
  */
 
+@Serializable
 data class Artist(
     val id: String,
     val name: String,
@@ -15,6 +16,7 @@ data class Artist(
     val bio: String = "",
 )
 
+@Serializable
 data class Album(
     val id: String,
     val title: String,
@@ -68,6 +70,7 @@ data class Song(
     val genres: List<String> = emptyList(),
 )
 
+@Serializable
 data class Playlist(
     val id: String,
     val name: String,
@@ -95,6 +98,7 @@ fun favouritesPlaylist(songs: List<Song>, name: String = "Favourites") = Playlis
     coverArt = null,
 )
 
+@Serializable
 data class Genre(
     val name: String,
     val songCount: Int,
