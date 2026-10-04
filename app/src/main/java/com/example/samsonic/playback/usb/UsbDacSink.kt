@@ -191,6 +191,9 @@ internal class UsbDacSink(
         return anchor.mediaUs + maxOf(0L, played - anchor.frames) * C.MICROS_PER_SECOND / anchor.rate
     }
 
+    // There is no AudioTrack; the driver keeps its own buffer.
+    override fun getAudioTrackBufferSizeUs(): Long = C.TIME_UNSET
+
     override fun handleDiscontinuity() = Unit
 
     override fun play() {
