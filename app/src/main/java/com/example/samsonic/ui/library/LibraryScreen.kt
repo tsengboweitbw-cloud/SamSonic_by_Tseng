@@ -1,6 +1,9 @@
 package com.example.samsonic.ui.library
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.unit.IntOffset
+import com.example.samsonic.ui.common.LocalChromeGuard
 import com.example.samsonic.ui.settings.menuOrigin
 import com.example.samsonic.ui.player.PanelState
 import com.example.samsonic.ui.components.GlassIconButton
@@ -253,12 +256,17 @@ fun LibraryScreen(
             )
             // A new playlist, from the playlists tab: a glass button like the back button's, over the nav bar's corner.
             if (repository.canEditPlaylists) {
+                val chromeTop = LocalChromeGuard.current?.top ?: { 0f }
                 Box(Modifier.fillMaxSize()) {
                     AnimatedVisibility(
                         visible = pagerState.targetPage == 2 && !viewOptions.targetState,
                         enter = fadeIn() + scaleIn(initialScale = 0.8f),
                         exit = fadeOut() + scaleOut(targetScale = 0.8f),
-                        modifier = Modifier.align(Alignment.BottomEnd).padding(end = 16.dp, bottom = contentPaddingBottom + 8.dp),
+                        // Just above the highest bar, wherever it is now: the nav bar, or the mini player over it.
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(end = 16.dp)
+                            .offset { IntOffset(0, -(chromeTop() + 12.dp.toPx()).roundToInt()) },
                     ) {
                         GlassIconButton(
                             icon = Icons.Filled.Add,
