@@ -5,6 +5,11 @@
     <string name="offline_kept">「%1$s」將儲存為離線</string>
     <string name="offline_removed">已移除「%1$s」的離線</string>
     <string name="offline_mark_description">已儲存為離線</string>
+    <string name="offline_mark_waiting">等待儲存為離線</string>
+    <string name="offline_mark_saving">正在儲存為離線</string>
+    <string name="offline_mark_refused">伺服器不提供此歌曲，因此未儲存為離線</string>
+    <string name="offline_retry_option">重試儲存</string>
+    <string name="offline_retrying">將重試「%1$s」</string>
     <string name="offline_channel_name">離線音樂</string>
     <string name="offline_notification_title">正在儲存離線音樂</string>
     <string name="offline_notification_waiting">準備中…</string>
@@ -13,6 +18,10 @@
     <string name="settings_offline_music">離線音樂</string>
     <string name="settings_offline_music_empty">無</string>
     <string name="settings_offline_music_saving">正在儲存 %1$d / %2$d</string>
+    <string name="settings_offline_refused">未儲存的歌曲</string>
+    <plurals name="settings_offline_refused_summary">
+        <item quantity="other">%1$d 首被伺服器拒絕 · 點一下重試</item>
+    </plurals>
     <string name="settings_offline_music_hint">儲存為離線的歌曲會保存在手機上，不需要伺服器也能播放。它們不計入音樂快取的大小，且僅在開啟該開關時才使用 Wi-Fi 儲存</string>
     <string name="settings_offline_only">只看離線</string>
     <string name="settings_offline_only_hint">所有頁面只顯示已儲存為離線的歌曲：歌手、專輯、播放清單、搜尋和首頁都由這些歌曲組成，不需要等待伺服器</string>

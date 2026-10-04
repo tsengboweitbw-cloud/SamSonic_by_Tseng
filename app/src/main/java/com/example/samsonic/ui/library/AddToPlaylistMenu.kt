@@ -33,6 +33,7 @@ import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.OfflinePin
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.RemoveCircleOutline
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -239,6 +240,8 @@ fun AddToPlaylistMenu(state: AddToPlaylistState, haze: HazeState) {
         var songs by remember { mutableStateOf<List<Song>?>(null) }
         val offline = LocalAppContainer.current.offlineMusic
         val kept by offline.keptIds.collectAsStateWithLifecycle()
+        val downloader = LocalAppContainer.current.offlineDownloader
+        val refused by downloader.refusedIds.collectAsStateWithLifecycle()
 
         suspend fun loadSongIds(): List<String> =
             songIds[0] ?: items.songs(repository).also { loadedSongs[0] = it }.map { it.id }.also {
@@ -375,6 +378,21 @@ fun AddToPlaylistMenu(state: AddToPlaylistState, haze: HazeState) {
                                     }
                                 },
                             )
+                            // Some of these songs refused by the server: ask it for them again.
+                            val refusedHere = songs.orEmpty().filter { it.id in kept && it.id in refused }
+                            if (refusedHere.isNotEmpty()) {
+                                MenuOption(
+                                    icon = Icons.Filled.Refresh,
+                                    label = stringResource(R.string.offline_retry_option),
+                                    selected = false,
+                                    onClick = {
+                                        if (saving == null) {
+                                            downloader.retry(refusedHere.mapTo(HashSet()) { it.id })
+                                            done(resources.getString(R.string.offline_retrying, items.title))
+                                        }
+                                    },
+                                )
+                            }
                         }
                         MenuOption(
                             icon = Icons.Filled.Add,

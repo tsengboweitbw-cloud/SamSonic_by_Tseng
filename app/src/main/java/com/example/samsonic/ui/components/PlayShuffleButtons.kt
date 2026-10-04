@@ -188,12 +188,14 @@ private fun PlayShuffleRow(
     // No hazeState on the glass buttons: the row sits inside the page list's own
     // haze source (see GlassBackButton), so they use the flat translucent glass fill.
     val glass = Modifier
-        .circleGlow(Color.Black.copy(alpha = 0.25f), width = 8.dp, offsetY = 2.dp)
+        .listActionShadow()
         .glassSurface(
             shape = CircleShape,
             hazeState = null,
             tint = MaterialTheme.colorScheme.surfaceContainerHigh,
             alpha = GlassAlpha.Nav,
+            // The nav bar's accent sheen, as on the other chrome glass.
+            sheen = AccentSheen.Chrome,
         )
     val merge = LocalListActionsMerge.current
     // A tap on any of them also tells a corner capsule holding them to fold back up.
@@ -452,12 +454,11 @@ private fun ramp(value: Float, from: Float, to: Float): Float = ((value - from) 
 /**
  * Play's surface: the same frosted glass as the buttons beside it, tinted with the
  * accent instead of the surface color, sheened into its neighbour color toward the
- * bottom-right, and lifted by a soft accent glow.
+ * bottom-right, and lifted by the same soft shadow ([listActionShadow]).
  */
 @Composable
 private fun Modifier.accentGlass(palette: AccentPalette): Modifier = this
-    // Not Modifier.shadow, whose polygon core shows through the see-through glass (see circleGlow).
-    .circleGlow(palette.primary.copy(alpha = 0.22f), width = 8.dp, offsetY = 2.dp)
+    .listActionShadow()
     .glassSurface(
         shape = CircleShape,
         hazeState = null,
@@ -468,6 +469,12 @@ private fun Modifier.accentGlass(palette: AccentPalette): Modifier = this
     // Already clipped to the circle by the glass.
     .background(Brush.linearGradient(listOf(Color.Transparent, palette.secondary.copy(alpha = 0.6f))))
     .border(GlassRimWidth, glassRimBrush(), CircleShape)
+
+/**
+ * The soft black shadow under every button of the row, Play and the neutral ones alike.
+ * Not Modifier.shadow, whose polygon core shows through the see-through glass (see circleGlow).
+ */
+private fun Modifier.listActionShadow(): Modifier = circleGlow(Color.Black.copy(alpha = 0.25f), width = 8.dp, offsetY = 2.dp)
 
 // Thinner than the neutral buttons' glass: enough accent to mark Play out, still see-through.
 private const val AccentGlassAlpha = 0.72f
