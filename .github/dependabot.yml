@@ -1,0 +1,14 @@
+version: 2
+updates:
+  - package-ecosystem: gradle
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      # Media3's modules must move together.
+      media3:
+        patterns: ["androidx.media3:*"]
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
