@@ -8,6 +8,11 @@ updates:
       # Media3's modules must move together.
       media3:
         patterns: ["androidx.media3:*"]
+    ignore:
+      # 2.10 changed the back gesture: the page it leaves lingers over the one it returns to
+      # (and the cover art's flight with it). Stay on 2.9 until that is dealt with.
+      - dependency-name: "androidx.navigation:navigation-compose"
+        versions: [">=2.10.0"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
