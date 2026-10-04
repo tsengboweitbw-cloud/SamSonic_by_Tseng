@@ -343,6 +343,16 @@ class SubsonicRepository(
         requireApi().updatePlaylist(params, emptyList()).response.requireOk()
     }
 
+    override suspend fun renamePlaylist(id: String, name: String) {
+        requireApi().updatePlaylist(authParams() + mapOf("playlistId" to id, "name" to name), emptyList()).response.requireOk()
+    }
+
+    // Making a playlist that already exists (by its id) replaces its songs, the one way Subsonic reorders.
+    override suspend fun reorderPlaylist(id: String, songIds: List<String>) {
+        require(songIds.isNotEmpty())
+        requireApi().createPlaylist(authParams() + ("playlistId" to id), songIds).response.requireOk()
+    }
+
     override suspend fun deletePlaylist(id: String) {
         requireApi().deletePlaylist(authParams() + ("id" to id)).response.requireOk()
     }

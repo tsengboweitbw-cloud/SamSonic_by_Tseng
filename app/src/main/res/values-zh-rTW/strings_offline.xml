@@ -21,4 +21,5 @@
         <item quantity="other">%1$d 首離線歌曲將從此手機移除，伺服器上的歌曲不受影響。</item>
     </plurals>
     <string name="settings_offline_remove">移除</string>
+    <string name="offline_out_of_space">手機已沒有足夠空間儲存離線歌曲</string>
 </resources>

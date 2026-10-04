@@ -112,6 +112,15 @@
     <string name="library_delete_playlist_body">「%1$s」將被刪除，其中的歌曲仍保留在你的音樂庫中。</string>
     <string name="library_delete_playlist_error">無法刪除播放清單</string>
     <string name="library_creating">正在建立…</string>
+    <string name="library_edit_playlist">編輯</string>
+    <string name="library_save">儲存</string>
+    <string name="library_discard">捨棄</string>
+    <string name="library_save_changes_title">儲存變更？</string>
+    <string name="library_save_changes_body">你對「%1$s」所做的變更尚未儲存。</string>
+    <string name="library_saving">正在儲存…</string>
+    <string name="library_drag_to_move">拖曳以移動</string>
+    <string name="library_save_playlist_error">無法儲存播放清單</string>
+    <string name="library_playlist_changed_elsewhere">播放清單已在其他地方變更並已重新載入，請重新編輯</string>
     <string name="library_add_anyway">仍要加入</string>
     <string name="library_skip">略過</string>
     <string name="library_skip_duplicates">略過重複項目</string>

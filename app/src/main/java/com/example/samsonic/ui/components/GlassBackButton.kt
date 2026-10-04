@@ -5,6 +5,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -51,6 +54,7 @@ fun GlassIconButton(
     hazeState: HazeState?,
     modifier: Modifier = Modifier,
     iconSize: Dp = ChromeButtonIconSize,
+    tint: Color = Color.Unspecified,
 ) {
     PressIconButton(
         onClick = onClick,
@@ -65,7 +69,7 @@ fun GlassIconButton(
                 inputScale = LocalChromeBlurScale.current,
             ),
     ) {
-        Icon(icon, contentDescription = contentDescription, modifier = Modifier.size(iconSize))
+        Icon(icon, contentDescription = contentDescription, modifier = Modifier.size(iconSize), tint = tint.takeOrElse { LocalContentColor.current })
     }
 }
 

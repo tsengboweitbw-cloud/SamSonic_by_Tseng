@@ -82,6 +82,16 @@ class CachedLibrary(
         invalidate()
     }
 
+    override suspend fun renamePlaylist(id: String, name: String) {
+        inner.renamePlaylist(id, name)
+        invalidate()
+    }
+
+    override suspend fun reorderPlaylist(id: String, songIds: List<String>) {
+        inner.reorderPlaylist(id, songIds)
+        invalidate()
+    }
+
     override suspend fun deletePlaylist(id: String) {
         inner.deletePlaylist(id)
         invalidate()

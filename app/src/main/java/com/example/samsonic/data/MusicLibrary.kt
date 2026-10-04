@@ -99,6 +99,14 @@ interface MusicLibrary {
     suspend fun removeFromPlaylist(playlistId: String, songIndex: Int): Unit =
         throw UnsupportedOperationException("This library has no playlists")
 
+    /** Renames playlist [id] to [name]. */
+    suspend fun renamePlaylist(id: String, name: String): Unit =
+        throw UnsupportedOperationException("This library has no playlists")
+
+    /** Puts playlist [id]'s songs in the order of [songIds], which are all of its songs (a song twice is listed twice). */
+    suspend fun reorderPlaylist(id: String, songIds: List<String>): Unit =
+        throw UnsupportedOperationException("This library has no playlists")
+
     /** Deletes playlist [id]; its songs stay in the library. */
     suspend fun deletePlaylist(id: String): Unit =
         throw UnsupportedOperationException("This library has no playlists")

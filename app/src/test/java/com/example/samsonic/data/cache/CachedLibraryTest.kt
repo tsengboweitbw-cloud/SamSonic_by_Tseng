@@ -45,6 +45,8 @@ class CachedLibraryTest {
 
         override suspend fun addToPlaylist(playlistId: String, songIds: List<String>) = Unit
         override suspend fun deletePlaylist(id: String) = Unit
+        override suspend fun renamePlaylist(id: String, name: String) = Unit
+        override suspend fun reorderPlaylist(id: String, songIds: List<String>) = Unit
     }
 
     private var time = 1_000_000L
@@ -194,6 +196,30 @@ class CachedLibraryTest {
         library.getPlaylists()
         time += 1
         library.deletePlaylist("p")
+        time += 1
+        library.getPlaylists()
+        assertEquals(2, server.calls)
+    }
+
+    @Test
+    fun renamingAPlaylistMakesTheSavedOnesOld() = runTest {
+        val server = Server()
+        val library = library(server)
+        library.getPlaylists()
+        time += 1
+        library.renamePlaylist("p", "New name")
+        time += 1
+        library.getPlaylists()
+        assertEquals(2, server.calls)
+    }
+
+    @Test
+    fun reorderingAPlaylistMakesTheSavedOnesOld() = runTest {
+        val server = Server()
+        val library = library(server)
+        library.getPlaylists()
+        time += 1
+        library.reorderPlaylist("p", listOf("a", "b"))
         time += 1
         library.getPlaylists()
         assertEquals(2, server.calls)
