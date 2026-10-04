@@ -15,7 +15,7 @@ private const val ROLLOFF = 0.91
 private const val MAX_COEFFICIENTS = 1 shl 20
 
 /**
- * Changes float PCM from [inRate] to [outRate] for exclusive mode, when the DAC doesn't take
+ * Changes float PCM from [inRate] to [outRate] for the USB DAC driver, when the DAC doesn't take
  * the song's own rate: a polyphase windowed-sinc low-pass at the exact ratio, so it never
  * drifts. It also takes mono to stereo ([outChannels] 2 from [inChannels] 1), by copying.
  * At the same rate it only copies, leaving every sample as it was.

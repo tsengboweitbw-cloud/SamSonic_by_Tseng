@@ -19,7 +19,7 @@ class LayoutClassTest {
     }
 
     @Test
-    fun foldInnerScreensKeepTwoPanesEitherWayRound() {
+    fun foldableInnerScreensKeepTwoPanesEitherWayRound() {
         assertEquals(LayoutClass.Wide, layoutClassFor(704.dp, 933.dp)) // Z Fold 8, narrow way
         assertEquals(LayoutClass.Wide, layoutClassFor(933.dp, 704.dp)) // Z Fold 8, wide way
         assertEquals(LayoutClass.Wide, layoutClassFor(859.dp, 954.dp)) // Z Fold 8 Ultra
@@ -41,19 +41,18 @@ class LayoutClassTest {
 
     @Test
     fun gridsCountColumnsByTheKindOfScreen() {
-        assertEquals(GridForm.PHONE, gridFormFor(412.dp, 915.dp, foldable = false))
-        assertEquals(GridForm.PHONE_LANDSCAPE, gridFormFor(915.dp, 412.dp, foldable = false))
-        // A foldable shut is a phone; open, a foldable either way round.
-        assertEquals(GridForm.PHONE, gridFormFor(475.dp, 751.dp, foldable = true))
-        assertEquals(GridForm.FOLDABLE_LANDSCAPE, gridFormFor(933.dp, 704.dp, foldable = true))
-        assertEquals(GridForm.FOLDABLE, gridFormFor(704.dp, 933.dp, foldable = true))
-        assertEquals(GridForm.TABLET_LANDSCAPE, gridFormFor(1280.dp, 800.dp, foldable = false))
-        assertEquals(GridForm.TABLET_PORTRAIT, gridFormFor(800.dp, 1280.dp, foldable = false))
+        assertEquals(GridForm.PHONE, gridFormFor(412.dp, 915.dp))
+        assertEquals(GridForm.PHONE_LANDSCAPE, gridFormFor(915.dp, 412.dp))
+        // A foldable shut is a phone; open, a tablet either way round.
+        assertEquals(GridForm.PHONE, gridFormFor(475.dp, 751.dp))
+        assertEquals(GridForm.TABLET_LANDSCAPE, gridFormFor(933.dp, 704.dp))
+        assertEquals(GridForm.TABLET_PORTRAIT, gridFormFor(704.dp, 933.dp))
+        assertEquals(GridForm.TABLET_LANDSCAPE, gridFormFor(1280.dp, 800.dp))
+        assertEquals(GridForm.TABLET_PORTRAIT, gridFormFor(800.dp, 1280.dp))
     }
 
     @Test
     fun theDefaultColumnCountsAreAsAsked() {
-        assertEquals(4, GridForm.FOLDABLE.defaultColumns)
         assertEquals(6, GridForm.TABLET_LANDSCAPE.defaultColumns)
         assertEquals(4, GridForm.TABLET_PORTRAIT.defaultColumns)
         GridForm.entries.forEach { assertEquals(6, it.maxColumns) }

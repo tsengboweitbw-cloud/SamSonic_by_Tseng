@@ -1,6 +1,7 @@
 package com.example.samsonic
 
 import android.content.Context
+import android.util.Log
 import androidx.compose.runtime.compositionLocalOf
 import com.example.samsonic.data.AutoDjSettings
 import com.example.samsonic.data.CoverArtPrefetcher
@@ -40,9 +41,15 @@ class AppContainer(context: Context) {
     val okHttpClient: OkHttpClient = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
-        .addInterceptor(
-            HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BASIC }
-        )
+        .apply {
+            // Debug builds only, and with the auth params blanked: the URLs carry them.
+            if (BuildConfig.DEBUG) {
+                addInterceptor(
+                    HttpLoggingInterceptor { Log.d("OkHttp", it.replace(AuthParams, "$1=…")) }
+                        .apply { level = HttpLoggingInterceptor.Level.BASIC },
+                )
+            }
+        }
         .build()
 
     val sessionManager = SessionManager(appContext)
@@ -112,3 +119,6 @@ class AppContainer(context: Context) {
 val LocalAppContainer = compositionLocalOf<AppContainer> {
     error("AppContainer not provided - wrap the app in CompositionLocalProvider(LocalAppContainer provides ...)")
 }
+
+/** The token, salt and password query params of a Subsonic URL. */
+private val AuthParams = Regex("([?&][tsp])=[^&\\s]*")

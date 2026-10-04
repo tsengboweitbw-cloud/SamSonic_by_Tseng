@@ -1,8 +1,6 @@
 package com.example.samsonic.ui.common
 
 import android.content.res.Configuration
-import androidx.compose.material3.adaptive.Posture
-import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.compositionLocalOf
@@ -64,15 +62,13 @@ private const val TabletTextScale = 1.15f
 private const val DesktopTextScale = 1.2f
 
 /**
- * The window's [layoutClass], its size, how a foldable is folded ([posture]: hinges,
- * tabletop).
+ * The window's [layoutClass] and its size, and whether it is [desktop] (Samsung DeX).
  */
 @Immutable
 data class WindowLayout(
     val layoutClass: LayoutClass,
     val width: Dp,
     val height: Dp,
-    val posture: Posture,
     // In Samsung DeX: the app in a window on a monitor, worked with a mouse and keyboard.
     val desktop: Boolean = false,
 ) {
@@ -188,15 +184,13 @@ fun currentWindowLayout(): WindowLayout {
     val density = LocalDensity.current
     val widthDp = with(density) { size.width.toDp().value.roundToInt() }
     val heightDp = with(density) { size.height.toDp().value.roundToInt() }
-    val posture = currentWindowAdaptiveInfo().windowPosture
     val configuration = LocalConfiguration.current
     val desktop = remember(configuration) { configuration.isSamsungDex() }
-    return remember(widthDp, heightDp, posture, desktop) {
+    return remember(widthDp, heightDp, desktop) {
         WindowLayout(
             layoutClass = layoutClassFor(widthDp.dp, heightDp.dp),
             width = widthDp.dp,
             height = heightDp.dp,
-            posture = posture,
             desktop = desktop,
         )
     }
@@ -204,5 +198,5 @@ fun currentWindowLayout(): WindowLayout {
 
 /** The app window's layout; provided in MainActivity. The phone's until then. */
 val LocalWindowLayout = compositionLocalOf {
-    WindowLayout(LayoutClass.Phone, 0.dp, 0.dp, Posture())
+    WindowLayout(LayoutClass.Phone, 0.dp, 0.dp)
 }
