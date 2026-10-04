@@ -12,6 +12,30 @@
 
 ---
 
+## Screenshots | 截圖
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/screenshots/library.jpg" width="250" alt="Library"><br><sub>Library | 資料庫</sub></td>
+    <td align="center"><img src="docs/screenshots/now-playing.jpg" width="250" alt="Now Playing"><br><sub>Now Playing | 播放畫面</sub></td>
+    <td align="center"><img src="docs/screenshots/song-info.jpg" width="250" alt="Song info with native DSD output"><br><sub>Song info, native DSD | 歌曲資訊與原生 DSD</sub></td>
+  </tr>
+  <tr>
+    <td align="center"><img src="docs/screenshots/queue.jpg" width="250" alt="Up next queue"><br><sub>Up next | 待播清單</sub></td>
+    <td align="center"><img src="docs/screenshots/album.jpg" width="250" alt="Album"><br><sub>Album | 專輯</sub></td>
+    <td align="center"><img src="docs/screenshots/glass-settings.jpg" width="250" alt="Glass settings"><br><sub>Glass settings | 毛玻璃設定</sub></td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+    <td align="center"><img src="docs/screenshots/library-landscape.jpg" width="400" alt="Library in landscape"><br><sub>Landscape library | 橫向資料庫</sub></td>
+    <td align="center"><img src="docs/screenshots/now-playing-landscape.jpg" width="400" alt="Now Playing in landscape"><br><sub>Landscape Now Playing | 橫向播放畫面</sub></td>
+  </tr>
+</table>
+
+---
+
 ## Features | 核心特色
 
 - **Samsung One UI 9.0 Spatial Visual Design | 三星 One UI 9.0 空間視覺設計**  
