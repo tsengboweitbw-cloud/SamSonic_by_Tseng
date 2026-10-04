@@ -346,6 +346,7 @@ fun SettingsScreen(
                     if (source is ActiveSource.Server) {
                         MusicCacheRows(container.musicCache, musicCacheUsage, clearMusicCacheMenu)
                         OfflineMusicRow(container.offlineStore, container.offlineDownloader, removeOfflineMenu, offlineUsage)
+                        OfflineRefusedRow(container.offlineStore, container.offlineDownloader)
                         OfflineOnlyRow(container.offlineOnly)
                     }
                     ImageCacheRows(

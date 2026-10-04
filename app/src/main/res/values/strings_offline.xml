@@ -6,6 +6,11 @@
     <string name="offline_kept">%1$s will be saved for offline</string>
     <string name="offline_removed">%1$s removed from offline</string>
     <string name="offline_mark_description">Saved for offline</string>
+    <string name="offline_mark_waiting">Waiting to be saved for offline</string>
+    <string name="offline_mark_saving">Saving for offline</string>
+    <string name="offline_mark_refused">The server would not give this song, so it is not saved for offline</string>
+    <string name="offline_retry_option">Try saving again</string>
+    <string name="offline_retrying">%1$s will be tried again</string>
     <string name="offline_channel_name">Offline music</string>
     <string name="offline_notification_title">Saving music for offline</string>
     <string name="offline_notification_waiting">Getting ready…</string>
@@ -14,6 +19,11 @@
     <string name="settings_offline_music">Offline music</string>
     <string name="settings_offline_music_empty">None</string>
     <string name="settings_offline_music_saving">Saving %1$d of %2$d</string>
+    <string name="settings_offline_refused">Songs not saved</string>
+    <plurals name="settings_offline_refused_summary">
+        <item quantity="one">%1$d refused by the server · tap to try again</item>
+        <item quantity="other">%1$d refused by the server · tap to try again</item>
+    </plurals>
     <string name="settings_offline_music_hint">Songs saved for offline are kept on the phone and play without the server. They are not counted in the music cache\'s size, and are saved on Wi-Fi only when that switch is on</string>
     <string name="settings_offline_only">Offline only</string>
     <string name="settings_offline_only_hint">Every page shows only the songs saved for offline: artists, albums, playlists, search and Home are made from them, and nothing waits for the server</string>

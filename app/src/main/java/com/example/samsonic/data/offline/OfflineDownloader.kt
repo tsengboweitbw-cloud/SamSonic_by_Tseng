@@ -22,14 +22,43 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-/** How far saving the songs kept for offline has got: [done] of [total] songs, [current] being saved. */
-data class OfflineProgress(val total: Int, val done: Int, val current: String?)
+/**
+ * How far saving the songs kept for offline has got: [done] of [total] songs, [current] (the
+ * title of the song with id [currentId]) being saved, [currentFraction] of it (0 to 1) there.
+ */
+data class OfflineProgress(
+    val total: Int,
+    val done: Int,
+    val current: String?,
+    val currentId: String? = null,
+    val currentFraction: Float = 0f,
+)
+
+/** Where a song kept for offline is in being saved, for the mark by its name. */
+sealed interface OfflineSongStatus {
+    /** Whole on the phone. */
+    data object Saved : OfflineSongStatus
+
+    /** Not saved yet, and in the queue (or held until the network allows). */
+    data object Waiting : OfflineSongStatus
+
+    /** Being saved now, [fraction] of it (0 to 1) there. */
+    data class Saving(val fraction: Float) : OfflineSongStatus
+
+    /** The server refused it; [OfflineDownloader.retry] asks again. */
+    data object Refused : OfflineSongStatus
+}
 
 /**
  * Saves every song kept for offline ([OfflineStore]) whole into the music cache, one after
@@ -57,7 +86,7 @@ class OfflineDownloader(
     private val connectivity = context.getSystemService(ConnectivityManager::class.java)
     private var job: Job? = null
 
-    // Songs the server refused this launch, left out of the runs after, and whether the lack of room has been said.
+    // Songs the server refused this launch, left out of the runs after (until [retry]), and whether the lack of room has been said.
     private val refused = HashSet<String>()
     private var toldOutOfSpace = false
 
@@ -66,6 +95,26 @@ class OfflineDownloader(
 
     private val _progress = MutableStateFlow<OfflineProgress?>(null)
     val progress: StateFlow<OfflineProgress?> = _progress.asStateFlow()
+
+    private val _unsaved = MutableStateFlow<Set<String>>(emptySet())
+    private val _refusedIds = MutableStateFlow<Set<String>>(emptySet())
+
+    /** The ids of the songs the server refused since the app started, which [retry] asks for again. */
+    val refusedIds: StateFlow<Set<String>> = _refusedIds.asStateFlow()
+
+    /** How far the song [songId] has got, as it changes; each song's mark follows its own. */
+    fun statusOf(songId: String): Flow<OfflineSongStatus> = combine(
+        _progress.map { p -> if (p?.currentId == songId) p.currentFraction else null }.distinctUntilChanged(),
+        _unsaved,
+        _refusedIds,
+    ) { fraction, unsaved, refusedIds ->
+        when {
+            songId in refusedIds -> OfflineSongStatus.Refused
+            fraction != null -> OfflineSongStatus.Saving(fraction)
+            songId in unsaved -> OfflineSongStatus.Waiting
+            else -> OfflineSongStatus.Saved
+        }
+    }.distinctUntilChanged()
 
     // Called on a system thread: a network that comes back, or turns unmetered, picks saving up again.
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
@@ -83,6 +132,7 @@ class OfflineDownloader(
         if (job?.isActive == true) return
         // Off the main thread: working out what's saved reads the cache's index from disk.
         job = scope.launch(Dispatchers.IO) {
+            publishUnsaved()
             if (wifiOnly.value && connectivity.isActiveNetworkMetered) return@launch
             val todo = pending()
             if (todo.isEmpty()) return@launch
@@ -91,7 +141,12 @@ class OfflineDownloader(
             // system won't allow one from here, it saves while the app is open.
             runCatching { ContextCompat.startForegroundService(context, Intent(context, OfflineDownloadService::class.java)) }
             try {
-                run(todo)
+                // Songs kept or retried while it ran are picked up before it ends.
+                var round = todo
+                while (run(round)) {
+                    round = pending()
+                    if (round.isEmpty()) break
+                }
             } finally {
                 _progress.value = null
                 writer = null
@@ -107,16 +162,26 @@ class OfflineDownloader(
         _progress.value = null
     }
 
-    private suspend fun run(todo: List<OfflineEntry>) {
+    /** Saves [todo] in turn. False if it stopped short (the connection dropped, or no room), true if it went through them all. */
+    private suspend fun run(todo: List<OfflineEntry>): Boolean {
         val source = cacheDataSourceFactory(cache(), upstreamFactory)
         var done = 0
         for (entry in todo) {
             // Removed from what's kept while this was saving: nothing to do for it.
             if (store.entries.value.none { it.cacheKey == entry.cacheKey }) continue
-            _progress.value = OfflineProgress(todo.size, done, entry.song.title)
-            val uri = library().streamUrl(entry.song.id)
+            val id = entry.song.id
+            _progress.value = OfflineProgress(todo.size, done, entry.song.title, currentId = id)
+            val uri = library().streamUrl(id)
             val spec = DataSpec.Builder().setUri(uri).setKey(entry.cacheKey).build()
-            val cacheWriter = CacheWriter(source.createDataSource(), spec, null, null)
+            var shown = 0
+            val cacheWriter = CacheWriter(source.createDataSource(), spec, null) { length, cached, _ ->
+                // A whole percent at a time, so the marks beside the songs aren't redrawn for every few bytes.
+                val percent = if (length > 0) (cached * 100 / length).toInt() else 0
+                if (percent != shown) {
+                    shown = percent
+                    _progress.update { p -> p?.takeIf { it.currentId == id }?.copy(currentFraction = percent / 100f) ?: p }
+                }
+            }
             writer = cacheWriter
             try {
                 cacheWriter.cache()
@@ -124,30 +189,52 @@ class OfflineDownloader(
                 throw e
             } catch (e: Exception) {
                 when (saveFailureOf(e)) {
-                    // One the server won't give out must not hold up the rest; it's tried again at the next launch.
-                    SaveFailure.SkipSong -> refused += entry.cacheKey
+                    // One the server won't give out must not hold up the rest; it's tried again by a retry or at the next launch.
+                    SaveFailure.SkipSong -> {
+                        refused += entry.cacheKey
+                        _refusedIds.update { it + id }
+                    }
                     // Cancelled, or the connection dropped: carries on from here at the next start.
-                    SaveFailure.Stop -> return
+                    SaveFailure.Stop -> return false
                     SaveFailure.OutOfSpace -> {
                         if (!toldOutOfSpace) {
                             toldOutOfSpace = true
                             withContext(Dispatchers.Main) { Toast.makeText(context, R.string.offline_out_of_space, Toast.LENGTH_LONG).show() }
                         }
-                        return
+                        return false
                     }
                 }
                 continue
             }
             toldOutOfSpace = false
             done++
+            _unsaved.update { it - id }
         }
+        return true
     }
 
-    /** The songs kept for the server in use and not saved whole yet. */
-    private fun pending(): List<OfflineEntry> {
-        val server = serverKey() ?: return emptyList()
-        return store.entries.value.filter { it.serverKey == server && it.cacheKey !in refused && !isComplete(it.cacheKey) }
+    /** Asks the server again for the songs [songIds] it refused (all of them if null), and saves what it now gives. */
+    fun retry(songIds: Set<String>? = null) {
+        val ids = _refusedIds.value.let { if (songIds == null) it else it.intersect(songIds) }
+        if (ids.isEmpty()) return
+        val keys = store.entries.value.filter { it.song.id in ids }.mapTo(HashSet()) { it.cacheKey }
+        refused -= keys
+        _refusedIds.update { it - ids }
+        start()
     }
+
+    /** Works out which of the songs kept for the server in use aren't saved whole yet, for the marks. */
+    private fun publishUnsaved() {
+        _unsaved.value = unsaved().mapTo(HashSet()) { it.song.id }
+    }
+
+    private fun unsaved(): List<OfflineEntry> {
+        val server = serverKey() ?: return emptyList()
+        return store.entries.value.filter { it.serverKey == server && !isComplete(it.cacheKey) }
+    }
+
+    /** The songs kept for the server in use and not saved whole yet, bar those the server refused. */
+    private fun pending(): List<OfflineEntry> = unsaved().filter { it.cacheKey !in refused }
 
     /** Whether the cache holds every byte of the song under [key]. */
     fun isComplete(key: String): Boolean {

@@ -38,6 +38,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.DownloadForOffline
+import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.ui.res.pluralStringResource
 import com.example.samsonic.data.offline.OfflineDownloader
 import com.example.samsonic.data.offline.OfflineStore
@@ -85,6 +86,32 @@ internal fun OfflineMusicRow(store: OfflineStore, downloader: OfflineDownloader,
         Text(text = stringResource(R.string.settings_offline_music), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
         Text(text = summary, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
         RowHint(hintState, hint)
+    }
+}
+
+/** Shown when the server refused some songs kept for offline: a tap asks it for them again. */
+@Composable
+internal fun OfflineRefusedRow(store: OfflineStore, downloader: OfflineDownloader) {
+    val refused by downloader.refusedIds.collectAsStateWithLifecycle()
+    val entries by store.entries.collectAsStateWithLifecycle()
+    // Only those still kept.
+    val count = entries.count { it.song.id in refused }
+    if (count == 0) return
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .oneUiRowClickable(onClick = { downloader.retry() })
+            .padding(horizontal = 8.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(Icons.Filled.ErrorOutline, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(22.dp))
+        Spacer(Modifier.width(14.dp))
+        Text(text = stringResource(R.string.settings_offline_refused), style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+        Text(
+            text = pluralStringResource(R.plurals.settings_offline_refused_summary, count, count),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
