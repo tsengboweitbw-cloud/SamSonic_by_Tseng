@@ -95,6 +95,10 @@ interface MusicLibrary {
     suspend fun createPlaylist(name: String, songIds: List<String>): Unit =
         throw UnsupportedOperationException("This library has no playlists")
 
+    /** Deletes playlist [id]; its songs stay in the library. */
+    suspend fun deletePlaylist(id: String): Unit =
+        throw UnsupportedOperationException("This library has no playlists")
+
     suspend fun getTopSongs(artistName: String, count: Int = 5): List<Song>
 
     /** Genres, most songs first. */

@@ -21,6 +21,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onPlaced
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -179,10 +184,17 @@ fun PlaylistCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     artSize: Dp = 140.dp,
+    // A long press, with the card's bounds for the menu it opens to grow out of.
+    onLongClick: ((Rect) -> Unit)? = null,
 ) {
     val cornerRadius = LocalRowPrefs.current.artCornerRadius
     val art = rememberSharedArt(ArtKeys.playlist(playlist.id), playlist, onClick)
-    PressableCard(onClick = art.onClick, modifier = modifier) {
+    val bounds = remember { arrayOfNulls<LayoutCoordinates>(1) }
+    PressableCard(
+        onClick = art.onClick,
+        modifier = modifier.onPlaced { bounds[0] = it },
+        onLongClick = onLongClick?.let { open -> { open(bounds[0]?.takeIf { it.isAttached }?.boundsInRoot() ?: Rect.Zero) } },
+    ) {
         Column(
             modifier = Modifier.widthIn(max = artSize),
         ) {

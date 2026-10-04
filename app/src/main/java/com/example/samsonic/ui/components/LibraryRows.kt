@@ -10,6 +10,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onPlaced
+import androidx.compose.ui.layout.LayoutCoordinates
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -54,14 +59,22 @@ fun ArtistRow(artist: Artist, onClick: () -> Unit, modifier: Modifier = Modifier
 
 /** A playlist as a list row, laid out like [AlbumRow]: cover, name, song count. */
 @Composable
-fun PlaylistRow(playlist: Playlist, onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun PlaylistRow(
+    playlist: Playlist,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    // A long press, with the row's bounds for the menu it opens to grow out of.
+    onLongClick: ((Rect) -> Unit)? = null,
+) {
+    val bounds = remember { arrayOfNulls<LayoutCoordinates>(1) }
     val cornerRadius = LocalRowPrefs.current.artCornerRadius
     val art = rememberSharedArt(ArtKeys.playlist(playlist.id), playlist, onClick)
     LibraryRow(
         title = playlist.name,
         details = pluralStringResource(R.plurals.components_song_count, playlist.songCount, playlist.songCount),
         onClick = art.onClick,
-        modifier = modifier,
+        onLongClick = onLongClick?.let { open -> { open(bounds[0]?.takeIf { it.isAttached }?.boundsInRoot() ?: Rect.Zero) } },
+        modifier = modifier.onPlaced { bounds[0] = it },
     ) {
         PlaylistArt(
             playlist = playlist,
@@ -79,12 +92,13 @@ private fun LibraryRow(
     details: String,
     onClick: () -> Unit,
     modifier: Modifier,
+    onLongClick: (() -> Unit)? = null,
     art: @Composable () -> Unit,
 ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .oneUiRowClickable(onClick)
+            .oneUiRowClickable(onClick, onLongClick)
             .padding(horizontal = 12.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

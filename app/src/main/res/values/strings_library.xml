@@ -120,6 +120,10 @@
     <string name="library_playlist_name">Name</string>
     <string name="library_cancel">Cancel</string>
     <string name="library_create">Create</string>
+    <string name="library_delete">Delete</string>
+    <string name="library_delete_playlist_title">Delete playlist</string>
+    <string name="library_delete_playlist_body">%1$s will be deleted. Its songs stay in your library.</string>
+    <string name="library_delete_playlist_error">Couldn\'t delete the playlist</string>
     <string name="library_creating">Creating…</string>
     <string name="library_add_anyway">Add anyway</string>
     <string name="library_skip">Skip</string>

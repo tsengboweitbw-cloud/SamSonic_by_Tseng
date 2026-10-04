@@ -338,6 +338,10 @@ class SubsonicRepository(
         requireApi().createPlaylist(authParams() + ("name" to name), songIds).response.requireOk()
     }
 
+    override suspend fun deletePlaylist(id: String) {
+        requireApi().deletePlaylist(authParams() + ("id" to id)).response.requireOk()
+    }
+
     /** Subsonic reports a refused call in the body, still with HTTP 200. */
     private fun SubsonicResponseBody.requireOk() {
         if (status != "ok") error(error?.message ?: context.getString(R.string.data_server_refused))

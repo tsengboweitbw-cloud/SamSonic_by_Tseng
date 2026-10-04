@@ -46,6 +46,12 @@ internal class DeviceStore(context: Context) {
         write(KEY_PLAYLISTS, playlists() + playlist)
     }
 
+    /** Deletes playlist [id]. */
+    @Synchronized
+    fun deletePlaylist(id: String) {
+        write(KEY_PLAYLISTS, playlists().filterNot { it.id == id })
+    }
+
     /** Adds [songIds] to the end of playlist [id], now; false if there's no such playlist. */
     @Synchronized
     fun addToPlaylist(id: String, songIds: List<String>, nowMs: Long = System.currentTimeMillis()): Boolean {

@@ -208,6 +208,8 @@ class DeviceLibrary(context: Context) : MusicLibrary {
 
     override suspend fun createPlaylist(name: String, songIds: List<String>) = store.createPlaylist(name, songIds)
 
+    override suspend fun deletePlaylist(id: String) = store.deletePlaylist(id)
+
     override suspend fun getTopSongs(artistName: String, count: Int): List<Song> = index().topSongs(artistName).take(count)
 
     override suspend fun getGenres() = index().genres
