@@ -28,6 +28,8 @@ class Scrobbler(
     // The active source's library, read at each use: it changes when the user switches sources.
     private val repository: () -> MusicLibrary,
     private val scope: CoroutineScope,
+    // The clock the listening time is counted by; a test gives its own.
+    private val clock: () -> Long = SystemClock::elapsedRealtime,
 ) : Player.Listener {
     private var songId: String? = null
     private var nowPlayingSent = false
@@ -73,10 +75,10 @@ class Scrobbler(
     private fun startTicker() {
         ticker?.cancel()
         ticker = scope.launch {
-            var last = SystemClock.elapsedRealtime()
+            var last = clock()
             while (isActive) {
                 delay(TickMillis)
-                val now = SystemClock.elapsedRealtime()
+                val now = clock()
                 listenedMs += ((now - last) * player.playbackParameters.speed).toLong()
                 last = now
                 maybeSubmit()
