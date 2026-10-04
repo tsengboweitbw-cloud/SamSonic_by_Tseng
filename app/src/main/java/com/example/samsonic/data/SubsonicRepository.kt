@@ -16,9 +16,11 @@ import com.example.samsonic.model.LyricLine
 import com.example.samsonic.model.Playlist
 import com.example.samsonic.model.SearchResults
 import com.example.samsonic.model.Song
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.serialization.json.Json
@@ -103,12 +105,15 @@ class SubsonicRepository(
         return SubsonicAuth.params(creds.username, creds.password)
     }
 
+    // Mapping and sorting thousands of entries is CPU work, and callers are on the main thread.
     override suspend fun getArtists(): List<Artist> {
         val body = requireApi().getArtists(authParams()).response
-        return body.artists?.index.orEmpty()
-            .flatMap { it.artist }
-            .map { it.toDomain() }
-            .sortedBy { it.name.lowercase() }
+        return withContext(Dispatchers.Default) {
+            body.artists?.index.orEmpty()
+                .flatMap { it.artist }
+                .map { it.toDomain() }
+                .sortedBy { it.name.lowercase() }
+        }
     }
 
     /**
@@ -120,7 +125,9 @@ class SubsonicRepository(
      */
     override suspend fun getAlbumArtists(): List<Artist> = coroutineScope {
         val covers = async { artistCovers() }
-        albumArtistsOf(allAlbums(mapOf("type" to "alphabeticalByArtist")), covers.await())
+        val albums = allAlbums(mapOf("type" to "alphabeticalByArtist"))
+        val coverById = covers.await()
+        withContext(Dispatchers.Default) { albumArtistsOf(albums, coverById) }
     }
 
     /**
@@ -131,22 +138,28 @@ class SubsonicRepository(
         val songs = async { if (songCount > 0) getGenreSongs(genre, songCount) else emptyList() }
         val covers = async { artistCovers() }
         val albums = allAlbums(mapOf("type" to "byGenre", "genre" to genre))
-        GenreContents(
-            albums = albums.map { it.toDomain() }.sortedWith(newestFirst { it.year }),
-            artists = albumArtistsOf(albums, covers.await()),
-            songs = songs.await(),
-        )
+        val coverById = covers.await()
+        withContext(Dispatchers.Default) {
+            GenreContents(
+                albums = albums.map { it.toDomain() }.sortedWith(newestFirst { it.year }),
+                artists = albumArtistsOf(albums, coverById),
+                songs = songs.await(),
+            )
+        }
     }
 
     /** Up to [count] of [genre]'s songs, newest first; getSongsByGenre pages at 500. */
-    override suspend fun getGenreSongs(genre: String, count: Int): List<Song> = buildList {
-        do {
-            val size = minOf(SONG_PAGE_SIZE, count - this.size)
-            val params = authParams() + mapOf("genre" to genre, "count" to "$size", "offset" to "${this.size}")
-            val page = requireApi().getSongsByGenre(params).response.songsByGenre?.song.orEmpty()
-            addAll(page.map { it.toDomain() })
-        } while (page.size == size && this.size < count)
-    }.distinctBy { it.id }.sortedWith(newestFirst { it.year })
+    override suspend fun getGenreSongs(genre: String, count: Int): List<Song> {
+        val songs = buildList {
+            do {
+                val size = minOf(SONG_PAGE_SIZE, count - this.size)
+                val params = authParams() + mapOf("genre" to genre, "count" to "$size", "offset" to "${this.size}")
+                val page = requireApi().getSongsByGenre(params).response.songsByGenre?.song.orEmpty()
+                addAll(withContext(Dispatchers.Default) { page.map { it.toDomain() } })
+            } while (page.size == size && this.size < count)
+        }
+        return withContext(Dispatchers.Default) { songs.distinctBy { it.id }.sortedWith(newestFirst { it.year }) }
+    }
 
     /** Every album getAlbumList2 lists for [query] (its type and filters), page after page. */
     private suspend fun allAlbums(query: Map<String, String>): List<AlbumDto> = buildList {

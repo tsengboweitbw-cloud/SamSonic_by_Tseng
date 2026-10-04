@@ -16,7 +16,6 @@ import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -35,6 +34,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImagePainter
 import coil3.compose.rememberAsyncImagePainter
 import com.example.samsonic.data.CoverArtSizes
@@ -153,10 +153,10 @@ private fun ArtSurface(
         }
     }
     val painter = rememberAsyncImagePainter(request)
-    val state by painter.state.collectAsState()
+    val state by painter.state.collectAsStateWithLifecycle()
     // Stands in until [painter] has loaded; null when there's none.
     val fallback = fallbackUrl?.let { rememberAsyncImagePainter(it) }
-    val fallbackState = fallback?.state?.collectAsState()?.value
+    val fallbackState = fallback?.state?.collectAsStateWithLifecycle()?.value
     val mainLoaded = state is AsyncImagePainter.State.Success
     // The art as last loaded here, kept while the same art loads again at another size (the
     // screen switched, folding or unfolding, and the art is laid out larger or smaller):
