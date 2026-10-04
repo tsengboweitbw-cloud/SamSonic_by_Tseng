@@ -1,5 +1,6 @@
 package com.example.samsonic.playback
 
+import android.app.ActivityManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
@@ -83,7 +84,7 @@ class PlaybackService : MediaSessionService() {
                 /* handleAudioFocus = */ true,
             )
             .setHandleAudioBecomingNoisy(true)
-            .setLoadControl(streamingLoadControl())
+            .setLoadControl(streamingLoadControl(this))
             .build()
         // The queue from last time, ready (not loading) until play is pressed here or in the media controls.
         val store = container.playbackStore
@@ -141,7 +142,10 @@ class PlaybackService : MediaSessionService() {
             }
         }
         // Application-scoped, so a scrobble sent just before the service stops still goes out.
-        scrobbler = Scrobbler(player, { container.repository }, container.applicationScope)
+        scrobbler = Scrobbler(
+            player, { container.repository }, container.applicationScope,
+            queue = container.scrobbleQueue, serverKey = { container.sources.serverKey },
+        )
         container.audioOutput.attach(player)
         prefetcher = MusicPrefetcher(
             player = player,
@@ -242,21 +246,19 @@ class PlaybackService : MediaSessionService() {
     }
 }
 
-/**
- * A deeper buffer than Media3's default (which suits video), so a poor connection has
- * minutes of music in hand rather than seconds: it loads up to three minutes ahead
- * and tops up once under one. Capped by size too, as hi-res files run large. After a
- * stall it waits for a few seconds' worth before playing on, so a weak signal gives
- * one short pause instead of stopping and starting over and over.
- */
+/** The player's buffer, sized to the phone: see [bufferPlanFor]. */
 @OptIn(UnstableApi::class)
-private fun streamingLoadControl(): DefaultLoadControl = DefaultLoadControl.Builder()
-    .setBufferDurationsMs(
-        /* minBufferMs = */ 60_000,
-        /* maxBufferMs = */ 180_000,
-        /* bufferForPlaybackMs = */ 2_500,
-        /* bufferForPlaybackAfterRebufferMs = */ 8_000,
-    )
-    .setTargetBufferBytes(48 * 1024 * 1024)
-    .setPrioritizeTimeOverSizeThresholds(false)
-    .build()
+private fun streamingLoadControl(context: Context): DefaultLoadControl {
+    val activityManager = context.getSystemService(ActivityManager::class.java)
+    val plan = bufferPlanFor(activityManager.memoryClass, activityManager.isLowRamDevice)
+    return DefaultLoadControl.Builder()
+        .setBufferDurationsMs(
+            /* minBufferMs = */ plan.minMs,
+            /* maxBufferMs = */ plan.maxMs,
+            /* bufferForPlaybackMs = */ 2_500,
+            /* bufferForPlaybackAfterRebufferMs = */ 8_000,
+        )
+        .setTargetBufferBytes(plan.bytes)
+        .setPrioritizeTimeOverSizeThresholds(false)
+        .build()
+}

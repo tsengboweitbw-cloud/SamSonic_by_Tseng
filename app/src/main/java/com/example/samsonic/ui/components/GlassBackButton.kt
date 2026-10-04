@@ -9,7 +9,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.R
 import com.example.samsonic.ui.theme.AccentSheen
@@ -31,6 +33,25 @@ import dev.chrisbanes.haze.hazeSource
  */
 @Composable
 fun GlassBackButton(onClick: () -> Unit, hazeState: HazeState?, modifier: Modifier = Modifier) {
+    GlassIconButton(
+        icon = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
+        contentDescription = stringResource(R.string.components_back),
+        onClick = onClick,
+        hazeState = hazeState,
+        modifier = modifier,
+    )
+}
+
+/** A round glass button like [GlassBackButton] with any [icon], for a page's floating actions (see its note on [hazeState]). */
+@Composable
+fun GlassIconButton(
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit,
+    hazeState: HazeState?,
+    modifier: Modifier = Modifier,
+    iconSize: Dp = ChromeButtonIconSize,
+) {
     PressIconButton(
         onClick = onClick,
         size = ChromeButtonSize,
@@ -44,7 +65,7 @@ fun GlassBackButton(onClick: () -> Unit, hazeState: HazeState?, modifier: Modifi
                 inputScale = LocalChromeBlurScale.current,
             ),
     ) {
-        Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = stringResource(R.string.components_back), modifier = Modifier.size(ChromeButtonIconSize))
+        Icon(icon, contentDescription = contentDescription, modifier = Modifier.size(iconSize))
     }
 }
 

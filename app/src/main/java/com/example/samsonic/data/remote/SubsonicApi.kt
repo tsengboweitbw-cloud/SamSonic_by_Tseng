@@ -44,6 +44,9 @@ interface SubsonicApi {
         @Query("songIdToAdd") songIdsToAdd: List<String>,
     ): SubsonicEnvelope
 
+    @GET("rest/deletePlaylist.view")
+    suspend fun deletePlaylist(@QueryMap params: Map<String, String>): SubsonicEnvelope
+
     @GET("rest/getGenres.view")
     suspend fun getGenres(@QueryMap params: Map<String, String>): SubsonicEnvelope
 

@@ -5,8 +5,8 @@ import androidx.annotation.OptIn
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.database.StandaloneDatabaseProvider
 import androidx.media3.datasource.cache.Cache
-import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor
 import androidx.media3.datasource.cache.SimpleCache
+import com.example.samsonic.data.offline.PinningCacheEvictor
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,7 +23,12 @@ import kotlinx.coroutines.flow.asStateFlow
  * the next app start; [activeStep] is the one in use until then.
  */
 @OptIn(UnstableApi::class)
-class MusicCache(context: Context, private val locations: ImageCacheSettings) {
+class MusicCache(
+    context: Context,
+    private val locations: ImageCacheSettings,
+    // The cache keys of songs kept for offline, which clearing and making room leave alone.
+    private val pinned: () -> Set<String> = { emptySet() },
+) {
     private val appContext = context.applicationContext
     private val prefs = appContext.getSharedPreferences("samsonic_cache", Context.MODE_PRIVATE)
     private val databaseProvider by lazy { StandaloneDatabaseProvider(appContext) }
@@ -57,7 +62,7 @@ class MusicCache(context: Context, private val locations: ImageCacheSettings) {
         SimpleCache(
             // Out of the system's cache folder, so it isn't emptied behind the index's back.
             locations.activeLocation.musicDir,
-            LeastRecentlyUsedCacheEvictor(ImageCacheSettings.Steps[activeStep]),
+            PinningCacheEvictor(ImageCacheSettings.Steps[activeStep], pinned),
             databaseProvider,
         )
     }
@@ -85,11 +90,12 @@ class MusicCache(context: Context, private val locations: ImageCacheSettings) {
     fun usedBytes(): Long = cache.cacheSpace
 
     /**
-     * Empties it, but for the parts of songs being read right now (the playing one,
+     * Empties it, but for the songs kept for offline and the parts of songs being read right now (the playing one,
      * one being saved ahead), which go the next time. Off the main thread.
      */
     fun clear() {
-        cache.keys.toList().forEach { key -> runCatching { cache.removeResource(key) } }
+        val keep = pinned()
+        cache.keys.filter { it !in keep }.forEach { key -> runCatching { cache.removeResource(key) } }
     }
 
     private companion object {

@@ -161,6 +161,20 @@ class SubsonicRepositoryTest {
         assertEquals("s1", played.param("id"))
     }
 
+
+    @Test
+    fun aListenToldLateCarriesTheTimeItHappened() = runTest {
+        ok()
+        repository.scrobble("s1", submission = true, timeMs = 1_700_000_000_000)
+        assertEquals("1700000000000", server.takeRequest().param("time"))
+    }
+
+    @Test
+    fun aListenToldAtOnceCarriesNoTime() = runTest {
+        ok()
+        repository.scrobble("s1", submission = true)
+        assertEquals(null, server.takeRequest().param("time"))
+    }
     @Test
     fun aPlaylistCreatedWithSeveralSongsRepeatsTheSongIdParameter() = runTest {
         ok()

@@ -13,6 +13,12 @@ import com.example.samsonic.data.MusicSources
 import com.example.samsonic.data.SessionManager
 import com.example.samsonic.data.SubsonicRepository
 import com.example.samsonic.data.cache.LibraryCacheStore
+import com.example.samsonic.data.offline.OfflineDownloader
+import com.example.samsonic.data.offline.OfflineMusic
+import com.example.samsonic.data.offline.OfflineOnlySetting
+import com.example.samsonic.data.offline.OfflineStore
+import com.example.samsonic.data.scrobble.ScrobbleQueue
+import androidx.media3.datasource.okhttp.OkHttpDataSource
 import com.example.samsonic.data.LibraryLayoutManager
 import com.example.samsonic.data.ThemeManager
 import com.example.samsonic.data.device.DeviceLibrary
@@ -65,8 +71,14 @@ class AppContainer(context: Context) {
 
     val imageCacheSettings = ImageCacheSettings(appContext)
 
+    /** The songs kept on the phone for offline; the music cache leaves them alone. */
+    val offlineStore = OfflineStore(File(appContext.filesDir, "offline.json"))
+
+    /** Whether only the songs kept for offline are shown. */
+    val offlineOnly = OfflineOnlySetting(appContext)
+
     /** Streamed songs kept on the phone, so a poor connection doesn't stop the music. */
-    val musicCache = MusicCache(appContext, imageCacheSettings)
+    val musicCache = MusicCache(appContext, imageCacheSettings, pinned = offlineStore::cacheKeys)
 
     /** What the player sends out and where; the playback service feeds it, Song info shows it. */
     val audioOutput = AudioOutputMonitor(appContext)
@@ -74,11 +86,15 @@ class AppContainer(context: Context) {
     /** USB audio devices plugged in, and the way to open one for the native driver. */
     val usbDacs = UsbDacManager(appContext)
 
+    /** Listens the server couldn't be told of, sent once it can be. */
+    val scrobbleQueue = ScrobbleQueue(File(appContext.filesDir, "scrobbles.json"))
+
     private val subsonic = SubsonicRepository(okHttpClient, appContext)
 
-    val sources = MusicSources(
+    val sources: MusicSources = MusicSources(
         sessionManager, subsonic, DeviceLibrary(appContext),
-        LibraryCacheStore(File(appContext.cacheDir, "library")), applicationScope,
+        LibraryCacheStore(File(appContext.cacheDir, "library")), scrobbleQueue,
+        offlineStore, offlineOnly.enabled, applicationScope,
     )
 
     /** Caches every cover of the signed-in server; the music on this phone has its art on hand. */
@@ -86,6 +102,28 @@ class AppContainer(context: Context) {
 
     /** The active source's library. Read it where it's used rather than holding on to it: it changes with the source. */
     val repository: MusicLibrary get() = sources.library
+
+    /** Saves the songs kept for offline whole, from the server in use. */
+    val offlineDownloader: OfflineDownloader = OfflineDownloader(
+        context = appContext,
+        cache = { musicCache.cache },
+        upstream = OkHttpDataSource.Factory(okHttpClient),
+        store = offlineStore,
+        library = { repository },
+        serverKey = { sources.serverKey },
+        wifiOnly = musicCache.prefetchWifiOnly,
+        scope = applicationScope,
+    )
+
+    /** Keeping songs on the phone for offline, and which are kept. */
+    val offlineMusic = OfflineMusic(
+        store = offlineStore,
+        library = { repository },
+        serverKey = { sources.serverKey },
+        serverKeys = sources.serverKeys,
+        scope = applicationScope,
+        onKept = { offlineDownloader.start() },
+    )
 
     /** What Auto DJ adds as the queue runs out, and from what. */
     val autoDjSettings = AutoDjSettings(appContext)
@@ -113,6 +151,13 @@ class AppContainer(context: Context) {
         }
         // So are the covers being cached.
         applicationScope.launch { sources.active.drop(1).collect { coverArtPrefetcher.cancel() } }
+        // The songs kept for offline are saved for the server in use, from the start and after each switch.
+        applicationScope.launch {
+            sources.active.collect {
+                offlineDownloader.cancel()
+                offlineDownloader.start()
+            }
+        }
         // Caches left behind by moving them to or from an SD card.
         applicationScope.launch(Dispatchers.IO) {
             imageCacheSettings.deleteUnusedCaches()

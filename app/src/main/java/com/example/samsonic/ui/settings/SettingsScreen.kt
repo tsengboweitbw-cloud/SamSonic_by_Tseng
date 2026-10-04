@@ -141,6 +141,8 @@ fun SettingsScreen(
     val cacheUsage = rememberCacheUsage()
     val clearMusicCacheMenu = remember { PanelState(scope) }
     val musicCacheUsage = rememberMusicCacheUsage(container.musicCache)
+    val removeOfflineMenu = remember { PanelState(scope) }
+    val offlineUsage = remember { OfflineUsage(container.offlineDownloader) }
     val source by container.sources.active.collectAsStateWithLifecycle()
     // The group picked in two columns, kept here rather than there: folding onto a phone's
     // one column and back, or anything else passing through one column, finds it still picked.
@@ -169,6 +171,7 @@ fun SettingsScreen(
             CacheAllMenu(cacheAllMenu, haze, container.imageCacheSettings, onConfirm = container.coverArtPrefetcher::start)
             ClearCacheMenu(clearCacheMenu, haze, cacheUsage, container.coverArtPrefetcher)
             ClearMusicCacheMenu(clearMusicCacheMenu, haze, musicCacheUsage)
+            RemoveOfflineMusicMenu(removeOfflineMenu, haze, container.offlineStore, container.offlineDownloader)
             LanguageMenu(languageMenu, haze)
             ListActionsMenu(listActionsMenu, haze)
             GlassMenu(glassMenu, haze, container.themeManager)
@@ -342,6 +345,8 @@ fun SettingsScreen(
                     // Only a server's music streams; the phone's own is on hand already.
                     if (source is ActiveSource.Server) {
                         MusicCacheRows(container.musicCache, musicCacheUsage, clearMusicCacheMenu)
+                        OfflineMusicRow(container.offlineStore, container.offlineDownloader, removeOfflineMenu, offlineUsage)
+                        OfflineOnlyRow(container.offlineOnly)
                     }
                     ImageCacheRows(
                         settings = container.imageCacheSettings,

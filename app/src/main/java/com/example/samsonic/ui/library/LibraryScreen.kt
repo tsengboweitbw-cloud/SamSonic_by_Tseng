@@ -1,6 +1,15 @@
 package com.example.samsonic.ui.library
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.unit.IntOffset
+import com.example.samsonic.ui.common.LocalChromeGuard
+import com.example.samsonic.ui.settings.menuOrigin
+import com.example.samsonic.ui.player.PanelState
+import com.example.samsonic.ui.components.GlassIconButton
+import androidx.compose.ui.Alignment
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Album
 import androidx.compose.material.icons.filled.Category
@@ -125,6 +134,10 @@ fun LibraryScreen(
     // Each tab loads on its first visit and then keeps its data while on this
     // page, so switching back shows the list at once, right where it was left.
     // A tab counts as visited as soon as a swipe brings it on screen.
+    val newPlaylistMenu = remember { PanelState(scope) }
+    // The playlist a long press chose to delete, and the card that asks about it.
+    val deletePlaylistMenu = remember { PanelState(scope) }
+    var playlistToDelete by remember { mutableStateOf<Playlist?>(null) }
     val visited = remember { mutableStateListOf(pagerState.currentPage) }
     LaunchedEffect(pagerState) {
         snapshotFlow { pagerState.layoutInfo.visiblePagesInfo.map { it.index } }
@@ -169,6 +182,14 @@ fun LibraryScreen(
     val genres = if (3 in visited) {
         rememberScreenLoad(Unit, errorMessage = stringResource(R.string.library_genres_load_error), refresh = refreshes[3]) { repository.getGenres() }
     } else UiState.Loading
+
+    // A long press on a playlist asks to delete it, except Favourites, which is the liked songs.
+    fun deleteOnLongPress(playlist: Playlist): ((Rect) -> Unit)? =
+        if (!repository.canEditPlaylists || playlist.isFavourites) null else { from ->
+            playlistToDelete = playlist
+            deletePlaylistMenu.origin = from
+            deletePlaylistMenu.open()
+        }
 
     fun onTabSelected(tab: Int) {
         if (tab == pagerState.currentPage && !pagerState.isScrollInProgress) {
@@ -245,6 +266,33 @@ fun LibraryScreen(
                     )
                 },
             )
+            // A new playlist, from the playlists tab: a glass button like the back button's, over the nav bar's corner.
+            if (repository.canEditPlaylists) {
+                val chromeTop = LocalChromeGuard.current?.top ?: { 0f }
+                Box(Modifier.fillMaxSize()) {
+                    AnimatedVisibility(
+                        visible = pagerState.targetPage == 2 && !viewOptions.targetState,
+                        enter = fadeIn() + scaleIn(initialScale = 0.8f),
+                        exit = fadeOut() + scaleOut(targetScale = 0.8f),
+                        // Just above the highest bar, wherever it is now: the nav bar, or the mini player over it.
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .padding(end = 16.dp)
+                            .offset { IntOffset(0, -(chromeTop() + 12.dp.toPx()).roundToInt()) },
+                    ) {
+                        GlassIconButton(
+                            icon = Icons.Filled.Add,
+                            contentDescription = stringResource(R.string.library_new_playlist),
+                            onClick = newPlaylistMenu::open,
+                            hazeState = hazeState,
+                            modifier = Modifier.menuOrigin(newPlaylistMenu),
+                            iconSize = 28.dp,
+                        )
+                    }
+                }
+                NewPlaylistMenu(newPlaylistMenu, hazeState, onCreated = refreshes[2]::refresh)
+                DeletePlaylistMenu(deletePlaylistMenu, hazeState, playlistToDelete, onDeleted = refreshes[2]::refresh)
+            }
         },
     ) { topPadding ->
         val padding = LibraryPadding(top = topPadding, bottom = contentPaddingBottom)
@@ -295,8 +343,8 @@ fun LibraryScreen(
                         layout = layouts.getValue(LibrarySection.PLAYLISTS),
                         padding = padding,
                         key = { it.id },
-                        card = { playlist, size -> PlaylistCard(playlist, onClick = { onPlaylistClick(playlist) }, artSize = size) },
-                        row = { playlist -> PlaylistRow(playlist, onClick = { onPlaylistClick(playlist) }) },
+                        card = { playlist, size -> PlaylistCard(playlist, onClick = { onPlaylistClick(playlist) }, artSize = size, onLongClick = deleteOnLongPress(playlist)) },
+                        row = { playlist -> PlaylistRow(playlist, onClick = { onPlaylistClick(playlist) }, onLongClick = deleteOnLongPress(playlist)) },
                     )
                     else -> GenreList(genres, genresList, padding, onGenreClick)
                 }

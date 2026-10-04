@@ -44,6 +44,7 @@ class CachedLibraryTest {
         }
 
         override suspend fun addToPlaylist(playlistId: String, songIds: List<String>) = Unit
+        override suspend fun deletePlaylist(id: String) = Unit
     }
 
     private var time = 1_000_000L
@@ -181,6 +182,18 @@ class CachedLibraryTest {
         library.getPlaylists()
         time += 1
         library.addToPlaylist("p", listOf("s"))
+        time += 1
+        library.getPlaylists()
+        assertEquals(2, server.calls)
+    }
+
+    @Test
+    fun deletingAPlaylistMakesTheSavedOnesOld() = runTest {
+        val server = Server()
+        val library = library(server)
+        library.getPlaylists()
+        time += 1
+        library.deletePlaylist("p")
         time += 1
         library.getPlaylists()
         assertEquals(2, server.calls)

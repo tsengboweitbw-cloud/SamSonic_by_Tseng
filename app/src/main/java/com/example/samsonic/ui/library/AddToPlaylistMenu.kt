@@ -31,6 +31,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.OfflinePin
+import androidx.compose.material.icons.filled.RemoveCircleOutline
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -42,6 +45,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
@@ -95,6 +99,15 @@ internal fun Song.toPlaylistItems() = PlaylistItems(title) { listOf(this) }
 
 internal fun Album.toPlaylistItems() = PlaylistItems(title) { library -> library.getAlbum(id).second }
 
+/** Taking a song out of the playlist it's in: [remove] does it, and the page then loads again. */
+class SongRemoval(val remove: suspend () -> Unit)
+
+/**
+ * Set by a playlist's page: for a song of its list, how to take it out of the playlist,
+ * so that long-pressing it offers that; null elsewhere.
+ */
+val LocalSongRemoval = staticCompositionLocalOf<((Song) -> SongRemoval?)?> { null }
+
 /** What the Add to playlist menu is open for, and the menu's panel. */
 class AddToPlaylistState internal constructor(scope: CoroutineScope) {
     internal val panel = PanelState(scope)
@@ -109,6 +122,10 @@ class AddToPlaylistState internal constructor(scope: CoroutineScope) {
     internal var originRadius by mutableStateOf<Dp?>(OneUiRadius.Art)
         private set
 
+    /** How the menu also offers to take the song out of the playlist it was long-pressed in; null elsewhere. */
+    internal var removal by mutableStateOf<SongRemoval?>(null)
+        private set
+
     /** Whether the menu also offers to add to the queue: not for the song already playing. */
     internal var offersQueue by mutableStateOf(true)
         private set
@@ -118,8 +135,9 @@ class AddToPlaylistState internal constructor(scope: CoroutineScope) {
      * cover with [originRadius] corners, or with null a round glass button. With
      * [offersQueue], it offers Add to queue above the playlists.
      */
-    fun open(items: PlaylistItems, from: Rect, originRadius: Dp?, offersQueue: Boolean = true) {
+    fun open(items: PlaylistItems, from: Rect, originRadius: Dp?, offersQueue: Boolean = true, removal: SongRemoval? = null) {
         this.items = items
+        this.removal = removal
         this.originRadius = originRadius
         this.offersQueue = offersQueue
         panel.origin = from
@@ -146,7 +164,7 @@ class AddToPlaylistLongPress(val origin: Modifier, val onLongClick: (() -> Unit)
 /** For a song row, which the menu grows out of. */
 @Composable
 fun rememberAddToPlaylistLongPress(song: Song): AddToPlaylistLongPress =
-    rememberAddToPlaylistLongPress(OneUiRadius.Art) { song.toPlaylistItems() }
+    rememberAddToPlaylistLongPress(OneUiRadius.Art, removal = LocalSongRemoval.current?.let { forSong -> { forSong(song) } }) { song.toPlaylistItems() }
 
 /** For an album, whose [origin][AddToPlaylistLongPress.origin] has [originRadius] corners (its cover, or its row). */
 @Composable
@@ -154,11 +172,16 @@ fun rememberAddToPlaylistLongPress(album: Album, originRadius: Dp): AddToPlaylis
     rememberAddToPlaylistLongPress(originRadius) { album.toPlaylistItems() }
 
 @Composable
-private fun rememberAddToPlaylistLongPress(originRadius: Dp, items: () -> PlaylistItems): AddToPlaylistLongPress {
+private fun rememberAddToPlaylistLongPress(
+    originRadius: Dp,
+    removal: (() -> SongRemoval?)? = null,
+    items: () -> PlaylistItems,
+): AddToPlaylistLongPress {
     val state = LocalAddToPlaylist.current
     val haptics = LocalHapticFeedback.current
     val currentItems by rememberUpdatedState(items)
     val currentRadius by rememberUpdatedState(originRadius)
+    val currentRemoval by rememberUpdatedState(removal)
     // A plain holder, so scrolling doesn't recompose. Only the row's coordinates are kept
     // as it's placed; its bounds are worked out on the long press, not on every scroll frame.
     val coordinates = remember { arrayOfNulls<LayoutCoordinates>(1) }
@@ -170,7 +193,7 @@ private fun rememberAddToPlaylistLongPress(originRadius: Dp, items: () -> Playli
             onLongClick = {
                 haptics.performHapticFeedback(HapticFeedbackType.LongPress)
                 val bounds = coordinates[0]?.takeIf { it.isAttached }?.boundsInRoot() ?: Rect.Zero
-                state.open(currentItems(), bounds, currentRadius)
+                state.open(currentItems(), bounds, currentRadius, removal = currentRemoval?.invoke())
             },
             label = label,
         )
@@ -211,16 +234,28 @@ fun AddToPlaylistMenu(state: AddToPlaylistState, haze: HazeState) {
         var error by remember { mutableStateOf<String?>(null) }
         // An album's songs, fetched at the first playlist picked.
         val songIds = remember { arrayOfNulls<List<String>>(1) }
+        val loadedSongs = remember { arrayOfNulls<List<Song>>(1) }
+        // The songs once fetched, to tell whether Offline would keep them or let them go.
+        var songs by remember { mutableStateOf<List<Song>?>(null) }
+        val offline = LocalAppContainer.current.offlineMusic
+        val kept by offline.keptIds.collectAsStateWithLifecycle()
+
+        suspend fun loadSongIds(): List<String> =
+            songIds[0] ?: items.songs(repository).also { loadedSongs[0] = it }.map { it.id }.also {
+                if (it.isEmpty()) throw IllegalStateException(resources.getString(R.string.library_no_songs_to_add))
+                songIds[0] = it
+            }
+
         LaunchedEffect(Unit) {
             playlists = runCatching { repository.getOwnPlaylists() }
                 .fold({ UiState.Success(it) }, { UiState.Error(resources.getString(R.string.library_playlists_load_error)) })
         }
-
-        suspend fun loadSongIds(): List<String> =
-            songIds[0] ?: items.songIds(repository).also {
-                if (it.isEmpty()) throw IllegalStateException(resources.getString(R.string.library_no_songs_to_add))
-                songIds[0] = it
+        LaunchedEffect(Unit) {
+            if (offline.available) {
+                runCatching { loadSongIds() }
+                songs = loadedSongs[0]
             }
+        }
 
         fun work(key: String, block: suspend () -> Unit) {
             if (saving != null) return
@@ -296,6 +331,19 @@ fun AddToPlaylistMenu(state: AddToPlaylistState, haze: HazeState) {
                         },
                     )
                     Step.Pick -> {
+                        state.removal?.let { removal ->
+                            MenuOption(
+                                icon = Icons.Filled.RemoveCircleOutline,
+                                label = stringResource(R.string.library_remove_from_playlist),
+                                selected = false,
+                                onClick = {
+                                    if (saving == null) work("remove") {
+                                        removal.remove()
+                                        done(resources.getString(R.string.library_removed_from_playlist, items.title))
+                                    }
+                                },
+                            )
+                        }
                         if (state.offersQueue) {
                             MenuOption(
                                 icon = Icons.AutoMirrored.Filled.PlaylistAdd,
@@ -306,6 +354,24 @@ fun AddToPlaylistMenu(state: AddToPlaylistState, haze: HazeState) {
                                         // Fetched and queued by the player, so it carries on after the menu closes.
                                         player.queueLater(next = false) { items.songs(repository) }
                                         done(resources.getString(R.string.library_added_to_queue, items.title))
+                                    }
+                                },
+                            )
+                        }
+                        // Only with a server in use: the music on this phone is on it already.
+                        if (offline.available) {
+                            val loaded = songs
+                            val keeping = loaded != null && loaded.isNotEmpty() && loaded.all { it.id in kept }
+                            MenuOption(
+                                icon = if (keeping) Icons.Filled.CloudOff else Icons.Filled.OfflinePin,
+                                label = stringResource(if (keeping) R.string.offline_remove_option else R.string.offline_keep_option),
+                                selected = keeping,
+                                onClick = {
+                                    if (saving == null) work("offline") {
+                                        loadSongIds()
+                                        val all = loadedSongs[0].orEmpty()
+                                        if (keeping) offline.remove(all) else offline.keep(all)
+                                        done(resources.getString(if (keeping) R.string.offline_removed else R.string.offline_kept, items.title))
                                     }
                                 },
                             )
@@ -402,7 +468,7 @@ private fun DuplicatesPrompt(
 }
 
 @Composable
-private fun NewPlaylistForm(saving: Boolean, onCancel: () -> Unit, onCreate: (String) -> Unit) {
+internal fun NewPlaylistForm(saving: Boolean, onCancel: () -> Unit, onCreate: (String) -> Unit) {
     var name by remember { mutableStateOf("") }
     val focus = remember { FocusRequester() }
     LaunchedEffect(Unit) { focus.requestFocus() }

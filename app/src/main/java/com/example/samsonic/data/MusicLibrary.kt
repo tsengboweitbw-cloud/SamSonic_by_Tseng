@@ -95,6 +95,14 @@ interface MusicLibrary {
     suspend fun createPlaylist(name: String, songIds: List<String>): Unit =
         throw UnsupportedOperationException("This library has no playlists")
 
+    /** Takes the song at place [songIndex] (from 0, as [getPlaylist] lists them) out of playlist [playlistId]. */
+    suspend fun removeFromPlaylist(playlistId: String, songIndex: Int): Unit =
+        throw UnsupportedOperationException("This library has no playlists")
+
+    /** Deletes playlist [id]; its songs stay in the library. */
+    suspend fun deletePlaylist(id: String): Unit =
+        throw UnsupportedOperationException("This library has no playlists")
+
     suspend fun getTopSongs(artistName: String, count: Int = 5): List<Song>
 
     /** Genres, most songs first. */
@@ -113,8 +121,9 @@ interface MusicLibrary {
      * Tells the server song [id] is playing: as "now playing" when [submission] is false,
      * or as a finished listen that counts towards its play count when true. The music
      * on this phone has no server to tell, so it counts plays itself; by default it does nothing.
+     * [timeMs] is when the listen happened (milliseconds since 1970), for one told late.
      */
-    suspend fun scrobble(id: String, submission: Boolean) {}
+    suspend fun scrobble(id: String, submission: Boolean, timeMs: Long? = null) {}
 
     suspend fun getLyrics(songId: String): List<LyricLine>
 

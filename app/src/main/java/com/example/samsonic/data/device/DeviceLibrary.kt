@@ -208,6 +208,12 @@ class DeviceLibrary(context: Context) : MusicLibrary {
 
     override suspend fun createPlaylist(name: String, songIds: List<String>) = store.createPlaylist(name, songIds)
 
+    override suspend fun removeFromPlaylist(playlistId: String, songIndex: Int) {
+        check(store.removeFromPlaylist(playlistId, songIndex)) { appContext.getString(R.string.data_playlist_not_found) }
+    }
+
+    override suspend fun deletePlaylist(id: String) = store.deletePlaylist(id)
+
     override suspend fun getTopSongs(artistName: String, count: Int): List<Song> = index().topSongs(artistName).take(count)
 
     override suspend fun getGenres() = index().genres
@@ -240,7 +246,7 @@ class DeviceLibrary(context: Context) : MusicLibrary {
     }
 
     /** With no server to tell, a finished listen is counted here, for play counts and history. */
-    override suspend fun scrobble(id: String, submission: Boolean) {
+    override suspend fun scrobble(id: String, submission: Boolean, timeMs: Long?) {
         if (!submission) return
         store.addPlay(id)
         cached = null

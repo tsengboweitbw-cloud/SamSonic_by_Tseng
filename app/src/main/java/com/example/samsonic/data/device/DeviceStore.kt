@@ -46,6 +46,23 @@ internal class DeviceStore(context: Context) {
         write(KEY_PLAYLISTS, playlists() + playlist)
     }
 
+    /** Takes the song at place [songIndex] out of playlist [id], now; false if there is no such playlist or place. */
+    @Synchronized
+    fun removeFromPlaylist(id: String, songIndex: Int, nowMs: Long = System.currentTimeMillis()): Boolean {
+        val all = playlists()
+        val playlist = all.firstOrNull { it.id == id } ?: return false
+        if (songIndex !in playlist.songIds.indices) return false
+        val left = playlist.songIds.filterIndexed { i, _ -> i != songIndex }
+        write(KEY_PLAYLISTS, all.map { if (it.id == id) it.copy(songIds = left, changedMs = nowMs) else it })
+        return true
+    }
+
+    /** Deletes playlist [id]. */
+    @Synchronized
+    fun deletePlaylist(id: String) {
+        write(KEY_PLAYLISTS, playlists().filterNot { it.id == id })
+    }
+
     /** Adds [songIds] to the end of playlist [id], now; false if there's no such playlist. */
     @Synchronized
     fun addToPlaylist(id: String, songIds: List<String>, nowMs: Long = System.currentTimeMillis()): Boolean {
