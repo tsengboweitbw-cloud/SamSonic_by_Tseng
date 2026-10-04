@@ -7,17 +7,17 @@ class DefaultColumnsTest {
 
     @Test
     fun testDefaultColumnsForWidthThresholds() {
-        // <= 300 dp -> 2
+        // <= 350 dp -> 2
         assertEquals(2, defaultColumnsForWidth(250f))
-        assertEquals(2, defaultColumnsForWidth(300f))
+        assertEquals(2, defaultColumnsForWidth(350f))
 
         // <= 500 dp -> 3 (e.g. tablet ListPane on left side ~ 380dp-480dp)
-        assertEquals(3, defaultColumnsForWidth(300.1f))
+        assertEquals(3, defaultColumnsForWidth(350.1f))
         assertEquals(3, defaultColumnsForWidth(412f))
         assertEquals(3, defaultColumnsForWidth(480f))
         assertEquals(3, defaultColumnsForWidth(500f))
 
-        // <= 900 dp -> 4 (e.g. detail pane ~ 600dp-800dp or foldable open ~ 704dp)
+        // <= 900 dp -> 4 (e.g. detail pane ~ 600dp-800dp or an open foldable ~ 704dp)
         assertEquals(4, defaultColumnsForWidth(500.1f))
         assertEquals(4, defaultColumnsForWidth(704f))
         assertEquals(4, defaultColumnsForWidth(800f))

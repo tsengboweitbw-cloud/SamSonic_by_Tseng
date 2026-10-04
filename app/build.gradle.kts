@@ -66,6 +66,10 @@ android {
     androidResources {
         generateLocaleConfig = true
     }
+    // Lint's existing findings are in the baseline, so only new ones fail the build.
+    lint {
+        baseline = file("lint-baseline.xml")
+    }
     testOptions {
         // Media3's exception classes read the clock, which android.jar stubs out.
         unitTests.isReturnDefaultValues = true
@@ -81,7 +85,6 @@ dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material3)
-    implementation(libs.androidx.compose.material3.adaptive)
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)

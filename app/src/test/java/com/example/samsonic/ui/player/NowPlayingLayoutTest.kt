@@ -24,14 +24,17 @@ class NowPlayingLayoutTest {
     }
 
     @Test
+    fun aNearSquareOrTallWindowIsAlwaysOneColumn() {
+        // Two columns would leave both sides narrow, whatever layout is showing.
+        assertEquals(NowPlayingColumns.One, nowPlayingColumnsFor(700.dp, 900.dp, current = NowPlayingColumns.Two))
+        assertEquals(NowPlayingColumns.One, nowPlayingColumnsFor(1000.dp, 900.dp, current = NowPlayingColumns.Two))
+    }
+
+    @Test
     fun theLayoutShowingHoldsUntilTheOtherIsClearlyBetter() {
-        // A window where two columns give a cover only a little larger than one does.
-        val width = 700.dp
-        val height = 900.dp
-        val one = oneColumnCover(width, height)
-        val two = twoColumnCover(width, height)
-        assert(two > one && two < one * 1.08f) { "the case should sit inside the margin: one=$one two=$two" }
-        assertEquals(NowPlayingColumns.One, nowPlayingColumnsFor(width, height, current = NowPlayingColumns.One))
-        assertEquals(NowPlayingColumns.Two, nowPlayingColumnsFor(width, height, current = NowPlayingColumns.Two))
+        // 933 by 704: two columns' cover is far larger, so the switch happens from either.
+        assertEquals(NowPlayingColumns.Two, nowPlayingColumnsFor(933.dp, 704.dp, current = NowPlayingColumns.One))
+        // Wide and short, but one column's cover is still the larger by more than the margin.
+        assertEquals(NowPlayingColumns.Two, nowPlayingColumnsFor(1280.dp, 800.dp, current = NowPlayingColumns.Two))
     }
 }
