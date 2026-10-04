@@ -141,7 +141,10 @@ class PlaybackService : MediaSessionService() {
             }
         }
         // Application-scoped, so a scrobble sent just before the service stops still goes out.
-        scrobbler = Scrobbler(player, { container.repository }, container.applicationScope)
+        scrobbler = Scrobbler(
+            player, { container.repository }, container.applicationScope,
+            queue = container.scrobbleQueue, serverKey = { container.sources.serverKey },
+        )
         container.audioOutput.attach(player)
         prefetcher = MusicPrefetcher(
             player = player,

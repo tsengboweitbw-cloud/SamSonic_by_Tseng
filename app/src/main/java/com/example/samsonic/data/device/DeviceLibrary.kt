@@ -240,7 +240,7 @@ class DeviceLibrary(context: Context) : MusicLibrary {
     }
 
     /** With no server to tell, a finished listen is counted here, for play counts and history. */
-    override suspend fun scrobble(id: String, submission: Boolean) {
+    override suspend fun scrobble(id: String, submission: Boolean, timeMs: Long?) {
         if (!submission) return
         store.addPlay(id)
         cached = null

@@ -5,6 +5,9 @@ import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import com.example.samsonic.data.MusicLibrary
+import com.example.samsonic.data.scrobble.PendingScrobble
+import com.example.samsonic.data.scrobble.ScrobbleQueue
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -21,7 +24,9 @@ private const val TickMillis = 1_000L
  * to. Time is counted while it actually plays, so seeking past 40% doesn't count as a
  * listen. A song played again (repeat, or picked again) is reported again.
  *
- * Runs on the player's (main) thread. Scrobbles are best-effort: a failed one is dropped.
+ * Runs on the player's (main) thread. A "now playing" that fails is dropped; a finished listen
+ * that fails (the server out of reach) waits in [queue], and goes out with the time it happened
+ * as soon as a later scrobble gets through, or when this starts.
  */
 class Scrobbler(
     private val player: Player,
@@ -30,6 +35,10 @@ class Scrobbler(
     private val scope: CoroutineScope,
     // The clock the listening time is counted by; a test gives its own.
     private val clock: () -> Long = SystemClock::elapsedRealtime,
+    // Where a listen that couldn't be sent waits, for the server [serverKey] says is in use (none: nowhere).
+    private val queue: ScrobbleQueue? = null,
+    private val serverKey: () -> String? = { null },
+    private val wallClock: () -> Long = System::currentTimeMillis,
 ) : Player.Listener {
     private var songId: String? = null
     private var nowPlayingSent = false
@@ -40,6 +49,7 @@ class Scrobbler(
     init {
         player.addListener(this)
         startSong(player.currentMediaItem)
+        flushWaiting()
     }
 
     override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) = startSong(mediaItem)
@@ -98,7 +108,28 @@ class Scrobbler(
 
     private fun send(id: String, submission: Boolean) {
         val library = repository()
-        scope.launch { runCatching { library.scrobble(id, submission) } }
+        val server = serverKey()
+        val heardAt = wallClock()
+        scope.launch {
+            try {
+                library.scrobble(id, submission, timeMs = null)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                // A listen counts later; a "now playing" does not.
+                if (submission && server != null) queue?.add(PendingScrobble(server, id, heardAt))
+                return@launch
+            }
+            // The server answered: what's waiting can go now.
+            if (server != null) runCatching { queue?.flush(library, server) }
+        }
+    }
+
+    /** Sends the listens left waiting by an earlier run, to the server in use. */
+    private fun flushWaiting() {
+        val library = repository()
+        val server = serverKey() ?: return
+        scope.launch { runCatching { queue?.flush(library, server) } }
     }
 
     fun release() {

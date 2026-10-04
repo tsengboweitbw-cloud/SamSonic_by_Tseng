@@ -4,6 +4,7 @@ import com.example.samsonic.data.SessionManager.Companion.DEVICE_SOURCE_ID
 import com.example.samsonic.data.cache.CachedLibrary
 import com.example.samsonic.data.cache.LibraryCacheStore
 import com.example.samsonic.data.device.DeviceLibrary
+import com.example.samsonic.data.scrobble.ScrobbleQueue
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -33,6 +34,7 @@ class MusicSources(
     private val subsonic: SubsonicRepository,
     private val device: DeviceLibrary,
     cacheStore: LibraryCacheStore,
+    private val scrobbleQueue: ScrobbleQueue,
     private val scope: CoroutineScope,
 ) {
     val servers: StateFlow<List<SavedServer>> = sessionManager.servers
@@ -54,6 +56,9 @@ class MusicSources(
     init {
         subsonic.configure((_active.value as? ActiveSource.Server)?.server?.credentials)
     }
+
+    /** The id of the server in use; null with the music on this phone, or no source. */
+    val serverKey: String? get() = (_active.value as? ActiveSource.Server)?.server?.id
 
     /** The library of the [active] source. */
     val library: MusicLibrary
@@ -80,7 +85,10 @@ class MusicSources(
     /** Forgets a saved server; if it was in use, no source is left chosen (back to sign in). */
     fun removeServer(id: String) {
         sessionManager.removeServer(id)
-        scope.launch { cachedSubsonic.forget(id) }
+        scope.launch {
+            cachedSubsonic.forget(id)
+            scrobbleQueue.forget(id)
+        }
         if ((_active.value as? ActiveSource.Server)?.server?.id == id) activate(null)
     }
 

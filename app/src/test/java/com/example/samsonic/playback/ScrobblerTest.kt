@@ -5,11 +5,15 @@ import androidx.media3.common.MediaItem
 import androidx.media3.common.PlaybackParameters
 import androidx.media3.common.Player
 import com.example.samsonic.FakeMusicLibrary
+import com.example.samsonic.data.scrobble.PendingScrobble
+import com.example.samsonic.data.scrobble.ScrobbleQueue
+import java.io.File
 import java.lang.reflect.Proxy
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.currentTime
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -49,14 +53,24 @@ class ScrobblerTest {
     private class Recorder : FakeMusicLibrary() {
         val sent = mutableListOf<Pair<String, Boolean>>()
         var fail = false
-        override suspend fun scrobble(id: String, submission: Boolean) {
+        val times = mutableListOf<Long?>()
+        override suspend fun scrobble(id: String, submission: Boolean, timeMs: Long?) {
             if (fail) throw java.io.IOException("offline")
             sent += id to submission
+            times += timeMs
         }
     }
 
-    private fun TestScope.scrobbler(player: FakePlayer, library: Recorder) =
-        Scrobbler(player.player, { library }, backgroundScope, clock = { currentTime })
+    private fun TestScope.scrobbler(
+        player: FakePlayer,
+        library: Recorder,
+        queue: ScrobbleQueue? = null,
+        server: String? = null,
+    ) =
+        Scrobbler(
+            player.player, { library }, backgroundScope, clock = { currentTime },
+            queue = queue, serverKey = { server }, wallClock = { 1_700_000_000_000 + currentTime },
+        )
 
     @Test
     fun startingASongSendsNowPlayingOnce() = runTest {
@@ -167,5 +181,73 @@ class ScrobblerTest {
         player.playing(true)
         advanceTimeBy(20_000)
         assertEquals(emptyList<Pair<String, Boolean>>(), library.sent)
+    }
+
+    private fun queueIn(folder: File) = ScrobbleQueue(File(folder, "scrobbles.json"))
+
+    /** The queue works on a real IO thread, which virtual time does not wait for: give it a moment. */
+    private fun TestScope.settle() = repeat(20) {
+        Thread.sleep(10)
+        runCurrent()
+    }
+
+    @Test
+    fun aListenThatFailsWaitsInTheQueueWithTheTimeItHappened() = runTest {
+        val dir = java.nio.file.Files.createTempDirectory("queue").toFile()
+        val queue = queueIn(dir)
+        val library = Recorder().apply { fail = true }
+        val player = FakePlayer("a", durationMs = 10_000)
+        scrobbler(player, library, queue, server = "s1")
+        player.playing(true)
+        advanceTimeBy(5_000)
+        settle()
+        // Only the listen, not the "now playing" that failed first.
+        assertEquals(1, queue.pending().size)
+        val waiting = queue.pending().single()
+        assertEquals("s1", waiting.serverKey)
+        assertEquals("a", waiting.songId)
+        assertEquals(1_700_000_000_000 + 4_000, waiting.timeMs)
+    }
+
+    @Test
+    fun whatWaitsGoesOutOnceTheServerAnswers() = runTest {
+        val dir = java.nio.file.Files.createTempDirectory("queue").toFile()
+        val queue = queueIn(dir)
+        queue.add(PendingScrobble("s1", "old", 1_600_000_000_000))
+        val library = Recorder()
+        val player = FakePlayer("a", durationMs = 10_000)
+        scrobbler(player, library, queue, server = "s1")
+        advanceTimeBy(1)
+        settle()
+        // On starting, the old listen goes out with the time it happened.
+        assertEquals(listOf("old" to true), library.sent)
+        assertEquals(listOf<Long?>(1_600_000_000_000), library.times)
+        assertEquals(emptyList<PendingScrobble>(), queue.pending())
+    }
+
+    @Test
+    fun whatWaitsStaysWhileTheServerIsOutOfReach() = runTest {
+        val dir = java.nio.file.Files.createTempDirectory("queue").toFile()
+        val queue = queueIn(dir)
+        queue.add(PendingScrobble("s1", "old", 1))
+        val library = Recorder().apply { fail = true }
+        val player = FakePlayer("a", durationMs = 10_000)
+        scrobbler(player, library, queue, server = "s1")
+        advanceTimeBy(1)
+        settle()
+        assertEquals(1, queue.pending().size)
+    }
+
+    @Test
+    fun withNoServerNothingIsQueued() = runTest {
+        val dir = java.nio.file.Files.createTempDirectory("queue").toFile()
+        val queue = queueIn(dir)
+        val library = Recorder().apply { fail = true }
+        val player = FakePlayer("a", durationMs = 10_000)
+        scrobbler(player, library, queue, server = null)
+        player.playing(true)
+        advanceTimeBy(5_000)
+        settle()
+        assertEquals(emptyList<PendingScrobble>(), queue.pending())
     }
 }

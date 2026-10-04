@@ -2,6 +2,7 @@
 
 ## 2.1.1 (in progress)
 
+- A play that couldn't be sent to the server (it was out of reach when a song passed 40%) is no longer lost: it waits on the phone, up to 500 of them, and goes out with the time it really happened as soon as the next scrobble gets through or the app starts again. A "now playing" that fails is still dropped, as it means nothing late. A server's waiting plays go when it's removed.
 - The Library's big listings (artists, album artists, albums, playlists and genres of a server) are now kept on the phone: opening the Library shows them at once, even right after the app starts, and they can still be browsed when the server can't be reached. A listing is asked for again once it is ten minutes old, or at once on a pull-to-refresh or after changing a playlist, and Home's shelves always stay fresh. What's saved for a server goes when the server is removed, and the system may clear it at any time.
 - Internal tidy-up with no change to how the app looks or behaves: the tab hosting code moved out of `SamSonicNavHost.kt` into `TabHost.kt`, and the Subsonic-to-app model mapping out of `SubsonicRepository.kt` into `data/remote/SubsonicMappers.kt`.
 - Large libraries no longer stall the main thread while they load: mapping and sorting the artists, album artists and a genre's songs now happen on a background thread, and the cover-art loader's state is read lifecycle-aware.

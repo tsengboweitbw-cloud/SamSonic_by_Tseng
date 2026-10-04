@@ -113,8 +113,9 @@ interface MusicLibrary {
      * Tells the server song [id] is playing: as "now playing" when [submission] is false,
      * or as a finished listen that counts towards its play count when true. The music
      * on this phone has no server to tell, so it counts plays itself; by default it does nothing.
+     * [timeMs] is when the listen happened (milliseconds since 1970), for one told late.
      */
-    suspend fun scrobble(id: String, submission: Boolean) {}
+    suspend fun scrobble(id: String, submission: Boolean, timeMs: Long? = null) {}
 
     suspend fun getLyrics(songId: String): List<LyricLine>
 

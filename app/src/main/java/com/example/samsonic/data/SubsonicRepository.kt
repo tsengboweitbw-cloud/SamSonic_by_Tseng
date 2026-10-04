@@ -418,8 +418,9 @@ class SubsonicRepository(
         requireApi().unstar(authParams() + ("id" to id))
     }
 
-    override suspend fun scrobble(id: String, submission: Boolean) {
-        requireApi().scrobble(authParams() + mapOf("id" to id, "submission" to submission.toString()))
+    override suspend fun scrobble(id: String, submission: Boolean, timeMs: Long?) {
+        val params = mapOf("id" to id, "submission" to submission.toString()) + listOfNotNull(timeMs?.let { "time" to it.toString() })
+        requireApi().scrobble(authParams() + params)
     }
 
     override suspend fun getLyrics(songId: String): List<LyricLine> {

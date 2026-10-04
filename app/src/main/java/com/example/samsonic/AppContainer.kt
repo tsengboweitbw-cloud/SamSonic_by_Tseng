@@ -13,6 +13,7 @@ import com.example.samsonic.data.MusicSources
 import com.example.samsonic.data.SessionManager
 import com.example.samsonic.data.SubsonicRepository
 import com.example.samsonic.data.cache.LibraryCacheStore
+import com.example.samsonic.data.scrobble.ScrobbleQueue
 import com.example.samsonic.data.LibraryLayoutManager
 import com.example.samsonic.data.ThemeManager
 import com.example.samsonic.data.device.DeviceLibrary
@@ -74,11 +75,14 @@ class AppContainer(context: Context) {
     /** USB audio devices plugged in, and the way to open one for the native driver. */
     val usbDacs = UsbDacManager(appContext)
 
+    /** Listens the server couldn't be told of, sent once it can be. */
+    val scrobbleQueue = ScrobbleQueue(File(appContext.filesDir, "scrobbles.json"))
+
     private val subsonic = SubsonicRepository(okHttpClient, appContext)
 
     val sources = MusicSources(
         sessionManager, subsonic, DeviceLibrary(appContext),
-        LibraryCacheStore(File(appContext.cacheDir, "library")), applicationScope,
+        LibraryCacheStore(File(appContext.cacheDir, "library")), scrobbleQueue, applicationScope,
     )
 
     /** Caches every cover of the signed-in server; the music on this phone has its art on hand. */
