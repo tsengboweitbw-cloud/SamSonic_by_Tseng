@@ -2,20 +2,14 @@ package com.example.samsonic.data
 
 import android.content.Context
 import com.example.samsonic.R
-import com.example.samsonic.data.remote.AlbumDetailDto
 import com.example.samsonic.data.remote.AlbumDto
-import com.example.samsonic.data.remote.ArtistDetailDto
-import com.example.samsonic.data.remote.ArtistDto
-import com.example.samsonic.data.remote.ItemGenreDto
-import com.example.samsonic.data.remote.PlaylistDetailDto
-import com.example.samsonic.data.remote.PlaylistDto
 import com.example.samsonic.data.remote.SongDto
 import com.example.samsonic.data.remote.SubsonicApi
 import com.example.samsonic.data.remote.SubsonicAuth
 import com.example.samsonic.data.remote.SubsonicResponseBody
+import com.example.samsonic.data.remote.toDomain
 import com.example.samsonic.model.Album
 import com.example.samsonic.model.Artist
-import com.example.samsonic.model.ArtistCredit
 import com.example.samsonic.model.Genre
 import com.example.samsonic.model.GenreContents
 import com.example.samsonic.model.LyricLine
@@ -452,87 +446,4 @@ class SubsonicRepository(
         val query = params.entries.joinToString("&") { (k, v) -> "$k=${URLEncoder.encode(v, "UTF-8")}" }
         return "${creds.serverUrl}rest/${path.removePrefix("rest/")}?$query"
     }
-
-    private fun ArtistDto.toDomain() = Artist(id = id, name = name, albumCount = albumCount, coverArt = coverArt)
-
-    private fun ArtistDetailDto.toDomain() = Artist(id = id, name = name, albumCount = albumCount, coverArt = coverArt)
-
-    private fun AlbumDto.toDomain() = Album(
-        id = id,
-        title = name,
-        artistId = artistId,
-        artistName = artist ?: "Unknown Artist",
-        year = year,
-        genre = genre,
-        trackCount = songCount,
-        durationSeconds = duration,
-        coverArt = coverArt,
-        genres = genres.names(),
-    )
-
-    private fun AlbumDetailDto.toDomain() = Album(
-        id = id,
-        title = name,
-        artistId = artistId,
-        artistName = artist ?: "Unknown Artist",
-        year = year,
-        genre = genre,
-        trackCount = songCount,
-        durationSeconds = duration,
-        coverArt = coverArt,
-        genres = genres.names(),
-    )
-
-    private fun List<ItemGenreDto>.names() = map { it.name }.filter { it.isNotBlank() }
-
-    private fun SongDto.toDomain() = Song(
-        id = id,
-        title = title,
-        artistId = artistId,
-        artistName = artist ?: "Unknown Artist",
-        albumId = albumId,
-        albumTitle = album ?: "",
-        trackNumber = track ?: 0,
-        durationSeconds = duration,
-        coverArt = coverArt,
-        liked = starred != null,
-        suffix = suffix,
-        bitRate = bitRate,
-        samplingRate = samplingRate,
-        bitDepth = bitDepth,
-        year = year,
-        genre = genre,
-        discNumber = discNumber,
-        sizeBytes = size,
-        contentType = contentType,
-        path = path,
-        playCount = playCount,
-        channelCount = channelCount,
-        created = created,
-        played = played,
-        artists = artists.mapNotNull { ref -> ref.name?.takeIf { it.isNotBlank() }?.let { ArtistCredit(ref.id, it) } },
-        albumArtistId = albumArtists.firstOrNull()?.id,
-        albumArtistName = displayAlbumArtist?.takeIf { it.isNotBlank() } ?: albumArtists.firstOrNull()?.name,
-        genres = genres.names(),
-    )
-
-    private fun PlaylistDto.toDomain() = Playlist(
-        id = id,
-        name = name,
-        description = comment ?: "",
-        songCount = songCount,
-        durationSeconds = duration,
-        coverArt = coverArt,
-        changed = changed,
-    )
-
-    private fun PlaylistDetailDto.toDomain() = Playlist(
-        id = id,
-        name = name,
-        description = comment ?: "",
-        songCount = songCount,
-        durationSeconds = duration,
-        coverArt = coverArt,
-        changed = changed,
-    )
 }

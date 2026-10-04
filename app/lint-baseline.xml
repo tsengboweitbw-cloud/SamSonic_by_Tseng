@@ -35,41 +35,19 @@
     </issue>
 
     <issue
-        id="GradleDependency"
-        message="A newer version of androidx.navigation:navigation-compose than 2.9.6 is available: 2.10.2"
-        errorLine1="navigationCompose = &quot;2.9.6&quot;"
-        errorLine2="                    ~~~~~~~">
-        <location
-            file="$HOME/AndroidStudioProjects/SamSonic/gradle/libs.versions.toml"
-            line="11"
-            column="21"/>
-    </issue>
-
-    <issue
-        id="NewerVersionAvailable"
-        message="A newer version of com.squareup.retrofit2:converter-kotlinx-serialization than 2.11.0 is available: 3.0.0"
-        errorLine1="retrofit = &quot;2.11.0&quot;"
-        errorLine2="           ~~~~~~~~">
-        <location
-            file="$HOME/AndroidStudioProjects/SamSonic/gradle/libs.versions.toml"
-            line="13"
-            column="12"/>
-    </issue>
-
-    <issue
-        id="NewerVersionAvailable"
-        message="A newer version of com.squareup.retrofit2:retrofit than 2.11.0 is available: 3.0.0"
-        errorLine1="retrofit = &quot;2.11.0&quot;"
-        errorLine2="           ~~~~~~~~">
-        <location
-            file="$HOME/AndroidStudioProjects/SamSonic/gradle/libs.versions.toml"
-            line="13"
-            column="12"/>
-    </issue>
-
-    <issue
         id="NewerVersionAvailable"
         message="A newer version of com.squareup.okhttp3:logging-interceptor than 4.12.0 is available: 5.5.0"
+        errorLine1="okhttp = &quot;4.12.0&quot;"
+        errorLine2="         ~~~~~~~~">
+        <location
+            file="$HOME/AndroidStudioProjects/SamSonic/gradle/libs.versions.toml"
+            line="14"
+            column="10"/>
+    </issue>
+
+    <issue
+        id="NewerVersionAvailable"
+        message="A newer version of com.squareup.okhttp3:mockwebserver than 4.12.0 is available: 5.5.0"
         errorLine1="okhttp = &quot;4.12.0&quot;"
         errorLine2="         ~~~~~~~~">
         <location
@@ -87,50 +65,6 @@
             file="$HOME/AndroidStudioProjects/SamSonic/gradle/libs.versions.toml"
             line="14"
             column="10"/>
-    </issue>
-
-    <issue
-        id="NewerVersionAvailable"
-        message="A newer version of org.jetbrains.kotlinx:kotlinx-serialization-json than 1.8.0 is available: 1.11.0"
-        errorLine1="kotlinxSerialization = &quot;1.8.0&quot;"
-        errorLine2="                       ~~~~~~~">
-        <location
-            file="$HOME/AndroidStudioProjects/SamSonic/gradle/libs.versions.toml"
-            line="15"
-            column="24"/>
-    </issue>
-
-    <issue
-        id="NewerVersionAvailable"
-        message="A newer version of io.coil-kt.coil3:coil-compose than 3.0.4 is available: 3.6.3"
-        errorLine1="coil = &quot;3.0.4&quot;"
-        errorLine2="       ~~~~~~~">
-        <location
-            file="$HOME/AndroidStudioProjects/SamSonic/gradle/libs.versions.toml"
-            line="18"
-            column="8"/>
-    </issue>
-
-    <issue
-        id="NewerVersionAvailable"
-        message="A newer version of io.coil-kt.coil3:coil-network-okhttp than 3.0.4 is available: 3.6.3"
-        errorLine1="coil = &quot;3.0.4&quot;"
-        errorLine2="       ~~~~~~~">
-        <location
-            file="$HOME/AndroidStudioProjects/SamSonic/gradle/libs.versions.toml"
-            line="18"
-            column="8"/>
-    </issue>
-
-    <issue
-        id="NewerVersionAvailable"
-        message="A newer version of org.jetbrains.kotlinx:kotlinx-coroutines-android than 1.9.0 is available: 1.11.0"
-        errorLine1="kotlinxCoroutines = &quot;1.9.0&quot;"
-        errorLine2="                    ~~~~~~~">
-        <location
-            file="$HOME/AndroidStudioProjects/SamSonic/gradle/libs.versions.toml"
-            line="19"
-            column="21"/>
     </issue>
 
     <issue
@@ -194,8 +128,8 @@
         errorLine1="    val stack by navController.currentBackStack.collectAsStateWithLifecycle()"
         errorLine2="                               ~~~~~~~~~~~~~~~~">
         <location
-            file="src/main/java/com/example/samsonic/ui/navigation/SamSonicNavHost.kt"
-            line="809"
+            file="src/main/java/com/example/samsonic/ui/navigation/TabHost.kt"
+            line="252"
             column="32"/>
     </issue>
 
@@ -437,7 +371,7 @@
         errorLine2="                               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/example/samsonic/ui/navigation/SamSonicNavHost.kt"
-            line="568"
+            line="542"
             column="32"/>
     </issue>
 
