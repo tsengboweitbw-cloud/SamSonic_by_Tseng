@@ -122,6 +122,7 @@
     <string name="library_create">Create</string>
     <string name="library_remove_from_playlist">Remove from this playlist</string>
     <string name="library_removed_from_playlist">%1$s removed from the playlist</string>
+    <string name="library_song_not_in_playlist">It is no longer in the playlist; the list has been reloaded</string>
     <string name="library_delete">Delete</string>
     <string name="library_delete_playlist_title">Delete playlist</string>
     <string name="library_delete_playlist_body">%1$s will be deleted. Its songs stay in your library.</string>

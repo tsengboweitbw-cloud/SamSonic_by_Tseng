@@ -34,6 +34,7 @@ import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.model.FAVOURITES_PLAYLIST_ID
 import com.example.samsonic.model.Playlist
 import com.example.samsonic.model.favouritesPlaylist
+import com.example.samsonic.data.placeToRemove
 import com.example.samsonic.model.Song
 import com.example.samsonic.ui.common.ScreenRefresh
 import androidx.compose.runtime.CompositionLocalProvider
@@ -106,10 +107,18 @@ fun PlaylistDetailScreen(
         ) { (playlist, loaded) ->
             // A song's place in the playlist as the server lists it, which its removal goes by; not in
             // Favourites (its hearts do that) or with Offline only on (the list is cut down, so places differ).
+            val gone = stringResource(R.string.library_song_not_in_playlist)
             val removal: ((Song) -> SongRemoval?)? = if (!repository.canEditPlaylists || offlineOnly || playlistId == FAVOURITES_PLAYLIST_ID) null else { song ->
                 val place = loaded.indexOfFirst { it === song }
                 if (place < 0) null else SongRemoval {
-                    repository.removeFromPlaylist(playlistId, place)
+                    // The playlist as it is now, in case it was edited elsewhere since this page loaded.
+                    val current = repository.getPlaylist(playlistId).second.map { it.id }
+                    val at = placeToRemove(current, song.id, place)
+                    if (at == null) {
+                        refresh.refresh()
+                        throw IllegalStateException(gone)
+                    }
+                    repository.removeFromPlaylist(playlistId, at)
                     refresh.refresh()
                 }
             }
