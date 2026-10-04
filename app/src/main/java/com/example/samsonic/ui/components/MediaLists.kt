@@ -274,13 +274,15 @@ fun SongRow(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Text(
-                    text = songSubtitle(song.artistName, song, display),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+                WithOfflineMark(song.id) {
+                    Text(
+                        text = songSubtitle(song.artistName, song, display),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
             }
             val hasHeart = onToggleLike != null && likesEnabled
             SongRowEnd(

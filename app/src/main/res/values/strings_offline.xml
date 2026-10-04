@@ -1,7 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Offline music: songs kept on the phone to play without the server -->
-    <string name="offline_playlist_name">Offline</string>
+    <string name="offline_keep_option">Save for offline</string>
+    <string name="offline_remove_option">Remove from offline</string>
+    <string name="offline_kept">%1$s will be saved for offline</string>
+    <string name="offline_removed">%1$s removed from offline</string>
+    <string name="offline_mark_description">Saved for offline</string>
     <string name="offline_channel_name">Offline music</string>
     <string name="offline_notification_title">Saving music for offline</string>
     <string name="offline_notification_waiting">Getting ready…</string>
@@ -10,11 +14,11 @@
     <string name="settings_offline_music">Offline music</string>
     <string name="settings_offline_music_empty">None</string>
     <string name="settings_offline_music_saving">Saving %1$d of %2$d</string>
-    <string name="settings_offline_music_hint">Songs added to the Offline playlist are kept on the phone and play without the server. They are not counted in the music cache\'s size, and are saved on Wi-Fi only when that switch is on</string>
+    <string name="settings_offline_music_hint">Songs saved for offline are kept on the phone and play without the server. They are not counted in the music cache\'s size, and are saved on Wi-Fi only when that switch is on</string>
     <string name="settings_offline_remove_title">Remove offline music</string>
     <plurals name="settings_offline_remove_body">
-        <item quantity="one">%1$d song in the Offline playlist will be removed from this phone. It stays on your server.</item>
-        <item quantity="other">%1$d songs in the Offline playlist will be removed from this phone. They stay on your server.</item>
+        <item quantity="one">%1$d offline song will be removed from this phone. It stays on your server.</item>
+        <item quantity="other">%1$d offline songs will be removed from this phone. They stay on your server.</item>
     </plurals>
     <string name="settings_offline_remove">Remove</string>
 </resources>

@@ -52,9 +52,13 @@ class OfflineStore(private val file: File) {
         fresh.size
     }
 
-    /** Stops keeping song [songId] of [serverKey]. */
-    suspend fun remove(serverKey: String, songId: String) {
-        lock.withLock { update(_entries.value.filterNot { it.serverKey == serverKey && it.song.id == songId }) }
+    /** Stops keeping the songs [songIds] of [serverKey]. */
+    suspend fun remove(serverKey: String, songIds: Set<String>) {
+        lock.withLock {
+            val kept = _entries.value
+            val left = kept.filterNot { it.serverKey == serverKey && it.song.id in songIds }
+            if (left.size != kept.size) update(left)
+        }
     }
 
     /** Stops keeping everything, or everything of [serverKey] (a removed server). */

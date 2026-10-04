@@ -34,6 +34,7 @@ import com.example.samsonic.model.artSeed
 import com.example.samsonic.playback.LocalPlayerState
 import com.example.samsonic.ui.components.MediaArt
 import com.example.samsonic.ui.components.SongRowEnd
+import com.example.samsonic.ui.components.WithOfflineMark
 import com.example.samsonic.ui.components.audioFormatDisplay
 import com.example.samsonic.ui.components.songSubtitle
 import com.example.samsonic.ui.library.rememberAddToPlaylistLongPress
@@ -120,13 +121,15 @@ private fun ShelfSongRow(song: Song, isCurrent: Boolean, onClick: () -> Unit) {
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            Text(
-                text = songSubtitle(listOfNotNull(song.artistName, song.year?.takeIf { it > 0 }?.toString()).joinToString(" • "), song, display),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            WithOfflineMark(song.id) {
+                Text(
+                    text = songSubtitle(listOfNotNull(song.artistName, song.year?.takeIf { it > 0 }?.toString()).joinToString(" • "), song, display),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
         Spacer(Modifier.width(12.dp))
         // As every song row: the audio format the way Settings shows it; no heart button here.

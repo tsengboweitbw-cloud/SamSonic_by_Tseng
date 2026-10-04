@@ -91,13 +91,6 @@ interface MusicLibrary {
     suspend fun addToPlaylist(playlistId: String, songIds: List<String>): Unit =
         throw UnsupportedOperationException("This library has no playlists")
 
-    /**
-     * Adds [songs] to playlist [playlistId], as [addToPlaylist] does by their ids; a library
-     * that keeps a playlist of its own (the Offline one) needs the songs themselves.
-     */
-    suspend fun addSongsToPlaylist(playlistId: String, songs: List<Song>) =
-        addToPlaylist(playlistId, songs.map { it.id })
-
     /** Makes a new playlist called [name] holding songs [songIds]. */
     suspend fun createPlaylist(name: String, songIds: List<String>): Unit =
         throw UnsupportedOperationException("This library has no playlists")

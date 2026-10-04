@@ -4,14 +4,15 @@ import com.example.samsonic.data.SessionManager.Companion.DEVICE_SOURCE_ID
 import com.example.samsonic.data.cache.CachedLibrary
 import com.example.samsonic.data.cache.LibraryCacheStore
 import com.example.samsonic.data.device.DeviceLibrary
-import com.example.samsonic.data.offline.OfflineLibrary
 import com.example.samsonic.data.offline.OfflineStore
 import com.example.samsonic.data.scrobble.ScrobbleQueue
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 
 /** The music source in use. */
 sealed interface ActiveSource {
@@ -38,8 +39,6 @@ class MusicSources(
     cacheStore: LibraryCacheStore,
     private val scrobbleQueue: ScrobbleQueue,
     private val offlineStore: OfflineStore,
-    offlineName: () -> String,
-    onOfflineAdded: () -> Unit,
     private val scope: CoroutineScope,
 ) {
     val servers: StateFlow<List<SavedServer>> = sessionManager.servers
@@ -55,15 +54,6 @@ class MusicSources(
         serverKey = { (_active.value as? ActiveSource.Server)?.server?.id },
     )
 
-    /** The server's library, with an Offline playlist of songs kept on the phone; see [OfflineLibrary]. */
-    private val offlineSubsonic = OfflineLibrary(
-        inner = cachedSubsonic,
-        store = offlineStore,
-        serverKey = { (_active.value as? ActiveSource.Server)?.server?.id },
-        playlistName = offlineName,
-        onAdded = onOfflineAdded,
-    )
-
     /** A pull-to-refresh: the saved listings count as old, so the next load asks the server. */
     fun refreshLibrary() = cachedSubsonic.invalidate()
 
@@ -74,9 +64,12 @@ class MusicSources(
     /** The id of the server in use; null with the music on this phone, or no source. */
     val serverKey: String? get() = (_active.value as? ActiveSource.Server)?.server?.id
 
+    /** [serverKey] as it changes. */
+    val serverKeys: Flow<String?> = _active.map { (it as? ActiveSource.Server)?.server?.id }
+
     /** The library of the [active] source. */
     val library: MusicLibrary
-        get() = if (_active.value is ActiveSource.Device) device else offlineSubsonic
+        get() = if (_active.value is ActiveSource.Device) device else cachedSubsonic
 
     private fun resolve(id: String?): ActiveSource? = when (id) {
         null -> null

@@ -14,9 +14,9 @@ import com.example.samsonic.data.SessionManager
 import com.example.samsonic.data.SubsonicRepository
 import com.example.samsonic.data.cache.LibraryCacheStore
 import com.example.samsonic.data.offline.OfflineDownloader
+import com.example.samsonic.data.offline.OfflineMusic
 import com.example.samsonic.data.offline.OfflineStore
 import com.example.samsonic.data.scrobble.ScrobbleQueue
-import com.example.samsonic.locale.AppLanguages
 import androidx.media3.datasource.okhttp.OkHttpDataSource
 import com.example.samsonic.data.LibraryLayoutManager
 import com.example.samsonic.data.ThemeManager
@@ -90,8 +90,7 @@ class AppContainer(context: Context) {
     val sources: MusicSources = MusicSources(
         sessionManager, subsonic, DeviceLibrary(appContext),
         LibraryCacheStore(File(appContext.cacheDir, "library")), scrobbleQueue,
-        offlineStore, { AppLanguages.wrap(appContext).getString(R.string.offline_playlist_name) },
-        { offlineDownloader.start() }, applicationScope,
+        offlineStore, applicationScope,
     )
 
     /** Caches every cover of the signed-in server; the music on this phone has its art on hand. */
@@ -110,6 +109,16 @@ class AppContainer(context: Context) {
         serverKey = { sources.serverKey },
         wifiOnly = musicCache.prefetchWifiOnly,
         scope = applicationScope,
+    )
+
+    /** Keeping songs on the phone for offline, and which are kept. */
+    val offlineMusic = OfflineMusic(
+        store = offlineStore,
+        library = { repository },
+        serverKey = { sources.serverKey },
+        serverKeys = sources.serverKeys,
+        scope = applicationScope,
+        onKept = { offlineDownloader.start() },
     )
 
     /** What Auto DJ adds as the queue runs out, and from what. */

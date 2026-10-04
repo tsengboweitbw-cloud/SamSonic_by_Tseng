@@ -31,6 +31,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.OfflinePin
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -42,6 +44,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
@@ -212,16 +215,27 @@ fun AddToPlaylistMenu(state: AddToPlaylistState, haze: HazeState) {
         // An album's songs, fetched at the first playlist picked.
         val songIds = remember { arrayOfNulls<List<String>>(1) }
         val loadedSongs = remember { arrayOfNulls<List<Song>>(1) }
-        LaunchedEffect(Unit) {
-            playlists = runCatching { repository.getOwnPlaylists() }
-                .fold({ UiState.Success(it) }, { UiState.Error(resources.getString(R.string.library_playlists_load_error)) })
-        }
+        // The songs once fetched, to tell whether Offline would keep them or let them go.
+        var songs by remember { mutableStateOf<List<Song>?>(null) }
+        val offline = LocalAppContainer.current.offlineMusic
+        val kept by offline.keptIds.collectAsStateWithLifecycle()
 
         suspend fun loadSongIds(): List<String> =
             songIds[0] ?: items.songs(repository).also { loadedSongs[0] = it }.map { it.id }.also {
                 if (it.isEmpty()) throw IllegalStateException(resources.getString(R.string.library_no_songs_to_add))
                 songIds[0] = it
             }
+
+        LaunchedEffect(Unit) {
+            playlists = runCatching { repository.getOwnPlaylists() }
+                .fold({ UiState.Success(it) }, { UiState.Error(resources.getString(R.string.library_playlists_load_error)) })
+        }
+        LaunchedEffect(Unit) {
+            if (offline.available) {
+                runCatching { loadSongIds() }
+                songs = loadedSongs[0]
+            }
+        }
 
         fun work(key: String, block: suspend () -> Unit) {
             if (saving != null) return
@@ -240,9 +254,7 @@ fun AddToPlaylistMenu(state: AddToPlaylistState, haze: HazeState) {
 
         suspend fun add(playlist: Playlist, ids: List<String>, skipped: Int = 0) {
             if (ids.isEmpty()) return done(resources.getString(R.string.library_already_in_playlist, playlist.name))
-            // The songs, not just their ids: the Offline playlist keeps the songs themselves.
-            val byId = loadedSongs[0].orEmpty().associateBy { it.id }
-            repository.addSongsToPlaylist(playlist.id, ids.mapNotNull { byId[it] })
+            repository.addToPlaylist(playlist.id, ids)
             done(addedMessage(context, ids.size, skipped, playlist.name))
         }
 
@@ -309,6 +321,24 @@ fun AddToPlaylistMenu(state: AddToPlaylistState, haze: HazeState) {
                                         // Fetched and queued by the player, so it carries on after the menu closes.
                                         player.queueLater(next = false) { items.songs(repository) }
                                         done(resources.getString(R.string.library_added_to_queue, items.title))
+                                    }
+                                },
+                            )
+                        }
+                        // Only with a server in use: the music on this phone is on it already.
+                        if (offline.available) {
+                            val loaded = songs
+                            val keeping = loaded != null && loaded.isNotEmpty() && loaded.all { it.id in kept }
+                            MenuOption(
+                                icon = if (keeping) Icons.Filled.CloudOff else Icons.Filled.OfflinePin,
+                                label = stringResource(if (keeping) R.string.offline_remove_option else R.string.offline_keep_option),
+                                selected = keeping,
+                                onClick = {
+                                    if (saving == null) work("offline") {
+                                        loadSongIds()
+                                        val all = loadedSongs[0].orEmpty()
+                                        if (keeping) offline.remove(all) else offline.keep(all)
+                                        done(resources.getString(if (keeping) R.string.offline_removed else R.string.offline_kept, items.title))
                                     }
                                 },
                             )
