@@ -4,6 +4,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.os.Bundle
+import android.widget.Toast
 import androidx.annotation.OptIn
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
@@ -20,6 +21,7 @@ import androidx.media3.session.MediaSessionService
 import androidx.media3.session.SessionCommand
 import androidx.media3.session.SessionResult
 import com.example.samsonic.MainActivity
+import com.example.samsonic.R
 import com.example.samsonic.SamSonicApplication
 import com.example.samsonic.locale.AppLanguages
 import com.example.samsonic.playback.dsd.DsdExtractorsFactory
@@ -125,6 +127,12 @@ class PlaybackService : MediaSessionService() {
                 reason: Int,
             ) = saveCursor()
         })
+        player.addListener(
+            PlaybackErrorHandler(player) { skipped ->
+                val message = if (skipped) R.string.playback_error_skipped else R.string.playback_error_stopped
+                Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+            },
+        )
         // Where playback is, a few seconds at a time, so a kill loses little.
         serviceScope.launch {
             while (true) {

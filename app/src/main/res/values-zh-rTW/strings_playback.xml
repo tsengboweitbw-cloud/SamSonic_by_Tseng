@@ -17,4 +17,7 @@
 
     <string name="app_duration_hours_minutes">%1$d 小時 %2$d 分鐘</string>
     <string name="app_duration_minutes">%1$d 分鐘</string>
+
+    <string name="playback_error_skipped">無法播放這首歌，已跳過</string>
+    <string name="playback_error_stopped">無法播放這首歌</string>
 </resources>

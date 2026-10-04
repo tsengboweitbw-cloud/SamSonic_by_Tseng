@@ -18,4 +18,8 @@
     <!-- Album length -->
     <string name="app_duration_hours_minutes">%1$d hr %2$d min</string>
     <string name="app_duration_minutes">%1$d min</string>
+
+    <!-- Playback errors -->
+    <string name="playback_error_skipped">Couldn\'t play that song, so skipped it</string>
+    <string name="playback_error_stopped">Couldn\'t play that song</string>
 </resources>
