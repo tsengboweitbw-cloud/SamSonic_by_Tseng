@@ -5,6 +5,7 @@ import com.example.samsonic.model.Album
 import com.example.samsonic.model.Artist
 import com.example.samsonic.model.Genre
 import com.example.samsonic.model.Playlist
+import com.example.samsonic.model.Song
 import kotlinx.coroutines.CancellationException
 import kotlinx.serialization.KSerializer
 
@@ -76,6 +77,10 @@ class CachedLibrary(
         inner.addToPlaylist(playlistId, songIds)
         invalidate()
     }
+
+    // Through [addToPlaylist] here, which makes what is saved old.
+    override suspend fun addSongsToPlaylist(playlistId: String, songs: List<Song>) =
+        addToPlaylist(playlistId, songs.map { it.id })
 
     override suspend fun createPlaylist(name: String, songIds: List<String>) {
         inner.createPlaylist(name, songIds)

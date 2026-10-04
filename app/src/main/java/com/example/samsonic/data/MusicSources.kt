@@ -4,6 +4,8 @@ import com.example.samsonic.data.SessionManager.Companion.DEVICE_SOURCE_ID
 import com.example.samsonic.data.cache.CachedLibrary
 import com.example.samsonic.data.cache.LibraryCacheStore
 import com.example.samsonic.data.device.DeviceLibrary
+import com.example.samsonic.data.offline.OfflineLibrary
+import com.example.samsonic.data.offline.OfflineStore
 import com.example.samsonic.data.scrobble.ScrobbleQueue
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -35,6 +37,9 @@ class MusicSources(
     private val device: DeviceLibrary,
     cacheStore: LibraryCacheStore,
     private val scrobbleQueue: ScrobbleQueue,
+    private val offlineStore: OfflineStore,
+    offlineName: () -> String,
+    onOfflineAdded: () -> Unit,
     private val scope: CoroutineScope,
 ) {
     val servers: StateFlow<List<SavedServer>> = sessionManager.servers
@@ -50,6 +55,15 @@ class MusicSources(
         serverKey = { (_active.value as? ActiveSource.Server)?.server?.id },
     )
 
+    /** The server's library, with an Offline playlist of songs kept on the phone; see [OfflineLibrary]. */
+    private val offlineSubsonic = OfflineLibrary(
+        inner = cachedSubsonic,
+        store = offlineStore,
+        serverKey = { (_active.value as? ActiveSource.Server)?.server?.id },
+        playlistName = offlineName,
+        onAdded = onOfflineAdded,
+    )
+
     /** A pull-to-refresh: the saved listings count as old, so the next load asks the server. */
     fun refreshLibrary() = cachedSubsonic.invalidate()
 
@@ -62,7 +76,7 @@ class MusicSources(
 
     /** The library of the [active] source. */
     val library: MusicLibrary
-        get() = if (_active.value is ActiveSource.Device) device else cachedSubsonic
+        get() = if (_active.value is ActiveSource.Device) device else offlineSubsonic
 
     private fun resolve(id: String?): ActiveSource? = when (id) {
         null -> null
@@ -88,6 +102,7 @@ class MusicSources(
         scope.launch {
             cachedSubsonic.forget(id)
             scrobbleQueue.forget(id)
+            offlineStore.clear(id)
         }
         if ((_active.value as? ActiveSource.Server)?.server?.id == id) activate(null)
     }

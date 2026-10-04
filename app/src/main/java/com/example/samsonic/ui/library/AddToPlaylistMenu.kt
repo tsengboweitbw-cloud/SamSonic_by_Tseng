@@ -211,13 +211,14 @@ fun AddToPlaylistMenu(state: AddToPlaylistState, haze: HazeState) {
         var error by remember { mutableStateOf<String?>(null) }
         // An album's songs, fetched at the first playlist picked.
         val songIds = remember { arrayOfNulls<List<String>>(1) }
+        val loadedSongs = remember { arrayOfNulls<List<Song>>(1) }
         LaunchedEffect(Unit) {
             playlists = runCatching { repository.getOwnPlaylists() }
                 .fold({ UiState.Success(it) }, { UiState.Error(resources.getString(R.string.library_playlists_load_error)) })
         }
 
         suspend fun loadSongIds(): List<String> =
-            songIds[0] ?: items.songIds(repository).also {
+            songIds[0] ?: items.songs(repository).also { loadedSongs[0] = it }.map { it.id }.also {
                 if (it.isEmpty()) throw IllegalStateException(resources.getString(R.string.library_no_songs_to_add))
                 songIds[0] = it
             }
@@ -239,7 +240,9 @@ fun AddToPlaylistMenu(state: AddToPlaylistState, haze: HazeState) {
 
         suspend fun add(playlist: Playlist, ids: List<String>, skipped: Int = 0) {
             if (ids.isEmpty()) return done(resources.getString(R.string.library_already_in_playlist, playlist.name))
-            repository.addToPlaylist(playlist.id, ids)
+            // The songs, not just their ids: the Offline playlist keeps the songs themselves.
+            val byId = loadedSongs[0].orEmpty().associateBy { it.id }
+            repository.addSongsToPlaylist(playlist.id, ids.mapNotNull { byId[it] })
             done(addedMessage(context, ids.size, skipped, playlist.name))
         }
 
