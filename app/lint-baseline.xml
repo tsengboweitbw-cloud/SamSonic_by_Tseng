@@ -19,7 +19,7 @@
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/AndroidManifest.xml"
-            line="34"
+            line="35"
             column="13"/>
     </issue>
 
@@ -32,6 +32,17 @@
             file="$HOME/AndroidStudioProjects/SamSonic/gradle/libs.versions.toml"
             line="3"
             column="11"/>
+    </issue>
+
+    <issue
+        id="GradleDependency"
+        message="A newer version of androidx.navigation:navigation-compose than 2.9.6 is available: 2.10.2"
+        errorLine1="navigationCompose = &quot;2.9.6&quot;"
+        errorLine2="                    ~~~~~~~">
+        <location
+            file="$HOME/AndroidStudioProjects/SamSonic/gradle/libs.versions.toml"
+            line="11"
+            column="21"/>
     </issue>
 
     <issue
@@ -316,7 +327,7 @@
         errorLine2="                                                 ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/example/samsonic/playback/PlaybackService.kt"
-            line="173"
+            line="177"
             column="50"/>
     </issue>
 
@@ -327,7 +338,7 @@
         errorLine2="                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/example/samsonic/playback/PlaybackService.kt"
-            line="174"
+            line="178"
             column="18"/>
     </issue>
 
@@ -338,7 +349,7 @@
         errorLine2="                                                  ~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/java/com/example/samsonic/playback/PlaybackService.kt"
-            line="175"
+            line="179"
             column="51"/>
     </issue>
 
@@ -349,7 +360,7 @@
         errorLine2="                 ~~~~~">
         <location
             file="src/main/java/com/example/samsonic/playback/PlaybackService.kt"
-            line="180"
+            line="184"
             column="18"/>
     </issue>
 
@@ -426,7 +437,7 @@
         errorLine2="    ~~~~~~~">
         <location
             file="src/main/java/com/example/samsonic/ui/components/PlayShuffleButtons.kt"
-            line="495"
+            line="502"
             column="5"/>
     </issue>
 
@@ -448,7 +459,7 @@
         errorLine2="    ~~~~~~~~">
         <location
             file="src/main/java/com/example/samsonic/ui/home/SongRowsCarousel.kt"
-            line="61"
+            line="62"
             column="5"/>
     </issue>
 
@@ -459,7 +470,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings_library.xml"
-            line="139"
+            line="152"
             column="5"/>
     </issue>
 
@@ -481,7 +492,7 @@
         errorLine2="    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings_settings.xml"
-            line="129"
+            line="128"
             column="5"/>
     </issue>
 
@@ -514,7 +525,7 @@
         errorLine2="         ~~~~~~~">
         <location
             file="src/main/AndroidManifest.xml"
-            line="87"
+            line="88"
             column="10"/>
     </issue>
 
@@ -560,83 +571,6 @@
 
     <issue
         id="UnusedResources"
-        message="The resource `R.color.purple_200` appears to be unused"
-        errorLine1="    &lt;color name=&quot;purple_200&quot;>#FFBB86FC&lt;/color>"
-        errorLine2="           ~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values/colors.xml"
-            line="3"
-            column="12"/>
-    </issue>
-
-    <issue
-        id="UnusedResources"
-        message="The resource `R.color.purple_500` appears to be unused"
-        errorLine1="    &lt;color name=&quot;purple_500&quot;>#FF6200EE&lt;/color>"
-        errorLine2="           ~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values/colors.xml"
-            line="4"
-            column="12"/>
-    </issue>
-
-    <issue
-        id="UnusedResources"
-        message="The resource `R.color.purple_700` appears to be unused"
-        errorLine1="    &lt;color name=&quot;purple_700&quot;>#FF3700B3&lt;/color>"
-        errorLine2="           ~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values/colors.xml"
-            line="5"
-            column="12"/>
-    </issue>
-
-    <issue
-        id="UnusedResources"
-        message="The resource `R.color.teal_200` appears to be unused"
-        errorLine1="    &lt;color name=&quot;teal_200&quot;>#FF03DAC5&lt;/color>"
-        errorLine2="           ~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values/colors.xml"
-            line="6"
-            column="12"/>
-    </issue>
-
-    <issue
-        id="UnusedResources"
-        message="The resource `R.color.teal_700` appears to be unused"
-        errorLine1="    &lt;color name=&quot;teal_700&quot;>#FF018786&lt;/color>"
-        errorLine2="           ~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values/colors.xml"
-            line="7"
-            column="12"/>
-    </issue>
-
-    <issue
-        id="UnusedResources"
-        message="The resource `R.color.black` appears to be unused"
-        errorLine1="    &lt;color name=&quot;black&quot;>#FF000000&lt;/color>"
-        errorLine2="           ~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values/colors.xml"
-            line="8"
-            column="12"/>
-    </issue>
-
-    <issue
-        id="UnusedResources"
-        message="The resource `R.color.white` appears to be unused"
-        errorLine1="    &lt;color name=&quot;white&quot;>#FFFFFFFF&lt;/color>"
-        errorLine2="           ~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values/colors.xml"
-            line="9"
-            column="12"/>
-    </issue>
-
-    <issue
-        id="UnusedResources"
         message="The resource `R.drawable.ic_launcher_foreground` appears to be unused"
         errorLine1="&lt;vector xmlns:android=&quot;http://schemas.android.com/apk/res/android&quot;"
         errorLine2="^">
@@ -648,89 +582,12 @@
 
     <issue
         id="UnusedResources"
-        message="The resource `R.string.auto_dj_mode_off_supporting` appears to be unused"
-        errorLine1="    &lt;string name=&quot;auto_dj_mode_off_supporting&quot;>The music stops at the end of the queue&lt;/string>"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values/strings_auto_dj.xml"
-            line="9"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="UnusedResources"
-        message="The resource `R.string.auto_dj_mode_songs_supporting` appears to be unused"
-        errorLine1="    &lt;string name=&quot;auto_dj_mode_songs_supporting&quot;>Adds a few songs at a time&lt;/string>"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values/strings_auto_dj.xml"
-            line="11"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="UnusedResources"
-        message="The resource `R.string.auto_dj_mode_albums_supporting` appears to be unused"
-        errorLine1="    &lt;string name=&quot;auto_dj_mode_albums_supporting&quot;>Adds a whole album at a time&lt;/string>"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values/strings_auto_dj.xml"
-            line="13"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="UnusedResources"
-        message="The resource `R.string.auto_dj_remove` appears to be unused"
-        errorLine1="    &lt;string name=&quot;auto_dj_remove&quot;>Remove %1$s&lt;/string>"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values/strings_auto_dj.xml"
-            line="37"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="UnusedResources"
-        message="The resource `R.string.library_layout` appears to be unused"
-        errorLine1="    &lt;string name=&quot;library_layout&quot;>Layout&lt;/string>"
+        message="The resource `R.string.library_saving` appears to be unused"
+        errorLine1="    &lt;string name=&quot;library_saving&quot;>Saving…&lt;/string>"
         errorLine2="            ~~~~~~~~~~~~~~~~~~~~~">
         <location
             file="src/main/res/values/strings_library.xml"
-            line="83"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="UnusedResources"
-        message="The resource `R.string.library_list` appears to be unused"
-        errorLine1="    &lt;string name=&quot;library_list&quot;>List&lt;/string>"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values/strings_library.xml"
-            line="84"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="UnusedResources"
-        message="The resource `R.string.library_grid` appears to be unused"
-        errorLine1="    &lt;string name=&quot;library_grid&quot;>Grid&lt;/string>"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values/strings_library.xml"
-            line="85"
-            column="13"/>
-    </issue>
-
-    <issue
-        id="UnusedResources"
-        message="The resource `R.string.settings_sentences` appears to be unused"
-        errorLine1="    &lt;string name=&quot;settings_sentences&quot;>%1$s. %2$s&lt;/string>"
-        errorLine2="            ~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/res/values/strings_settings.xml"
-            line="16"
+            line="133"
             column="13"/>
     </issue>
 
@@ -785,7 +642,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/com/example/samsonic/data/MusicCache.kt"
-            line="47"
+            line="52"
             column="9"/>
     </issue>
 
@@ -796,7 +653,7 @@
         errorLine2="        ~~~~~~~~~~~~">
         <location
             file="src/main/java/com/example/samsonic/data/MusicCache.kt"
-            line="80"
+            line="85"
             column="9"/>
     </issue>
 

@@ -80,9 +80,6 @@
     <string name="library_close_view_options">Close view options</string>
     <!-- %1$s: the section, e.g. Albums -->
     <string name="library_section_view">%1$s view</string>
-    <string name="library_layout">Layout</string>
-    <string name="library_list">List</string>
-    <string name="library_grid">Grid</string>
     <string name="library_grid_columns">Grid columns</string>
     <string name="library_sort_by">Sort by</string>
     <string name="library_sort_name">Name</string>

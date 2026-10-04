@@ -5,11 +5,8 @@
 
     <string name="auto_dj_group_mode">佇列播完時</string>
     <string name="auto_dj_mode_off">關閉</string>
-    <string name="auto_dj_mode_off_supporting">佇列播完就停止</string>
     <string name="auto_dj_mode_songs">歌曲</string>
-    <string name="auto_dj_mode_songs_supporting">每次加入幾首歌曲</string>
     <string name="auto_dj_mode_albums">專輯</string>
-    <string name="auto_dj_mode_albums_supporting">每次加入一整張專輯</string>
 
     <string name="auto_dj_group_follow">依照正在播放的歌曲</string>
     <string name="auto_dj_follow_artist">相同歌手</string>
@@ -33,7 +30,6 @@
     <string name="auto_dj_filter_artists">歌手</string>
     <string name="auto_dj_search_artists">搜尋要加入的歌手</string>
     <string name="auto_dj_no_artists_found">找不到歌手</string>
-    <string name="auto_dj_remove">移除 %1$s</string>
     <string name="auto_dj_liked_only">只挑喜歡的歌曲</string>
     <string name="auto_dj_hi_res_only">只挑 Hi-Res</string>
     <string name="auto_dj_hi_res_only_hint">優於 CD：超過 48 kHz 或 16 位元。手機上的音樂沒有這項資訊，因此都不算。</string>

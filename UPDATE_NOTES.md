@@ -2,6 +2,7 @@
 
 ## 2.2.0 (in progress)
 
+- Internal tidy-up with no change to how the app looks or behaves: unused colours (`colors.xml`) and eight unused strings (Auto DJ mode hints and remove, Library layout/list/grid, the settings sentence join) are removed, and the lint baseline is regenerated without the findings they caused.
 - Turning Wi-Fi only off now starts saving the songs kept for offline at once, instead of leaving them waiting until the network next changed or the app restarted.
 - The Play button above a list now has the same soft black shadow as Shuffle, Queue and Add to playlist (it had a faint accent glow that hardly showed), and those three take the nav bar's accent sheen. Play keeps its accent colour as it was.
 - Songs kept for offline show how far saving has got, in the mark beside the artist: a tick once saved, a ring filling as the song comes in (turning while the first bytes arrive), an outline while it waits its turn or for the network to allow it, and a red warning when the server refused it. A refused song can be asked for again: Try saving again in the long-press menu of a song or album with refused songs, or the new Songs not saved row in Settings > Storage (shown only then; it asks for all of them). Songs kept or retried while saving is under way are now picked up before it ends, instead of waiting for the next start.

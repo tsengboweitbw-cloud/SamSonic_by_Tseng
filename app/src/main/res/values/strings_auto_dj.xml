@@ -6,11 +6,8 @@
 
     <string name="auto_dj_group_mode">When the queue runs out</string>
     <string name="auto_dj_mode_off">Off</string>
-    <string name="auto_dj_mode_off_supporting">The music stops at the end of the queue</string>
     <string name="auto_dj_mode_songs">Songs</string>
-    <string name="auto_dj_mode_songs_supporting">Adds a few songs at a time</string>
     <string name="auto_dj_mode_albums">Albums</string>
-    <string name="auto_dj_mode_albums_supporting">Adds a whole album at a time</string>
 
     <string name="auto_dj_group_follow">Follow the song playing</string>
     <string name="auto_dj_follow_artist">Same artist</string>
@@ -34,7 +31,6 @@
     <string name="auto_dj_filter_artists">Artists</string>
     <string name="auto_dj_search_artists">Search for an artist to add</string>
     <string name="auto_dj_no_artists_found">No artists found</string>
-    <string name="auto_dj_remove">Remove %1$s</string>
     <string name="auto_dj_liked_only">Liked songs only</string>
     <string name="auto_dj_hi_res_only">Hi-Res only</string>
     <string name="auto_dj_hi_res_only_hint">Better than CD: over 48 kHz or 16 bits. Music on the phone doesn\'t say, so none of it counts.</string>
