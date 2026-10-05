@@ -1,6 +1,10 @@
 # Update notes
 
-## 2.2.0 (in progress)
+## 2.2.1 (in progress)
+
+- The USB DAC driver now takes over a queue that is already loaded: switching it on in Settings, plugging a DAC in or allowing its permission while songs are queued sets the current song up again on the DAC (and switching it off or unplugging does the same for Android's output), where before the queue kept playing the old way until it was replaced. The song and position are kept (`UsbDacManager.ready`, watched in `PlaybackService`).
+
+## 2.2.0
 
 - Faster first launch after an install or update, once a profile is recorded: the app now carries a baseline profile slot (`profileinstaller` plus a new `:baselineprofile` module) so the classes used at start-up and while scrolling are compiled ahead of time instead of interpreted. The module has the recorder (`BaselineProfileGenerator`, which starts the app, scrolls each tab and the library's lists, opens a playlist and opens the full player, and stops with a message if the phone is not signed in) and a cold-start benchmark with and without the profile (`StartupBenchmark`). To record, sign in on a connected phone and run `./gradlew :app:generateBaselineProfile`; commit the file it writes to `app/src/release/generated/baselineProfiles`. Until then, builds behave as before.
 
@@ -47,7 +51,7 @@
 - Now Playing's stacked action capsules now take no more height than the row of buttons does: the capsules peeking out behind the front one are drawn below it, in the bottom padding, instead of adding their own room. The controls above are no longer pushed up and crowded when the actions are stacked.
 - Surround music (3 to 8 channels, such as 5.1) now plays: it is folded down to stereo (ITU-R BS.775: the centre and the back and side channels join their side at -3dB, the LFE is left out) before it goes to the speaker, headphones or a USB DAC. The stock output had no downmix, so a 5.1 stream depended on the output taking six channels, and the USB DAC driver only took mono and stereo.
 
-## 2.1.0 (in progress)
+## 2.1.0
 
 - Bit-perfect USB output is gone, and with it the Exclusive USB output and DSD output settings: Android 14's bit-perfect mixer attributes (`AudioMixerAttributes`) never worked reliably, so the app no longer asks Android for them. The integer and native-DSD AudioTracks, the in-app resampler to the DAC's rate, DoP and native DSD packing, and the Exclusive line in Song info and Now Playing went with them, and the player is the stock one on every Android version again. DSD files (DSF, DSDIFF) still play, always filtered to PCM in the app. The `MODIFY_AUDIO_SETTINGS` permission is dropped. A bit-perfect driver of our own may come later.
 - USB DAC driver (experimental, off by default; Settings > Playback > USB DAC driver): the app now drives a plugged-in USB DAC itself, in native code (libusb over usbfs, USB audio class 1 and 2), instead of asking Android to. Songs go out bit for bit, in the DAC's own sample size and at the song's own rate where the DAC takes it (resampled to the nearest rate it does take otherwise), with gapless trimming, seeking and pause working as before, and the DAC's own volume. DSD files go to the DAC as DoP, or with the new Native DSD switch, in the DAC's raw-data format when it has one, and the DAC is sent DSD silence in between so it doesn't drop out of DSD. Without a DAC, or with the switch off, everything plays as before. A DAC unplugged mid-song pauses it. While the driver plays, Now Playing's info capsule and Song info show what it sends: the rate and sample size of PCM (or DSD64, DSD128... with DoP or Native), the USB DAC's name, and the rate its clock runs at. New native code: `app/src/main/cpp` (with libusb 1.0.29 vendored).
