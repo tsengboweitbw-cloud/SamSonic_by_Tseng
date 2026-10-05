@@ -21,6 +21,7 @@ import androidx.compose.ui.unit.Dp
 import com.example.samsonic.R
 import com.example.samsonic.data.MusicLibrary
 import com.example.samsonic.model.Album
+import com.example.samsonic.model.ArtistCredit
 import com.example.samsonic.model.Song
 import com.example.samsonic.ui.player.PanelState
 import com.example.samsonic.ui.theme.OneUiRadius
@@ -29,14 +30,28 @@ import kotlinx.coroutines.CoroutineScope
 /** What the Add to playlist menu adds, to a playlist or the queue: one song, or every song of an album. */
 class PlaylistItems internal constructor(
     val title: String,
+    // Where the menu's Go to rows lead: a song's album and artists, or an album's artist.
+    // The album artist is looked up at the tap where the song doesn't carry it.
+    internal val albumId: String? = null,
+    internal val artists: List<ArtistCredit> = emptyList(),
+    internal val albumArtist: ArtistCredit? = null,
     internal val songs: suspend (MusicLibrary) -> List<Song>,
 ) {
     internal suspend fun songIds(library: MusicLibrary): List<String> = songs(library).map { it.id }
 }
 
-internal fun Song.toPlaylistItems() = PlaylistItems(title) { listOf(this) }
+internal fun Song.toPlaylistItems() = PlaylistItems(
+    title,
+    albumId = albumId,
+    artists = artists.ifEmpty { listOf(ArtistCredit(artistId, artistName)) }.filter { it.id != null },
+    albumArtist = albumArtistName?.let { ArtistCredit(albumArtistId, it) },
+) { listOf(this) }
 
-internal fun Album.toPlaylistItems() = PlaylistItems(title) { library -> library.getAlbum(id).second }
+// Long-pressed from its own page's link, so only its artist is offered to go to.
+internal fun Album.toPlaylistItems() = PlaylistItems(
+    title,
+    artists = listOf(ArtistCredit(artistId, artistName)).filter { it.id != null },
+) { library -> library.getAlbum(id).second }
 
 /** Taking a song out of the playlist it's in: [remove] does it, and the page then loads again. */
 class SongRemoval(val remove: suspend () -> Unit)
@@ -124,7 +139,7 @@ internal fun rememberAddToPlaylistLongPress(
     // A plain holder, so scrolling doesn't recompose. Only the row's coordinates are kept
     // as it's placed; its bounds are worked out on the long press, not on every scroll frame.
     val coordinates = remember { arrayOfNulls<LayoutCoordinates>(1) }
-    val label = stringResource(R.string.library_add_to_playlist)
+    val label = stringResource(R.string.library_more_options)
     return remember(state, haptics, label) {
         if (state == null) return@remember AddToPlaylistLongPress(Modifier, null, null)
         AddToPlaylistLongPress(

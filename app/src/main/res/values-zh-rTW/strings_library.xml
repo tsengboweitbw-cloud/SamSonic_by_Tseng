@@ -137,4 +137,10 @@
     <plurals name="library_duplicate_some">
         <item quantity="other">%2$d 首中有 %1$d 首已在「%3$s」中。</item>
     </plurals>
+    <string name="library_more_options">更多選項</string>
+    <string name="library_go_to_album">前往專輯</string>
+    <string name="library_go_to_album_artist">前往專輯歌手</string>
+    <string name="library_go_to_artist">前往歌手</string>
+    <string name="library_choose_artist">選擇歌手</string>
+    <string name="library_no_album_artist">這張專輯沒有可開啟的歌手。</string>
 </resources>

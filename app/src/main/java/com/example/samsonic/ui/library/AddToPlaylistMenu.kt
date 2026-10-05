@@ -2,6 +2,7 @@ package com.example.samsonic.ui.library
 
 import android.content.Context
 import android.widget.Toast
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.SizeTransform
@@ -25,7 +26,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.automirrored.filled.QueueMusic
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Album
+import androidx.compose.material.icons.filled.LibraryAdd
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.OfflinePin
 import androidx.compose.material.icons.filled.Refresh
@@ -51,9 +56,11 @@ import androidx.compose.ui.unit.dp
 import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.playback.LocalPlayerState
 import com.example.samsonic.R
+import com.example.samsonic.model.ArtistCredit
 import com.example.samsonic.model.Playlist
 import com.example.samsonic.model.Song
 import com.example.samsonic.ui.common.UiState
+import com.example.samsonic.ui.player.PlayerLinks
 import com.example.samsonic.ui.settings.MenuOption
 import com.example.samsonic.ui.settings.SettingsMenu
 import com.example.samsonic.ui.theme.scrollEdgeFades
@@ -64,23 +71,31 @@ import kotlinx.coroutines.launch
 private const val PlaylistListMaxHeight = 360
 private const val StepFadeMillis = 220
 
-/** Where the menu is: choosing a playlist, naming a new one, or asking about songs already there. */
+/**
+ * Where the menu is: the actions, choosing a playlist, naming a new one, asking about songs
+ * already there, or choosing which of several artists to go to.
+ */
 internal sealed interface Step {
     data object Pick : Step
+    data object Playlists : Step
+    class Artists(val credits: List<ArtistCredit>) : Step
     data object Naming : Step
     class Duplicates(val playlist: Playlist, val songIds: List<String>, val duplicates: Set<String>) : Step
 }
 
 /**
- * Adds [state]'s song or album to one of the user's playlists, or to a new one
- * named here. A card like the Settings menus, grown out of what was long-pressed
- * over the dimmed app; [haze] is the content it blurs. Songs already in the chosen
- * playlist are asked about first: skipped, or added again. It closes once the
- * server takes the songs, and keeps any error in the card so it can be tried again.
+ * What can be done with [state]'s song or album: add it to the queue or a playlist (one
+ * of the user's, or a new one named here), go to its album, album artist or artist, and
+ * keep it for offline. A card like the Settings menus, grown out of what was long-pressed
+ * over the dimmed app; [haze] is the content it blurs. Where there is a choice to make (which
+ * playlist, which of several artists) it's a second step in the same card. Songs already in
+ * the chosen playlist are asked about first: skipped, or added again. It closes once the
+ * server takes the songs, and keeps any error in the card so it can be tried again. [links]
+ * open the pages of the Go to rows.
  */
 @Composable
-fun AddToPlaylistMenu(state: AddToPlaylistState, haze: HazeState) {
-    SettingsMenu(state.panel, haze, title = stringResource(R.string.library_add_to_playlist), originRadius = state.originRadius, resizable = true) {
+fun AddToPlaylistMenu(state: AddToPlaylistState, haze: HazeState, links: PlayerLinks) {
+    SettingsMenu(state.panel, haze, title = stringResource(R.string.library_more_options), originRadius = state.originRadius, resizable = true) {
         val items = state.items ?: return@SettingsMenu
         val repository = LocalAppContainer.current.repository
         val player = LocalPlayerState.current
@@ -141,6 +156,26 @@ fun AddToPlaylistMenu(state: AddToPlaylistState, haze: HazeState) {
             done(addedMessage(context, ids.size, skipped, playlist.name))
         }
 
+        // The step before this one, for Back and the heading's tap.
+        BackHandler(enabled = step != Step.Pick) {
+            if (saving == null) {
+                step = if (step is Step.Naming || step is Step.Duplicates) Step.Playlists else Step.Pick
+                error = null
+            }
+        }
+
+        fun goToArtist(artistId: String) {
+            state.panel.close()
+            links.openArtist(artistId)
+        }
+
+        fun goToAlbumArtist() = work("albumArtist") {
+            val artist = items.albumArtist
+                ?: items.albumId?.let { repository.getAlbum(it).first }?.let { ArtistCredit(it.artistId, it.artistName) }
+            val id = artist?.id ?: throw IllegalStateException(resources.getString(R.string.library_no_album_artist))
+            goToArtist(id)
+        }
+
         fun pick(playlist: Playlist) = work(playlist.id) {
             val ids = loadSongIds()
             val existing = repository.getPlaylist(playlist.id).second.mapTo(HashSet()) { it.id }
@@ -173,7 +208,7 @@ fun AddToPlaylistMenu(state: AddToPlaylistState, haze: HazeState) {
                 when (current) {
                     Step.Naming -> NewPlaylistForm(
                         saving = saving != null,
-                        onCancel = { step = Step.Pick; error = null },
+                        onCancel = { step = Step.Playlists; error = null },
                         onCreate = { name ->
                             work("") {
                                 val ids = loadSongIds()
@@ -221,6 +256,41 @@ fun AddToPlaylistMenu(state: AddToPlaylistState, haze: HazeState) {
                                 },
                             )
                         }
+                        MenuOption(
+                            icon = Icons.Filled.LibraryAdd,
+                            label = stringResource(R.string.library_add_to_playlist),
+                            selected = false,
+                            onClick = { if (saving == null) step = Step.Playlists },
+                        )
+                        if (items.albumId != null) {
+                            MenuOption(
+                                icon = Icons.Filled.Album,
+                                label = stringResource(R.string.library_go_to_album),
+                                selected = false,
+                                onClick = {
+                                    state.panel.close()
+                                    links.openAlbum(items.albumId)
+                                },
+                            )
+                            MenuOption(
+                                icon = Icons.Filled.AccountCircle,
+                                label = stringResource(R.string.library_go_to_album_artist),
+                                selected = saving == "albumArtist",
+                                onClick = { goToAlbumArtist() },
+                            )
+                        }
+                        if (items.artists.isNotEmpty()) {
+                            MenuOption(
+                                icon = Icons.Filled.Person,
+                                label = stringResource(R.string.library_go_to_artist),
+                                selected = false,
+                                onClick = {
+                                    // One artist goes straight there; several are chosen from.
+                                    val only = items.artists.singleOrNull()
+                                    if (only?.id != null) goToArtist(only.id) else step = Step.Artists(items.artists)
+                                },
+                            )
+                        }
                         // Only with a server in use: the music on this phone is on it already.
                         if (offline.available) {
                             val loaded = songs
@@ -254,6 +324,20 @@ fun AddToPlaylistMenu(state: AddToPlaylistState, haze: HazeState) {
                                 )
                             }
                         }
+                    }
+                    is Step.Artists -> {
+                        StepHeading(stringResource(R.string.library_choose_artist))
+                        current.credits.forEach { credit ->
+                            MenuOption(
+                                icon = Icons.Filled.Person,
+                                label = credit.name,
+                                selected = false,
+                                onClick = { credit.id?.let(::goToArtist) },
+                            )
+                        }
+                    }
+                    Step.Playlists -> {
+                        StepHeading(stringResource(R.string.library_add_to_playlist))
                         MenuOption(
                             icon = Icons.Filled.Add,
                             label = stringResource(R.string.library_new_playlist),
