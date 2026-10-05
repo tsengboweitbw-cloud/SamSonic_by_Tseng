@@ -366,6 +366,20 @@ private fun SheetSurface(
             Modifier
                 .fillMaxSize()
                 .graphicsLayer { alpha = 1f - ramp(sheet.progress, 0.3f, 0.6f) }
+                // Haze finds what's behind the glass from where it was last placed, and only
+                // re-reads that on a layout pass. The sheet's own layer moves the pill (coming
+                // in, swiped away, lifted in the pile) without one, so the glass kept blurring
+                // the patch behind where it had been. Reading those in the placement makes
+                // each frame of the move place it again.
+                .layout { measurable, constraints ->
+                    val placeable = measurable.measure(constraints)
+                    layout(placeable.width, placeable.height) {
+                        entrance()
+                        sheet.dismissal
+                        pile?.pose(MiniPlayerCard, collapsed.height, PileStep.toPx(), pickThresholdPx())?.weighted(pileWeight())
+                        placeable.place(0, 0)
+                    }
+                }
                 .glassSurface(
                     // The pill's own radius, held as the frame grows (a percentage of the
                     // growing frame would round its glass's corners ever wider than the clip's).
