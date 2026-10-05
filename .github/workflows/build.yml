@@ -24,8 +24,13 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+<<<<<<< HEAD
       - uses: actions/checkout@v7
       - uses: actions/setup-java@v4
+=======
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v6
+>>>>>>> origin/dependabot/github_actions/actions/setup-java-6
         with:
           distribution: temurin
           java-version: 21
