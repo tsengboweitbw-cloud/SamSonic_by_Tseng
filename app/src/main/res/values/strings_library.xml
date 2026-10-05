@@ -132,6 +132,10 @@
     <string name="library_save_changes_body">Your changes to %1$s have not been saved.</string>
     <string name="library_saving">Saving…</string>
     <string name="library_drag_to_move">Drag to move</string>
+    <string name="library_change_cover">Change cover</string>
+    <string name="library_crop_done">Done</string>
+    <string name="library_remove_cover">Remove cover</string>
+    <string name="library_cover_error">Couldn\'t use that image</string>
     <string name="library_save_playlist_error">Couldn\'t save the playlist</string>
     <string name="library_playlist_changed_elsewhere">The playlist was changed elsewhere and has been reloaded, so edit it again</string>
     <string name="library_add_anyway">Add anyway</string>

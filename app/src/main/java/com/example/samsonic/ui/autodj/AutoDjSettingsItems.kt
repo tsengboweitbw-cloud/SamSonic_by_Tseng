@@ -1,5 +1,6 @@
 package com.example.samsonic.ui.autodj
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material.icons.Icons
@@ -17,7 +18,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.R
+import androidx.compose.material.icons.filled.LibraryMusic
+import com.example.samsonic.data.AutoDjAlbumCounts
 import com.example.samsonic.data.AutoDjConfig
+import com.example.samsonic.data.AutoDjSongCounts
+import com.example.samsonic.ui.settings.SliderRow
+import kotlin.math.roundToInt
 import com.example.samsonic.data.AutoDjFollow
 import com.example.samsonic.data.AutoDjMode
 import com.example.samsonic.data.AutoDjSettings
@@ -39,6 +45,30 @@ internal fun LazyListScope.autoDjSettingsItems(
 ) {
     val filters = config.filters
     item(key = "mode") { mode() }
+
+    // How much is added each time, in the unit of the mode; nothing to set with Auto DJ off.
+    if (config.mode != AutoDjMode.OFF) {
+        item(key = "amount") {
+            val songs = config.mode == AutoDjMode.SONGS
+            val range = if (songs) AutoDjSongCounts else AutoDjAlbumCounts
+            val count = if (songs) config.songCount else config.albumCount
+            // Clear of the mode chips above, which end flush with the item.
+            Box(Modifier.padding(top = 16.dp)) {
+                SettingsCard {
+                    SliderRow(
+                        icon = Icons.Filled.LibraryMusic,
+                        title = stringResource(if (songs) R.string.auto_dj_amount_songs else R.string.auto_dj_amount_albums),
+                        hint = stringResource(R.string.auto_dj_amount_hint),
+                        valueLabel = count.toString(),
+                        value = count.toFloat(),
+                        valueRange = range.first.toFloat()..range.last.toFloat(),
+                        steps = range.last - range.first - 1,
+                        onValueChange = { value -> if (songs) settings.setSongCount(value.roundToInt()) else settings.setAlbumCount(value.roundToInt()) },
+                    )
+                }
+            }
+        }
+    }
 
     item(key = "follow-label") { GroupLabel(stringResource(R.string.auto_dj_group_follow)) }
     item(key = "follow") {

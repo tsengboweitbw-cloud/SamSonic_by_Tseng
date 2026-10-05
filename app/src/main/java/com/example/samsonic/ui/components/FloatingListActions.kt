@@ -80,9 +80,13 @@ private val FadeDistance = 32.dp
 /**
  * Room in a list for its [FloatingListActions], where the row sits at rest (right
  * under the header), with [bottomSpacing] under it before the next item.
+ * A page that hides its buttons for a while can lend the room to something else, as [content]
+ * at the top of the slot.
  */
-fun LazyListScope.floatingActionsSlot(bottomSpacing: Dp = 0.dp) {
-    item(key = SlotKey) { Spacer(Modifier.fillMaxWidth().height(ListActionButtonSize + bottomSpacing)) }
+fun LazyListScope.floatingActionsSlot(bottomSpacing: Dp = 0.dp, content: (@Composable BoxScope.() -> Unit)? = null) {
+    item(key = SlotKey) {
+        Box(Modifier.fillMaxWidth().height(ListActionButtonSize + bottomSpacing)) { content?.invoke(this) }
+    }
 }
 
 /** [floatingActionsSlot] for a grid, across its full width. */

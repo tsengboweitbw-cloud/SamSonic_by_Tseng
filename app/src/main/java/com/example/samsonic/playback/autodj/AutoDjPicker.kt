@@ -11,8 +11,6 @@ import com.example.samsonic.model.Song
 import com.example.samsonic.model.genreNames
 import com.example.samsonic.util.isHiRes
 
-// Songs added at a time in song mode.
-private const val SONG_BATCH = 5
 // Songs asked for per random pick, to have enough left after the filters.
 private const val SONG_POOL = 100
 // Albums asked for per random pick.
@@ -52,8 +50,8 @@ internal suspend fun pickAutoDj(
     for (criteria in criteriaFor(config, seed)) {
         val picked = runCatching {
             when (config.mode) {
-                AutoDjMode.SONGS -> pickSongs(library, criteria, exclude)
-                AutoDjMode.ALBUMS -> pickAlbum(library, criteria, excludeAlbums)
+                AutoDjMode.SONGS -> pickSongs(library, criteria, exclude, config.songCount)
+                AutoDjMode.ALBUMS -> pickAlbums(library, criteria, excludeAlbums, config.albumCount)
                 AutoDjMode.OFF -> emptyList()
             }
         }.getOrDefault(emptyList())
@@ -105,7 +103,7 @@ private fun <T> narrow(filter: Set<T>?, follow: Set<T>?, same: (T, T) -> Boolean
     else -> filter.filterTo(HashSet()) { f -> follow.any { same(it, f) } }.takeIf { it.isNotEmpty() }?.let { Limit(it) }
 }
 
-private suspend fun pickSongs(library: MusicLibrary, criteria: Criteria, exclude: Set<String>): List<Song> {
+private suspend fun pickSongs(library: MusicLibrary, criteria: Criteria, exclude: Set<String>, count: Int): List<Song> {
     repeat(TRIES) {
         val pool = when {
             criteria.artistIds != null -> artistSongs(library, criteria)
@@ -115,7 +113,7 @@ private suspend fun pickSongs(library: MusicLibrary, criteria: Criteria, exclude
             }
         }
         val fits = pool.filter { it.id !in exclude && criteria.admits(it) }.distinctBy { it.id }
-        if (fits.isNotEmpty()) return fits.shuffled().take(SONG_BATCH)
+        if (fits.isNotEmpty()) return fits.shuffled().take(count)
     }
     return emptyList()
 }
@@ -127,8 +125,12 @@ private suspend fun artistSongs(library: MusicLibrary, criteria: Criteria): List
     return library.getAlbumsSongs(albums.shuffled().take(ARTIST_ALBUMS))
 }
 
-private suspend fun pickAlbum(library: MusicLibrary, criteria: Criteria, excludeAlbums: Set<String>): List<Song> {
+/** The songs of up to [count] albums that fit, whole and one after another; fewer if that is all there is to find. */
+private suspend fun pickAlbums(library: MusicLibrary, criteria: Criteria, excludeAlbums: Set<String>, count: Int): List<Song> {
+    val picked = mutableListOf<Song>()
+    val pickedAlbums = HashSet<String>()
     repeat(TRIES) {
+        if (pickedAlbums.size >= count) return@repeat
         val candidates: List<String> = when {
             criteria.artistIds != null -> criteria.artistIds.random().let { id ->
                 library.getArtist(id).second.filter { criteria.admitsAlbum(it) }.map { it.id }
@@ -138,12 +140,16 @@ private suspend fun pickAlbum(library: MusicLibrary, criteria: Criteria, exclude
                 library.randomAlbums(ALBUM_POOL, genre = criteria.genres?.random(), fromYear = years?.first, toYear = years?.last)
             }.filter { criteria.admitsAlbum(it) }.map { it.id }
         }
-        for (id in candidates.filter { it !in excludeAlbums }.shuffled().take(TRIES)) {
+        for (id in candidates.filter { it !in excludeAlbums && it !in pickedAlbums }.shuffled().take(count + TRIES - 1)) {
+            if (pickedAlbums.size >= count) break
             val songs = library.getAlbum(id).second
-            if (songs.isNotEmpty() && criteria.admitsAlbumSongs(songs)) return songs
+            if (songs.isNotEmpty() && criteria.admitsAlbumSongs(songs)) {
+                pickedAlbums += id
+                picked += songs
+            }
         }
     }
-    return emptyList()
+    return picked
 }
 
 private fun Criteria.admits(song: Song): Boolean {

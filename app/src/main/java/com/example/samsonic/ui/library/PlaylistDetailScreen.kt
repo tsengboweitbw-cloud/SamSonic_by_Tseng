@@ -1,5 +1,17 @@
 package com.example.samsonic.ui.library
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
+import androidx.compose.ui.draw.clip
+import com.example.samsonic.data.PlaylistCovers
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -39,6 +51,8 @@ import androidx.compose.ui.platform.LocalContext
 import android.widget.Toast
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.animation.core.FastOutLinearInEasing
+import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.snap
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.ui.graphics.Color
@@ -179,9 +193,33 @@ fun PlaylistDetailScreen(
             val context = LocalContext.current
             val changedElsewhere = stringResource(R.string.library_playlist_changed_elsewhere)
             val saveFailure = stringResource(R.string.library_save_playlist_error)
+            // The cover is picked on this phone: kept here until Save, then handed to [PlaylistCovers].
+            val covers = LocalAppContainer.current.playlistCovers
+            val coverKey = PlaylistCovers.key(LocalAppContainer.current.sources.serverKey, playlistId)
+            val savedCover = covers.covers.collectAsStateWithLifecycle().value[coverKey]
+            var pickedCover by remember(loaded) { mutableStateOf<Uri?>(null) }
+            var removeCover by remember(loaded) { mutableStateOf(false) }
+            // The photo just chosen, being cropped; the crop is what is kept as [pickedCover].
+            var cropSource by remember(loaded) { mutableStateOf<Uri?>(null) }
+            val coverPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+                if (uri != null) cropSource = uri
+            }
+            cropSource?.let { source ->
+                CoverCropDialog(
+                    uri = source,
+                    onCropped = { cropped ->
+                        pickedCover = cropped
+                        removeCover = false
+                        cropSource = null
+                    },
+                    onDismiss = { cropSource = null },
+                )
+            }
+            val coverChanged = pickedCover != null || removeCover
+            val coverFailure = stringResource(R.string.library_cover_error)
             val newName = draftName.trim()
             val order = draft.map { it.song.id }
-            val canSave = newName.isNotEmpty() && (newName != playlist.name || order != loaded.map { it.id })
+            val canSave = newName.isNotEmpty() && (newName != playlist.name || order != loaded.map { it.id } || coverChanged)
             fun save() {
                 saving = true
                 scope.launch {
@@ -194,7 +232,14 @@ fun PlaylistDetailScreen(
                         }
                         if (order != current) repository.reorderPlaylist(playlistId, order)
                         if (newName != playlist.name) repository.renamePlaylist(playlistId, newName)
+                        pickedCover?.let { if (!covers.set(coverKey, it)) throw IllegalStateException(coverFailure) }
+                        if (removeCover) covers.remove(coverKey)
                         refresh.refresh()
+                    }.onSuccess {
+                        // A reload only ends editing when the list changed; a cover alone leaves it as it was.
+                        pickedCover = null
+                        removeCover = false
+                        isEditing = false
                     }.onFailure { Toast.makeText(context, it.message ?: saveFailure, Toast.LENGTH_LONG).show() }
                     saving = false
                 }
@@ -202,7 +247,7 @@ fun PlaylistDetailScreen(
             // Going back while editing leaves editing, not the page: at once if nothing was changed, else after
             // asking whether to save. The back button above the list does the same, so it is told how.
             val leavePanel = remember { PanelState(scope) }
-            val hasChanges = newName != playlist.name || order != loaded.map { it.id }
+            val hasChanges = newName != playlist.name || order != loaded.map { it.id } || coverChanged
             fun leaveEditing() {
                 if (saving) return
                 if (hasChanges) leavePanel.open() else isEditing = false
@@ -234,10 +279,24 @@ fun PlaylistDetailScreen(
             LaunchedEffect(isEditing) {
                 if (isEditing != rowsEditing) {
                     rowsSettled = false
-                    rowsAlpha.animateTo(0f, tween(110))
+                    rowsAlpha.animateTo(0.1f, tween(140, easing = FastOutLinearInEasing))
+                    // The two kinds of row list the songs in different orders (the sort's, and the server's), so the
+                    // song at the top of the screen is found in the other list and put back where it was, not by index.
+                    val first = listState.firstVisibleItemIndex
+                    val rowCount = if (rowsEditing) draft.size else songs.size
+                    val anchor = if (first >= ROWS_START && rowCount > 0) {
+                        val at = (first - ROWS_START).coerceAtMost(rowCount - 1)
+                        val from = if (rowsEditing) draft.map { it.song } else songs
+                        val to = if (rowsEditing) songs else draft.map { it.song }
+                        val song = from[at]
+                        val nth = from.take(at).count { it === song }
+                        to.withIndex().filter { it.value === song }.getOrNull(nth)?.index
+                    } else null
+                    val scrollOffset = listState.firstVisibleItemScrollOffset
                     rowsEditing = isEditing
+                    if (anchor != null) listState.scrollToItem(ROWS_START + anchor, scrollOffset)
                 }
-                rowsAlpha.animateTo(1f, tween(180))
+                rowsAlpha.animateTo(1f, tween(280, easing = LinearOutSlowInEasing))
                 rowsSettled = true
             }
             // A new sort starts over from the first song, if the list was past it.
@@ -254,14 +313,33 @@ fun PlaylistDetailScreen(
                     item(key = "header") {
                         PlaylistHeader(
                             playlist, songs.size, cornerRadius, actions = null,
-                            editing = if (isEditing) ({
-                                PlaylistNameField(name = draftName, onNameChange = { draftName = it }, enabled = !saving)
-                            }) else null,
+                            // The title follows the field below it as it is typed.
+                            name = if (isEditing) draftName else playlist.name,
+                            coverEdit = if (isEditing) {
+                                CoverEdit(
+                                    pending = pickedCover?.toString(),
+                                    showPicked = !removeCover,
+                                    removable = pickedCover != null || (!removeCover && savedCover != null),
+                                    enabled = !saving,
+                                    onPick = { coverPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+                                    onRemove = {
+                                        // A cover picked just now is dropped; one saved earlier is let go on Save.
+                                        if (pickedCover != null) pickedCover = null else removeCover = true
+                                    },
+                                )
+                            } else null,
                         )
                     }
                     // Play and shuffle float over the list ([FloatingListActions]); this keeps their place.
                     // Editing has no use for them, so the songs start right under the header.
-                    floatingActionsSlot(bottomSpacing = 8.dp)
+                    // The name field takes their room while editing, fading in as they fade out.
+                    floatingActionsSlot(bottomSpacing = 8.dp) {
+                        if (isEditing || actionsFade < 1f) {
+                            Box(Modifier.padding(horizontal = 24.dp).graphicsLayer { alpha = 1f - actionsFade }) {
+                                PlaylistNameField(name = draftName, onNameChange = { draftName = it }, enabled = !saving && isEditing)
+                            }
+                        }
+                    }
                     if (rowsEditing) {
                         items(draft, key = { drag.key(it) }) { item ->
                             // The one being dragged follows the finger; the others slide out of its way.
@@ -270,9 +348,7 @@ fun PlaylistDetailScreen(
                                 cornerRadius = cornerRadius,
                                 drag = drag,
                                 enabled = !saving,
-                                modifier = Modifier
-                                    .graphicsLayer { alpha = rowsAlpha.value }
-                                    .then(if (!rowsSettled || drag.draggedUid == item.uid) Modifier else Modifier.animateItem()),
+                                modifier = Modifier.graphicsLayer { alpha = rowsAlpha.value }.then(if (!rowsSettled || drag.draggedUid == item.uid) Modifier else Modifier.animateItem()),
                             )
                         }
                     } else {
@@ -302,8 +378,8 @@ fun PlaylistDetailScreen(
                     val chromeTop = LocalChromeGuard.current?.top ?: { 0f }
                     AnimatedVisibility(
                         visible = !isEditing,
-                        enter = fadeIn() + scaleIn(initialScale = 0.8f),
-                        exit = fadeOut() + scaleOut(targetScale = 0.8f),
+                        enter = fadeIn(tween(180, delayMillis = 90)) + scaleIn(tween(180, delayMillis = 90), initialScale = 0.8f),
+                        exit = fadeOut(tween(90)) + scaleOut(tween(90), targetScale = 0.8f),
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
                             .padding(end = 16.dp)
@@ -315,6 +391,8 @@ fun PlaylistDetailScreen(
                             contentDescription = stringResource(R.string.library_edit_playlist),
                             onClick = {
                                 draftName = playlist.name
+                                pickedCover = null
+                                removeCover = false
                                 draft.clear()
                                 draft.addAll(loaded.mapIndexed { i, s -> DraftSong(i.toLong(), s) })
                                 isEditing = true
@@ -326,8 +404,8 @@ fun PlaylistDetailScreen(
                     // While editing, Cancel and Save take its place.
                     AnimatedVisibility(
                         visible = isEditing,
-                        enter = fadeIn() + scaleIn(initialScale = 0.8f),
-                        exit = fadeOut() + scaleOut(targetScale = 0.8f),
+                        enter = fadeIn(tween(180, delayMillis = 90)) + scaleIn(tween(180, delayMillis = 90), initialScale = 0.8f),
+                        exit = fadeOut(tween(90)) + scaleOut(tween(90), targetScale = 0.8f),
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
                             .padding(end = 16.dp)
@@ -390,7 +468,8 @@ private fun PlaylistHeader(
     songCount: Int,
     cornerRadius: Dp,
     actions: (@Composable () -> Unit)?,
-    editing: (@Composable () -> Unit)? = null,
+    name: String = playlist.name,
+    coverEdit: CoverEdit? = null,
 ) {
     Column(
         modifier = Modifier
@@ -398,32 +477,30 @@ private fun PlaylistHeader(
             .padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        PlaylistArt(
-            playlist = playlist,
-            size = 180.dp,
-            cornerRadius = cornerRadius,
-            smallFirst = true,
-            modifier = Modifier.sharedArt(ArtKeys.playlist(playlist.id)),
-        )
-        Spacer(Modifier.height(16.dp))
-        // The name becomes a field and back in a place as tall as the field, so the page below doesn't move.
-        val lastEditing = remember { arrayOfNulls<@Composable () -> Unit>(1) }
-        if (editing != null) lastEditing[0] = editing
-        AnimatedContent(
-            targetState = editing != null,
-            modifier = Modifier.fillMaxWidth().heightIn(min = NameFieldHeight),
-            transitionSpec = {
-                (fadeIn(tween(200, delayMillis = 60)) togetherWith fadeOut(tween(120)))
-                    .using(SizeTransform(clip = false) { _, _ -> snap() })
-            },
-            contentAlignment = Alignment.Center,
-            label = "playlistName",
-        ) { isEditing ->
-            if (isEditing) {
-                lastEditing[0]?.invoke()
-            } else {
-                Text(text = playlist.name, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
+        Box(contentAlignment = Alignment.Center) {
+            PlaylistArt(
+                playlist = playlist,
+                size = 180.dp,
+                cornerRadius = cornerRadius,
+                smallFirst = true,
+                pendingCover = coverEdit?.pending,
+                showPicked = coverEdit?.showPicked ?: true,
+                modifier = Modifier.sharedArt(ArtKeys.playlist(playlist.id)),
+            )
+            // The overlay fades with the mode instead of popping, and keeps its last content while it fades out.
+            val lastCoverEdit = remember { arrayOfNulls<CoverEdit>(1) }
+            if (coverEdit != null) lastCoverEdit[0] = coverEdit
+            val overlayAlpha by animateFloatAsState(if (coverEdit != null) 1f else 0f, tween(200), label = "coverEditOverlay")
+            val shown = coverEdit ?: lastCoverEdit[0]
+            if (shown != null && overlayAlpha > 0f) {
+                Box(Modifier.graphicsLayer { alpha = overlayAlpha }) {
+                    CoverEditOverlay(if (coverEdit != null) shown else shown.disabled(), cornerRadius)
+                }
             }
+        }
+        Spacer(Modifier.height(16.dp))
+        Box(Modifier.fillMaxWidth().heightIn(min = NameFieldHeight), contentAlignment = Alignment.Center) {
+            Text(text = name, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
         }
         if (playlist.description.isNotBlank()) {
             Spacer(Modifier.height(4.dp))
@@ -448,5 +525,58 @@ private fun PlaylistHeader(
     }
 }
 
+/** The cover while editing: [pending] is an image picked but not saved, [showPicked] false when the saved pick is to go. */
+private class CoverEdit(
+    val pending: String?,
+    val showPicked: Boolean,
+    val removable: Boolean,
+    val enabled: Boolean,
+    val onPick: () -> Unit,
+    val onRemove: () -> Unit,
+) {
+    /** The same overlay, not tappable: for while it fades out. */
+    fun disabled() = CoverEdit(pending, showPicked, removable, enabled = false, onPick, onRemove)
+}
+
+/** Over the cover, 180dp square: tapping it picks another image, and a cross lets a picked one go. */
+@Composable
+private fun CoverEditOverlay(edit: CoverEdit, cornerRadius: Dp) {
+    val shape = RoundedCornerShape(cornerRadius)
+    Box(Modifier.size(180.dp)) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .clip(shape)
+                .background(Color.Black.copy(alpha = 0.3f))
+                .clickable(enabled = edit.enabled, onClickLabel = stringResource(R.string.library_change_cover), onClick = edit.onPick),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Edit,
+                contentDescription = stringResource(R.string.library_change_cover),
+                tint = Color.White,
+                modifier = Modifier.size(32.dp),
+            )
+        }
+        if (edit.removable) {
+            IconButton(
+                onClick = edit.onRemove,
+                enabled = edit.enabled,
+                modifier = Modifier.align(Alignment.TopEnd).padding(4.dp).size(36.dp).background(Color.Black.copy(alpha = 0.55f), CircleShape),
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Close,
+                    contentDescription = stringResource(R.string.library_remove_cover),
+                    tint = Color.White,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+        }
+    }
+}
+
 /** The height of the playlist's name field, which its name's place in the header keeps in both modes. */
 private val NameFieldHeight = 56.dp
+
+/** Where the song rows start in the list: after the header and the room for Play and Shuffle. */
+private const val ROWS_START = 2

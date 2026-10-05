@@ -9,6 +9,10 @@
     <string name="auto_dj_mode_songs">Songs</string>
     <string name="auto_dj_mode_albums">Albums</string>
 
+    <string name="auto_dj_amount_songs">Songs to add</string>
+    <string name="auto_dj_amount_albums">Albums to add</string>
+    <string name="auto_dj_amount_hint">How many Auto DJ adds each time the queue runs out</string>
+
     <string name="auto_dj_group_follow">Follow the song playing</string>
     <string name="auto_dj_follow_artist">Same artist</string>
     <string name="auto_dj_follow_genre">Same genre</string>

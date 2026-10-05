@@ -43,13 +43,24 @@ data class AutoDjFilters(
     val count: Int get() = listOf(genres.isNotEmpty(), decades.isNotEmpty(), artists.isNotEmpty(), likedOnly, hiResOnly, neverPlayed).count { it }
 }
 
+/** How many songs Auto DJ adds at a time in song mode, at least and at most, and to start with. */
+val AutoDjSongCounts = 1..20
+const val DEFAULT_AUTO_DJ_SONGS = 5
+
+/** How many albums Auto DJ adds at a time in album mode, at least and at most, and to start with. */
+val AutoDjAlbumCounts = 1..5
+const val DEFAULT_AUTO_DJ_ALBUMS = 1
+
 /**
- * All of Auto DJ's settings: its [mode], what of the playing song it [follow]s (none:
+ * All of Auto DJ's settings: its [mode] and how many [songCount] songs or [albumCount]
+ * albums it adds each time, what of the playing song it [follow]s (none:
  * anything at random), the genres of it not to follow ([ignoredGenres], for a song of
  * several), and the [filters] on it all.
  */
 data class AutoDjConfig(
     val mode: AutoDjMode = AutoDjMode.OFF,
+    val songCount: Int = DEFAULT_AUTO_DJ_SONGS,
+    val albumCount: Int = DEFAULT_AUTO_DJ_ALBUMS,
     val follow: Set<AutoDjFollow> = emptySet(),
     val ignoredGenres: Set<String> = emptySet(),
     val filters: AutoDjFilters = AutoDjFilters(),
@@ -70,6 +81,10 @@ class AutoDjSettings(context: Context) {
 
     fun setMode(mode: AutoDjMode) = update { it.copy(mode = mode) }
 
+    fun setSongCount(count: Int) = update { it.copy(songCount = count.coerceIn(AutoDjSongCounts)) }
+
+    fun setAlbumCount(count: Int) = update { it.copy(albumCount = count.coerceIn(AutoDjAlbumCounts)) }
+
     fun setFollowing(follow: AutoDjFollow, on: Boolean) =
         update { it.copy(follow = if (on) it.follow + follow else it.follow - follow) }
 
@@ -81,6 +96,8 @@ class AutoDjSettings(context: Context) {
 
     private fun load(): AutoDjConfig = AutoDjConfig(
         mode = AutoDjMode.entries.find { it.name == prefs.getString(KEY_MODE, null) } ?: AutoDjMode.OFF,
+        songCount = prefs.getInt(KEY_SONG_COUNT, DEFAULT_AUTO_DJ_SONGS).coerceIn(AutoDjSongCounts),
+        albumCount = prefs.getInt(KEY_ALBUM_COUNT, DEFAULT_AUTO_DJ_ALBUMS).coerceIn(AutoDjAlbumCounts),
         follow = prefs.getStringSet(KEY_FOLLOW, null).orEmpty().mapNotNullTo(HashSet()) { name -> AutoDjFollow.entries.find { it.name == name } },
         ignoredGenres = prefs.getStringSet(KEY_IGNORED_GENRES, null).orEmpty().toSet(),
         filters = AutoDjFilters(
@@ -96,6 +113,8 @@ class AutoDjSettings(context: Context) {
     private fun save(config: AutoDjConfig) = prefs.edit {
         val filters = config.filters
         putString(KEY_MODE, config.mode.name)
+        putInt(KEY_SONG_COUNT, config.songCount)
+        putInt(KEY_ALBUM_COUNT, config.albumCount)
         putStringSet(KEY_FOLLOW, config.follow.mapTo(HashSet()) { it.name })
         putStringSet(KEY_IGNORED_GENRES, config.ignoredGenres)
         putStringSet(KEY_GENRES, filters.genres)
@@ -113,6 +132,8 @@ class AutoDjSettings(context: Context) {
 
     private companion object {
         const val KEY_MODE = "mode"
+        const val KEY_SONG_COUNT = "song_count"
+        const val KEY_ALBUM_COUNT = "album_count"
         const val KEY_FOLLOW = "follow"
         const val KEY_IGNORED_GENRES = "ignored_genres"
         const val KEY_GENRES = "filter_genres"
