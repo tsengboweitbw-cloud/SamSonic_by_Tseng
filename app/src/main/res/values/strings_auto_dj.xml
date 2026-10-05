@@ -14,17 +14,17 @@
     <string name="auto_dj_amount_hint">How many Auto DJ adds each time the queue runs out</string>
 
     <string name="auto_dj_group_follow">Follow the song playing</string>
-    <string name="auto_dj_follow_artist">Same artist</string>
-    <string name="auto_dj_follow_genre">Same genre</string>
-    <string name="auto_dj_follow_genre_hint">For a song of several genres, choose which to follow in Up next</string>
-    <string name="auto_dj_follow_era">Same era</string>
-    <string name="auto_dj_follow_era_hint">From the same decade</string>
-    <string name="auto_dj_follow_note">With none on, anything may come next. When nothing fits them all, Auto DJ lets go of the artist first, then the era, then the genre.</string>
+    <string name="auto_dj_follow_artist">Artist</string>
+    <string name="auto_dj_follow_genre">Genre</string>
+    <string name="auto_dj_follow_era">Era</string>
+    <string name="auto_dj_follow_note">Era means the same decade. For a song of several genres, choose which to follow in Up next. With none on, anything may come next. When nothing fits them all, Auto DJ lets go of the artist first, then the era, then the genre.</string>
 
     <string name="auto_dj_group_filters">Only pick</string>
-    <string name="auto_dj_filters_note">These always hold, whatever is followed.</string>
+    <string name="auto_dj_filters_note">These always hold, whatever is followed. Tap a genre, decade or artist once to pick only those, twice to never pick them.</string>
+    <string name="auto_dj_summary_not">Not %1$s</string>
     <string name="auto_dj_any">Any</string>
     <string name="auto_dj_clear">Clear</string>
+    <string name="auto_dj_summary_more">%1$s +%2$d</string>
     <string name="auto_dj_filter_genres">Genres</string>
     <string name="auto_dj_show_all">Show all</string>
     <string name="auto_dj_show_fewer">Show fewer</string>

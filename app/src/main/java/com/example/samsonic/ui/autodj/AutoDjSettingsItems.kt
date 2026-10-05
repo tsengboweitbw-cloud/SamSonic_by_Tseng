@@ -1,16 +1,16 @@
 package com.example.samsonic.ui.autodj
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AllInclusive
-import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FiberNew
 import androidx.compose.material.icons.filled.GraphicEq
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Style
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.LibraryMusic
 import com.example.samsonic.data.AutoDjAlbumCounts
 import com.example.samsonic.data.AutoDjConfig
 import com.example.samsonic.data.AutoDjSongCounts
+import com.example.samsonic.ui.components.ToggleChip
 import com.example.samsonic.ui.settings.SliderRow
 import kotlin.math.roundToInt
 import com.example.samsonic.data.AutoDjFollow
@@ -37,6 +38,7 @@ import com.example.samsonic.ui.settings.SwitchRow
  * Playing alike: [mode] (each place picks its mode its own way), what of the song
  * playing it follows, and the filters on everything it picks from [library].
  */
+@OptIn(ExperimentalLayoutApi::class)
 internal fun LazyListScope.autoDjSettingsItems(
     config: AutoDjConfig,
     settings: AutoDjSettings,
@@ -72,27 +74,19 @@ internal fun LazyListScope.autoDjSettingsItems(
 
     item(key = "follow-label") { GroupLabel(stringResource(R.string.auto_dj_group_follow)) }
     item(key = "follow") {
-        SettingsCard {
-            SwitchRow(
-                icon = Icons.Filled.Person,
-                title = stringResource(R.string.auto_dj_follow_artist),
-                checked = AutoDjFollow.ARTIST in config.follow,
-                onCheckedChange = { settings.setFollowing(AutoDjFollow.ARTIST, it) },
-            )
-            SwitchRow(
-                icon = Icons.Filled.Style,
-                title = stringResource(R.string.auto_dj_follow_genre),
-                checked = AutoDjFollow.GENRE in config.follow,
-                onCheckedChange = { settings.setFollowing(AutoDjFollow.GENRE, it) },
-                hint = stringResource(R.string.auto_dj_follow_genre_hint),
-            )
-            SwitchRow(
-                icon = Icons.Filled.DateRange,
-                title = stringResource(R.string.auto_dj_follow_era),
-                checked = AutoDjFollow.ERA in config.follow,
-                onCheckedChange = { settings.setFollowing(AutoDjFollow.ERA, it) },
-                hint = stringResource(R.string.auto_dj_follow_era_hint),
-            )
+        FlowRow(
+            modifier = Modifier.padding(horizontal = 24.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            listOf(
+                AutoDjFollow.ARTIST to R.string.auto_dj_follow_artist,
+                AutoDjFollow.GENRE to R.string.auto_dj_follow_genre,
+                AutoDjFollow.ERA to R.string.auto_dj_follow_era,
+            ).forEach { (follow, label) ->
+                val on = follow in config.follow
+                ToggleChip(stringResource(label), selected = on, onClick = { settings.setFollowing(follow, !on) })
+            }
         }
     }
     item(key = "follow-note") { Note(stringResource(R.string.auto_dj_follow_note)) }
@@ -100,9 +94,9 @@ internal fun LazyListScope.autoDjSettingsItems(
     item(key = "filters-label") { GroupLabel(stringResource(R.string.auto_dj_group_filters)) }
     item(key = "filters") {
         SettingsCard {
-            GenreFilter(library, filters) { genres -> settings.updateFilters { it.copy(genres = genres) } }
-            DecadeFilter(filters) { decades -> settings.updateFilters { it.copy(decades = decades) } }
-            ArtistFilter(library, filters) { artists -> settings.updateFilters { it.copy(artists = artists) } }
+            GenreFilter(library, filters, settings::updateFilters)
+            DecadeFilter(filters, settings::updateFilters)
+            ArtistFilter(library, filters, settings::updateFilters)
             SwitchRow(
                 icon = Icons.Filled.Favorite,
                 title = stringResource(R.string.auto_dj_liked_only),

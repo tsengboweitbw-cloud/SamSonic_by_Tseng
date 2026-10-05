@@ -2,6 +2,9 @@
 
 ## 2.2.3
 
+- Auto DJ can now leave things out as well as keep to them: tap a genre, decade or artist once to pick only those, twice to never pick them.
+- Auto DJ's settings are tidier, with every option kept. The Genres, Decades and Artists filters are rows that open on a tap and show what is chosen (the first, then "+2") while closed, with Clear once open; before, all their chips were always showing. "Follow the song playing" is one row of three chips (Same artist, Same genre, Same era) rather than three switch rows, and the two hints that went with them are folded into the note beneath (`FilterTitle` in `AutoDjFilterRows`, `autoDjSettingsItems`).
+
 - The USB DAC driver and Native DSD are now on by default. A DAC that can't take a format falls back step by step (native DSD, then DoP, then PCM at a rate it supports), and one the driver can't read is left to Android, so nothing needs switching on first. A choice already made in Settings is kept (`UsbDacManager`).
 
 - Long-pressing a playlist in Library now opens a menu with Save for offline (or Remove from offline once all its songs are kept) as well as Delete, instead of going straight to the delete question. Delete still asks first, as a second step in the same card, and Cancel returns to the menu. Favourites can be saved for offline but not deleted; without a server in use the menu shows only Delete (`DeletePlaylistMenu`, `deleteOnLongPress` in `LibraryScreen`).

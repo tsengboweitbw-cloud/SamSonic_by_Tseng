@@ -30,7 +30,8 @@ data class AutoDjArtist(val id: String, val name: String)
 /**
  * The limits on everything Auto DJ adds, whatever it follows: only these [genres],
  * [decades] (see [decadeYears]), these [artists], and liked, hi-res or never played
- * songs. Empty or null is no limit.
+ * songs. Empty or null is no limit. The [excludedGenres], [excludedDecades] and
+ * [excludedArtists] are the reverse: nothing of them is picked.
  */
 data class AutoDjFilters(
     val genres: Set<String> = emptySet(),
@@ -39,8 +40,17 @@ data class AutoDjFilters(
     val likedOnly: Boolean = false,
     val hiResOnly: Boolean = false,
     val neverPlayed: Boolean = false,
+    val excludedGenres: Set<String> = emptySet(),
+    val excludedDecades: Set<Int> = emptySet(),
+    val excludedArtists: List<AutoDjArtist> = emptyList(),
 ) {
-    val count: Int get() = listOf(genres.isNotEmpty(), decades.isNotEmpty(), artists.isNotEmpty(), likedOnly, hiResOnly, neverPlayed).count { it }
+    val count: Int
+        get() = listOf(
+            genres.isNotEmpty() || excludedGenres.isNotEmpty(),
+            decades.isNotEmpty() || excludedDecades.isNotEmpty(),
+            artists.isNotEmpty() || excludedArtists.isNotEmpty(),
+            likedOnly, hiResOnly, neverPlayed,
+        ).count { it }
 }
 
 /** How many songs Auto DJ adds at a time in song mode, at least and at most, and to start with. */
@@ -107,6 +117,9 @@ class AutoDjSettings(context: Context) {
             likedOnly = prefs.getBoolean(KEY_LIKED_ONLY, false),
             hiResOnly = prefs.getBoolean(KEY_HI_RES_ONLY, false),
             neverPlayed = prefs.getBoolean(KEY_NEVER_PLAYED, false),
+            excludedGenres = prefs.getStringSet(KEY_EXCLUDED_GENRES, null).orEmpty().toSet(),
+            excludedDecades = prefs.getStringSet(KEY_EXCLUDED_DECADES, null).orEmpty().mapNotNullTo(HashSet()) { it.toIntOrNull() },
+            excludedArtists = prefs.getStringSet(KEY_EXCLUDED_ARTISTS, null).orEmpty().mapNotNull(::decodeArtist).sortedBy { it.name.lowercase() },
         ),
     )
 
@@ -120,6 +133,9 @@ class AutoDjSettings(context: Context) {
         putStringSet(KEY_GENRES, filters.genres)
         putStringSet(KEY_DECADES, filters.decades.mapTo(HashSet()) { it.toString() })
         putStringSet(KEY_ARTISTS, filters.artists.mapTo(HashSet()) { "${it.id}$SEPARATOR${it.name}" })
+        putStringSet(KEY_EXCLUDED_GENRES, filters.excludedGenres)
+        putStringSet(KEY_EXCLUDED_DECADES, filters.excludedDecades.mapTo(HashSet()) { it.toString() })
+        putStringSet(KEY_EXCLUDED_ARTISTS, filters.excludedArtists.mapTo(HashSet()) { "${it.id}$SEPARATOR${it.name}" })
         putBoolean(KEY_LIKED_ONLY, filters.likedOnly)
         putBoolean(KEY_HI_RES_ONLY, filters.hiResOnly)
         putBoolean(KEY_NEVER_PLAYED, filters.neverPlayed)
@@ -139,6 +155,9 @@ class AutoDjSettings(context: Context) {
         const val KEY_GENRES = "filter_genres"
         const val KEY_DECADES = "filter_decades"
         const val KEY_ARTISTS = "filter_artists"
+        const val KEY_EXCLUDED_GENRES = "filter_excluded_genres"
+        const val KEY_EXCLUDED_DECADES = "filter_excluded_decades"
+        const val KEY_EXCLUDED_ARTISTS = "filter_excluded_artists"
         const val KEY_LIKED_ONLY = "filter_liked_only"
         const val KEY_HI_RES_ONLY = "filter_hi_res_only"
         const val KEY_NEVER_PLAYED = "filter_never_played"

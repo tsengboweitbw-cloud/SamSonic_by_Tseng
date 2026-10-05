@@ -31,6 +31,9 @@ private data class Criteria(
     val likedOnly: Boolean,
     val hiResOnly: Boolean,
     val neverPlayed: Boolean,
+    val excludedGenres: Set<String> = emptySet(),
+    val excludedDecades: Set<Int> = emptySet(),
+    val excludedArtistIds: Set<String> = emptySet(),
 )
 
 /**
@@ -86,6 +89,9 @@ private fun criteriaFor(config: AutoDjConfig, seed: Song): List<Criteria> {
             likedOnly = filters.likedOnly,
             hiResOnly = filters.hiResOnly,
             neverPlayed = filters.neverPlayed,
+            excludedGenres = filters.excludedGenres,
+            excludedDecades = filters.excludedDecades,
+            excludedArtistIds = filters.excludedArtists.mapTo(HashSet()) { it.id },
         )
     }.distinct()
 }
@@ -158,6 +164,11 @@ private fun Criteria.admits(song: Song): Boolean {
     if (artistIds != null && song.artistId !in artistIds && song.albumArtistId !in artistIds &&
         song.artists.none { it.id in artistIds }
     ) return false
+    if (excludedGenres.isNotEmpty() && song.genreNames.any { g -> excludedGenres.any { it.equals(g, ignoreCase = true) } }) return false
+    if (excludedDecades.isNotEmpty() && song.year?.let { decadeOf(it) } in excludedDecades) return false
+    if (excludedArtistIds.isNotEmpty() && (song.artistId in excludedArtistIds || song.albumArtistId in excludedArtistIds ||
+            song.artists.any { it.id in excludedArtistIds })
+    ) return false
     if (likedOnly && !song.liked) return false
     if (hiResOnly && !isHiRes(song)) return false
     if (neverPlayed && ((song.playCount ?: 0L) > 0L || song.played != null)) return false
@@ -169,6 +180,9 @@ private fun Criteria.admitsAlbum(album: Album): Boolean {
     val albumGenres = album.genreNames
     if (genres != null && albumGenres.isNotEmpty() && albumGenres.none { g -> genres.any { it.equals(g, ignoreCase = true) } }) return false
     if (decades != null && decadeOf(album.year ?: return false) !in decades) return false
+    if (excludedGenres.isNotEmpty() && albumGenres.any { g -> excludedGenres.any { it.equals(g, ignoreCase = true) } }) return false
+    if (excludedDecades.isNotEmpty() && album.year?.let { decadeOf(it) } in excludedDecades) return false
+    if (album.artistId != null && album.artistId in excludedArtistIds) return false
     return true
 }
 

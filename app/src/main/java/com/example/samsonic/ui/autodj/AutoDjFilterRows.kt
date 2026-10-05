@@ -12,8 +12,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Style
@@ -32,9 +33,11 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.R
@@ -47,7 +50,6 @@ import com.example.samsonic.model.Artist
 import com.example.samsonic.ui.components.ToggleChip
 import com.example.samsonic.ui.settings.rowIconTint
 import com.example.samsonic.ui.theme.OneUiRadius
-import com.example.samsonic.ui.theme.OneUiRow
 import com.example.samsonic.ui.theme.oneUiRowClickable
 import kotlinx.coroutines.delay
 
@@ -58,17 +60,33 @@ private const val ARTIST_RESULTS = 6
 // How long typing pauses before an artist search runs.
 private const val SEARCH_DELAY_MS = 300L
 
-/** A filter's name, with what it's set to and a way to clear it once set. */
+/**
+ * A filter's name with what it's set to, tapped to open or close its choices. Once
+ * open, a set filter offers Clear in place of its summary.
+ */
 @Composable
-private fun FilterTitle(icon: ImageVector, title: String, value: String, onClear: (() -> Unit)?) {
+private fun FilterTitle(
+    icon: ImageVector,
+    title: String,
+    summary: String?,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+    onClear: (() -> Unit)?,
+) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 12.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .oneUiRowClickable(onToggle)
+            // The same inner padding as SwitchRow, so the icons and titles line up.
+            .padding(horizontal = 8.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(icon, contentDescription = null, tint = rowIconTint(), modifier = Modifier.size(22.dp))
         Spacer(Modifier.width(14.dp))
-        Text(title, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-        if (onClear != null) {
+        Text(title, style = MaterialTheme.typography.bodyLarge)
+        Spacer(Modifier.width(12.dp))
+        if (expanded && onClear != null) {
+            Spacer(Modifier.weight(1f))
             Text(
                 text = stringResource(R.string.auto_dj_clear),
                 style = MaterialTheme.typography.bodyMedium,
@@ -77,21 +95,66 @@ private fun FilterTitle(icon: ImageVector, title: String, value: String, onClear
             )
         } else {
             Text(
-                text = value,
+                text = summary ?: stringResource(R.string.auto_dj_any),
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                // The same room as Clear takes (its press inset and padding), so the row keeps its height.
-                modifier = Modifier.padding(OneUiRow.Inset).padding(horizontal = 8.dp, vertical = 4.dp),
+                color = if (summary != null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.End,
+                modifier = Modifier.weight(1f),
             )
         }
+        Icon(
+            Icons.Filled.ExpandMore,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 4.dp).size(24.dp).rotate(if (expanded) 180f else 0f),
+        )
     }
+}
+
+/** The first of [names], with how many more are chosen; null when none are. */
+@Composable
+private fun chosenSummary(names: List<String>): String? = when (names.size) {
+    0 -> null
+    1 -> names[0]
+    else -> stringResource(R.string.auto_dj_summary_more, names[0], names.size - 1)
+}
+
+/** [chosenSummary] of what's kept and what's left out ("Rock +1 · Not Jazz"); null when neither is set. */
+@Composable
+private fun filterSummary(included: List<String>, excluded: List<String>): String? {
+    val kept = chosenSummary(included)
+    val left = chosenSummary(excluded)?.let { stringResource(R.string.auto_dj_summary_not, it) }
+    return listOfNotNull(kept, left).takeIf { it.isNotEmpty() }?.joinToString(" · ")
+}
+
+/** Where a choice stands: not used, the only kind picked, or never picked. */
+private enum class Stand { NONE, INCLUDE, EXCLUDE }
+
+/** A choice's chip: lit when it's used either way, and barred when it's left out. */
+@Composable
+private fun StandChip(label: String, stand: Stand, onClick: () -> Unit) {
+    ToggleChip(
+        label = label,
+        selected = stand != Stand.NONE,
+        trailingIcon = if (stand == Stand.EXCLUDE) Icons.Filled.Block else null,
+        onClick = onClick,
+    )
+}
+
+/** [item] with its next stand when tapped: none, then kept, then left out, then none again. */
+private fun <T> Set<T>.next(item: T, excluded: Set<T>): Pair<Set<T>, Set<T>> = when {
+    item in this -> (this - item) to (excluded + item)
+    item in excluded -> this to (excluded - item)
+    else -> (this + item) to excluded
 }
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ChipFlow(content: @Composable () -> Unit) {
     FlowRow(
-        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, top = 10.dp, bottom = 12.dp),
+        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 16.dp, bottom = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) { content() }
@@ -99,18 +162,25 @@ private fun ChipFlow(content: @Composable () -> Unit) {
 
 /** Which of [library]'s genres Auto DJ picks from: its biggest, or all of them on asking. */
 @Composable
-internal fun GenreFilter(library: MusicLibrary, filters: AutoDjFilters, onChange: (Set<String>) -> Unit) {
+internal fun GenreFilter(library: MusicLibrary, filters: AutoDjFilters, onChange: ((AutoDjFilters) -> AutoDjFilters) -> Unit) {
     val genres by produceState<List<String>?>(null, library) {
         value = runCatching { library.getGenres().map { it.name } }.getOrDefault(emptyList())
     }
     var showAll by rememberSaveable { mutableStateOf(false) }
-    val any = stringResource(R.string.auto_dj_any)
+    var open by rememberSaveable { mutableStateOf(false) }
     FilterTitle(
         icon = Icons.Filled.Style,
         title = stringResource(R.string.auto_dj_filter_genres),
-        value = any,
-        onClear = if (filters.genres.isNotEmpty()) ({ onChange(emptySet()) }) else null,
+        summary = filterSummary(filters.genres.sorted(), filters.excludedGenres.sorted()),
+        expanded = open,
+        onToggle = { open = !open },
+        onClear = if (filters.genres.isNotEmpty() || filters.excludedGenres.isNotEmpty()) {
+            { onChange { it.copy(genres = emptySet(), excludedGenres = emptySet()) } }
+        } else {
+            null
+        },
     )
+    if (!open) return
     val all = genres ?: return
     if (all.isEmpty()) {
         Text(
@@ -122,11 +192,20 @@ internal fun GenreFilter(library: MusicLibrary, filters: AutoDjFilters, onChange
         return
     }
     // The chosen ones stay in view even when they're not among the biggest.
-    val shown = if (showAll) all else (all.take(GENRES_SHOWN) + all.filter { it in filters.genres }).distinct()
+    val shown = if (showAll) all else (all.take(GENRES_SHOWN) + all.filter { it in filters.genres || it in filters.excludedGenres }).distinct()
     ChipFlow {
         shown.forEach { genre ->
-            val on = genre in filters.genres
-            ToggleChip(genre, on, onClick = { onChange(if (on) filters.genres - genre else filters.genres + genre) })
+            val stand = when (genre) {
+                in filters.genres -> Stand.INCLUDE
+                in filters.excludedGenres -> Stand.EXCLUDE
+                else -> Stand.NONE
+            }
+            StandChip(genre, stand) {
+                onChange { f ->
+                    val (kept, left) = f.genres.next(genre, f.excludedGenres)
+                    f.copy(genres = kept, excludedGenres = left)
+                }
+            }
         }
         if (all.size > GENRES_SHOWN) {
             Text(
@@ -141,21 +220,37 @@ internal fun GenreFilter(library: MusicLibrary, filters: AutoDjFilters, onChange
 
 /** Which decades Auto DJ picks from. */
 @Composable
-internal fun DecadeFilter(filters: AutoDjFilters, onChange: (Set<Int>) -> Unit) {
+internal fun DecadeFilter(filters: AutoDjFilters, onChange: ((AutoDjFilters) -> AutoDjFilters) -> Unit) {
+    var open by rememberSaveable { mutableStateOf(false) }
     FilterTitle(
         icon = Icons.Filled.DateRange,
         title = stringResource(R.string.auto_dj_filter_decades),
-        value = stringResource(R.string.auto_dj_any),
-        onClear = if (filters.decades.isNotEmpty()) ({ onChange(emptySet()) }) else null,
+        summary = filterSummary(
+            AutoDjDecades.filter { it in filters.decades }.map { decadeLabel(it) },
+            AutoDjDecades.filter { it in filters.excludedDecades }.map { decadeLabel(it) },
+        ),
+        expanded = open,
+        onToggle = { open = !open },
+        onClear = if (filters.decades.isNotEmpty() || filters.excludedDecades.isNotEmpty()) {
+            { onChange { it.copy(decades = emptySet(), excludedDecades = emptySet()) } }
+        } else {
+            null
+        },
     )
+    if (!open) return
     ChipFlow {
         AutoDjDecades.forEach { decade ->
-            val on = decade in filters.decades
-            ToggleChip(
-                label = decadeLabel(decade),
-                selected = on,
-                onClick = { onChange(if (on) filters.decades - decade else filters.decades + decade) },
-            )
+            val stand = when (decade) {
+                in filters.decades -> Stand.INCLUDE
+                in filters.excludedDecades -> Stand.EXCLUDE
+                else -> Stand.NONE
+            }
+            StandChip(decadeLabel(decade), stand) {
+                onChange { f ->
+                    val (kept, left) = f.decades.next(decade, f.excludedDecades)
+                    f.copy(decades = kept, excludedDecades = left)
+                }
+            }
         }
     }
 }
@@ -166,22 +261,36 @@ internal fun decadeLabel(decade: Int): String =
 
 /** Which artists Auto DJ picks from: the chosen ones, and a search of [library] to add more. */
 @Composable
-internal fun ArtistFilter(library: MusicLibrary, filters: AutoDjFilters, onChange: (List<AutoDjArtist>) -> Unit) {
+internal fun ArtistFilter(library: MusicLibrary, filters: AutoDjFilters, onChange: ((AutoDjFilters) -> AutoDjFilters) -> Unit) {
+    var open by rememberSaveable { mutableStateOf(false) }
     FilterTitle(
         icon = Icons.Filled.Person,
         title = stringResource(R.string.auto_dj_filter_artists),
-        value = stringResource(R.string.auto_dj_any),
-        onClear = if (filters.artists.isNotEmpty()) ({ onChange(emptyList()) }) else null,
+        summary = filterSummary(filters.artists.map { it.name }, filters.excludedArtists.map { it.name }),
+        expanded = open,
+        onToggle = { open = !open },
+        onClear = if (filters.artists.isNotEmpty() || filters.excludedArtists.isNotEmpty()) {
+            { onChange { it.copy(artists = emptyList(), excludedArtists = emptyList()) } }
+        } else {
+            null
+        },
     )
-    if (filters.artists.isNotEmpty()) {
+    if (!open) return
+    if (filters.artists.isNotEmpty() || filters.excludedArtists.isNotEmpty()) {
         ChipFlow {
+            // A kept artist turns to left out when tapped, and a left out one is dropped.
             filters.artists.forEach { artist ->
-                ToggleChip(
-                    label = artist.name,
-                    selected = true,
-                    trailingIcon = Icons.Filled.Close,
-                    onClick = { onChange(filters.artists - artist) },
-                )
+                StandChip(artist.name, Stand.INCLUDE) {
+                    onChange { f ->
+                        f.copy(
+                            artists = f.artists - artist,
+                            excludedArtists = (f.excludedArtists + artist).sortedBy { it.name.lowercase() },
+                        )
+                    }
+                }
+            }
+            filters.excludedArtists.forEach { artist ->
+                StandChip(artist.name, Stand.EXCLUDE) { onChange { f -> f.copy(excludedArtists = f.excludedArtists - artist) } }
             }
         }
     }
@@ -210,7 +319,7 @@ internal fun ArtistFilter(library: MusicLibrary, filters: AutoDjFilters, onChang
         ),
     )
     val found = results ?: return
-    val chosen = filters.artists.map { it.id }.toSet()
+    val chosen = (filters.artists + filters.excludedArtists).map { it.id }.toSet()
     val addable = found.filter { it.id !in chosen }.take(ARTIST_RESULTS)
     Column(Modifier.padding(bottom = 8.dp)) {
         if (addable.isEmpty()) {
@@ -230,7 +339,9 @@ internal fun ArtistFilter(library: MusicLibrary, filters: AutoDjFilters, onChang
                 modifier = Modifier
                     .fillMaxWidth()
                     .oneUiRowClickable({
-                        onChange((filters.artists + AutoDjArtist(artist.id, artist.name)).sortedBy { it.name.lowercase() })
+                        onChange { f ->
+                            f.copy(artists = (f.artists + AutoDjArtist(artist.id, artist.name)).sortedBy { it.name.lowercase() })
+                        }
                         query = ""
                     })
                     .padding(horizontal = 16.dp, vertical = 10.dp),

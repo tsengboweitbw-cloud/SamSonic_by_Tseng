@@ -139,6 +139,25 @@ class AutoDjPickerTest {
     }
 
     @Test
+    fun excludedGenresDecadesAndArtistsAreNeverPicked() = runTest {
+        val library = Library(
+            random = listOf(
+                song("jazz", genre = "Jazz", year = 1995),
+                song("old", genre = "Pop", year = 1965),
+                song("bad", genre = "Pop", year = 1995, artistId = "nope"),
+                song("ok", genre = "Pop", year = 1995, artistId = "fine"),
+            ),
+        )
+        val filters = AutoDjFilters(
+            excludedGenres = setOf("jazz"),
+            excludedDecades = setOf(1960),
+            excludedArtists = listOf(AutoDjArtist("nope", "Nope")),
+        )
+        val picked = pickAutoDj(library, config(filters = filters), seed, emptySet(), emptySet())
+        assertEquals(listOf("ok"), picked.map { it.id })
+    }
+
+    @Test
     fun theArtistFilterPicksFromThatArtist() = runTest {
         val library = Library(
             artistAlbums = mapOf("fav" to listOf(album("fa"))),
