@@ -1,5 +1,9 @@
 # Update notes
 
+## 2.2.3
+
+- Long-pressing a playlist in Library now opens a menu with Save for offline (or Remove from offline once all its songs are kept) as well as Delete, instead of going straight to the delete question. Delete still asks first, as a second step in the same card, and Cancel returns to the menu. Favourites can be saved for offline but not deleted; without a server in use the menu shows only Delete (`DeletePlaylistMenu`, `deleteOnLongPress` in `LibraryScreen`).
+
 ## 2.2.2
 
 - Long-pressing a song or album opens a menu of what you can do with it, instead of going straight to the playlists: Add to queue, Add to playlist, Go to album, Go to album artist, Go to artist, and Save for offline (with Remove from this playlist first in a playlist, and Try saving again where a song was refused). Where there is a choice to make, it is a second step in the same glass card, and Back returns to the actions: Add to playlist shows the playlists and New playlist, and Go to artist lists the artists when a song has several (with one it goes straight there). An album offers only Go to artist. Go to album artist reads it from the song, else from its album when tapped. The pages open over the tab that is showing, or after Now Playing folds away when the menu was opened from there (`AddToPlaylistMenu`, `Step.Playlists` and `Step.Artists`). Only the album's one artist is known to the app, so the album artist step has no list.
