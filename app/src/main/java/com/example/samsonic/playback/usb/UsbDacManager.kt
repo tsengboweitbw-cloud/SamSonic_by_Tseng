@@ -47,8 +47,8 @@ class UsbDacManager(context: Context) {
     // Declared before `init`, which calls refresh().
     private val declined: MutableSet<String> = java.util.concurrent.ConcurrentHashMap.newKeySet()
     private val prefs = appContext.getSharedPreferences("samsonic_usb_dac", Context.MODE_PRIVATE)
-    private val _enabled = MutableStateFlow(prefs.getBoolean(KEY_ENABLED, false))
-    private val _nativeDsd = MutableStateFlow(prefs.getBoolean(KEY_NATIVE_DSD, false))
+    private val _enabled = MutableStateFlow(prefs.getBoolean(KEY_ENABLED, true))
+    private val _nativeDsd = MutableStateFlow(prefs.getBoolean(KEY_NATIVE_DSD, true))
     private val _dacs = MutableStateFlow<List<UsbDac>>(emptyList())
     val dacs: StateFlow<List<UsbDac>> = _dacs.asStateFlow()
 
