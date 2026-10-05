@@ -14,9 +14,12 @@ import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import com.example.samsonic.playback.dsd.DsdMode
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 /**
  * A USB audio device that's plugged in, whether the app may open it yet, and whether the driver can
@@ -90,6 +93,9 @@ class UsbDacManager(context: Context) {
 
     /** The first plugged-in DAC the app may open, if the driver is on and there is one. */
     fun readyDac(): UsbDac? = if (_enabled.value) _dacs.value.firstOrNull { it.hasPermission && it.usable } else null
+
+    /** The name of the DAC the driver would play to now, or null; changes when it's switched on or off, plugged or allowed. */
+    val ready: Flow<String?> = combine(_enabled, _dacs) { _, _ -> readyDac()?.device?.deviceName }.distinctUntilChanged()
 
     /** Whether the driver plays to a plugged-in USB DAC itself, instead of Android's own output. */
     val enabled: StateFlow<Boolean> = _enabled.asStateFlow()

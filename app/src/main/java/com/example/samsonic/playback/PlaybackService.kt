@@ -34,6 +34,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
 
 /**
@@ -146,6 +147,17 @@ class PlaybackService : MediaSessionService() {
             player, { container.repository }, container.applicationScope,
             queue = container.scrobbleQueue, serverKey = { container.sources.serverKey },
         )
+        // The sink picks USB or Android's output as a song is configured, so a queue that's already
+        // loaded has to be set up again when the DAC becomes (or stops being) usable. stop() keeps
+        // the queue and position; prepare() then configures the current song afresh.
+        serviceScope.launch {
+            container.usbDacs.ready.drop(1).collect {
+                if (player.mediaItemCount > 0 && player.playbackState != Player.STATE_IDLE) {
+                    player.stop()
+                    player.prepare()
+                }
+            }
+        }
         container.audioOutput.attach(player)
         prefetcher = MusicPrefetcher(
             player = player,
