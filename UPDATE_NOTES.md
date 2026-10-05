@@ -2,6 +2,8 @@
 
 ## 2.2.3
 
+- The USB DAC driver and Native DSD are now on by default. A DAC that can't take a format falls back step by step (native DSD, then DoP, then PCM at a rate it supports), and one the driver can't read is left to Android, so nothing needs switching on first. A choice already made in Settings is kept (`UsbDacManager`).
+
 - Long-pressing a playlist in Library now opens a menu with Save for offline (or Remove from offline once all its songs are kept) as well as Delete, instead of going straight to the delete question. Delete still asks first, as a second step in the same card, and Cancel returns to the menu. Favourites can be saved for offline but not deleted; without a server in use the menu shows only Delete (`DeletePlaylistMenu`, `deleteOnLongPress` in `LibraryScreen`).
 
 ## 2.2.2
