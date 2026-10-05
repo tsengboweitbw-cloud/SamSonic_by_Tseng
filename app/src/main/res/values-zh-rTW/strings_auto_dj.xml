@@ -8,6 +8,10 @@
     <string name="auto_dj_mode_songs">歌曲</string>
     <string name="auto_dj_mode_albums">專輯</string>
 
+    <string name="auto_dj_amount_songs">加入的歌曲數</string>
+    <string name="auto_dj_amount_albums">加入的專輯數</string>
+    <string name="auto_dj_amount_hint">每次佇列播完時，自動 DJ 加入的數量</string>
+
     <string name="auto_dj_group_follow">依照正在播放的歌曲</string>
     <string name="auto_dj_follow_artist">相同歌手</string>
     <string name="auto_dj_follow_genre">相同曲風</string>
