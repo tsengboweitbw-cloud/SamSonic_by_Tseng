@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.baselineprofile)
 }
 android {
     namespace = "com.example.samsonic"
@@ -89,6 +90,15 @@ android {
     }
 }
 
+androidComponents {
+    // The baseline profile plugin's build for recording copies release, which shrinks with
+    // the optimization setting above. Its names must stay readable, so turn that off.
+    beforeVariants(selector().withBuildType("nonMinifiedRelease")) {
+        it.isMinifyEnabled = false
+        it.shrinkResources = false
+    }
+}
+
 dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
@@ -116,6 +126,8 @@ dependencies {
     implementation(libs.androidx.media3.datasource.okhttp)
 
     implementation(libs.androidx.security.crypto)
+    implementation(libs.androidx.profileinstaller)
+    "baselineProfile"(project(":baselineprofile"))
 
     implementation(libs.coil.compose)
     implementation(libs.coil.network.okhttp)

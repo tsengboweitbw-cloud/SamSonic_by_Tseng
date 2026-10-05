@@ -24,4 +24,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "SamSonic"
 include(":app")
+include(":baselineprofile")
  
