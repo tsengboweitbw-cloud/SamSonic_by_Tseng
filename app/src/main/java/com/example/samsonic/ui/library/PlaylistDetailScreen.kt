@@ -32,6 +32,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -54,6 +55,9 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.animation.core.FastOutLinearInEasing
 import androidx.compose.animation.core.LinearOutSlowInEasing
 import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.VisibilityThreshold
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
@@ -77,6 +81,7 @@ import com.example.samsonic.ui.settings.menuOrigin
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import com.example.samsonic.data.SortedList
 import androidx.compose.ui.Alignment
@@ -221,6 +226,7 @@ fun PlaylistDetailScreen(
             val order = draft.map { it.song.id }
             val canSave = newName.isNotEmpty() && (newName != playlist.name || order != loaded.map { it.id } || coverChanged)
             fun save() {
+                val reordered = order != loaded.map { it.id }
                 saving = true
                 scope.launch {
                     runCatching {
@@ -249,6 +255,9 @@ fun PlaylistDetailScreen(
                         // A reload only ends editing when the list changed; a cover alone leaves it as it was.
                         pickedCover = null
                         removeCover = false
+                        // A new order is left through the reload that follows (the rows swap in place, unseen);
+                        // leaving first would show the old order for a moment. If it never comes, leave anyway.
+                        if (reordered) delay(5_000)
                         isEditing = false
                     }.onFailure { Toast.makeText(context, it.message ?: saveFailure, Toast.LENGTH_LONG).show() }
                     saving = false
@@ -276,7 +285,7 @@ fun PlaylistDetailScreen(
             val density = LocalDensity.current
             val drag = remember(loaded, density) {
                 // The finger scrolls the list from 64dp inside its visible edge, at up to 14dp a frame.
-                PlaylistDragState(listState, draft, edgePx = with(density) { 64.dp.toPx() }, maxStepPx = with(density) { 14.dp.toPx() })
+                PlaylistDragState(listState, draft, edgePx = with(density) { 120.dp.toPx() }, maxStepPx = with(density) { 30.dp.toPx() })
             }
             LaunchedEffect(drag, isEditing) { if (isEditing) drag.scrollNearEdges() }
             // Entering editing moves nothing above the songs: the header and the room for Play and Shuffle keep
@@ -286,23 +295,78 @@ fun PlaylistDetailScreen(
             val rowsAlpha = remember { Animatable(1f) }
             var rowsEditing by remember { mutableStateOf(false) }
             var rowsSettled by remember { mutableStateOf(true) }
+            val editSeen = remember { EditSeen() }
+            // The effects below outlive the draft and songs they started with (saving reloads both), so they read these.
+            val songsNow by rememberUpdatedState(songs)
+            val draftNow by rememberUpdatedState(draft)
+            LaunchedEffect(listState, draft) {
+                snapshotFlow { Triple(listState.firstVisibleItemIndex, listState.firstVisibleItemScrollOffset, draft.size) }
+                    .collect { (index, offset, size) ->
+                        if (size > 0 && rowsEditing) {
+                            editSeen.songs = draft.map { it.song }
+                            editSeen.index = index
+                            editSeen.offset = offset
+                        }
+                    }
+            }
+            // The saved playlist arriving while still editing (the draft starts empty again): its rows take the edit
+            // rows' place in this very composition, and the list is asked to stay on the song it was on, so nothing
+            // dips, jumps or flashes.
+            val swapRows = rowsEditing && draft.isEmpty() && editSeen.songs.isNotEmpty()
+            remember(loaded) {
+                if (swapRows) {
+                    val seen = editSeen.songs
+                    val at = (editSeen.index - ROWS_START).coerceIn(0, seen.size - 1)
+                    val song = seen[at]
+                    val nth = seen.take(at).count { it.id == song.id }
+                    val to = songs.withIndex().filter { it.value.id == song.id }.getOrNull(nth)?.index
+                    if (editSeen.index >= ROWS_START && to != null) listState.requestScrollToItem(ROWS_START + to, editSeen.offset)
+                    editSeen.swapped = true
+                }
+            }
+            // Saving reloads the playlist, maybe after editing has ended: the list is put back on the song it
+            // was on, found in the songs as saved.
+            LaunchedEffect(loaded) {
+                val id = editSeen.exitId
+                // Only a reload soon after leaving editing is the save's; a later one leaves the list be.
+                if (id != null && !rowsEditing && System.currentTimeMillis() - editSeen.exitAt < 10_000) {
+                    val at = songs.withIndex().filter { it.value.id == id }.getOrNull(editSeen.exitNth)?.index
+                    if (at != null) listState.scrollToItem(ROWS_START + at, editSeen.exitOffset)
+                    editSeen.exitId = null
+                }
+            }
             LaunchedEffect(isEditing) {
-                if (isEditing != rowsEditing) {
+                if (editSeen.swapped) {
+                    // Already swapped and placed while composing; only the flag is left to catch up.
+                    editSeen.swapped = false
+                    editSeen.songs = emptyList()
+                    rowsEditing = isEditing
+                } else if (isEditing != rowsEditing) {
                     rowsSettled = false
                     rowsAlpha.animateTo(0.1f, tween(140, easing = FastOutLinearInEasing))
                     // The two kinds of row list the songs in different orders (the sort's, and the server's), so the
                     // song at the top of the screen is found in the other list and put back where it was, not by index.
-                    val first = listState.firstVisibleItemIndex
-                    val rowCount = if (rowsEditing) draft.size else songs.size
+                    // Saving reloads the playlist, which empties the draft and with it the rows, so the list
+                    // has already fallen back to the top; the place it had is the one last seen while editing.
+                    val reloaded = rowsEditing && editSeen.songs.isNotEmpty()
+                    val first = if (reloaded) editSeen.index else listState.firstVisibleItemIndex
+                    val fromSongs = if (reloaded) editSeen.songs else if (rowsEditing) draftNow.map { it.song } else songsNow
+                    val rowCount = fromSongs.size
+                    editSeen.exitId = null
                     val anchor = if (first >= ROWS_START && rowCount > 0) {
                         val at = (first - ROWS_START).coerceAtMost(rowCount - 1)
-                        val from = if (rowsEditing) draft.map { it.song } else songs
-                        val to = if (rowsEditing) songs else draft.map { it.song }
-                        val song = from[at]
-                        val nth = from.take(at).count { it === song }
-                        to.withIndex().filter { it.value === song }.getOrNull(nth)?.index
+                        val to = if (rowsEditing) songsNow else draftNow.map { it.song }
+                        val song = fromSongs[at]
+                        val nth = fromSongs.take(at).count { it.id == song.id }
+                        if (rowsEditing) {
+                            editSeen.exitId = song.id
+                            editSeen.exitNth = nth
+                            editSeen.exitOffset = if (reloaded) editSeen.offset else listState.firstVisibleItemScrollOffset
+                            editSeen.exitAt = System.currentTimeMillis()
+                        }
+                        to.withIndex().filter { it.value.id == song.id }.getOrNull(nth)?.index
                     } else null
-                    val scrollOffset = listState.firstVisibleItemScrollOffset
+                    val scrollOffset = if (reloaded) editSeen.offset else listState.firstVisibleItemScrollOffset
                     rowsEditing = isEditing
                     if (anchor != null) listState.scrollToItem(ROWS_START + anchor, scrollOffset)
                 }
@@ -315,7 +379,8 @@ fun PlaylistDetailScreen(
             Box(Modifier.fillMaxSize()) {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize().scrollTopFade(listState).backButtonHazeSource(backHaze)
-                        .onGloballyPositioned { drag.listBounds = it.boundsInRoot() },
+                        .onGloballyPositioned { drag.listBounds = it.boundsInRoot() }
+                        .scrollWithSecondFinger(drag),
                     state = listState,
                     overscrollEffect = overscroll,
                     contentPadding = PaddingValues(top = BackButtonClearance, bottom = contentPaddingBottom),
@@ -350,7 +415,7 @@ fun PlaylistDetailScreen(
                             }
                         }
                     }
-                    if (rowsEditing) {
+                    if (rowsEditing && !swapRows) {
                         items(draft, key = { drag.key(it) }) { item ->
                             // The one being dragged follows the finger; the others slide out of its way.
                             EditSongRow(
@@ -358,7 +423,7 @@ fun PlaylistDetailScreen(
                                 cornerRadius = cornerRadius,
                                 drag = drag,
                                 enabled = !saving,
-                                modifier = Modifier.graphicsLayer { alpha = rowsAlpha.value }.then(if (!rowsSettled || drag.draggedUid == item.uid) Modifier else Modifier.animateItem()),
+                                modifier = Modifier.graphicsLayer { alpha = rowsAlpha.value }.then(if (!rowsSettled || drag.draggedUid == item.uid) Modifier else Modifier.animateItem(fadeInSpec = null, fadeOutSpec = null, placementSpec = if (drag.scrolling) null else spring(stiffness = Spring.StiffnessMedium, visibilityThreshold = IntOffset.VisibilityThreshold))),
                             )
                         }
                     } else {
@@ -587,6 +652,19 @@ private fun CoverEditOverlay(edit: CoverEdit, cornerRadius: Dp) {
 
 /** The height of the playlist's name field, which its name's place in the header keeps in both modes. */
 private val NameFieldHeight = 56.dp
+
+/** Where the list was, and the songs it showed, while editing; and the song it was on when editing ended. */
+private class EditSeen {
+    var songs: List<Song> = emptyList()
+    var index = 0
+    var offset = 0
+    var exitId: String? = null
+    var exitNth = 0
+    var exitOffset = 0
+    var exitAt = 0L
+    /** The saved playlist arrived while editing, and its rows have already replaced the edit rows. */
+    var swapped = false
+}
 
 /** Where the song rows start in the list: after the header and the room for Play and Shuffle. */
 private const val ROWS_START = 2
