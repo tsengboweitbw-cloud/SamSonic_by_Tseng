@@ -13,17 +13,17 @@
     <string name="auto_dj_amount_hint">每次佇列播完時，自動 DJ 加入的數量</string>
 
     <string name="auto_dj_group_follow">依照正在播放的歌曲</string>
-    <string name="auto_dj_follow_artist">相同歌手</string>
-    <string name="auto_dj_follow_genre">相同曲風</string>
-    <string name="auto_dj_follow_genre_hint">歌曲有多種曲風時，可在「接下來播放」中選擇要依照哪些</string>
-    <string name="auto_dj_follow_era">相同年代</string>
-    <string name="auto_dj_follow_era_hint">同一個十年間</string>
-    <string name="auto_dj_follow_note">全部關閉時，接下來的歌曲完全隨機。若沒有歌曲同時符合所有條件，會依序放寬歌手、年代，最後是曲風。</string>
+    <string name="auto_dj_follow_artist">歌手</string>
+    <string name="auto_dj_follow_genre">曲風</string>
+    <string name="auto_dj_follow_era">年代</string>
+    <string name="auto_dj_follow_note">「年代」指同一個十年。歌曲有多種曲風時，可在「接下來播放」中選擇要依照哪些。全部關閉時，接下來的歌曲完全隨機。若沒有歌曲同時符合所有條件，會依序放寬歌手、年代，最後是曲風。</string>
 
     <string name="auto_dj_group_filters">只挑選</string>
-    <string name="auto_dj_filters_note">無論依照什麼，這些條件一律適用。</string>
+    <string name="auto_dj_filters_note">無論依照什麼，這些條件一律適用。點一下曲風、年代或歌手，只挑選它們；點兩下，則永不挑選。</string>
+    <string name="auto_dj_summary_not">排除 %1$s</string>
     <string name="auto_dj_any">不限</string>
     <string name="auto_dj_clear">清除</string>
+    <string name="auto_dj_summary_more">%1$s +%2$d</string>
     <string name="auto_dj_filter_genres">曲風</string>
     <string name="auto_dj_show_all">顯示全部</string>
     <string name="auto_dj_show_fewer">顯示較少</string>
