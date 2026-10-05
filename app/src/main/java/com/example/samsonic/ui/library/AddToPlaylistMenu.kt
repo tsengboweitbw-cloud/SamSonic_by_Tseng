@@ -34,6 +34,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.OfflinePin
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.RemoveCircleOutline
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -243,6 +244,17 @@ fun AddToPlaylistMenu(state: AddToPlaylistState, haze: HazeState, links: PlayerL
                             )
                         }
                         if (state.offersQueue) {
+                            MenuOption(
+                                icon = Icons.Filled.SkipNext,
+                                label = stringResource(R.string.components_play_next),
+                                selected = false,
+                                onClick = {
+                                    if (saving == null) {
+                                        player.queueLater(next = true) { items.songs(repository) }
+                                        done(resources.getString(R.string.library_playing_next, items.title))
+                                    }
+                                },
+                            )
                             MenuOption(
                                 icon = Icons.AutoMirrored.Filled.PlaylistAdd,
                                 label = stringResource(R.string.components_add_to_queue),

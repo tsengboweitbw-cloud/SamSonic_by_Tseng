@@ -5,6 +5,8 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.unit.IntOffset
 import com.example.samsonic.ui.common.LocalChromeGuard
+import androidx.compose.runtime.CompositionLocalProvider
+import com.example.samsonic.ui.settings.LocalMenuBottomInset
 import com.example.samsonic.ui.settings.menuOrigin
 import com.example.samsonic.ui.player.PanelState
 import com.example.samsonic.ui.components.GlassIconButton
@@ -293,11 +295,14 @@ fun LibraryScreen(
                 }
                 NewPlaylistMenu(newPlaylistMenu, hazeState, onCreated = refreshes[2]::refresh)
             }
-            DeletePlaylistMenu(
-                deletePlaylistMenu, hazeState, playlistToDelete,
-                canDelete = repository.canEditPlaylists && playlistToDelete?.isFavourites == false,
-                onDeleted = refreshes[2]::refresh,
-            )
+            // Over the floating chrome, which dims with the page and closes the menu when tapped.
+            CompositionLocalProvider(LocalMenuBottomInset provides contentPaddingBottom) {
+                DeletePlaylistMenu(
+                    deletePlaylistMenu, hazeState, playlistToDelete,
+                    canDelete = repository.canEditPlaylists && playlistToDelete?.isFavourites == false,
+                    onDeleted = refreshes[2]::refresh,
+                )
+            }
         },
     ) { topPadding ->
         val padding = LibraryPadding(top = topPadding, bottom = contentPaddingBottom)

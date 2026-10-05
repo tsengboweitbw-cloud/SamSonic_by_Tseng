@@ -10,7 +10,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.OfflinePin
 import androidx.compose.material3.Button
@@ -32,6 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.R
+import com.example.samsonic.playback.LocalPlayerState
 import com.example.samsonic.model.Playlist
 import com.example.samsonic.model.Song
 import com.example.samsonic.model.isFavourites
@@ -72,7 +75,28 @@ internal fun DeletePlaylistMenu(panel: PanelState, haze: HazeState, playlist: Pl
         LaunchedEffect(target.id) {
             if (offline.available) songs = runCatching { fetchSongs() }.getOrNull()
         }
+        val player = LocalPlayerState.current
         if (!confirming) {
+            MenuOption(
+                icon = Icons.Filled.SkipNext,
+                label = stringResource(R.string.components_play_next),
+                selected = false,
+                onClick = {
+                    player.queueLater(next = true) { fetchSongs() }
+                    Toast.makeText(context, context.getString(R.string.library_playing_next, target.name), Toast.LENGTH_SHORT).show()
+                    panel.close()
+                },
+            )
+            MenuOption(
+                icon = Icons.AutoMirrored.Filled.PlaylistAdd,
+                label = stringResource(R.string.components_add_to_queue),
+                selected = false,
+                onClick = {
+                    player.queueLater(next = false) { fetchSongs() }
+                    Toast.makeText(context, context.getString(R.string.library_added_to_queue, target.name), Toast.LENGTH_SHORT).show()
+                    panel.close()
+                },
+            )
             if (offline.available) {
                 val loaded = songs
                 val keeping = loaded != null && loaded.isNotEmpty() && loaded.all { it.id in kept }
