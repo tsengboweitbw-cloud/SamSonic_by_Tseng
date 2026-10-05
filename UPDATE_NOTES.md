@@ -1,6 +1,12 @@
 # Update notes
 
-## 2.2.1 (in progress)
+## 2.2.2
+
+- Long-pressing a song or album opens a menu of what you can do with it, instead of going straight to the playlists: Add to queue, Add to playlist, Go to album, Go to album artist, Go to artist, and Save for offline (with Remove from this playlist first in a playlist, and Try saving again where a song was refused). Where there is a choice to make, it is a second step in the same glass card, and Back returns to the actions: Add to playlist shows the playlists and New playlist, and Go to artist lists the artists when a song has several (with one it goes straight there). An album offers only Go to artist. Go to album artist reads it from the song, else from its album when tapped. The pages open over the tab that is showing, or after Now Playing folds away when the menu was opened from there (`AddToPlaylistMenu`, `Step.Playlists` and `Step.Artists`). Only the album's one artist is known to the app, so the album artist step has no list.
+
+- The mini player's glass no longer sometimes blurs the wrong part of the page (the patch behind where the pill had been, rather than right below it). Haze reads where the glass sits only when it is laid out, and the sheet's own layer moves the pill (coming in, swiped away, lifted in the card pile) without a layout pass; the glass now reads those in its placement (`SheetSurface` in `PlayerSheet.kt`), so each frame of a move places it again.
+
+## 2.2.1
 
 - The USB DAC driver now takes over a queue that is already loaded: switching it on in Settings, plugging a DAC in or allowing its permission while songs are queued sets the current song up again on the DAC (and switching it off or unplugging does the same for Android's output), where before the queue kept playing the old way until it was replaced. The song and position are kept (`UsbDacManager.ready`, watched in `PlaybackService`).
 
