@@ -4,8 +4,6 @@ package com.example.samsonic.ui.settings
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.getValue
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Usb
 import androidx.compose.material.icons.filled.Waves
 //import androidx.compose.material3.IconButton
@@ -21,18 +19,15 @@ import com.example.samsonic.ui.autodj.AutoDjIcon
 import com.example.samsonic.ui.autodj.autoDjModeLabel
 import com.example.samsonic.playback.LocalPlayerState
 
-/** The Playback group: the sleep timer, Auto DJ, the player's behaviour, the USB DAC driver and the format shown on songs. */
+/** The Playback group: the sleep timer, Auto DJ, and the USB DAC driver. */
 @Composable
 internal fun PlaybackSettings(panels: SettingsPanels) {
     val container = LocalAppContainer.current
     val player = LocalPlayerState.current
-    val likesEnabled by container.themeManager.likesEnabled.collectAsStateWithLifecycle()
     val autoDjConfig by container.autoDjSettings.config.collectAsStateWithLifecycle()
     val usbDriver by container.usbDacs.enabled.collectAsStateWithLifecycle()
     val nativeDsd by container.usbDacs.nativeDsd.collectAsStateWithLifecycle()
-    val audioFormatDisplay by container.themeManager.audioFormatDisplay.collectAsStateWithLifecycle()
     val autoDjMenu = panels.autoDjMenu
-    val audioFormatMenu = panels.audioFormatMenu
     SettingsCard {
         SleepTimerRow(player)
         NavRow(
@@ -49,15 +44,6 @@ internal fun PlaybackSettings(panels: SettingsPanels) {
             modifier = Modifier.menuOrigin(autoDjMenu),
         )
         SwitchRow(
-            icon = Icons.Filled.Favorite,
-            title = stringResource(R.string.settings_like_button),
-            checked = likesEnabled,
-            onCheckedChange = container.themeManager::setLikesEnabled,
-            hint = stringResource(R.string.settings_like_button_hint),
-        )
-        // The mini player's swipes, with the rest of how the player behaves.
-        SwipeGestureRows(container.themeManager)
-        SwitchRow(
             icon = Icons.Filled.Usb,
             title = stringResource(R.string.settings_usb_driver),
             checked = usbDriver,
@@ -73,15 +59,6 @@ internal fun PlaybackSettings(panels: SettingsPanels) {
                 if (usbDriver) R.string.settings_usb_native_dsd_hint else R.string.settings_usb_native_dsd_needs_driver_hint,
             ),
             enabled = usbDriver,
-        )
-        // How every song list shows each song's format, or not at all.
-        NavRow(
-            icon = Icons.Filled.GraphicEq,
-            title = stringResource(R.string.settings_audio_format),
-            value = audioFormatDisplay.label,
-            hint = stringResource(R.string.settings_audio_format_hint),
-            onClick = { audioFormatMenu.open() },
-            modifier = Modifier.menuOrigin(audioFormatMenu),
         )
     }
 }

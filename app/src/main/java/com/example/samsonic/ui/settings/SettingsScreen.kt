@@ -8,6 +8,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.material.icons.automirrored.filled.LibraryBooks
 import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.filled.Dns
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.SdStorage
 import androidx.compose.runtime.mutableIntStateOf
@@ -71,6 +72,7 @@ fun SettingsScreen(
                 SourcesCard(onAddServer = onAddServer)
             },
             SettingsGroup(R.string.settings_group_playback, Icons.Filled.PlayCircle) { PlaybackSettings(panels) },
+            SettingsGroup(R.string.settings_group_home, Icons.Filled.Home) { HomeSettings(panels) },
             SettingsGroup(R.string.settings_group_library, Icons.AutoMirrored.Filled.LibraryBooks) { LibrarySettings(panels) },
             SettingsGroup(R.string.settings_group_appearance, Icons.Filled.Brush) { AppearanceSettings(panels) },
             SettingsGroup(R.string.settings_group_storage, Icons.Filled.SdStorage) { StorageSettings(panels) },

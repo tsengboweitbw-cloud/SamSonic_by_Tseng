@@ -20,6 +20,7 @@ import com.example.samsonic.data.offline.OfflineOnlySetting
 import com.example.samsonic.data.offline.OfflineStore
 import com.example.samsonic.data.scrobble.ScrobbleQueue
 import androidx.media3.datasource.okhttp.OkHttpDataSource
+import com.example.samsonic.data.HomeLayoutManager
 import com.example.samsonic.data.LibraryLayoutManager
 import com.example.samsonic.data.ThemeManager
 import com.example.samsonic.data.device.DeviceLibrary
@@ -69,6 +70,9 @@ class AppContainer(context: Context) {
     val playbackStore = PlaybackStore(appContext)
 
     val libraryLayoutManager = LibraryLayoutManager(appContext)
+
+    /** Which Home sections show, in what order and how long. */
+    val homeLayoutManager = HomeLayoutManager(appContext)
 
     /** The covers picked for playlists, which the server has no place for. */
     val playlistCovers = PlaylistCovers(appContext)
