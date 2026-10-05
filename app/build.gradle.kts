@@ -30,6 +30,14 @@ android {
             version = "3.22.1"
         }
     }
+    // -PnativeSanitize=hwasan builds the native code with HWAddressSanitizer, for a debug
+    // app on a phone with Android 14 or later (see app/src/hwasan). Off unless asked for.
+    if (project.findProperty("nativeSanitize") == "hwasan") {
+        defaultConfig.externalNativeBuild.cmake.arguments += "-DSAMSONIC_HWASAN=ON"
+        sourceSets.getByName("debug").resources.srcDir("src/hwasan/resources")
+        // wrap.sh runs from the extracted libraries.
+        packaging.jniLibs.useLegacyPackaging = true
+    }
     buildTypes {
         release {
             optimization {

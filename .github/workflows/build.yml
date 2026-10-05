@@ -6,6 +6,21 @@ on:
   pull_request:
 
 jobs:
+  # The driver's plain C++ (the byte ring), on the runner's own compiler, with the sanitisers.
+  native-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        sanitize: ["address,undefined", thread]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure
+        run: cmake -S app/src/test/cpp -B build/native-tests -DCMAKE_BUILD_TYPE=RelWithDebInfo -DSAMSONIC_SANITIZE=${{ matrix.sanitize }}
+      - name: Build
+        run: cmake --build build/native-tests
+      - name: Test
+        run: ctest --test-dir build/native-tests --output-on-failure
+
   build:
     runs-on: ubuntu-latest
     steps:

@@ -5,6 +5,14 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_C_STANDARD 11)
 
+# Opt-in memory checking for the driver and libusb: build with -PnativeSanitize=hwasan. HWASan
+# turns an out-of-bounds or use-after-free access into a crash with a report in logcat.
+option(SAMSONIC_HWASAN "Build the native code with HWAddressSanitizer" OFF)
+if(SAMSONIC_HWASAN)
+    add_compile_options(-fsanitize=hwaddress -fno-omit-frame-pointer -g)
+    add_link_options(-fsanitize=hwaddress)
+endif()
+
 # libusb 1.0.29, vendored and built as a static library for Android's usbfs backend.
 set(LIBUSB_DIR ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libusb)
 add_library(usb1.0 STATIC
