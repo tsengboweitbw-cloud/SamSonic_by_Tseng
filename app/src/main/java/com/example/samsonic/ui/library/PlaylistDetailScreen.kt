@@ -232,8 +232,18 @@ fun PlaylistDetailScreen(
                         }
                         if (order != current) repository.reorderPlaylist(playlistId, order)
                         if (newName != playlist.name) repository.renamePlaylist(playlistId, newName)
-                        pickedCover?.let { if (!covers.set(coverKey, it)) throw IllegalStateException(coverFailure) }
-                        if (removeCover) covers.remove(coverKey)
+                        // On the server, so every device shows it; kept on this phone only if the server won't take it.
+                        pickedCover?.let { picked ->
+                            val bytes = covers.readBytes(picked)
+                            val onServer = repository.canSetPlaylistCover && bytes != null &&
+                                runCatching { repository.setPlaylistCover(playlistId, bytes) }.isSuccess
+                            if (onServer) covers.remove(coverKey)
+                            else if (!covers.set(coverKey, picked)) throw IllegalStateException(coverFailure)
+                        }
+                        if (removeCover) {
+                            if (repository.canSetPlaylistCover) runCatching { repository.removePlaylistCover(playlistId) }
+                            covers.remove(coverKey)
+                        }
                         refresh.refresh()
                     }.onSuccess {
                         // A reload only ends editing when the list changed; a cover alone leaves it as it was.

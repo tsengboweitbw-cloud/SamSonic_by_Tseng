@@ -107,6 +107,17 @@ interface MusicLibrary {
     suspend fun reorderPlaylist(id: String, songIds: List<String>): Unit =
         throw UnsupportedOperationException("This library has no playlists")
 
+    /** Whether the server can keep a playlist's cover ([setPlaylistCover]), so it is the same on every device. */
+    val canSetPlaylistCover: Boolean get() = false
+
+    /** Makes [jpeg] the cover of playlist [id] on the server; throws if the server won't take it. */
+    suspend fun setPlaylistCover(id: String, jpeg: ByteArray): Unit =
+        throw UnsupportedOperationException("This library keeps no playlist covers")
+
+    /** Lets the server's cover of playlist [id] go, so it has its own again. */
+    suspend fun removePlaylistCover(id: String): Unit =
+        throw UnsupportedOperationException("This library keeps no playlist covers")
+
     /** Deletes playlist [id]; its songs stay in the library. */
     suspend fun deletePlaylist(id: String): Unit =
         throw UnsupportedOperationException("This library has no playlists")
