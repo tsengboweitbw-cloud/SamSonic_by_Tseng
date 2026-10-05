@@ -1,5 +1,6 @@
 package com.example.samsonic.data
 
+import androidx.core.content.edit
 import android.content.Context
 import androidx.annotation.OptIn
 import androidx.media3.common.util.UnstableApi
@@ -49,7 +50,7 @@ class MusicCache(
     val prefetchWifiOnly: StateFlow<Boolean> = _prefetchWifiOnly.asStateFlow()
 
     fun setPrefetchWifiOnly(on: Boolean) {
-        prefs.edit().putBoolean(KEY_PREFETCH_WIFI_ONLY, on).apply()
+        prefs.edit { putBoolean(KEY_PREFETCH_WIFI_ONLY, on) }
         _prefetchWifiOnly.value = on
     }
 
@@ -82,7 +83,7 @@ class MusicCache(
     fun setMaxSizeStep(step: Int) {
         val clamped = step.coerceIn(ImageCacheSettings.Steps.indices)
         if (clamped == _maxSizeStep.value) return
-        prefs.edit().putInt(KEY_MAX_SIZE_STEP, clamped).apply()
+        prefs.edit { putInt(KEY_MAX_SIZE_STEP, clamped) }
         _maxSizeStep.value = clamped
     }
 

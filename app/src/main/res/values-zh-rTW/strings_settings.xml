@@ -13,7 +13,6 @@
     <string name="settings_off">關閉</string>
     <string name="settings_cancel">取消</string>
     <string name="settings_clear">清除</string>
-    <string name="settings_sentences">%1$s。%2$s</string>
     <string name="settings_applies_on_restart">將在下次啟動 SamSonic 時生效</string>
 
     <!-- Playback -->

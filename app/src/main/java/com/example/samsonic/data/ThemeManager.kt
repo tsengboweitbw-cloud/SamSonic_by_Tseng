@@ -1,5 +1,6 @@
 package com.example.samsonic.data
 
+import androidx.core.content.edit
 import android.content.Context
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
@@ -77,7 +78,7 @@ class ThemeManager(context: Context) {
     val audioFormatDisplay: StateFlow<AudioFormatDisplay> = _audioFormatDisplay.asStateFlow()
 
     fun setAudioFormatDisplay(display: AudioFormatDisplay) {
-        prefs.edit().putString(KEY_AUDIO_FORMAT_DISPLAY, display.name).apply()
+        prefs.edit { putString(KEY_AUDIO_FORMAT_DISPLAY, display.name) }
         _audioFormatDisplay.value = display
     }
 
@@ -99,7 +100,7 @@ class ThemeManager(context: Context) {
     val stackChrome: StateFlow<Boolean> = _stackChrome.asStateFlow()
 
     fun setStackChrome(enabled: Boolean) {
-        prefs.edit().putBoolean(KEY_STACK_CHROME, enabled).apply()
+        prefs.edit { putBoolean(KEY_STACK_CHROME, enabled) }
         _stackChrome.value = enabled
     }
 
@@ -110,7 +111,7 @@ class ThemeManager(context: Context) {
     val railStaysPut: StateFlow<Boolean> = _railStaysPut.asStateFlow()
 
     fun setRailStaysPut(enabled: Boolean) {
-        prefs.edit().putBoolean(KEY_RAIL_STAYS_PUT, enabled).apply()
+        prefs.edit { putBoolean(KEY_RAIL_STAYS_PUT, enabled) }
         _railStaysPut.value = enabled
     }
 
@@ -120,69 +121,69 @@ class ThemeManager(context: Context) {
     val stackPlayerActions: StateFlow<Boolean> = _stackPlayerActions.asStateFlow()
 
     fun setStackPlayerActions(enabled: Boolean) {
-        prefs.edit().putBoolean(KEY_STACK_PLAYER_ACTIONS, enabled).apply()
+        prefs.edit { putBoolean(KEY_STACK_PLAYER_ACTIONS, enabled) }
         _stackPlayerActions.value = enabled
     }
 
     fun setThemeMode(mode: ThemeMode) {
-        prefs.edit().putString(KEY_MODE, mode.name).apply()
+        prefs.edit { putString(KEY_MODE, mode.name) }
         _themeMode.value = mode
     }
 
     fun setAccentColor(color: Color) {
-        prefs.edit().putInt(KEY_ACCENT, color.toArgb()).apply()
+        prefs.edit { putInt(KEY_ACCENT, color.toArgb()) }
         _accentColor.value = color
     }
 
     fun resetAccentColor() = setAccentColor(DefaultAccent)
 
     fun setAlbumArtCornerRadius(radius: Dp) {
-        prefs.edit().putFloat(KEY_ART_RADIUS, radius.value).apply()
+        prefs.edit { putFloat(KEY_ART_RADIUS, radius.value) }
         _albumArtCornerRadius.value = radius
     }
 
     fun setGlassOpacity(scale: Float) {
-        prefs.edit().putFloat(KEY_GLASS_OPACITY, scale).apply()
+        prefs.edit { putFloat(KEY_GLASS_OPACITY, scale) }
         _glassOpacity.value = scale
     }
 
     fun setGlassBlur(radius: Dp) {
-        prefs.edit().putFloat(KEY_GLASS_BLUR, radius.value).apply()
+        prefs.edit { putFloat(KEY_GLASS_BLUR, radius.value) }
         _glassBlur.value = radius
     }
 
     fun setBackdropBlur(radius: Dp) {
-        prefs.edit().putFloat(KEY_BACKDROP_BLUR, radius.value).apply()
+        prefs.edit { putFloat(KEY_BACKDROP_BLUR, radius.value) }
         _backdropBlur.value = radius
     }
 
     fun setPanelOpacity(scale: Float) {
-        prefs.edit().putFloat(KEY_PANEL_OPACITY, scale).apply()
+        prefs.edit { putFloat(KEY_PANEL_OPACITY, scale) }
         _panelOpacity.value = scale
     }
 
     fun setPanelBlur(radius: Dp) {
-        prefs.edit().putFloat(KEY_PANEL_BLUR, radius.value).apply()
+        prefs.edit { putFloat(KEY_PANEL_BLUR, radius.value) }
         _panelBlur.value = radius
     }
 
     fun setPlayerGlassOpacity(scale: Float) {
-        prefs.edit().putFloat(KEY_PLAYER_GLASS_OPACITY, scale).apply()
+        prefs.edit { putFloat(KEY_PLAYER_GLASS_OPACITY, scale) }
         _playerGlassOpacity.value = scale
     }
 
     fun setPlayerGlassBlur(radius: Dp) {
-        prefs.edit().putFloat(KEY_PLAYER_GLASS_BLUR, radius.value).apply()
+        prefs.edit { putFloat(KEY_PLAYER_GLASS_BLUR, radius.value) }
         _playerGlassBlur.value = radius
     }
 
     fun setLikesEnabled(enabled: Boolean) {
-        prefs.edit().putBoolean(KEY_LIKES_ENABLED, enabled).apply()
+        prefs.edit { putBoolean(KEY_LIKES_ENABLED, enabled) }
         _likesEnabled.value = enabled
     }
 
     fun setSwipeMiniForSong(enabled: Boolean) {
-        prefs.edit().putBoolean(KEY_SWIPE_MINI_SONG, enabled).apply()
+        prefs.edit { putBoolean(KEY_SWIPE_MINI_SONG, enabled) }
         _swipeMiniForSong.value = enabled
     }
 

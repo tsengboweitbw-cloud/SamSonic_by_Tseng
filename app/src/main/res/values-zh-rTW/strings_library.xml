@@ -74,9 +74,6 @@
     <string name="library_view_options">檢視選項</string>
     <string name="library_close_view_options">關閉檢視選項</string>
     <string name="library_section_view">%1$s檢視方式</string>
-    <string name="library_layout">版面配置</string>
-    <string name="library_list">清單</string>
-    <string name="library_grid">格狀</string>
     <string name="library_grid_columns">格狀欄數</string>
     <string name="library_sort_by">排序方式</string>
     <string name="library_sort_name">名稱</string>

@@ -1,5 +1,6 @@
 package com.example.samsonic.data
 
+import androidx.core.content.edit
 import android.content.Context
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
@@ -72,12 +73,13 @@ class SessionManager(context: Context) {
         val url = prefs.getString(KEY_URL, null) ?: return
         val user = prefs.getString(KEY_USER, null)
         val pass = prefs.getString(KEY_PASS, null)
-        val editor = prefs.edit().remove(KEY_URL).remove(KEY_USER).remove(KEY_PASS)
-        if (user != null && pass != null) {
-            val server = SavedServer(UUID.randomUUID().toString(), url, user, pass)
-            editor.putString(KEY_SERVERS, json.encodeToString(listOf(server))).putString(KEY_ACTIVE, server.id)
+        prefs.edit {
+            remove(KEY_URL).remove(KEY_USER).remove(KEY_PASS)
+            if (user != null && pass != null) {
+                val server = SavedServer(UUID.randomUUID().toString(), url, user, pass)
+                putString(KEY_SERVERS, json.encodeToString(listOf(server))).putString(KEY_ACTIVE, server.id)
+            }
         }
-        editor.apply()
     }
 
     /**
@@ -108,12 +110,12 @@ class SessionManager(context: Context) {
     }
 
     fun setActiveSource(id: String?) {
-        prefs.edit().putString(KEY_ACTIVE, id).apply()
+        prefs.edit { putString(KEY_ACTIVE, id) }
         _activeSourceId.value = id
     }
 
     private fun saveServers(servers: List<SavedServer>) {
-        prefs.edit().putString(KEY_SERVERS, json.encodeToString(servers)).apply()
+        prefs.edit { putString(KEY_SERVERS, json.encodeToString(servers)) }
         _servers.value = servers
     }
 

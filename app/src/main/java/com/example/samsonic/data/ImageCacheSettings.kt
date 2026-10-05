@@ -1,5 +1,6 @@
 package com.example.samsonic.data
 
+import androidx.core.content.edit
 import android.content.Context
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -52,12 +53,12 @@ class ImageCacheSettings(context: Context) {
     fun setMaxSizeStep(step: Int) {
         val clamped = step.coerceIn(Steps.indices)
         if (clamped == _maxSizeStep.value) return
-        prefs.edit().putInt(KEY_MAX_SIZE_STEP, clamped).apply()
+        prefs.edit { putInt(KEY_MAX_SIZE_STEP, clamped) }
         _maxSizeStep.value = clamped
     }
 
     fun setLocation(id: String) {
-        prefs.edit().putString(KEY_LOCATION, id).apply()
+        prefs.edit { putString(KEY_LOCATION, id) }
         _locationId.value = id
     }
 
