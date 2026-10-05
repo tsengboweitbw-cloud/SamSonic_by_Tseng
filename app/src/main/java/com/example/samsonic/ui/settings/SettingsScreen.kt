@@ -6,6 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.material.icons.automirrored.filled.LibraryBooks
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.filled.Dns
 import androidx.compose.material.icons.filled.Home
@@ -76,6 +77,7 @@ fun SettingsScreen(
             SettingsGroup(R.string.settings_group_library, Icons.AutoMirrored.Filled.LibraryBooks) { LibrarySettings(panels) },
             SettingsGroup(R.string.settings_group_appearance, Icons.Filled.Brush) { AppearanceSettings(panels) },
             SettingsGroup(R.string.settings_group_storage, Icons.Filled.SdStorage) { StorageSettings(panels) },
+            SettingsGroup(R.string.settings_group_statistics, Icons.Filled.BarChart) { StatisticsSettings() },
             SettingsGroup(R.string.settings_group_about, Icons.Filled.Info) {
                 SettingsCard {
                     AboutRow()

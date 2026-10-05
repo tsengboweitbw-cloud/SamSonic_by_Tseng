@@ -8,7 +8,14 @@
     <string name="settings_group_library">音樂庫</string>
     <string name="settings_group_appearance">外觀</string>
     <string name="settings_group_storage">儲存空間</string>
+    <string name="settings_group_statistics">統計</string>
     <string name="settings_group_about">關於</string>
+    <string name="settings_stat_songs">歌曲</string>
+    <string name="settings_stat_albums">專輯</string>
+    <string name="settings_stat_artists">歌手</string>
+    <string name="settings_stat_genres">類型</string>
+    <string name="settings_stat_playlists">播放清單</string>
+    <string name="settings_stat_favourites">我的最愛</string>
 
     <!-- Shared -->
     <string name="settings_off">關閉</string>
