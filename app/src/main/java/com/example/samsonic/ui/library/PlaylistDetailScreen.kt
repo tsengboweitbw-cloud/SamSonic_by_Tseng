@@ -323,6 +323,7 @@ fun PlaylistDetailScreen(
                     if (editSeen.index >= ROWS_START && to != null) listState.requestScrollToItem(ROWS_START + to, editSeen.offset)
                     editSeen.swapped = true
                 }
+                swapRows
             }
             // Saving reloads the playlist, maybe after editing has ended: the list is put back on the song it
             // was on, found in the songs as saved.
