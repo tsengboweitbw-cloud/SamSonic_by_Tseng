@@ -442,6 +442,8 @@ fun PlaylistDetailScreen(
                     }
                     item { Spacer(Modifier.height(24.dp)) }
                 }
+                // The held song, as frosted glass over the list (outside the list's own blur source).
+                if (rowsEditing) HeldSongGlass(draft, cornerRadius, drag, backHaze)
                 // Its corner button goes beside the sort button.
                 if (actionsFade > 0f) {
                     Box(Modifier.fillMaxSize().graphicsLayer { alpha = actionsFade }) {

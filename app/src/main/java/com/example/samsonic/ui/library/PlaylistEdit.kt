@@ -68,7 +68,13 @@ import com.example.samsonic.model.Song
 import com.example.samsonic.model.artSeed
 import com.example.samsonic.ui.components.MediaArt
 import com.example.samsonic.ui.components.LocalRowPrefs
+import com.example.samsonic.ui.theme.GlassAlpha
+import com.example.samsonic.ui.theme.LocalChromeBlurScale
 import com.example.samsonic.ui.theme.OneUiRow
+import com.example.samsonic.ui.theme.outerShadow
+import androidx.compose.foundation.layout.RowScope
+import androidx.compose.ui.graphics.Color
+import com.example.samsonic.ui.theme.glassSurface
 import kotlin.math.abs
 import kotlin.math.exp
 import kotlinx.coroutines.Job
@@ -149,7 +155,7 @@ internal class PlaylistDragState(
     var scrolledByHand = false
 
     // The finger's height on the screen while dragging.
-    private var fingerY = 0f
+    private var fingerY by mutableFloatStateOf(0f)
 
     // How far below the row's top the finger took hold of it.
     private var grabY = 0f
@@ -165,6 +171,12 @@ internal class PlaylistDragState(
     // The row the last swap was made with, and when.
     private var lastSwapKey: Any? = null
     private var lastSwapNanos = 0L
+
+    /**
+     * Where the held row's top is, from the top of the list: under the finger, where it took hold of the row.
+     * Row offsets count from below the list's top padding, which the overlay's origin does not.
+     */
+    val heldTop: Float get() = fingerY - listBounds.top - grabY + listState.layoutInfo.beforeContentPadding
 
     /** The key a song's row has in the list. */
     fun key(item: DraftSong) = "$KEY_PREFIX${item.uid}"
@@ -337,11 +349,8 @@ internal fun EditSongRow(
     enabled: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val song = item.song
     val haptics = LocalHapticFeedback.current
     val dragging = drag.draggedUid == item.uid
-    val likesEnabled = LocalRowPrefs.current.likesEnabled
-    val lifted = MaterialTheme.colorScheme.surfaceContainerHigh
     // The handle's place on the screen, for the finger's height there.
     val handle = remember { arrayOfNulls<LayoutCoordinates>(1) }
     fun rootY(local: Offset) = handle[0]?.takeIf { it.isAttached }?.localToRoot(local)?.y ?: 0f
@@ -351,15 +360,12 @@ internal fun EditSongRow(
         modifier = modifier
             .then(
                 if (dragging) {
-                    Modifier
-                        .zIndex(1f)
-                        .graphicsLayer {
-                            translationY = drag.offset
-                            shadowElevation = 12.dp.toPx()
-                            shape = OneUiRow.Shape
-                            clip = false
-                        }
-                        .background(lifted, OneUiRow.Shape)
+                    // Unseen but still here, holding the finger and the row's place: the glass copy
+                    // floating over the list ([HeldSongGlass]) is what shows.
+                    Modifier.graphicsLayer {
+                        translationY = drag.offset
+                        alpha = 0f
+                    }
                 } else {
                     Modifier
                 },
@@ -386,33 +392,10 @@ internal fun EditSongRow(
             .padding(start = 12.dp, top = 6.dp, bottom = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        MediaArt(
-            coverArt = song.coverArt,
-            colorSeed = song.id.artSeed(),
-            size = 44.dp,
+        EditSongContent(
+            song = item.song,
             cornerRadius = cornerRadius,
-            shadowElevation = 0.dp,
-        )
-        Spacer(Modifier.width(12.dp))
-        Column(Modifier.weight(1f)) {
-            Text(
-                text = song.title,
-                style = MaterialTheme.typography.bodyLarge,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text = song.artistName,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-        Box(
-            modifier = Modifier
-                // As tall as a song row's end is (its heart button, when the Like button is on), so the list does not move.
-                .size(width = 48.dp, height = if (likesEnabled) 48.dp else 44.dp)
+            handle = Modifier
                 .onGloballyPositioned { handle[0] = it }
                 .then(
                     if (enabled && (drag.draggedUid == null || dragging)) {
@@ -433,14 +416,72 @@ internal fun EditSongRow(
                         Modifier
                     },
                 ),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                Icons.Filled.DragHandle,
-                contentDescription = stringResource(R.string.library_drag_to_move),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+        )
+    }
+}
+
+/** The held song as the nav bar's frosted glass, floating over the list at the finger; [haze] is the list's own, which the glass sits outside of. */
+@Composable
+internal fun HeldSongGlass(draft: List<DraftSong>, cornerRadius: Dp, drag: PlaylistDragState, haze: HazeState?) {
+    val uid = drag.draggedUid ?: return
+    val item = draft.firstOrNull { it.uid == uid } ?: return
+    Box(
+        Modifier
+            .fillMaxWidth()
+            .graphicsLayer { translationY = drag.heldTop }
+            .padding(OneUiRow.Inset)
+            .outerShadow(elevation = 12.dp, shape = OneUiRow.Shape, color = Color.Black.copy(alpha = 0.2f))
+            .glassSurface(
+                shape = OneUiRow.Shape,
+                hazeState = haze,
+                tint = MaterialTheme.colorScheme.surfaceContainerHigh,
+                alpha = GlassAlpha.Nav,
+                inputScale = LocalChromeBlurScale.current,
+            ),
+    ) {
+        Row(Modifier.padding(start = 12.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
+            EditSongContent(item.song, cornerRadius, Modifier)
         }
+    }
+}
+
+/** A song's art, title and artist, and the drag handle at the end. */
+@Composable
+private fun RowScope.EditSongContent(song: Song, cornerRadius: Dp, handle: Modifier) {
+    val likesEnabled = LocalRowPrefs.current.likesEnabled
+    MediaArt(
+        coverArt = song.coverArt,
+        colorSeed = song.id.artSeed(),
+        size = 44.dp,
+        cornerRadius = cornerRadius,
+        shadowElevation = 0.dp,
+    )
+    Spacer(Modifier.width(12.dp))
+    Column(Modifier.weight(1f)) {
+        Text(
+            text = song.title,
+            style = MaterialTheme.typography.bodyLarge,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+            text = song.artistName,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+    Box(
+        // As tall as a song row's end is (its heart button, when the Like button is on), so the list does not move.
+        modifier = Modifier.size(width = 48.dp, height = if (likesEnabled) 48.dp else 44.dp).then(handle),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            Icons.Filled.DragHandle,
+            contentDescription = stringResource(R.string.library_drag_to_move),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
