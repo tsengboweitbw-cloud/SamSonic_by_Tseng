@@ -10,6 +10,8 @@
 
 - The long-press menus offer Play next as well as Add to queue: on a song or album (`AddToPlaylistMenu`, not shown for the song already playing) and on a playlist in Library, which now offers both ahead of Save for offline and Delete (`DeletePlaylistMenu`).
 
+- A playlist's cover now syncs both ways with Navidrome. Saving a cover while editing uploads it to the server (Navidrome's own API: `/auth/login`, then `/api/playlist/{id}/image`), so other devices and clients show it too, and removing it removes it there. If the server won't take the upload, the cover is kept on this phone as before (`setPlaylistCover` / `removePlaylistCover` in `MusicLibrary`, `SubsonicRepository`).
+
 ## 2.2.2
 
 - Long-pressing a song or album opens a menu of what you can do with it, instead of going straight to the playlists: Add to queue, Add to playlist, Go to album, Go to album artist, Go to artist, and Save for offline (with Remove from this playlist first in a playlist, and Try saving again where a song was refused). Where there is a choice to make, it is a second step in the same glass card, and Back returns to the actions: Add to playlist shows the playlists and New playlist, and Go to artist lists the artists when a song has several (with one it goes straight there). An album offers only Go to artist. Go to album artist reads it from the song, else from its album when tapped. The pages open over the tab that is showing, or after Now Playing folds away when the menu was opened from there (`AddToPlaylistMenu`, `Step.Playlists` and `Step.Artists`). Only the album's one artist is known to the app, so the album artist step has no list.

@@ -92,6 +92,17 @@ class CachedLibrary(
         invalidate()
     }
 
+    // A new cover gives the playlist a new cover id, which the saved lists still have the old one of.
+    override suspend fun setPlaylistCover(id: String, jpeg: ByteArray) {
+        inner.setPlaylistCover(id, jpeg)
+        invalidate()
+    }
+
+    override suspend fun removePlaylistCover(id: String) {
+        inner.removePlaylistCover(id)
+        invalidate()
+    }
+
     override suspend fun deletePlaylist(id: String) {
         inner.deletePlaylist(id)
         invalidate()

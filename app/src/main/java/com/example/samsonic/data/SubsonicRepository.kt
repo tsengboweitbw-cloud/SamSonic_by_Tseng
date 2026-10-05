@@ -25,7 +25,11 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.serialization.json.Json
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.MultipartBody
 import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
 import retrofit2.Retrofit
 import retrofit2.converter.kotlinx.serialization.asConverterFactory
 import java.net.URLEncoder
@@ -351,6 +355,37 @@ class SubsonicRepository(
     override suspend fun reorderPlaylist(id: String, songIds: List<String>) {
         require(songIds.isNotEmpty())
         requireApi().createPlaylist(authParams() + ("playlistId" to id), songIds).response.requireOk()
+    }
+
+    // Subsonic has no call for a playlist's cover; Navidrome's own API does (a token from its login, then the image).
+    override val canSetPlaylistCover: Boolean get() = credentials != null
+
+    override suspend fun setPlaylistCover(id: String, jpeg: ByteArray) {
+        val body = MultipartBody.Builder().setType(MultipartBody.FORM)
+            .addFormDataPart("image", "cover.jpg", jpeg.toRequestBody("image/jpeg".toMediaType()))
+            .build()
+        navidromeCall("api/playlist/$id/image") { post(body) }
+    }
+
+    override suspend fun removePlaylistCover(id: String) {
+        navidromeCall("api/playlist/$id/image") { delete() }
+    }
+
+    private suspend fun navidromeCall(path: String, method: Request.Builder.() -> Request.Builder) {
+        val creds = requireCreds()
+        withContext(Dispatchers.IO) {
+            val login = JSONObject().put("username", creds.username).put("password", creds.password).toString()
+            val token = okHttpClient.newCall(
+                Request.Builder().url("${creds.serverUrl}auth/login").post(login.toRequestBody("application/json".toMediaType())).build(),
+            ).execute().use { response ->
+                if (!response.isSuccessful) error(context.getString(R.string.data_server_refused))
+                JSONObject(response.body?.string().orEmpty()).getString("token")
+            }
+            val request = Request.Builder().url("${creds.serverUrl}$path").header("X-ND-Authorization", "Bearer $token").let(method).build()
+            okHttpClient.newCall(request).execute().use { response ->
+                if (!response.isSuccessful) error(context.getString(R.string.data_server_refused))
+            }
+        }
     }
 
     override suspend fun deletePlaylist(id: String) {

@@ -59,6 +59,11 @@ class PlaylistCovers(private val context: Context, private val dir: File = File(
         }.getOrNull()
     }
 
+    /** The bytes of the image at [uri] (a cropped cover, already a JPEG), for the server; null if it can't be read. */
+    suspend fun readBytes(uri: Uri): ByteArray? = withContext(Dispatchers.IO) {
+        runCatching { context.contentResolver.openInputStream(uri)?.use { it.readBytes() } }.getOrNull()
+    }
+
     // Decoded no larger than needed: the biggest cover is shown at a few hundred dp.
     private fun decode(uri: Uri, maxShortSide: Int): Bitmap =
         ImageDecoder.decodeBitmap(ImageDecoder.createSource(context.contentResolver, uri)) { decoder, info, _ ->
