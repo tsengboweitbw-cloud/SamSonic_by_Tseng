@@ -66,13 +66,15 @@ fun MediaArt(
     // Shows the small (list-row) size until this one loads: for a page's header,
     // whose art may have just grown out of a row's thumbnail, already in memory.
     smallFirst: Boolean = false,
+    // An image to show in place of [coverArt] (a picked playlist cover): a file or content URI.
+    imageUrl: String? = null,
 ) {
     val repository = LocalAppContainer.current.repository
     val density = LocalDensity.current
     val pixelSize = remember(size, density) { with(density) { size.roundToPx() }.coerceAtLeast(64) }
-    val url = remember(coverArt, pixelSize) { repository.coverArtUrl(coverArt, pixelSize) }
-    val smallUrl = remember(coverArt, smallFirst) {
-        if (smallFirst) repository.coverArtUrl(coverArt, CoverArtSizes.Small)?.takeIf { it != url } else null
+    val url = remember(coverArt, pixelSize, imageUrl) { imageUrl ?: repository.coverArtUrl(coverArt, pixelSize) }
+    val smallUrl = remember(coverArt, smallFirst, imageUrl) {
+        if (smallFirst && imageUrl == null) repository.coverArtUrl(coverArt, CoverArtSizes.Small)?.takeIf { it != url } else null
     }
 
     Box(modifier = modifier.size(size), contentAlignment = Alignment.Center) {

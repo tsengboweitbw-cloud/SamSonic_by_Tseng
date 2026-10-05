@@ -116,6 +116,10 @@
     <string name="library_save_changes_body">你對「%1$s」所做的變更尚未儲存。</string>
     <string name="library_saving">正在儲存…</string>
     <string name="library_drag_to_move">拖曳以移動</string>
+    <string name="library_change_cover">更換封面</string>
+    <string name="library_crop_done">完成</string>
+    <string name="library_remove_cover">移除封面</string>
+    <string name="library_cover_error">無法使用該圖片</string>
     <string name="library_save_playlist_error">無法儲存播放清單</string>
     <string name="library_playlist_changed_elsewhere">播放清單已在其他地方變更並已重新載入，請重新編輯</string>
     <string name="library_add_anyway">仍要加入</string>

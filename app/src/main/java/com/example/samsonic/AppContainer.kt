@@ -10,6 +10,7 @@ import com.example.samsonic.data.ImageCacheSettings
 import com.example.samsonic.data.MusicCache
 import com.example.samsonic.data.MusicLibrary
 import com.example.samsonic.data.MusicSources
+import com.example.samsonic.data.PlaylistCovers
 import com.example.samsonic.data.SessionManager
 import com.example.samsonic.data.SubsonicRepository
 import com.example.samsonic.data.cache.LibraryCacheStore
@@ -68,6 +69,9 @@ class AppContainer(context: Context) {
     val playbackStore = PlaybackStore(appContext)
 
     val libraryLayoutManager = LibraryLayoutManager(appContext)
+
+    /** The covers picked for playlists, which the server has no place for. */
+    val playlistCovers = PlaylistCovers(appContext)
 
     val imageCacheSettings = ImageCacheSettings(appContext)
 

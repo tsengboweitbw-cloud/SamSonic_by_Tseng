@@ -1,6 +1,11 @@
 package com.example.samsonic.ui.components
 
+import android.net.Uri
 import androidx.compose.foundation.background
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.samsonic.LocalAppContainer
+import com.example.samsonic.data.PlaylistCovers
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,7 +29,9 @@ import com.example.samsonic.ui.theme.accentPalette
 
 /**
  * A playlist's cover as [MediaArt] draws it, except Favourites, which has no cover of
- * its own and gets [FavouritesArt] instead.
+ * its own and gets [FavouritesArt] instead. A cover picked on this phone ([PlaylistCovers])
+ * takes the place of the server's; while editing, [pendingCover] (an image picked but not
+ * saved) shows over it, or the server's cover if [showPicked] is false (the pick is to be let go).
  */
 @Composable
 fun PlaylistArt(
@@ -34,11 +41,18 @@ fun PlaylistArt(
     modifier: Modifier = Modifier,
     shadowElevation: Dp = 6.dp,
     smallFirst: Boolean = false,
+    pendingCover: String? = null,
+    showPicked: Boolean = true,
 ) {
     if (playlist.isFavourites) {
         FavouritesArt(size = size, cornerRadius = cornerRadius, modifier = modifier, shadowElevation = shadowElevation)
     } else {
+        val container = LocalAppContainer.current
+        val picked by container.playlistCovers.covers.collectAsStateWithLifecycle()
+        val key = PlaylistCovers.key(container.sources.serverKey, playlist.id)
+        val imageUrl = pendingCover ?: if (showPicked) picked[key]?.let { Uri.fromFile(it).toString() } else null
         MediaArt(
+            imageUrl = imageUrl,
             coverArt = playlist.coverArt,
             colorSeed = playlist.id.artSeed(),
             size = size,

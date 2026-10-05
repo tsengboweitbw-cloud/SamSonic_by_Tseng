@@ -1,5 +1,17 @@
 package com.example.samsonic.ui.library
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
+import androidx.compose.ui.draw.clip
+import com.example.samsonic.data.PlaylistCovers
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -179,9 +191,33 @@ fun PlaylistDetailScreen(
             val context = LocalContext.current
             val changedElsewhere = stringResource(R.string.library_playlist_changed_elsewhere)
             val saveFailure = stringResource(R.string.library_save_playlist_error)
+            // The cover is picked on this phone: kept here until Save, then handed to [PlaylistCovers].
+            val covers = LocalAppContainer.current.playlistCovers
+            val coverKey = PlaylistCovers.key(LocalAppContainer.current.sources.serverKey, playlistId)
+            val savedCover = covers.covers.collectAsStateWithLifecycle().value[coverKey]
+            var pickedCover by remember(loaded) { mutableStateOf<Uri?>(null) }
+            var removeCover by remember(loaded) { mutableStateOf(false) }
+            // The photo just chosen, being cropped; the crop is what is kept as [pickedCover].
+            var cropSource by remember(loaded) { mutableStateOf<Uri?>(null) }
+            val coverPicker = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
+                if (uri != null) cropSource = uri
+            }
+            cropSource?.let { source ->
+                CoverCropDialog(
+                    uri = source,
+                    onCropped = { cropped ->
+                        pickedCover = cropped
+                        removeCover = false
+                        cropSource = null
+                    },
+                    onDismiss = { cropSource = null },
+                )
+            }
+            val coverChanged = pickedCover != null || removeCover
+            val coverFailure = stringResource(R.string.library_cover_error)
             val newName = draftName.trim()
             val order = draft.map { it.song.id }
-            val canSave = newName.isNotEmpty() && (newName != playlist.name || order != loaded.map { it.id })
+            val canSave = newName.isNotEmpty() && (newName != playlist.name || order != loaded.map { it.id } || coverChanged)
             fun save() {
                 saving = true
                 scope.launch {
@@ -194,7 +230,14 @@ fun PlaylistDetailScreen(
                         }
                         if (order != current) repository.reorderPlaylist(playlistId, order)
                         if (newName != playlist.name) repository.renamePlaylist(playlistId, newName)
+                        pickedCover?.let { if (!covers.set(coverKey, it)) throw IllegalStateException(coverFailure) }
+                        if (removeCover) covers.remove(coverKey)
                         refresh.refresh()
+                    }.onSuccess {
+                        // A reload only ends editing when the list changed; a cover alone leaves it as it was.
+                        pickedCover = null
+                        removeCover = false
+                        isEditing = false
                     }.onFailure { Toast.makeText(context, it.message ?: saveFailure, Toast.LENGTH_LONG).show() }
                     saving = false
                 }
@@ -202,7 +245,7 @@ fun PlaylistDetailScreen(
             // Going back while editing leaves editing, not the page: at once if nothing was changed, else after
             // asking whether to save. The back button above the list does the same, so it is told how.
             val leavePanel = remember { PanelState(scope) }
-            val hasChanges = newName != playlist.name || order != loaded.map { it.id }
+            val hasChanges = newName != playlist.name || order != loaded.map { it.id } || coverChanged
             fun leaveEditing() {
                 if (saving) return
                 if (hasChanges) leavePanel.open() else isEditing = false
@@ -257,6 +300,19 @@ fun PlaylistDetailScreen(
                             editing = if (isEditing) ({
                                 PlaylistNameField(name = draftName, onNameChange = { draftName = it }, enabled = !saving)
                             }) else null,
+                            coverEdit = if (isEditing) {
+                                CoverEdit(
+                                    pending = pickedCover?.toString(),
+                                    showPicked = !removeCover,
+                                    removable = pickedCover != null || (!removeCover && savedCover != null),
+                                    enabled = !saving,
+                                    onPick = { coverPicker.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
+                                    onRemove = {
+                                        // A cover picked just now is dropped; one saved earlier is let go on Save.
+                                        if (pickedCover != null) pickedCover = null else removeCover = true
+                                    },
+                                )
+                            } else null,
                         )
                     }
                     // Play and shuffle float over the list ([FloatingListActions]); this keeps their place.
@@ -315,6 +371,8 @@ fun PlaylistDetailScreen(
                             contentDescription = stringResource(R.string.library_edit_playlist),
                             onClick = {
                                 draftName = playlist.name
+                                pickedCover = null
+                                removeCover = false
                                 draft.clear()
                                 draft.addAll(loaded.mapIndexed { i, s -> DraftSong(i.toLong(), s) })
                                 isEditing = true
@@ -391,6 +449,7 @@ private fun PlaylistHeader(
     cornerRadius: Dp,
     actions: (@Composable () -> Unit)?,
     editing: (@Composable () -> Unit)? = null,
+    coverEdit: CoverEdit? = null,
 ) {
     Column(
         modifier = Modifier
@@ -398,13 +457,18 @@ private fun PlaylistHeader(
             .padding(horizontal = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        PlaylistArt(
-            playlist = playlist,
-            size = 180.dp,
-            cornerRadius = cornerRadius,
-            smallFirst = true,
-            modifier = Modifier.sharedArt(ArtKeys.playlist(playlist.id)),
-        )
+        Box(contentAlignment = Alignment.Center) {
+            PlaylistArt(
+                playlist = playlist,
+                size = 180.dp,
+                cornerRadius = cornerRadius,
+                smallFirst = true,
+                pendingCover = coverEdit?.pending,
+                showPicked = coverEdit?.showPicked ?: true,
+                modifier = Modifier.sharedArt(ArtKeys.playlist(playlist.id)),
+            )
+            if (coverEdit != null) CoverEditOverlay(coverEdit, cornerRadius)
+        }
         Spacer(Modifier.height(16.dp))
         // The name becomes a field and back in a place as tall as the field, so the page below doesn't move.
         val lastEditing = remember { arrayOfNulls<@Composable () -> Unit>(1) }
@@ -444,6 +508,53 @@ private fun PlaylistHeader(
         if (actions != null) {
             actions()
             Spacer(Modifier.height(8.dp))
+        }
+    }
+}
+
+/** The cover while editing: [pending] is an image picked but not saved, [showPicked] false when the saved pick is to go. */
+private class CoverEdit(
+    val pending: String?,
+    val showPicked: Boolean,
+    val removable: Boolean,
+    val enabled: Boolean,
+    val onPick: () -> Unit,
+    val onRemove: () -> Unit,
+)
+
+/** Over the cover, 180dp square: tapping it picks another image, and a cross lets a picked one go. */
+@Composable
+private fun CoverEditOverlay(edit: CoverEdit, cornerRadius: Dp) {
+    val shape = RoundedCornerShape(cornerRadius)
+    Box(Modifier.size(180.dp)) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .clip(shape)
+                .background(Color.Black.copy(alpha = 0.3f))
+                .clickable(enabled = edit.enabled, onClickLabel = stringResource(R.string.library_change_cover), onClick = edit.onPick),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Edit,
+                contentDescription = stringResource(R.string.library_change_cover),
+                tint = Color.White,
+                modifier = Modifier.size(32.dp),
+            )
+        }
+        if (edit.removable) {
+            IconButton(
+                onClick = edit.onRemove,
+                enabled = edit.enabled,
+                modifier = Modifier.align(Alignment.TopEnd).padding(4.dp).size(36.dp).background(Color.Black.copy(alpha = 0.55f), CircleShape),
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Close,
+                    contentDescription = stringResource(R.string.library_remove_cover),
+                    tint = Color.White,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
         }
     }
 }
