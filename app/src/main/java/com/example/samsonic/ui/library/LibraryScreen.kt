@@ -183,9 +183,10 @@ fun LibraryScreen(
         rememberScreenLoad(Unit, errorMessage = stringResource(R.string.library_genres_load_error), refresh = refreshes[3]) { repository.getGenres() }
     } else UiState.Loading
 
-    // A long press on a playlist asks to delete it, except Favourites, which is the liked songs.
+    // A long press on a playlist offers to keep it for offline and to delete it (not Favourites, the liked songs).
+    val offlineMusic = LocalAppContainer.current.offlineMusic
     fun deleteOnLongPress(playlist: Playlist): ((Rect) -> Unit)? =
-        if (!repository.canEditPlaylists || playlist.isFavourites) null else { from ->
+        if (!offlineMusic.available && (!repository.canEditPlaylists || playlist.isFavourites)) null else { from ->
             playlistToDelete = playlist
             deletePlaylistMenu.origin = from
             deletePlaylistMenu.open()
@@ -291,8 +292,12 @@ fun LibraryScreen(
                     }
                 }
                 NewPlaylistMenu(newPlaylistMenu, hazeState, onCreated = refreshes[2]::refresh)
-                DeletePlaylistMenu(deletePlaylistMenu, hazeState, playlistToDelete, onDeleted = refreshes[2]::refresh)
             }
+            DeletePlaylistMenu(
+                deletePlaylistMenu, hazeState, playlistToDelete,
+                canDelete = repository.canEditPlaylists && playlistToDelete?.isFavourites == false,
+                onDeleted = refreshes[2]::refresh,
+            )
         },
     ) { topPadding ->
         val padding = LibraryPadding(top = topPadding, bottom = contentPaddingBottom)
