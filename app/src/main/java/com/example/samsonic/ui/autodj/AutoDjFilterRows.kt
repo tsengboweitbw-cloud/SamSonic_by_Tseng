@@ -77,7 +77,8 @@ private fun FilterTitle(
         modifier = Modifier
             .fillMaxWidth()
             .oneUiRowClickable(onToggle)
-            .padding(start = 16.dp, end = 12.dp, top = 12.dp, bottom = 12.dp),
+            // The same inner padding as SwitchRow, so the icons and titles line up.
+            .padding(horizontal = 8.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(icon, contentDescription = null, tint = rowIconTint(), modifier = Modifier.size(22.dp))
