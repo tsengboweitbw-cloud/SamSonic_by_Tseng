@@ -52,13 +52,14 @@ internal fun StatisticsSettings() {
         val library = container.sources.library
         value = coroutineScope {
             val genres = async { runCatching { library.getGenres() }.getOrNull() }
+            val songs = async { runCatching { library.getSongCount() }.getOrNull() }
             val artists = async { runCatching { library.getAlbumArtists() }.getOrNull() }
             val playlists = async { runCatching { library.getPlaylists() }.getOrNull() }
             val liked = async { runCatching { library.getLikedSongs() }.getOrNull() }
             val genreList = genres.await()
             val artistList = artists.await()
             LibraryStats(
-                songs = genreList?.sumOf { it.songCount },
+                songs = songs.await(),
                 // Each album is filed under one album artist, so none is counted twice.
                 albums = artistList?.sumOf { it.albumCount },
                 artists = artistList?.size,

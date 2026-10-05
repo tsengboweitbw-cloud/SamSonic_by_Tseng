@@ -9,7 +9,16 @@
     <string name="settings_group_appearance">外觀</string>
     <string name="settings_group_storage">儲存空間</string>
     <string name="settings_group_statistics">統計</string>
+    <string name="settings_group_listening">聆聽</string>
     <string name="settings_group_about">關於</string>
+    <string name="settings_listening_songs">最常播放的歌曲</string>
+    <string name="settings_listening_artists">最常播放的歌手</string>
+    <string name="settings_listening_albums">最常播放的專輯</string>
+    <string name="settings_listening_loading">載入中…</string>
+    <string name="settings_listening_empty">尚未播放任何歌曲</string>
+    <plurals name="settings_listening_plays">
+        <item quantity="other">%d 次播放</item>
+    </plurals>
     <string name="settings_stat_songs">歌曲</string>
     <string name="settings_stat_albums">專輯</string>
     <string name="settings_stat_artists">歌手</string>

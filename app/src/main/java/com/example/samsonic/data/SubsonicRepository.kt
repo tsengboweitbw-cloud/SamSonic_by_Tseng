@@ -41,6 +41,8 @@ private const val MAX_ALBUMS = 20_000
 // How many songs a search for an artist's name looks through for their guest appearances.
 private const val ARTIST_SEARCH_SONGS = 500
 // How many albums of a list a song list (see getSongList) takes its songs from.
+// The most albums a Subsonic server gives in one getAlbumList2 call.
+private const val SONG_COUNT_PAGE = 500
 private const val SONG_LIST_MIN_ALBUMS = 10
 private const val SONG_LIST_MAX_ALBUMS = 50
 // getSongsByGenre returns at most 500 songs per call; a genre page lists up to MAX_GENRE_SONGS.
@@ -406,6 +408,24 @@ class SubsonicRepository(
         return requireApi().getGenres(authParams()).response.genres?.genre.orEmpty()
             .map { Genre(it.value, it.songCount) }
             .sortedByDescending { it.songCount }
+    }
+
+    // Every album lists its own tracks, so adding them up counts each song once; the server hands
+    // albums over a page at a time.
+    override suspend fun getSongCount(): Int {
+        var total = 0
+        var offset = 0
+        while (true) {
+            val params = authParams() + mapOf(
+                "type" to "alphabeticalByName",
+                "size" to SONG_COUNT_PAGE.toString(),
+                "offset" to offset.toString(),
+            )
+            val page = requireApi().getAlbumList2(params).response.albumList2?.album.orEmpty()
+            total += page.sumOf { it.songCount }
+            if (page.size < SONG_COUNT_PAGE) return total
+            offset += page.size
+        }
     }
 
     override suspend fun search(query: String): SearchResults {

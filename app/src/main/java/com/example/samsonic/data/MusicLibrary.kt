@@ -127,6 +127,12 @@ interface MusicLibrary {
     /** Genres, most songs first. */
     suspend fun getGenres(): List<Genre>
 
+    /**
+     * How many songs the library holds, each counted once (unlike adding up [getGenres],
+     * which counts a song under every genre it has); null if it can't be counted.
+     */
+    suspend fun getSongCount(): Int? = null
+
     suspend fun search(query: String): SearchResults
 
     /** The songs the user has liked ([star]red): the Favourites playlist. */

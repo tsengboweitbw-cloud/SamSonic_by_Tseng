@@ -133,6 +133,8 @@ class OfflineOnlyLibrary(
     override suspend fun randomAlbums(count: Int, genre: String?, fromYear: Int?, toYear: Int?): List<Album> =
         albumsOf(kept().within(genre, fromYear, toYear)).shuffled().take(count)
 
+    override suspend fun getSongCount(): Int = kept().size
+
     override suspend fun getGenres(): List<Genre> =
         kept().flatMap { it.genreNames }
             .groupBy { it.lowercase() }

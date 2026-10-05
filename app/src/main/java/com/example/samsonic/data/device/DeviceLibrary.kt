@@ -226,6 +226,8 @@ class DeviceLibrary(context: Context) : MusicLibrary {
 
     override suspend fun getGenres() = index().genres
 
+    override suspend fun getSongCount(): Int = index().songs.size
+
     // Off the main thread: it filters the whole library, and it's called as the user types.
     override suspend fun search(query: String): SearchResults = withContext(Dispatchers.Default) {
         val index = index()
