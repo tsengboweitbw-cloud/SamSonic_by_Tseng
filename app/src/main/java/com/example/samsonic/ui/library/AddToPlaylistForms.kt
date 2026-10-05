@@ -110,3 +110,14 @@ internal fun MenuMessage(text: String, isError: Boolean = false) {
         modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 12.dp),
     )
 }
+
+/** The heading of a menu's second step, over its choices. */
+@Composable
+internal fun StepHeading(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 4.dp),
+    )
+}

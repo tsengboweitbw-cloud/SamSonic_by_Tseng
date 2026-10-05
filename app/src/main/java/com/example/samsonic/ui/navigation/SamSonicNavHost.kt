@@ -77,6 +77,7 @@ import com.example.samsonic.ui.common.LocalSharedTransitionScope
 import com.example.samsonic.ui.library.AddToPlaylistMenu
 import com.example.samsonic.ui.library.LocalAddToPlaylist
 import com.example.samsonic.ui.library.rememberAddToPlaylistState
+import com.example.samsonic.ui.player.PlayerLinks
 import com.example.samsonic.ui.player.PlayerSheet
 import com.example.samsonic.ui.player.RailMiniPlayerHeight
 import com.example.samsonic.ui.player.rememberPlayerSheetState
@@ -429,7 +430,16 @@ fun SamSonicNavHost(lastTab: LastTab) {
             }
 
             // Over everything, the nav bar included; it grows out of the long-pressed song row.
-            if (canEditPlaylists) AddToPlaylistMenu(addToPlaylist, hazeState)
+            if (canEditPlaylists) {
+                // Its Go to rows open the page over the tab that is showing.
+                val menuLinks = remember(tabs) {
+                    PlayerLinks(
+                        openAlbum = { tabs.open(tabs.currentRoute, Routes.album(it)) },
+                        openArtist = { tabs.open(tabs.currentRoute, Routes.artist(it)) },
+                    )
+                }
+                AddToPlaylistMenu(addToPlaylist, hazeState, menuLinks)
+            }
         }
         }
     }

@@ -159,4 +159,10 @@
         <item quantity="one">%1$d song of %2$d is already in “%3$s”.</item>
         <item quantity="other">%1$d songs of %2$d are already in “%3$s”.</item>
     </plurals>
+    <string name="library_more_options">More options</string>
+    <string name="library_go_to_album">Go to album</string>
+    <string name="library_go_to_album_artist">Go to album artist</string>
+    <string name="library_go_to_artist">Go to artist</string>
+    <string name="library_choose_artist">Choose an artist</string>
+    <string name="library_no_album_artist">This album has no artist to open.</string>
 </resources>

@@ -77,7 +77,7 @@ internal fun PlayerPages(sheet: PlayerSheetState) {
             AutoDjPanel(Modifier.fillMaxSize())
         }
         }
-        if (canAddToPlaylist) AddToPlaylistMenu(addToPlaylist, haze)
+        if (canAddToPlaylist) AddToPlaylistMenu(addToPlaylist, haze, LocalPlayerLinks.current)
     }
 }
 
