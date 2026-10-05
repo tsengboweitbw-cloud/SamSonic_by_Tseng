@@ -13,19 +13,14 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistAdd
@@ -35,13 +30,9 @@ import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.OfflinePin
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.RemoveCircleOutline
-import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -49,163 +40,32 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.layout.boundsInRoot
-import androidx.compose.ui.layout.LayoutCoordinates
-import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalResources
-import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.ImeAction
-import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.playback.LocalPlayerState
 import com.example.samsonic.R
-import com.example.samsonic.data.MusicLibrary
-import com.example.samsonic.model.Album
 import com.example.samsonic.model.Playlist
 import com.example.samsonic.model.Song
 import com.example.samsonic.ui.common.UiState
-import com.example.samsonic.ui.player.PanelState
 import com.example.samsonic.ui.settings.MenuOption
 import com.example.samsonic.ui.settings.SettingsMenu
-import com.example.samsonic.ui.theme.OneUiRadius
 import com.example.samsonic.ui.theme.scrollEdgeFades
 import dev.chrisbanes.haze.HazeState
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
-/** What the Add to playlist menu adds, to a playlist or the queue: one song, or every song of an album. */
-class PlaylistItems internal constructor(
-    val title: String,
-    internal val songs: suspend (MusicLibrary) -> List<Song>,
-) {
-    internal suspend fun songIds(library: MusicLibrary): List<String> = songs(library).map { it.id }
-}
-
-internal fun Song.toPlaylistItems() = PlaylistItems(title) { listOf(this) }
-
-internal fun Album.toPlaylistItems() = PlaylistItems(title) { library -> library.getAlbum(id).second }
-
-/** Taking a song out of the playlist it's in: [remove] does it, and the page then loads again. */
-class SongRemoval(val remove: suspend () -> Unit)
-
-/**
- * Set by a playlist's page: for a song of its list, how to take it out of the playlist,
- * so that long-pressing it offers that; null elsewhere.
- */
-val LocalSongRemoval = staticCompositionLocalOf<((Song) -> SongRemoval?)?> { null }
-
-/** What the Add to playlist menu is open for, and the menu's panel. */
-class AddToPlaylistState internal constructor(scope: CoroutineScope) {
-    internal val panel = PanelState(scope)
-
-    internal var items by mutableStateOf<PlaylistItems?>(null)
-        private set
-
-    /**
-     * The corner radius of what the menu grows out of, for it to fold back into; null for
-     * a round glass button, which the menu folds into as Now Playing's panels do theirs.
-     */
-    internal var originRadius by mutableStateOf<Dp?>(OneUiRadius.Art)
-        private set
-
-    /** How the menu also offers to take the song out of the playlist it was long-pressed in; null elsewhere. */
-    internal var removal by mutableStateOf<SongRemoval?>(null)
-        private set
-
-    /** Whether the menu also offers to add to the queue: not for the song already playing. */
-    internal var offersQueue by mutableStateOf(true)
-        private set
-
-    /**
-     * Opens the menu for [items], growing out of [from] (bounds in the root): a row or
-     * cover with [originRadius] corners, or with null a round glass button. With
-     * [offersQueue], it offers Add to queue above the playlists.
-     */
-    fun open(items: PlaylistItems, from: Rect, originRadius: Dp?, offersQueue: Boolean = true, removal: SongRemoval? = null) {
-        this.items = items
-        this.removal = removal
-        this.originRadius = originRadius
-        this.offersQueue = offersQueue
-        panel.origin = from
-        panel.open()
-    }
-}
-
-/** Null where nothing can be added to playlists ([MusicLibrary.canEditPlaylists] is false). */
-val LocalAddToPlaylist = staticCompositionLocalOf<AddToPlaylistState?> { null }
-
-@Composable
-fun rememberAddToPlaylistState(): AddToPlaylistState {
-    val scope = rememberCoroutineScope()
-    return remember { AddToPlaylistState(scope) }
-}
-
-/**
- * A row's or card's way into the Add to playlist menu: [origin] goes on what the
- * menu should grow out of, and [onLongClick] opens it. Both do nothing where
- * nothing can be added to playlists.
- */
-class AddToPlaylistLongPress(val origin: Modifier, val onLongClick: (() -> Unit)?, val label: String?)
-
-/** For a song row, which the menu grows out of. */
-@Composable
-fun rememberAddToPlaylistLongPress(song: Song): AddToPlaylistLongPress =
-    rememberAddToPlaylistLongPress(OneUiRadius.Art, removal = LocalSongRemoval.current?.let { forSong -> { forSong(song) } }) { song.toPlaylistItems() }
-
-/** For an album, whose [origin][AddToPlaylistLongPress.origin] has [originRadius] corners (its cover, or its row). */
-@Composable
-fun rememberAddToPlaylistLongPress(album: Album, originRadius: Dp): AddToPlaylistLongPress =
-    rememberAddToPlaylistLongPress(originRadius) { album.toPlaylistItems() }
-
-@Composable
-private fun rememberAddToPlaylistLongPress(
-    originRadius: Dp,
-    removal: (() -> SongRemoval?)? = null,
-    items: () -> PlaylistItems,
-): AddToPlaylistLongPress {
-    val state = LocalAddToPlaylist.current
-    val haptics = LocalHapticFeedback.current
-    val currentItems by rememberUpdatedState(items)
-    val currentRadius by rememberUpdatedState(originRadius)
-    val currentRemoval by rememberUpdatedState(removal)
-    // A plain holder, so scrolling doesn't recompose. Only the row's coordinates are kept
-    // as it's placed; its bounds are worked out on the long press, not on every scroll frame.
-    val coordinates = remember { arrayOfNulls<LayoutCoordinates>(1) }
-    val label = stringResource(R.string.library_add_to_playlist)
-    return remember(state, haptics, label) {
-        if (state == null) return@remember AddToPlaylistLongPress(Modifier, null, null)
-        AddToPlaylistLongPress(
-            origin = Modifier.onPlaced { coordinates[0] = it },
-            onLongClick = {
-                haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                val bounds = coordinates[0]?.takeIf { it.isAttached }?.boundsInRoot() ?: Rect.Zero
-                state.open(currentItems(), bounds, currentRadius, removal = currentRemoval?.invoke())
-            },
-            label = label,
-        )
-    }
-}
 
 private const val PlaylistListMaxHeight = 360
 private const val StepFadeMillis = 220
 
 /** Where the menu is: choosing a playlist, naming a new one, or asking about songs already there. */
-private sealed interface Step {
+internal sealed interface Step {
     data object Pick : Step
     data object Naming : Step
     class Duplicates(val playlist: Playlist, val songIds: List<String>, val duplicates: Set<String>) : Step
@@ -449,82 +309,4 @@ private fun addedMessage(context: Context, added: Int, skipped: Int, playlistNam
         added == 1 -> context.getString(R.string.library_added_to_playlist, playlistName)
         else -> context.getString(R.string.library_added_songs, songs(added), playlistName)
     }
-}
-
-/** Some of the songs are in the playlist already: add them again, or skip them. */
-@Composable
-private fun DuplicatesPrompt(
-    step: Step.Duplicates,
-    itemTitle: String,
-    saving: Boolean,
-    onAddAnyway: () -> Unit,
-    onSkip: () -> Unit,
-) {
-    val total = step.songIds.size
-    val count = step.duplicates.size
-    val playlist = step.playlist.name
-    val message = when {
-        total == 1 -> stringResource(R.string.library_duplicate_one, itemTitle, playlist)
-        count == total -> stringResource(R.string.library_duplicate_all, total, playlist)
-        else -> pluralStringResource(R.plurals.library_duplicate_some, count, count, total, playlist)
-    }
-    Column(Modifier.padding(horizontal = 24.dp)) {
-        Text(text = message, style = MaterialTheme.typography.bodyLarge)
-        Spacer(Modifier.height(16.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            TextButton(onClick = onAddAnyway, enabled = !saving) { Text(stringResource(R.string.library_add_anyway)) }
-            Spacer(Modifier.width(8.dp))
-            Button(onClick = onSkip, enabled = !saving) {
-                Text(stringResource(if (total == 1 || count == total) R.string.library_skip else R.string.library_skip_duplicates))
-            }
-        }
-    }
-}
-
-@Composable
-internal fun NewPlaylistForm(saving: Boolean, onCancel: () -> Unit, onCreate: (String) -> Unit) {
-    var name by remember { mutableStateOf("") }
-    val focus = remember { FocusRequester() }
-    LaunchedEffect(Unit) { focus.requestFocus() }
-    val canCreate = name.isNotBlank() && !saving
-    Column(Modifier.padding(horizontal = 24.dp)) {
-        OutlinedTextField(
-            value = name,
-            onValueChange = { name = it },
-            label = { Text(stringResource(R.string.library_playlist_name)) },
-            singleLine = true,
-            enabled = !saving,
-            keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences, imeAction = ImeAction.Done),
-            keyboardActions = KeyboardActions(onDone = { if (canCreate) onCreate(name.trim()) }),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-            ),
-            modifier = Modifier.fillMaxWidth().focusRequester(focus),
-        )
-        Spacer(Modifier.height(12.dp))
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.End,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            TextButton(onClick = onCancel, enabled = !saving) { Text(stringResource(R.string.library_cancel)) }
-            Spacer(Modifier.width(8.dp))
-            Button(onClick = { onCreate(name.trim()) }, enabled = canCreate) { Text(stringResource(if (saving) R.string.library_creating else R.string.library_create)) }
-        }
-    }
-}
-
-@Composable
-private fun MenuMessage(text: String, isError: Boolean = false) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.bodySmall,
-        color = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 12.dp),
-    )
 }

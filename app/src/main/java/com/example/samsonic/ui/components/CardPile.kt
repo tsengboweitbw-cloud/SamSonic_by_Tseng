@@ -4,43 +4,25 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.animate
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.awaitVerticalTouchSlopOrCancellation
-import androidx.compose.foundation.gestures.verticalDrag
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.RoundRect
-import androidx.compose.ui.graphics.ClipOp
 import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.hapticfeedback.HapticFeedback
-import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.PointerEventPass
-import androidx.compose.ui.input.pointer.PointerInputScope
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.input.pointer.PointerInputChange
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.input.pointer.positionChange
-import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.CompositingStrategy
-import androidx.compose.ui.graphics.drawscope.ContentDrawScope
-import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.util.lerp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -51,13 +33,13 @@ import kotlin.math.roundToInt
 // Each card further back in a pile sits this much lower and this much smaller,
 // so its bottom edge peeks out below the one in front, as the Now Bar's do.
 val PileStep = 7.dp
-private const val PileShrink = 0.07f
+internal const val PileShrink = 0.07f
 
 // Swiped up, the front card follows the finger; let go at least this high, it goes on
 // to the back of the pile, the next coming forward; any lower, it drops back into place.
-private val PickThreshold = 44.dp
+internal val PickThreshold = 44.dp
 // Beyond the pile's top the finger drags it on at this share of its travel.
-private const val PickOverdrag = 0.35f
+internal const val PickOverdrag = 0.35f
 // Going to the back: no overshoot, which would carry the next card past the front.
 private val ToBackSpring = spring<Float>(dampingRatio = 1f, stiffness = 380f)
 // Dropping back into place: a little bounce as it lands.
@@ -68,8 +50,8 @@ private val HandOffSpring = spring<Float>(dampingRatio = 1f, stiffness = 700f)
 // Held up off the pile, a card grows this much by the threshold, as a card picked
 // up does; on its way to the back it rises to this far (in its own heights) above the
 // front card's place, clear of the pile, before going down behind it.
-private const val PickScale = 1.04f
-private const val PickLift = 0.9f
+internal const val PickScale = 1.04f
+internal const val PickLift = 0.9f
 
 // The share of its trip to the back a card spends rising to the top, in front of the
 // pile; the rest it spends behind, settling into the back place.
@@ -217,160 +199,6 @@ interface PileDrag {
 // Lifted this far (the finger's own travel: just clear of the pile, past where letting go
 // sends the card to the back), a card with somewhere to go on to hands the drag over to
 // it; over the next [LiftConversion] of travel, its lift turns into that opening.
-private val LiftHandOff = 128.dp
-private val LiftConversion = 120.dp
-
-/**
- * The swipe up that sends the front card of [pile] (cards [cardHeight] high) to the
- * back: the card follows the finger, past the pile's top more slowly. A drag that sets
- * off downward goes to [downDrag] if given, else is left alone, for what's around.
- * Carried on up past [LiftHandOff], the rest of the drag goes to [liftDrag] if given,
- * from where the card has been lifted to (the mini player opening into Now Playing).
- * Only a gesture that starts while [enabled] says so is taken.
- */
-@Composable
-fun Modifier.pileSwipe(
-    pile: CardPileState,
-    cardHeight: Dp,
-    downDrag: PileDrag? = null,
-    liftDrag: PileDrag? = null,
-    enabled: () -> Boolean = { true },
-): Modifier {
-    val haptics = LocalHapticFeedback.current
-    val canStart by rememberUpdatedState(enabled)
-    return pointerInput(pile, downDrag, liftDrag, cardHeight) {
-        pileGesture(pile, cardHeight, downDrag, liftDrag, { canStart() }, haptics)
-    }
-}
-
-private suspend fun PointerInputScope.pileGesture(
-    pile: CardPileState,
-    cardHeight: Dp,
-    downDrag: PileDrag?,
-    liftDrag: PileDrag?,
-    enabled: () -> Boolean,
-    haptics: HapticFeedback,
-) {
-    val thresholdPx = PickThreshold.toPx()
-    val handOffPx = LiftHandOff.toPx()
-    val conversionPx = LiftConversion.toPx()
-    // Past the pile's top the finger drags the card on more slowly.
-    val topPx = cardHeight.toPx() * PickLift
-    awaitEachGesture {
-        val down = awaitFirstDown(requireUnconsumed = false)
-        if (!enabled()) return@awaitEachGesture
-        var over = 0f
-        var downward = false
-        val drag = awaitVerticalTouchSlopOrCancellation(down.id) { change, amount ->
-            if (amount < 0f || downDrag != null) {
-                change.consume()
-                over = amount
-                downward = amount > 0f
-            }
-        } ?: return@awaitEachGesture
-        if (downward && downDrag != null) {
-            // From the finger's own steps: the card moves with it, so where the finger is on
-            // the card barely changes, and a velocity from that came out near nothing.
-            val tracker = FingerVelocity(drag)
-            downDrag.start()
-            downDrag.drag(over)
-            verticalDrag(drag.id) { change ->
-                tracker.add(change)
-                downDrag.drag(change.positionChange().y)
-                change.consume()
-            }
-            downDrag.end(tracker.velocityY())
-            return@awaitEachGesture
-        }
-        // One card at a time: one still on its way to the back gets there now.
-        pile.finishMove()
-        // How far up the finger has gone since it took hold, px; coming back down stops
-        // where it started.
-        var raised = -over
-        var armed = false
-        fun held(): Float = if (raised <= topPx) raised else topPx + (raised - topPx) * PickOverdrag
-        fun follow() {
-            val now = held() >= thresholdPx
-            if (now && !armed) haptics.performHapticFeedback(HapticFeedbackType.GestureThresholdActivate)
-            armed = now
-            pile.hold(held())
-        }
-        follow()
-        // From the finger's own steps, as above: what it opens rises with it.
-        val tracker = FingerVelocity(drag)
-        var handedOff = false
-        // Where the finger was, and how high the card, as it was handed over.
-        var handOffAt = 0f
-        var liftAtHandOff = 0f
-        // How far what it's handed to has been dragged open, px.
-        var opened = 0f
-        verticalDrag(drag.id) { change ->
-            tracker.add(change)
-            val dy = change.positionChange().y
-            change.consume()
-            if (handedOff) {
-                // The card's lift turns into the opening as the finger carries on up (and
-                // back, as it comes down): what opens rises with the finger, and by as much
-                // again as the lift comes down, so the card's top stays under the finger
-                // while its bottom follows it down into the new shape. Brought back below
-                // where it was handed over, the opening is closed and the card follows the
-                // finger down as it did before, to drop back into place when let go.
-                raised = (raised - dy).coerceAtLeast(0f)
-                val beyond = raised - handOffAt
-                val lift = if (beyond >= 0f) {
-                    liftAtHandOff * (1f - (beyond / conversionPx).coerceIn(0f, 1f))
-                } else {
-                    held()
-                }
-                // How far the opening is dragged open: the finger's travel past the hand-off,
-                // and the lift turned into it.
-                val open = if (beyond >= 0f) beyond + (liftAtHandOff - lift) else 0f
-                pile.handOffLift = lift
-                liftDrag!!.drag(-(open - opened))
-                opened = open
-                return@verticalDrag
-            }
-            raised = (raised - dy).coerceAtLeast(0f)
-            if (liftDrag != null && raised >= handOffPx) {
-                handedOff = true
-                handOffAt = raised
-                liftAtHandOff = held()
-                haptics.performHapticFeedback(HapticFeedbackType.SegmentTick)
-                pile.beginHandOff(liftAtHandOff)
-                liftDrag.start()
-                return@verticalDrag
-            }
-            follow()
-        }
-        if (handedOff) {
-            pile.endHandOff()
-            liftDrag!!.end(tracker.velocityY())
-        } else {
-            pile.release(held(), thresholdPx)
-        }
-    }
-}
-
-/**
- * A finger's velocity from its own steps added up, not from where it is on the node it
- * touches: that node (a card, and what it opens into) moves with the finger, so the
- * finger's place on it barely changes, and a velocity from that came out near nothing.
- */
-private class FingerVelocity(first: PointerInputChange) {
-    private val tracker = VelocityTracker()
-    private var at = Offset.Zero
-
-    init {
-        tracker.addPosition(first.uptimeMillis, at)
-    }
-
-    fun add(change: PointerInputChange) {
-        at += change.positionChange()
-        tracker.addPosition(change.uptimeMillis, at)
-    }
-
-    fun velocityY(): Float = tracker.calculateVelocity().y
-}
 
 /**
  * Card [index] of [pile], drawn in its place in the pile (cards [cardHeight] high, fully
@@ -436,179 +264,3 @@ fun Modifier.pileCard(
             }
         }
 }
-
-
-/** How a card is drawn: its size, how far it's raised (px, negative = up) and how clearly it shows. */
-class CardPose(val scale: Float, val rise: Float, val alpha: Float) {
-    /** This pose [weight] of the way from none (full size, in place, clear) to itself. */
-    fun weighted(weight: Float): CardPose =
-        if (weight >= 1f) this else CardPose(lerp(1f, scale, weight), rise * weight, lerp(1f, alpha, weight))
-}
-
-/**
- * The pose of a card [depth] into the pile of [heightPx]-high cards, [stepPx]
- * apart. In the pile (0 and on) each further back is smaller and lower, the front one
- * held up [lift] px by the finger, growing toward [PickScale] as it nears the threshold
- * ([thresholdPx]). On its way to the back (between 0 and -1), set off from [liftFrom]
- * px up, it's a card moved from the top of a pile to the bottom: it carries on up to
- * clear the pile, whole, then goes down behind it and settles into the back place at its
- * bottom ([backDepth]), taking on the look of the card there only as it arrives.
- */
-fun cardPose(
-    depth: Float,
-    backDepth: Float,
-    heightPx: Float,
-    stepPx: Float,
-    lift: Float,
-    liftFrom: Float,
-    thresholdPx: Float,
-): CardPose {
-    fun held(up: Float) = lerp(1f, PickScale, ramp(up, 0f, thresholdPx))
-    if (depth == 0f) return CardPose(held(lift), -lift, 1f)
-    if (depth > 0f) return CardPose(stackScale(depth), stackRise(depth, stepPx), stackAlpha(depth))
-    val t = -depth
-    val back = CardPose(stackScale(backDepth), stackRise(backDepth, stepPx), stackAlpha(backDepth))
-    // Up clear of the front card's place (and of the pile below it), whole, before it goes
-    // down behind the pile and comes out at the bottom, the last card.
-    val top = minOf(minOf(back.rise, 0f) - heightPx * PickLift, -liftFrom)
-    return if (t < ToTopShare) {
-        val u = t / ToTopShare
-        val eased = 1f - (1f - u) * (1f - u)
-        CardPose(lerp(held(liftFrom), PickScale, eased), lerp(-liftFrom, top, eased), 1f)
-    } else {
-        val u = (t - ToTopShare) / (1f - ToTopShare)
-        val eased = u * u * (3 - 2 * u)
-        CardPose(lerp(PickScale, back.scale, eased), lerp(top, back.rise, eased), lerp(1f, back.alpha, eased * eased))
-    }
-}
-
-/** How much of its contents a card [depth] into the pile shows: the front one's, and the next one's as the front is lifted off it. */
-fun CardPileState.contentAlpha(index: Int, thresholdPx: Float, inFrontAway: Boolean = false): Float {
-    val d = depth(index)
-    return when {
-        // On its way up; gone as it passes behind the pile.
-        d < 0f -> 1f - ramp(-d, ToTopShare, ToTopShare + 0.2f)
-        // Next in line: showing as the front one is lifted off it, and staying shown as it
-        // comes forward once that one is let go high enough, or as the front one is away.
-        d == 1f -> if (inFrontAway) 1f else ramp(lift.value, 0f, thresholdPx)
-        d > 0f && d < 1f -> maxOf(1f - d, ramp(liftFrom, 0f, thresholdPx))
-        // In front; the rest of the pile shows none.
-        else -> (1f - d).coerceIn(0f, 1f)
-    }
-}
-
-/** [PickThreshold] in px. */
-fun Density.pickThresholdPx(): Float = PickThreshold.toPx()
-
-/** Maps [value] from [start]..[end] onto 0..1, clamped. */
-private fun ramp(value: Float, start: Float, end: Float) = ((value - start) / (end - start)).coerceIn(0f, 1f)
-
-/**
- * How clearly a card [depth] back in the pile shows: fainter further back, and past the
- * last layer that shows ([ShownLayers]) fading away behind it, so however many cards
- * there are, the pile is only ever a couple of slim edges.
- */
-private fun stackAlpha(depth: Float): Float {
-    val d = depth.coerceAtLeast(0f)
-    if (d <= ShownLayers) return 1f - 0.25f * d
-    return (1f - 0.25f * ShownLayers) * (1f - (d - ShownLayers)).coerceIn(0f, 1f)
-}
-
-/** How big a card [depth] back in the pile is drawn: each shown layer smaller, the hidden ones as the last. */
-private fun stackScale(depth: Float): Float = 1f - PileShrink * layerDepth(depth)
-
-/**
- * How far (px, positive = down) a card [depth] back in the pile is lowered: a full [step]
- * for the first card behind, less for the next ([LayerTaper]), so the edges taper off as
- * the Now Bar's do; ones further back wait where the last shown one is.
- */
-private fun stackRise(depth: Float, step: Float): Float = step * layerDepth(depth)
-
-// How many cards behind the front one show, as edges; any more wait unseen behind the last.
-private const val ShownLayers = 2f
-
-// Each layer after the first sits this much of a step (and a shrink) behind the one before.
-private const val LayerTaper = 0.55f
-
-/** A card [depth] back, in steps of the first layer's: 1 for it, tapering after, and no further than the last shown. */
-private fun layerDepth(depth: Float): Float {
-    val d = depth.coerceIn(0f, ShownLayers)
-    return if (d <= 1f) d else 1f + (d - 1f) * LayerTaper
-}
-
-/** How far below the front card a pile of [count] reaches: room to keep for its edges. */
-fun pileExtent(count: Int): Dp = PileStep * layerDepth((count - 1).toFloat())
-
-private fun floorMod(value: Int, count: Int): Int = ((value % count) + count) % count
-
-private fun floorModFloat(value: Float, count: Float): Float = ((value % count) + count) % count
-
-// Drawing is on the one UI thread, and saveLayer only reads it.
-private val CutFadePaint = androidx.compose.ui.graphics.Paint()
-
-/**
- * Draws card [index] of [pile], cut away where the card just in front of it covers it
- * (see [pileCard]).
- */
-private fun ContentDrawScope.drawPiled(
-    pile: CardPileState,
-    index: Int,
-    cut: () -> Float,
-    weight: () -> Float,
-    frontScale: () -> Float,
-    offsetFromFront: () -> Float,
-    cutout: Path,
-) {
-    val d = pile.depth(index)
-    val inFrontIndex = floorMod(index - 1, pile.count)
-    val inFront = pile.depth(inFrontIndex)
-    // Cut away only where the one in front is drawn over this one: not the front
-    // one itself, nor one on its way up over the top, nor by one gone behind.
-    val amount = cut().coerceIn(0f, 1f)
-    val underIt = (d > 0f || d < -ToTopShare) && inFront >= -ToTopShare && amount > 0f
-    if (!underIt) {
-        drawContent()
-        return
-    }
-    val step = PileStep.toPx()
-    val threshold = PickThreshold.toPx()
-    val w = weight()
-    val own = pile.pose(index, size.height, step, threshold).weighted(w)
-    val front = pile.pose(inFrontIndex, size.height, step, threshold).weighted(w)
-    val ratio = front.scale * frontScale() / own.scale
-    val halfW = size.width / 2 * ratio
-    val halfH = size.height / 2 * ratio
-    val centreY = size.height / 2 + (front.rise - own.rise + offsetFromFront()) / own.scale
-    cutout.reset()
-    cutout.addRoundRect(
-        RoundRect(
-            left = size.width / 2 - halfW,
-            top = centreY - halfH,
-            right = size.width / 2 + halfW,
-            bottom = centreY + halfH,
-            cornerRadius = CornerRadius(halfH),
-        ),
-    )
-    clipPath(cutout, ClipOp.Difference) { this@drawPiled.drawContent() }
-    // Partly cut: what's under the card in front shows faded, rather than switching
-    // off in one frame (which, through that card's translucent glass, blinked).
-    if (amount < 1f) {
-        CutFadePaint.alpha = 1f - amount
-        drawContext.canvas.saveLayer(cutout.getBounds(), CutFadePaint)
-        clipPath(cutout) { this@drawPiled.drawContent() }
-        drawContext.canvas.restore()
-    }
-}
-
-/**
- * How clearly the last shown layer of a pile shows ([ShownLayers]): the least a card is
- * ever shaded. Down to it, a card is shaded toward the page; past it (a hidden layer, or
- * one hidden outright), it really fades.
- */
-private val LastLayerClarity = stackAlpha(ShownLayers)
-
-/** The layer opacity for a card of [clarity]: whole while it's merely shaded, fading past the last shown layer. */
-private fun layerAlpha(clarity: Float): Float = (clarity / LastLayerClarity).coerceIn(0f, 1f)
-
-/** How much a card of [clarity] is shaded toward the page, over its glass: never more than the last shown layer. */
-private fun shade(clarity: Float): Float = (1f - clarity).coerceIn(0f, 1f - LastLayerClarity)

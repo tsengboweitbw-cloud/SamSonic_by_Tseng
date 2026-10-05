@@ -11,9 +11,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
-import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.ui.layout.layout
@@ -23,8 +21,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
@@ -45,10 +41,6 @@ import com.example.samsonic.ui.theme.ChromeBlurScale
 import androidx.compose.runtime.snapshotFlow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.drop
-import kotlinx.coroutines.flow.collectLatest
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -57,13 +49,8 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.samsonic.playback.LocalPlayerState
 import com.example.samsonic.ui.components.NavRail
 import com.example.samsonic.ui.components.rememberNavRailWidth
-import com.example.samsonic.ui.components.pileCard
-import com.example.samsonic.ui.components.pileSwipe
-import com.example.samsonic.ui.components.rememberCardPileState
-import com.example.samsonic.ui.player.MiniPillMotion
 import com.example.samsonic.ui.player.MiniPlayerCard
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -73,8 +60,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.platform.LocalConfiguration
-import com.example.samsonic.ui.components.SelectedTabExtraWeight
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
 import androidx.navigationevent.compose.rememberNavigationEventDispatcherOwner
@@ -105,7 +90,7 @@ import dev.chrisbanes.haze.rememberHazeState
 
 data class BottomDestination(val route: String, @StringRes val label: Int, val icon: androidx.compose.ui.graphics.vector.ImageVector)
 
-private val bottomDestinations = listOf(
+internal val bottomDestinations = listOf(
     BottomDestination(Routes.HOME, R.string.nav_home, Icons.Filled.Home),
     BottomDestination(Routes.LIBRARY, R.string.nav_library, Icons.Filled.LibraryMusic),
     BottomDestination(Routes.SEARCH, R.string.nav_search, Icons.Filled.Search),
@@ -127,7 +112,7 @@ private val DesktopMiniLift = 24.dp
 
 // The mini player rising into the stacked pile: unhurried, settling without a bounce.
 // No overshoot either: coming back under 1 would flash the nav bar whole behind it.
-private val StackEntranceSpring = spring<Float>(dampingRatio = 1f, stiffness = 260f)
+internal val StackEntranceSpring = spring<Float>(dampingRatio = 1f, stiffness = 260f)
 
 @Composable
 fun SamSonicNavHost(lastTab: LastTab) {
@@ -175,74 +160,18 @@ fun SamSonicNavHost(lastTab: LastTab) {
     }
     // Wider than a phone, the nav bar is a rail at the side, the mini player on its own at
     // the foot of the screen; tabs fade from one to the next rather than sliding.
-    val onRail by rememberUpdatedState(LocalWindowLayout.current.usesRail)
+    val onRailState = rememberUpdatedState(LocalWindowLayout.current.usesRail)
+    val onRail by onRailState
     SideEffect { tabs.fades = onRail }
-    // Stacked, the nav bar (card 0) and the mini player share one place, piled; only
-    // while there's a song, else the nav bar is on its own. Not beside a rail: there's no
-    // nav bar at the foot of the screen to pile onto.
-    val stackSetting by container.themeManager.stackChrome.collectAsStateWithLifecycle()
-    val stackChrome by remember { derivedStateOf { stackSetting && !onRail } }
     val railStaysPut by container.themeManager.railStaysPut.collectAsStateWithLifecycle()
-    // Changing only as music starts or stops, not with each new song.
-    val player = LocalPlayerState.current
-    val hasSong by remember(player) { derivedStateOf { player.currentSong != null } }
-    // Switched between the two, the mini player glides down behind the nav bar into the
-    // pile, or rises out of it back to its place above: 0 apart, 1 piled. Switching screens
-    // (the rail coming or going as a foldable folds or opens) it's simply in its place.
-    val stackTarget = if (stackChrome) 1f else 0f
-    val stackAnimation = remember { Animatable(stackTarget) }
-    val railWas = remember { booleanArrayOf(onRail) }
-    LaunchedEffect(stackTarget, onRail) {
-        if (railWas[0] != onRail) {
-            railWas[0] = onRail
-            stackAnimation.snapTo(stackTarget)
-        } else {
-            // No overshoot: past either end it would pile or part for a frame.
-            stackAnimation.animateTo(stackTarget, spring(dampingRatio = 1f, stiffness = 300f))
-        }
-    }
-    val stackAmount by stackAnimation.asState()
-    // 1 while there's a song (the mini player up), 0 without, easing between as music
-    // starts or stops: for what floats above the chrome to follow it (ChromeGuard.top).
-    val miniPresence = animateFloatAsState(
-        targetValue = if (hasSong) 1f else 0f,
-        animationSpec = spring(dampingRatio = 1f, stiffness = 400f),
-        label = "miniPresence",
-    )
-    // Drawn in the pile while it comes together or apart; swiped only once it has.
-    val pileShown by remember { derivedStateOf { hasSong && stackAmount > 0f } }
-    // The nav bar keeps its place in the pile (its layer, order and pose) for as long as
-    // the layout is stacked, with or without a song, posed as if alone when there's none:
-    // adding them as the first song came in rebuilt its glass, and it blinked.
-    val navInPile by remember { derivedStateOf { stackAmount > 0f } }
-    val piled by remember { derivedStateOf { hasSong && stackChrome && stackAmount >= 1f } }
-    val chromePile = rememberCardPileState(2)
-    // Piling up, the mini player goes behind; with it gone, or apart again, the nav bar is in front.
-    LaunchedEffect(stackChrome) { if (stackChrome) chromePile.snapTo(0) }
-    LaunchedEffect(pileShown) { if (!pileShown) chromePile.snapTo(0) }
-    // How far the mini player has come in, stacked, as something starts to play: it fades
-    // in from below into the front of the pile, over the nav bar. 1 at rest.
-    val stackEntrance = remember { Animatable(1f) }
-    // Something starting to play puts the mini player in front, fading in from the bottom
-    // (from nothing, or from behind the nav bar alike), not swapping places with it.
-    LaunchedEffect(player, chromePile) {
-        snapshotFlow { player.playStarts }.drop(1).collectLatest {
-            if (!stackChrome) return@collectLatest
-            // Already in front: it stays, with only its song changing.
-            if (hasSong && chromePile.front == MiniPlayerCard) return@collectLatest
-            stackEntrance.snapTo(0f)
-            snapshotFlow { pileShown }.first { it }
-            chromePile.snapTo(MiniPlayerCard)
-            stackEntrance.animateTo(1f, StackEntranceSpring)
-        }
-    }
-    // Opening, Now Playing grows out of the mini player, so it's the card in front (and
-    // takes touches) whichever way it was opened; it's what closing folds back into too.
-    LaunchedEffect(chromePile, playerSheet) {
-        snapshotFlow { playerSheet.progress > 0f }.collect { opening ->
-            if (opening && pileShown && chromePile.front != MiniPlayerCard) chromePile.snapTo(MiniPlayerCard)
-        }
-    }
+    // Stacked, the nav bar and the mini player share one place, piled (see ChromeStack).
+    val stack = rememberChromeStack(onRailState, playerSheet)
+    val stackChrome by stack.stackChrome
+    val stackAmount by stack.stackAmount
+    val pileShown by stack.pileShown
+    val miniPresence = stack.miniPresence
+    val chromePile = stack.chromePile
+    val stackEntrance = stack.stackEntrance
     // How far above the nav bar the mini player's own place is: all the way apart, none piled.
     val apartPx = with(LocalDensity.current) { (navBarHeight + 8.dp).toPx() }
     val navBarHeightPx = with(LocalDensity.current) { navBarHeight.toPx() }
@@ -441,119 +370,43 @@ fun SamSonicNavHost(lastTab: LastTab) {
             // rail it isn't there. Composed only for a phone's layout, so switching screens
             // (folding shut, a window narrowing) shows it in place at once, not sliding in:
             // it slides only as signing in comes and goes.
-            if (!onRail) AnimatedVisibility(
-                visible = showChrome,
-                enter = slideInVertically { it } + fadeIn(),
-                exit = slideOutVertically { it } + fadeOut(),
-                modifier = Modifier
-                    .then(if (navInPile) Modifier.zIndex(if (navBarOnTop) -1f else -2f) else Modifier)
-                    .align(Alignment.BottomCenter)
-                    .graphicsLayer {
-                        val progress = playerSheet.progress
-                        translationY = progress * (navBarHeight + navBarBottomInset + chromeBottomInset).toPx()
-                        alpha = 1f - progress
-                    }
-                    .padding(horizontal = 16.dp)
-                    .padding(bottom = chromeBottomInset + navBarBottomInset)
-                    .fillMaxWidth()
-                    .height(navBarHeight)
-                    // Piled with the mini player: posed in the pile, and a swipe up sends it
-                    // to the back; behind, it takes no touches.
-                    .then(
-                        if (navInPile) {
-                            Modifier
-                                .pileCard(
-                                    chromePile,
-                                    0,
-                                    navBarHeight,
-                                    ignoreTouchesBehind = true,
-                                    // As the mini player in front is swiped away, the nav bar
-                                    // comes forward out of its place behind, whole, in step,
-                                    // so it's already in place when the music stops; and goes
-                                    // back as the mini player comes in over it, not all at once.
-                                    weight = {
-                                        if (!hasSong) {
-                                            0f
-                                        } else {
-                                            stackAmount * (1f - playerSheet.dismissal.coerceIn(0f, 1f)) *
-                                                stackEntrance.value.coerceIn(0f, 1f)
-                                        }
-                                    },
-                                    // Cut just where the mini player is drawn as it comes in or
-                                    // goes (MiniPillMotion), as clearly as it's drawn: so the nav
-                                    // bar dissolves under it, never cut where it isn't yet.
-                                    cut = { MiniPillMotion.alpha(1f - stackEntrance.value.coerceIn(0f, 1f), playerSheet.dismissal.coerceIn(0f, 1f)) },
-                                    offsetFromFront = {
-                                        -miniAboveNavPx() + MiniPillMotion.shift(
-                                            1f - stackEntrance.value.coerceIn(0f, 1f),
-                                            playerSheet.dismissal.coerceIn(0f, 1f),
-                                            navBarHeightPx,
-                                            playerSheet.dismissTravelPx,
-                                        )
-                                    },
-                                    frontScale = {
-                                        MiniPillMotion.scale(1f - stackEntrance.value.coerceIn(0f, 1f), playerSheet.dismissal.coerceIn(0f, 1f))
-                                    },
-                                )
-                                .then(if (piled) Modifier.pileSwipe(chromePile, navBarHeight) else Modifier)
-                        } else {
-                            Modifier
-                        },
-                    ),
-            ) {
-                FloatingNavBar(
-                    destinations = bottomDestinations,
+            if (!onRail) {
+                NavBarLayer(
+                    showChrome = showChrome,
+                    stack = stack,
+                    playerSheet = playerSheet,
                     tabs = tabs,
                     hazeState = hazeState,
-                    modifier = Modifier.fillMaxSize(),
+                    navBarOnTop = navBarOnTop,
+                    navBarHeight = navBarHeight,
+                    navBarBottomInset = navBarBottomInset,
+                    chromeBottomInset = chromeBottomInset,
+                    miniAboveNavPx = miniAboveNavPx,
+                    navBarHeightPx = navBarHeightPx,
                 )
             }
 
-            // On wider screens, the nav bar as a rail at the side; it slides out past the
-            // screen's side in step with the player sheet opening, as the nav bar sinks.
-            // Composed only beside a rail, as the nav bar only without, so it too is simply
-            // there as the screen switches.
-            if (onRail) AnimatedVisibility(
-                visible = showChrome,
-                enter = slideInHorizontally { -it } + fadeIn(),
-                exit = slideOutHorizontally { -it } + fadeOut(),
-                modifier = Modifier
-                    .align(Alignment.CenterStart)
-                    .graphicsLayer {
-                        val progress = playerSheet.progress
-                        translationX = -progress * railReserve.toPx()
-                        // Centred in the room above the mini player's place: whether or not
-                        // there's a song (it stays put as music starts and stops), or, as set
-                        // in Settings, only while there's one, rising as it comes and settling
-                        // back as it goes.
-                        val miniRoom = (systemBarInset + navBarBottomInset + railMiniLift + railMiniHeight + railMiniGap).toPx()
-                        val lift = if (railStaysPut) 1f else miniPresence.value * (1f - playerSheet.dismissal.coerceIn(0f, 1f))
-                        // Centred between the status bar and the mini player, not the window's middle:
-                        // a phone on its side has little height, and it reached under the status bar.
-                        val topInset = innerPadding.calculateTopPadding().toPx()
-                        translationY = (topInset * lift - miniRoom * lift) / 2
-                        alpha = 1f - progress
-                    }
-                    .padding(start = railStartInset + railMargin),
-            ) {
-                // On a phone on its side, the tabs take the height the mini player leaves
-                // (the rail's length is tabHeight * (count + extra) + inset * 2).
-                val tabHeight = if (phoneLandscape) {
-                    val room = LocalConfiguration.current.screenHeightDp.dp - innerPadding.calculateTopPadding() -
-                        systemBarInset - navBarBottomInset - railMiniLift - railMiniHeight - railMiniGap - 8.dp
-                    ((room - NavRail.Inset * 2) / (bottomDestinations.size + SelectedTabExtraWeight))
-                        .coerceIn(NavRail.ShortTabHeight, NavRail.TabHeight)
-                } else {
-                    railTabHeight
-                }
-                FloatingNavRail(
-                    destinations = bottomDestinations,
+            if (onRail) {
+                NavRailLayer(
+                    showChrome = showChrome,
+                    stack = stack,
+                    playerSheet = playerSheet,
                     tabs = tabs,
                     hazeState = hazeState,
-                    width = railWidth,
-                    // Taller in DeX, where a window has height to spare.
-                    tabHeight = tabHeight,
-                    iconSize = if (desktopChrome) NavRail.DesktopIconSize else NavRail.IconSize,
+                    railStaysPut = railStaysPut,
+                    railReserve = railReserve,
+                    railStartInset = railStartInset,
+                    railMargin = railMargin,
+                    railWidth = railWidth,
+                    railMiniLift = railMiniLift,
+                    railMiniHeight = railMiniHeight,
+                    railMiniGap = railMiniGap,
+                    railTabHeight = railTabHeight,
+                    systemBarInset = systemBarInset,
+                    navBarBottomInset = navBarBottomInset,
+                    topInset = innerPadding.calculateTopPadding(),
+                    phoneLandscape = phoneLandscape,
+                    desktopChrome = desktopChrome,
                 )
             }
 
