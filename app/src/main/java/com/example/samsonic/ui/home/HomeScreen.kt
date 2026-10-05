@@ -9,6 +9,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.samsonic.LocalAppContainer
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
@@ -45,7 +48,13 @@ fun HomeScreen(
         title = { PageTitle(stringResource(R.string.home_your_library)) },
     ) { topPadding ->
         StateContent(state = viewModel.state, modifier = Modifier.fillMaxSize(), onRetry = viewModel::retry) { sections ->
-            val shown = sections.filter { (shelf, items) -> !items.isEmpty || !shelf.hiddenWhenEmpty() }
+            // In the user's order, leaving out what they hid and cutting each to the length they set.
+            val layout by LocalAppContainer.current.homeLayoutManager.sections.collectAsStateWithLifecycle()
+            val shown = layout.mapNotNull { section ->
+                val items = sections[section.shelf] ?: return@mapNotNull null
+                if (!section.visible || (items.isEmpty && section.shelf.hiddenWhenEmpty())) return@mapNotNull null
+                section.shelf to items.take(section.count)
+            }
             // Pulling down past the top reloads every shelf, re-rolling "Picked For You".
             OneUiPullToRefresh(
                 isRefreshing = viewModel.isRefreshing,
@@ -59,7 +68,17 @@ fun HomeScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(top = topPadding, bottom = contentPaddingBottom),
                 ) {
-                    shown.entries.forEachIndexed { index, (shelf, items) ->
+                    if (shown.isEmpty()) {
+                        item(key = "none") {
+                            Text(
+                                text = stringResource(R.string.home_all_hidden),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
+                            )
+                        }
+                    }
+                    shown.forEachIndexed { index, (shelf, items) ->
                         item(key = shelf.key) {
                             // The title opens the shelf's full list as its own page.
                             SectionHeader(title = stringResource(shelf.title), onTitleClick = { onShelfClick(shelf) })

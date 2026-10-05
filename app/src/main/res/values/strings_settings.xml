@@ -4,6 +4,7 @@
     <string name="settings_title">Settings</string>
     <string name="settings_group_music_source">Music source</string>
     <string name="settings_group_playback">Playback</string>
+    <string name="settings_group_home">Home</string>
     <string name="settings_group_library">Library</string>
     <string name="settings_group_appearance">Appearance</string>
     <string name="settings_group_storage">Storage</string>
@@ -34,6 +35,17 @@
     <string name="settings_sleep_timer">Sleep timer</string>
     <string name="settings_sleep_timer_hint">Pauses the music after this many minutes</string>
     <string name="settings_sleep_timer_minutes">%1$d min</string>
+
+    <!-- Home -->
+    <string name="settings_home_sections">Home sections</string>
+    <!-- %1$d: sections shown, %2$d: all sections -->
+    <string name="settings_home_sections_value">%1$d of %2$d shown</string>
+    <string name="settings_home_sections_hint">Choose which sections Home shows, how many items each holds and their order</string>
+    <string name="settings_home_albums_shown">Albums shown</string>
+    <string name="settings_home_songs_shown">Songs shown</string>
+    <string name="settings_home_move_up">Move up</string>
+    <string name="settings_home_move_down">Move down</string>
+    <string name="settings_home_reset">Reset to default</string>
 
     <!-- Library -->
     <string name="settings_album_artists_only">Album artists only</string>
