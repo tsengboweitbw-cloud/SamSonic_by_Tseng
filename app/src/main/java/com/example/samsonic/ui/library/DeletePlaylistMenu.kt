@@ -29,6 +29,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -62,6 +63,7 @@ internal fun DeletePlaylistMenu(panel: PanelState, haze: HazeState, playlist: Pl
         val repository = LocalAppContainer.current.repository
         val scope = rememberCoroutineScope()
         val context = LocalContext.current
+        val resources = LocalResources.current
         var deleting by remember { mutableStateOf(false) }
         var confirming by remember { mutableStateOf(false) }
         var working by remember { mutableStateOf(false) }
@@ -83,7 +85,7 @@ internal fun DeletePlaylistMenu(panel: PanelState, haze: HazeState, playlist: Pl
                 selected = false,
                 onClick = {
                     player.queueLater(next = true) { fetchSongs() }
-                    Toast.makeText(context, context.getString(R.string.library_playing_next, target.name), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, resources.getString(R.string.library_playing_next, target.name), Toast.LENGTH_SHORT).show()
                     panel.close()
                 },
             )
@@ -93,7 +95,7 @@ internal fun DeletePlaylistMenu(panel: PanelState, haze: HazeState, playlist: Pl
                 selected = false,
                 onClick = {
                     player.queueLater(next = false) { fetchSongs() }
-                    Toast.makeText(context, context.getString(R.string.library_added_to_queue, target.name), Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, resources.getString(R.string.library_added_to_queue, target.name), Toast.LENGTH_SHORT).show()
                     panel.close()
                 },
             )
@@ -114,7 +116,7 @@ internal fun DeletePlaylistMenu(panel: PanelState, haze: HazeState, playlist: Pl
                                     if (keeping) offline.remove(all) else offline.keep(all)
                                 }.onSuccess {
                                     val message = if (keeping) R.string.offline_removed else R.string.offline_kept
-                                    Toast.makeText(context, context.getString(message, target.name), Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, resources.getString(message, target.name), Toast.LENGTH_SHORT).show()
                                     panel.close()
                                 }.onFailure { error = it.message ?: failure }
                                 working = false
