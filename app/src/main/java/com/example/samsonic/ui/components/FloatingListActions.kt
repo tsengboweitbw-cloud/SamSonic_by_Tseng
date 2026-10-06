@@ -64,6 +64,10 @@ import com.example.samsonic.data.ListActionsPin
 import com.example.samsonic.ui.common.LocalChromeGuard
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.BlendMode
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.Dp
@@ -252,7 +256,27 @@ private fun BoxScope.FloatingActions(
     val readMerge = remember(merge) { { merge.floatValue } }
     val gather = remember { RowGather() }
     // Clipped to the page, so a row scrolling away doesn't draw up over the status bar.
-    Box(Modifier.matchParentSize().clipToBounds()) {
+    val scrollsWithPage = pin.value == ListActionsPin.OFF
+    Box(
+        Modifier
+            .matchParentSize()
+            .clipToBounds()
+            .then(
+                // Scrolling with the page, the buttons fade through the page's top edge as the rows do.
+                if (scrollsWithPage) Modifier
+                    .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
+                    .drawWithContent {
+                        drawContent()
+                        val fade = FadeDistance.toPx()
+                        drawRect(
+                            brush = Brush.verticalGradient(0f to Color.Transparent, 1f to Color.Black, endY = fade),
+                            size = Size(size.width, fade),
+                            blendMode = BlendMode.DstIn,
+                        )
+                    }
+                else Modifier,
+            ),
+    ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -262,7 +286,7 @@ private fun BoxScope.FloatingActions(
                     val cornerCentre = if (pin.value == ListActionsPin.CORNER) {
                         Offset(row.width - (16.dp + cornerEndOffset + ChromeButtonSize / 2).toPx(), (8.dp + ChromeButtonSize / 2).toPx())
                     } else null
-                    layout(row.width, row.height) { placeRow(row, restTop(), scrolledPast(), pin.value == ListActionsPin.TOP, merge, cornerCentre, gather, pull ={ overscroll?.pull ?: 0f }) }
+                    layout(row.width, row.height) { placeRow(row, restTop(), scrolledPast(), pin.value == ListActionsPin.TOP, pin.value != ListActionsPin.OFF, merge, cornerCentre, gather, pull ={ overscroll?.pull ?: 0f }) }
                 },
         ) {
             CompositionLocalProvider(
@@ -446,6 +470,7 @@ private fun Placeable.PlacementScope.placeRow(
     rest: Int?,
     past: Boolean,
     pinned: Boolean,
+    fades: Boolean,
     merge: MutableFloatState,
     cornerCentre: Offset?,
     gather: RowGather,
@@ -459,7 +484,7 @@ private fun Placeable.PlacementScope.placeRow(
         // Scrolled away, or not laid out yet.
         else -> {
             // Scrolled away: the stack is whole, or not yet laid out.
-            gather.progress = if (past) 1f else 0f
+            gather.progress = if (past && cornerCentre != null) 1f else 0f
             return
         }
     }
@@ -468,11 +493,14 @@ private fun Placeable.PlacementScope.placeRow(
         val t = ((pinnedTop + MergeDistance.toPx() - rest) / MergeDistance.toPx()).coerceIn(0f, 1f)
         t * t * (3f - 2f * t)
     }
+    // Only the corner button's row gathers; any other choice leaves its buttons apart.
+    if (cornerCentre == null) gather.progress = 0f
     row.placeWithLayer(0, top) {
         // Riding with the list, it follows a pull past the list's end (a move, see PullOverscrollEffect).
         if (rest != null && rest >= pinnedTop) translationY = pull()
         // Gone by the time its top meets the page's clip, so the edge never slices through it.
-        if (!pinned) {
+        // Scrolling with the page (not fading), it moves with the list all the way off.
+        if (!pinned && fades) {
             // Not an offscreen layer, whose bounds would slice off the buttons' shadows along the row's bottom.
             compositingStrategy = CompositingStrategy.ModulateAlpha
             if (cornerCentre != null && rest != null) {
