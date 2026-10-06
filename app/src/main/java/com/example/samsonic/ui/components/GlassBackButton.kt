@@ -18,7 +18,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.R
 import com.example.samsonic.ui.theme.AccentSheen
-import com.example.samsonic.ui.common.rememberPageLowering
 import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.LocalChromeBlurScale
 import com.example.samsonic.ui.theme.glassSurface
@@ -88,10 +87,3 @@ val ChromeButtonIconSize = 34.dp
 
 /** Room a list leaves at its top so its first row starts below a floating [GlassBackButton]. */
 val BackButtonClearance = 8.dp + ChromeButtonSize
-
-/**
- * [BackButtonClearance] plus the page lowering, for a detail page's list: its first
- * row (or header) starts lower, within a thumb's reach, and scrolls away with the list.
- */
-@Composable
-fun lowerBackButtonClearance(): Dp = BackButtonClearance + rememberPageLowering()

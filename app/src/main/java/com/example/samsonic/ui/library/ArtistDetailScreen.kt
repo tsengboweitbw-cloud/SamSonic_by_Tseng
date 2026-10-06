@@ -38,7 +38,6 @@ import androidx.compose.ui.Alignment
 import com.example.samsonic.ui.common.rememberScreenLoad
 import com.example.samsonic.ui.components.BackButtonClearance
 import com.example.samsonic.ui.components.GlassBackButton
-import com.example.samsonic.ui.components.lowerBackButtonClearance
 import com.example.samsonic.ui.components.FloatingListActions
 import com.example.samsonic.ui.components.floatingActionsSlot
 import com.example.samsonic.ui.components.floatingActionsEnd
@@ -101,7 +100,7 @@ fun ArtistDetailScreen(
     Box(modifier = modifier.fillMaxSize().statusBarsPadding()) {
         if (state is UiState.Loading && preview != null) {
             // Just where the loaded list puts its header, so the two swap unseen.
-            Column(Modifier.fillMaxSize().padding(top = lowerBackButtonClearance())) {
+            Column(Modifier.fillMaxSize().padding(top = BackButtonClearance)) {
                 DetailHeader(
                     title = preview.name,
                     subtitle = pluralStringResource(R.plurals.library_album_count, preview.albumCount, preview.albumCount),
@@ -125,7 +124,7 @@ fun ArtistDetailScreen(
                     modifier = Modifier.fillMaxSize().scrollTopFade(listState).backButtonHazeSource(backHaze),
                     state = listState,
                     overscrollEffect = overscroll,
-                    contentPadding = PaddingValues(top = lowerBackButtonClearance(), bottom = contentPaddingBottom),
+                    contentPadding = PaddingValues(top = BackButtonClearance, bottom = contentPaddingBottom),
                 ) {
                     item(key = "header") {
                         DetailHeader(

@@ -40,7 +40,6 @@ import com.example.samsonic.ui.components.ArtistCard
 import com.example.samsonic.ui.components.ArtistRow
 import com.example.samsonic.ui.components.BackButtonClearance
 import com.example.samsonic.ui.components.GlassBackButton
-import com.example.samsonic.ui.components.lowerBackButtonClearance
 import com.example.samsonic.ui.components.ChromeButtonSize
 import com.example.samsonic.ui.components.FloatingListActions
 import com.example.samsonic.ui.components.floatingActionsSlot
@@ -94,7 +93,7 @@ internal fun AlbumsPage(
                     gridState = gridState,
                     overscrollEffect = overscroll,
                     layout = layouts.getValue(section),
-                    padding = LibraryPadding(top = lowerBackButtonClearance(), bottom = contentPaddingBottom),
+                    padding = LibraryPadding(top = BackButtonClearance, bottom = contentPaddingBottom),
                     key = { it.id },
                     card = { album, size -> AlbumCard(album, onClick = { onAlbumClick(album) }, artSize = size, showTitle = showAlbumNames, showArtist = showAlbumArtists) },
                     row = { album -> AlbumRow(album, onClick = { onAlbumClick(album) }, showTitle = showAlbumNames, showArtist = showAlbumArtists) },
@@ -130,7 +129,7 @@ internal fun ArtistsPage(
                 state = UiState.Success(artists),
                 gridState = gridState,
                 layout = layouts.getValue(LibrarySection.ARTISTS),
-                padding = LibraryPadding(top = lowerBackButtonClearance(), bottom = contentPaddingBottom),
+                padding = LibraryPadding(top = BackButtonClearance, bottom = contentPaddingBottom),
                 key = { it.id },
                 card = { artist, size -> ArtistCard(artist, onClick = { onArtistClick(artist) }, artSize = size) },
                 row = { artist -> ArtistRow(artist, onClick = { onArtistClick(artist) }) },
@@ -164,7 +163,7 @@ internal fun SongsPage(
                     modifier = Modifier.fillMaxSize().scrollTopFade(listState).backButtonHazeSource(backHaze),
                     state = listState,
                     overscrollEffect = overscroll,
-                    contentPadding = PaddingValues(top = lowerBackButtonClearance(), bottom = contentPaddingBottom),
+                    contentPadding = PaddingValues(top = BackButtonClearance, bottom = contentPaddingBottom),
                 ) {
                     item { PageHeader(owner = owner, title = title, modifier = Modifier.padding(horizontal = 20.dp), bottomSpacing = 0.dp) }
                     // Play and shuffle float over the list ([FloatingListActions]); this keeps their place.

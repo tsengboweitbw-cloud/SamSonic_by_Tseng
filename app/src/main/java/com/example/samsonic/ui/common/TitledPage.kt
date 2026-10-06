@@ -59,9 +59,8 @@ private const val LoweringFraction = 0.3f
 private val MaxLowering = 280.dp
 
 /**
- * How far a page's content is lowered from the top: empty space above the title of a tab
- * page that collapses as it scrolls, and above the list of a detail page that scrolls away
- * with it. Only for a phone held upright, where a thumb can't reach the top; none in
+ * How far a tab page's content is lowered from the top: empty space above its title
+ * that collapses as it scrolls. Only for a phone held upright, where a thumb can't reach the top; none in
  * landscape, on a tablet or in a desktop window.
  */
 @Composable

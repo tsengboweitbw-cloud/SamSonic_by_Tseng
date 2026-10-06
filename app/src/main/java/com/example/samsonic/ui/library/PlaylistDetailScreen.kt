@@ -113,7 +113,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.ui.components.BackButtonClearance
 import com.example.samsonic.ui.components.backButtonHazeSource
 import com.example.samsonic.ui.components.GlassBackButton
-import com.example.samsonic.ui.components.lowerBackButtonClearance
 import com.example.samsonic.ui.components.ChromeButtonSize
 import com.example.samsonic.ui.components.FloatingListActions
 import com.example.samsonic.ui.components.floatingActionsSlot
@@ -158,7 +157,7 @@ fun PlaylistDetailScreen(
     Box(modifier = modifier.fillMaxSize().statusBarsPadding()) {
         if (state is UiState.Loading && preview != null) {
             // Just where the loaded list puts its header, so the two swap unseen.
-            Column(Modifier.fillMaxSize().padding(top = lowerBackButtonClearance())) {
+            Column(Modifier.fillMaxSize().padding(top = BackButtonClearance)) {
                 PlaylistHeader(preview, preview.songCount, cornerRadius, actions = null)
                 Box(Modifier.fillMaxWidth().padding(top = 24.dp), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
@@ -385,7 +384,7 @@ fun PlaylistDetailScreen(
                         .scrollWithSecondFinger(drag),
                     state = listState,
                     overscrollEffect = overscroll,
-                    contentPadding = PaddingValues(top = lowerBackButtonClearance(), bottom = contentPaddingBottom),
+                    contentPadding = PaddingValues(top = BackButtonClearance, bottom = contentPaddingBottom),
                 ) {
                     item(key = "header") {
                         PlaylistHeader(
