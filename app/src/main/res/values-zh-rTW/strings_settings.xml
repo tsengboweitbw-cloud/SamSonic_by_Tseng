@@ -10,6 +10,7 @@
     <string name="settings_group_storage">儲存空間</string>
     <string name="settings_group_statistics">統計</string>
     <string name="settings_group_listening">聆聽</string>
+    <string name="settings_stats_library">資料庫</string>
     <string name="settings_group_about">關於</string>
     <string name="settings_listening_songs">最常播放的歌曲</string>
     <string name="settings_listening_artists">最常播放的歌手</string>

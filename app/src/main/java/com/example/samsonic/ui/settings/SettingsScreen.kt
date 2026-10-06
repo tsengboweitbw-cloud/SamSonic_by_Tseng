@@ -9,7 +9,6 @@ import androidx.compose.material.icons.automirrored.filled.LibraryBooks
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.filled.Dns
-import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.SdStorage
@@ -78,8 +77,7 @@ fun SettingsScreen(
             SettingsGroup(R.string.settings_group_library, Icons.AutoMirrored.Filled.LibraryBooks) { LibrarySettings(panels) },
             SettingsGroup(R.string.settings_group_appearance, Icons.Filled.Brush) { AppearanceSettings(panels) },
             SettingsGroup(R.string.settings_group_storage, Icons.Filled.SdStorage) { StorageSettings(panels) },
-            SettingsGroup(R.string.settings_group_statistics, Icons.Filled.BarChart) { StatisticsSettings() },
-            SettingsGroup(R.string.settings_group_listening, Icons.Filled.Headphones) { ListeningSettings() },
+            SettingsGroup(R.string.settings_group_statistics, Icons.Filled.BarChart) { StatisticsSettings(panels) },
             SettingsGroup(R.string.settings_group_about, Icons.Filled.Info) {
                 SettingsCard {
                     AboutRow()

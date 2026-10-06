@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Album
+import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.Headphones
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.MusicNote
@@ -27,7 +29,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.R
+import com.example.samsonic.ui.player.PanelState
 import com.example.samsonic.ui.theme.OneUiRow
+import dev.chrisbanes.haze.HazeState
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import java.text.NumberFormat
@@ -42,9 +46,37 @@ private data class LibraryStats(
     val favourites: Int?,
 )
 
-/** The Statistics group: what the library in use holds, counted again when the source changes. */
+/** The Statistics group: a row for each of two menus, what the library holds and what is played most. */
 @Composable
-internal fun StatisticsSettings() {
+internal fun StatisticsSettings(panels: SettingsPanels) {
+    SettingsCard {
+        NavRow(
+            icon = Icons.Filled.BarChart,
+            title = stringResource(R.string.settings_stats_library),
+            value = "",
+            onClick = { panels.statisticsMenu.open() },
+            modifier = Modifier.menuOrigin(panels.statisticsMenu),
+        )
+        NavRow(
+            icon = Icons.Filled.Headphones,
+            title = stringResource(R.string.settings_group_listening),
+            value = "",
+            onClick = { panels.listeningMenu.open() },
+            modifier = Modifier.menuOrigin(panels.listeningMenu),
+        )
+    }
+}
+
+/** The library menu ([SettingsMenu]): what the library in use holds, counted again when the source changes. */
+@Composable
+internal fun StatisticsMenu(panel: PanelState, haze: HazeState) {
+    SettingsMenu(panel, haze, title = stringResource(R.string.settings_stats_library)) {
+        StatisticsCounts()
+    }
+}
+
+@Composable
+private fun StatisticsCounts() {
     val container = LocalAppContainer.current
     val source by container.sources.active.collectAsStateWithLifecycle()
     val stats by produceState<LibraryStats?>(initialValue = null, source) {
@@ -69,14 +101,12 @@ internal fun StatisticsSettings() {
             )
         }
     }
-    SettingsCard {
-        StatRow(Icons.Filled.MusicNote, R.string.settings_stat_songs, stats?.songs, loading = stats == null)
-        StatRow(Icons.Filled.Album, R.string.settings_stat_albums, stats?.albums, loading = stats == null)
-        StatRow(Icons.Filled.Person, R.string.settings_stat_artists, stats?.artists, loading = stats == null)
-        StatRow(Icons.Filled.Category, R.string.settings_stat_genres, stats?.genres, loading = stats == null)
-        StatRow(Icons.Filled.QueueMusic, R.string.settings_stat_playlists, stats?.playlists, loading = stats == null)
-        StatRow(Icons.Filled.Favorite, R.string.settings_stat_favourites, stats?.favourites, loading = stats == null)
-    }
+    StatRow(Icons.Filled.MusicNote, R.string.settings_stat_songs, stats?.songs, loading = stats == null)
+    StatRow(Icons.Filled.Album, R.string.settings_stat_albums, stats?.albums, loading = stats == null)
+    StatRow(Icons.Filled.Person, R.string.settings_stat_artists, stats?.artists, loading = stats == null)
+    StatRow(Icons.Filled.Category, R.string.settings_stat_genres, stats?.genres, loading = stats == null)
+    StatRow(Icons.Filled.QueueMusic, R.string.settings_stat_playlists, stats?.playlists, loading = stats == null)
+    StatRow(Icons.Filled.Favorite, R.string.settings_stat_favourites, stats?.favourites, loading = stats == null)
 }
 
 /** One count: its icon and name, and the number at the end (a dash while counting or if it couldn't be). */
@@ -85,9 +115,9 @@ private fun StatRow(icon: ImageVector, label: Int, value: Int?, loading: Boolean
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            // The inset the other rows get from oneUiRowClickable, so its icon lines up with theirs.
+            // The same padding as the other menus' options (MenuOption).
             .padding(OneUiRow.Inset)
-            .padding(horizontal = 8.dp, vertical = 12.dp),
+            .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(icon, contentDescription = null, tint = rowIconTint(), modifier = Modifier.size(22.dp))

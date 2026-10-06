@@ -32,6 +32,8 @@ internal class SettingsPanels(
     val homeLayoutMenu: PanelState,
     val clearMusicCacheMenu: PanelState,
     val removeOfflineMenu: PanelState,
+    val statisticsMenu: PanelState,
+    val listeningMenu: PanelState,
     val cacheUsage: CacheUsage,
     val musicCacheUsage: MusicCacheUsage,
     val offlineUsage: OfflineUsage,
@@ -59,6 +61,8 @@ internal fun rememberSettingsPanels(): SettingsPanels {
             homeLayoutMenu = PanelState(scope),
             clearMusicCacheMenu = PanelState(scope),
             removeOfflineMenu = PanelState(scope),
+            statisticsMenu = PanelState(scope),
+            listeningMenu = PanelState(scope),
             cacheUsage = cacheUsage,
             musicCacheUsage = musicCacheUsage,
             offlineUsage = offlineUsage,
@@ -97,4 +101,6 @@ internal fun SettingsMenus(panels: SettingsPanels, haze: HazeState) {
     GlassMenu(panels.glassMenu, haze, container.themeManager)
     AutoDjMenu(panels.autoDjMenu, haze)
     HomeLayoutMenu(panels.homeLayoutMenu, haze)
+    StatisticsMenu(panels.statisticsMenu, haze)
+    ListeningMenu(panels.listeningMenu, haze)
 }

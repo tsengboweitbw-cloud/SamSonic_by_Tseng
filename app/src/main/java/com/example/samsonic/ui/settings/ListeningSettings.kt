@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -20,7 +22,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.R
+import com.example.samsonic.ui.player.PanelState
 import com.example.samsonic.ui.theme.OneUiRow
+import com.example.samsonic.ui.theme.scrollEdgeFades
+import dev.chrisbanes.haze.HazeState
 
 /** How many of each ranking are listed. */
 private const val TOP_COUNT = 5
@@ -33,11 +38,18 @@ private data class Ranked(val title: String, val subtitle: String?, val plays: L
 private data class ListeningStats(val songs: List<Ranked>, val artists: List<Ranked>, val albums: List<Ranked>)
 
 /**
- * The Listening group: the most played songs, artists and albums. They're ranked from the
- * most played songs the source reports, so a song played only a little may be missed.
+ * The Listening menu ([SettingsMenu]): the most played songs, artists and albums. They're ranked
+ * from the most played songs the source reports, so a song played only a little may be missed.
  */
 @Composable
-internal fun ListeningSettings() {
+internal fun ListeningMenu(panel: PanelState, haze: HazeState) {
+    SettingsMenu(panel, haze, title = stringResource(R.string.settings_group_listening)) {
+        ListeningRankings()
+    }
+}
+
+@Composable
+private fun ListeningRankings() {
     val container = LocalAppContainer.current
     val source by container.sources.active.collectAsStateWithLifecycle()
     // Null while loading; empty lists where nothing has been played (or the source keeps no counts).
@@ -58,13 +70,15 @@ internal fun ListeningSettings() {
         )
     }
     val loaded = stats
-    SettingsCard {
+    // Scrolls within the menu, as there are fifteen rows.
+    val scrollState = rememberScrollState()
+    Column(Modifier.scrollEdgeFades(scrollState).verticalScroll(scrollState)) {
         if (loaded == null || loaded.songs.isEmpty()) {
             Text(
                 text = stringResource(if (loaded == null) R.string.settings_listening_loading else R.string.settings_listening_empty),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.fillMaxWidth().padding(OneUiRow.Inset).padding(horizontal = 8.dp, vertical = 14.dp),
+                modifier = Modifier.fillMaxWidth().padding(OneUiRow.Inset).padding(horizontal = 16.dp, vertical = 14.dp),
             )
         } else {
             RankingRows(R.string.settings_listening_songs, loaded.songs)
@@ -80,11 +94,11 @@ private fun RankingRows(title: Int, items: List<Ranked>) {
         text = stringResource(title),
         style = MaterialTheme.typography.titleSmall,
         color = rowIconTint(),
-        modifier = Modifier.fillMaxWidth().padding(OneUiRow.Inset).padding(start = 8.dp, end = 8.dp, top = 14.dp, bottom = 2.dp),
+        modifier = Modifier.fillMaxWidth().padding(OneUiRow.Inset).padding(start = 16.dp, end = 16.dp, top = 14.dp, bottom = 2.dp),
     )
     items.forEachIndexed { index, item ->
         Row(
-            modifier = Modifier.fillMaxWidth().padding(OneUiRow.Inset).padding(horizontal = 8.dp, vertical = 8.dp),
+            modifier = Modifier.fillMaxWidth().padding(OneUiRow.Inset).padding(horizontal = 16.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(text = "${index + 1}", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.width(24.dp))
