@@ -63,6 +63,7 @@ internal fun MergingRow(merge: () -> Float, modifier: Modifier, content: @Compos
         DockShape.NONE -> {}
     }
     val haze = LocalListActionsHaze.current
+    val gather = LocalListActionsGather.current
     // How many buttons and where the glass sits in the row, handed from layout to draw.
     val count = remember { IntArray(1) }
     val glassLeft = remember { FloatArray(1) }
@@ -169,12 +170,25 @@ internal fun MergingRow(merge: () -> Float, modifier: Modifier, content: @Compos
             val (left, _) = rowSpan(buttons.size, rowWidth, m)
             val width = size * scale
             val gap = lerp(ListActionButtonGap.toPx(), MergedGap.toPx(), m)
+            // Heading for the corner button: each button slides to its spot and shrinks to its size,
+            // stacking up with Play on top.
+            val g = gather?.progress ?: 0f
+            val cornerScale = lerp(1f, ChromeButtonSize / ListActionButtonSize, g)
+            // Arrives sooner than the shrinking ends, so the stack is whole before the corner button takes over.
+            val reach = 1f - (1f - g) * (1f - g)
             buttons.forEachIndexed { i, button ->
                 // Scaled about its centre, so it's placed where its centre goes.
                 val centre = left + i * (width + gap) + width / 2
-                button.placeWithLayer((centre - size / 2f).roundToInt(), 0) {
-                    scaleX = scale
-                    scaleY = scale
+                var x = centre - size / 2f
+                var y = 0f
+                if (gather != null && g > 0f) {
+                    val targetX = gather.x - (gather.rowWidth - constraints.maxWidth) / 2f
+                    x = lerp(x, targetX - size / 2f, reach)
+                    y = lerp(0f, gather.y - size / 2f, reach)
+                }
+                button.placeWithLayer(x.roundToInt(), y.roundToInt(), zIndex = (buttons.size - i).toFloat()) {
+                    scaleX = scale * cornerScale
+                    scaleY = scale * cornerScale
                 }
             }
         }

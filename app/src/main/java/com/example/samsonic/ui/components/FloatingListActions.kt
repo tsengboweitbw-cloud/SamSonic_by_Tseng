@@ -36,8 +36,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.res.stringResource
@@ -140,8 +143,9 @@ fun BoxScope.FloatingListActions(gridState: LazyGridState, overscroll: PullOvers
 }
 
 /**
- * Room at the end of a list for its docked play buttons ([ListActionsPin.BOTTOM],
- * [ListActionsPin.SIDE]), so
+ * Room at the end of a list for its docked play buttons ([ListActionsPin.BOTTOM_LEFT],
+ * [ListActionsPin.BOTTOM_RIGHT], [ListActionsPin.SIDE_LEFT],
+ * [ListActionsPin.SIDE_RIGHT]), so
  * they never cover its last row; nothing otherwise.
  */
 fun LazyListScope.floatingActionsEnd() {
@@ -157,9 +161,9 @@ fun LazyGridScope.floatingActionsEnd() {
 private fun FloatingActionsEndSpace() {
     val pin by LocalAppContainer.current.libraryLayoutManager.listActionsPin.collectAsStateWithLifecycle()
     when (pin) {
-        ListActionsPin.BOTTOM -> Spacer(Modifier.fillMaxWidth().height(ListActionButtonSize + DockGap))
+        ListActionsPin.BOTTOM_LEFT, ListActionsPin.BOTTOM_RIGHT -> Spacer(Modifier.fillMaxWidth().height(ListActionButtonSize + DockGap))
         // The last row can rise clear of the standing capsule, which covers its end.
-        ListActionsPin.SIDE -> Spacer(Modifier.fillMaxWidth().height(mergedCapsuleLength(4) + DockGap))
+        ListActionsPin.SIDE_LEFT, ListActionsPin.SIDE_RIGHT -> Spacer(Modifier.fillMaxWidth().height(mergedCapsuleLength(4) + DockGap))
         else -> {}
     }
 }
@@ -170,6 +174,21 @@ private fun FloatingActionsEndSpace() {
  * apart. Read it only in layout or draw.
  */
 internal val LocalListActionsMerge = staticCompositionLocalOf<() -> Float> { { 0f } }
+
+/**
+ * A row heading for the corner button: how far its buttons have gathered into one stack
+ * ([progress], 0 apart, 1 stacked), and where the stack is, in the floating row's own
+ * coordinates ([x], [y], the stack's centre; [rowWidth], the row's width).
+ */
+internal class RowGather {
+    var progress by mutableFloatStateOf(0f)
+    var x by mutableFloatStateOf(0f)
+    var y by mutableFloatStateOf(0f)
+    var rowWidth by mutableFloatStateOf(0f)
+}
+
+/** Set by a floating row heading for the corner button, so its buttons gather together. */
+internal val LocalListActionsGather = staticCompositionLocalOf<RowGather?> { null }
 
 /** A page's play buttons merged on their own, sized to fit: in a dock or the corner capsule. */
 internal enum class DockShape { NONE, ROW, COLUMN }
@@ -187,7 +206,7 @@ internal val LocalListActionsAfterAction = staticCompositionLocalOf<() -> Unit> 
 internal val LocalListActionsHaze = staticCompositionLocalOf<HazeState?> { null }
 
 // Over this last stretch before it pins, the row merges into its capsule.
-private val MergeDistance = 48.dp
+private val MergeDistance = 64.dp
 
 // Docked, the capsule sits this far above the floating chrome (the mini player).
 private val DockGap = 8.dp
@@ -200,6 +219,11 @@ private val DockRise = 24.dp
 
 // The corner capsule opening out of its button and folding back into it.
 private val CornerSpring = spring<Float>(dampingRatio = 0.75f, stiffness = 420f)
+
+
+// Over this last stretch of scrolling, the row's buttons slowly shrink and stack up in the corner button's spot.
+private val CornerMergeStart = 220.dp
+
 
 // After a tap on one of its buttons, the corner capsule stays open this long, so the
 // button's bounce (and Queue's tick) shows before it folds up.
@@ -226,6 +250,7 @@ private fun BoxScope.FloatingActions(
     // Set as the row is placed, and read as its buttons are, in the same pass.
     val merge = remember { mutableFloatStateOf(0f) }
     val readMerge = remember(merge) { { merge.floatValue } }
+    val gather = remember { RowGather() }
     // Clipped to the page, so a row scrolling away doesn't draw up over the status bar.
     Box(Modifier.matchParentSize().clipToBounds()) {
         Box(
@@ -233,20 +258,25 @@ private fun BoxScope.FloatingActions(
                 .fillMaxWidth()
                 .layout { measurable, constraints ->
                     val row = measurable.measure(constraints.copy(minHeight = 0))
-                    layout(row.width, row.height) { placeRow(row, restTop(), scrolledPast(), pin.value == ListActionsPin.TOP, merge, pull = { overscroll?.pull ?: 0f }) }
+                    // Where the corner button's centre is, in this row's own coordinates.
+                    val cornerCentre = if (pin.value == ListActionsPin.CORNER) {
+                        Offset(row.width - (16.dp + cornerEndOffset + ChromeButtonSize / 2).toPx(), (8.dp + ChromeButtonSize / 2).toPx())
+                    } else null
+                    layout(row.width, row.height) { placeRow(row, restTop(), scrolledPast(), pin.value == ListActionsPin.TOP, merge, cornerCentre, gather, pull ={ overscroll?.pull ?: 0f }) }
                 },
         ) {
             CompositionLocalProvider(
                 LocalListActionsMerge provides readMerge,
+                LocalListActionsGather provides gather,
                 // For its capsule, merged pinned at the top: the chrome's glass, blurring the list.
                 LocalListActionsHaze provides haze,
                 content = content,
             )
     }
         when (pin.value) {
-            ListActionsPin.BOTTOM, ListActionsPin.SIDE ->
-                Dock(rememberRowGone(restTop, scrolledPast), side = pin.value == ListActionsPin.SIDE, haze, content)
-            ListActionsPin.CORNER -> Corner(rememberRowGone(restTop, scrolledPast), cornerEndOffset, haze, content)
+            ListActionsPin.BOTTOM_LEFT, ListActionsPin.BOTTOM_RIGHT, ListActionsPin.SIDE_LEFT, ListActionsPin.SIDE_RIGHT ->
+                Dock(rememberRowGone(restTop, scrolledPast), pin.value, haze, content)
+            ListActionsPin.CORNER -> Corner(gather, cornerEndOffset, haze, content)
             else -> {}
         }
     }
@@ -258,12 +288,12 @@ private fun BoxScope.FloatingActions(
  * recomposes nothing.
  */
 @Composable
-private fun rememberRowGone(restTop: () -> Int?, scrolledPast: () -> Boolean): State<Boolean> {
+private fun rememberRowGone(restTop: () -> Int?, scrolledPast: () -> Boolean, lead: Dp = 0.dp): State<Boolean> {
     val density = LocalDensity.current
     return remember {
         derivedStateOf {
             val rest = restTop()
-            if (rest == null) scrolledPast() else rest + with(density) { (ListActionButtonSize / 2).toPx() } < with(density) { FadeDistance.toPx() }
+            if (rest == null) scrolledPast() else rest + with(density) { (ListActionButtonSize / 2).toPx() } < with(density) { (FadeDistance + lead).toPx() }
         }
     }
 }
@@ -271,19 +301,22 @@ private fun rememberRowGone(restTop: () -> Int?, scrolledPast: () -> Boolean): S
 /**
  * The docked capsule: the page's buttons again, merged, sliding up into place just above
  * the floating chrome once the row in the list is [gone], and back down out of the way
- * when it comes back; or with [side], standing at the right edge, sliding in from it.
+ * when it comes back, in the bottom left or right corner as [pin] has it; or, for
+ * [ListActionsPin.SIDE_LEFT] or [ListActionsPin.SIDE_RIGHT], standing at that edge, sliding in from it.
  */
 @Composable
-private fun BoxScope.Dock(gone: State<Boolean>, side: Boolean, haze: HazeState?, content: @Composable () -> Unit) {
+private fun BoxScope.Dock(gone: State<Boolean>, pin: ListActionsPin, haze: HazeState?, content: @Composable () -> Unit) {
+    val side = pin == ListActionsPin.SIDE_LEFT || pin == ListActionsPin.SIDE_RIGHT
+    val left = pin == ListActionsPin.BOTTOM_LEFT || pin == ListActionsPin.SIDE_LEFT
     val progress = animateFloatAsState(if (gone.value) 1f else 0f, DockSpring, label = "dock")
     val showing by remember { derivedStateOf { progress.value > 0.01f } }
     if (!showing) return
     val chromeTop = LocalChromeGuard.current?.top ?: { 0f }
     Box(
         modifier = Modifier
-            .align(if (side) Alignment.BottomEnd else Alignment.BottomCenter)
-            // At the side, in from the edge as far as the chrome is.
-            .padding(end = if (side) 16.dp else 0.dp)
+            .align(if (left) Alignment.BottomStart else Alignment.BottomEnd)
+            // In from the edge as far as the chrome is.
+            .padding(horizontal = 16.dp)
             // Just above the highest bar, wherever it is right now: the nav bar alone, or the
             // mini player over it, moving with it as it comes and goes.
             .offset { IntOffset(0, -(chromeTop() + DockGap.toPx()).roundToInt()) }
@@ -291,7 +324,7 @@ private fun BoxScope.Dock(gone: State<Boolean>, side: Boolean, haze: HazeState?,
                 val p = progress.value
                 alpha = p.coerceIn(0f, 1f)
                 // In from the edge beside it, or up from below.
-                if (side) translationX = (1f - p) * DockRise.toPx() else translationY = (1f - p) * DockRise.toPx()
+                if (side) translationX = (if (left) -1 else 1) * (1f - p) * DockRise.toPx() else translationY = (1f - p) * DockRise.toPx()
             },
     ) {
         CompositionLocalProvider(
@@ -310,13 +343,14 @@ private fun BoxScope.Dock(gone: State<Boolean>, side: Boolean, haze: HazeState?,
  * the page's buttons, merged; a tap on one of them, outside it, or back folds it up.
  */
 @Composable
-private fun BoxScope.Corner(gone: State<Boolean>, endOffset: Dp, haze: HazeState?, content: @Composable () -> Unit) {
+private fun BoxScope.Corner(gather: RowGather, endOffset: Dp, haze: HazeState?, content: @Composable () -> Unit) {
     var open by remember { mutableStateOf(false) }
     // The row coming back takes its place, so the capsule folds up with the button going.
-    LaunchedEffect(gone.value) { if (!gone.value) open = false }
-    val shown = animateFloatAsState(if (gone.value) 1f else 0f, DockSpring, label = "cornerShown")
+    // Arrives as the stacked buttons reach its spot, and leaves as they part, scroll-driven.
+    val arrival = remember { derivedStateOf { ramp(gather.progress, 0.8f, 0.97f) } }
+    LaunchedEffect(arrival.value > 0.01f) { if (arrival.value <= 0.01f) open = false }
     val opened = animateFloatAsState(if (open) 1f else 0f, CornerSpring, label = "cornerOpen")
-    val showing by remember { derivedStateOf { shown.value > 0.01f } }
+    val showing by remember { derivedStateOf { arrival.value > 0.01f } }
     val capsuleShowing by remember { derivedStateOf { opened.value > 0.01f } }
     // Gone once the capsule is well out, so it can't catch a tap meant for the capsule's end.
     val buttonShowing by remember { derivedStateOf { opened.value < 0.4f } }
@@ -339,10 +373,11 @@ private fun BoxScope.Corner(gone: State<Boolean>, endOffset: Dp, haze: HazeState
             .padding(end = 16.dp + endOffset - (MergedCapsuleThickness - ChromeButtonSize) / 2, top = 8.dp + ChromeButtonSize / 2 - MergedCapsuleThickness / 2)
             .height(MergedCapsuleThickness)
             .graphicsLayer {
-                val p = shown.value
-                alpha = p.coerceIn(0f, 1f)
-                scaleX = lerp(0.8f, 1f, p)
-                scaleY = lerp(0.8f, 1f, p)
+                val p = arrival.value
+                // Swells up in place, where the row's buttons are drawing together.
+                alpha = p
+                scaleX = 1f
+                scaleY = 1f
             },
         contentAlignment = Alignment.CenterEnd,
     ) {
@@ -412,6 +447,8 @@ private fun Placeable.PlacementScope.placeRow(
     past: Boolean,
     pinned: Boolean,
     merge: MutableFloatState,
+    cornerCentre: Offset?,
+    gather: RowGather,
     pull: () -> Float,
 ) {
     val pinnedTop = PinnedTop.roundToPx()
@@ -420,13 +457,39 @@ private fun Placeable.PlacementScope.placeRow(
         pinned && rest != null -> maxOf(rest, pinnedTop)
         rest != null -> rest
         // Scrolled away, or not laid out yet.
-        else -> return
+        else -> {
+            // Scrolled away: the stack is whole, or not yet laid out.
+            gather.progress = if (past) 1f else 0f
+            return
+        }
     }
-    merge.floatValue = if (!pinned) 0f else if (rest == null) 1f else
-        ((pinnedTop + MergeDistance.toPx() - rest) / MergeDistance.toPx()).coerceIn(0f, 1f)
+    // Eased at both ends, so the buttons ease into their slide and settle into the capsule.
+    merge.floatValue = if (!pinned) 0f else if (rest == null) 1f else {
+        val t = ((pinnedTop + MergeDistance.toPx() - rest) / MergeDistance.toPx()).coerceIn(0f, 1f)
+        t * t * (3f - 2f * t)
+    }
     row.placeWithLayer(0, top) {
         // Riding with the list, it follows a pull past the list's end (a move, see PullOverscrollEffect).
         if (rest != null && rest >= pinnedTop) translationY = pull()
-        if (!pinned) alpha = ((top + row.height / 2f) / FadeDistance.toPx()).coerceIn(0f, 1f)
+        // Gone by the time its top meets the page's clip, so the edge never slices through it.
+        if (!pinned) {
+            // Not an offscreen layer, whose bounds would slice off the buttons' shadows along the row's bottom.
+            compositingStrategy = CompositingStrategy.ModulateAlpha
+            if (cornerCentre != null && rest != null) {
+                // Heading for the corner button: the buttons slowly shrink and stack up in its
+                // spot (see MergingRow), melting into it at the very end.
+                val start = CornerMergeStart.toPx()
+                val t = ((start - rest) / start).coerceIn(0f, 1f)
+                val p = t * t * (3f - 2f * t)
+                gather.progress = p
+                gather.x = cornerCentre.x
+                gather.y = cornerCentre.y - top
+                gather.rowWidth = row.width.toFloat()
+                alpha = 1f - ramp(p, 0.9f, 1f)
+            } else {
+                gather.progress = 0f
+                alpha = (top / FadeDistance.toPx()).coerceIn(0f, 1f)
+            }
+        }
     }
 }

@@ -2,10 +2,12 @@ package com.example.samsonic.ui.settings
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
+import androidx.compose.material.icons.filled.AlignHorizontalLeft
 import androidx.compose.material.icons.filled.AlignHorizontalRight
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.SwipeVertical
-import androidx.compose.material.icons.filled.VerticalAlignBottom
+import androidx.compose.material.icons.filled.SouthEast
+import androidx.compose.material.icons.filled.SouthWest
 import androidx.compose.material.icons.filled.VerticalAlignTop
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -23,8 +25,10 @@ private val ListActionsPin.label: Int
     get() = when (this) {
         ListActionsPin.OFF -> R.string.settings_list_actions_scroll
         ListActionsPin.TOP -> R.string.settings_list_actions_top
-        ListActionsPin.BOTTOM -> R.string.settings_list_actions_bottom
-        ListActionsPin.SIDE -> R.string.settings_list_actions_side
+        ListActionsPin.BOTTOM_LEFT -> R.string.settings_list_actions_bottom_left
+        ListActionsPin.BOTTOM_RIGHT -> R.string.settings_list_actions_bottom_right
+        ListActionsPin.SIDE_LEFT -> R.string.settings_list_actions_side_left
+        ListActionsPin.SIDE_RIGHT -> R.string.settings_list_actions_side_right
         ListActionsPin.CORNER -> R.string.settings_list_actions_corner
     }
 
@@ -32,8 +36,10 @@ private val ListActionsPin.icon: ImageVector
     get() = when (this) {
         ListActionsPin.OFF -> Icons.Filled.SwipeVertical
         ListActionsPin.TOP -> Icons.Filled.VerticalAlignTop
-        ListActionsPin.BOTTOM -> Icons.Filled.VerticalAlignBottom
-        ListActionsPin.SIDE -> Icons.Filled.AlignHorizontalRight
+        ListActionsPin.BOTTOM_LEFT -> Icons.Filled.SouthWest
+        ListActionsPin.BOTTOM_RIGHT -> Icons.Filled.SouthEast
+        ListActionsPin.SIDE_LEFT -> Icons.Filled.AlignHorizontalLeft
+        ListActionsPin.SIDE_RIGHT -> Icons.Filled.AlignHorizontalRight
         ListActionsPin.CORNER -> Icons.AutoMirrored.Filled.PlaylistPlay
     }
 

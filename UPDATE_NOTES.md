@@ -2,6 +2,16 @@
 
 ## 2.2.4
 
+- The Play buttons' "Dock at the bottom" is now two choices, Dock at the bottom left and Dock at the bottom right, each standing in its corner above the highest bar (the nav bar, or the mini player over it) and moving with it as before. A saved "Dock at the bottom" becomes the bottom right (`ListActionsPin.BOTTOM_LEFT` / `BOTTOM_RIGHT`, `Dock`).
+
+- Likewise "Dock at the side" is now Dock at the left side and Dock at the right side, the capsule standing upright at that edge and sliding in from it. A saved "Dock at the side" becomes the right side (`ListActionsPin.SIDE_LEFT` / `SIDE_RIGHT`).
+
+- The corner button now eases in more gently as the Play buttons scroll away: it grows from half size, drifting up from below and to the left (where the row was heading), on a softer spring, instead of a quick pop (`Corner`, `CornerArrivalSpring`).
+- The Play buttons no longer get sliced flat by the status bar as they scroll off the top: they now fade out by their top edge, so they're gone before they reach it (`placeRow`). Fading, they also no longer have their shadows cut off along the bottom: the fade is applied per button rather than to the whole row as one layer.
+- Pinned at the top, the Play buttons merge into their capsule more gracefully: the buttons no longer have square cut-offs around their shadows while their glass melts away (`RoundButton`), and the slide together is longer and eased at both ends instead of linear (`MergeDistance`, `placeRow`).
+- With the corner button set, scrolling the Play buttons up now makes the four slowly shrink and slide together into one stack at the corner button's spot (Play on top), then become the button, which fades in over the stack at the same spot and size as they melt away (driven by the scroll, not a timer), instead of the row just fading out and the button arriving from below (`MergingRow`, `RowGather`, `placeRow`, `Corner`).
+
+
 - Statistics and Listening are now one Settings group, Statistics, with a row for each that opens its figures in a pop-up card like the other settings menus, instead of two groups of always-showing rows (`StatisticsSettings`, `StatisticsMenu`, `ListeningMenu`).
 
 - Settings has a new Listening group ranking the five most played songs, artists and albums, each with its play count. They are drawn from the 100 most played songs the source reports (on a server, those of its 50 most played albums), so a song played only a little may be missed; an artist's or album's plays are those songs' added up (`ListeningSettings`).

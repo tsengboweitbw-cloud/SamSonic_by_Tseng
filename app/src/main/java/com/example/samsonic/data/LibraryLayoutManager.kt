@@ -94,11 +94,12 @@ enum class LibrarySort(val section: LibrarySection) {
 /**
  * Where a page's Play / Shuffle / Queue buttons go once its header scrolls away:
  * with it ([OFF]), merged into a capsule pinned under the back button ([TOP]), or as
- * that capsule docked just above the mini player ([BOTTOM]), or standing at the
- * right edge above it ([SIDE]), or tucked into a button in the top right corner
+ * that capsule docked just above the mini player, at the bottom left ([BOTTOM_LEFT]) or
+ * right ([BOTTOM_RIGHT]), or standing at the
+ * left or right edge above it ([SIDE_LEFT], [SIDE_RIGHT]), or tucked into a button in the top right corner
  * that opens into it ([CORNER]).
  */
-enum class ListActionsPin { OFF, TOP, BOTTOM, SIDE, CORNER }
+enum class ListActionsPin { OFF, TOP, BOTTOM_LEFT, BOTTOM_RIGHT, SIDE_LEFT, SIDE_RIGHT, CORNER }
 
 /** What an opened list can be sorted by; [DEFAULT] is the order it comes in (track, playlist order, ...). */
 enum class SortKey { DEFAULT, TITLE, ARTIST, ALBUM, YEAR, DURATION }
@@ -276,7 +277,14 @@ class LibraryLayoutManager(
     }
 
     // Where a page's Play / Shuffle / Queue buttons go once its header scrolls away.
-    private val _listActionsPin = MutableStateFlow(prefs.getEnum(KEY_LIST_ACTIONS_PIN, ListActionsPin.TOP))
+    private val _listActionsPin = MutableStateFlow(
+        // The single bottom and side docks were each split in two; the right ones are closest.
+        when (prefs.getString(KEY_LIST_ACTIONS_PIN, null)) {
+            "BOTTOM" -> ListActionsPin.BOTTOM_RIGHT
+            "SIDE" -> ListActionsPin.SIDE_RIGHT
+            else -> prefs.getEnum(KEY_LIST_ACTIONS_PIN, ListActionsPin.TOP)
+        },
+    )
     val listActionsPin: StateFlow<ListActionsPin> = _listActionsPin.asStateFlow()
 
     fun setListActionsPin(pin: ListActionsPin) {

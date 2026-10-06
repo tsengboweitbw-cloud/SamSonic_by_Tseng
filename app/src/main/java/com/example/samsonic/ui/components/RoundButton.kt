@@ -22,6 +22,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -120,7 +121,13 @@ internal fun RoundButton(
         contentAlignment = Alignment.Center,
     ) {
         if (surfaceAlpha != null) {
-            Box(Modifier.matchParentSize().graphicsLayer { alpha = surfaceAlpha() }.then(surface))
+            Box(
+                Modifier.matchParentSize().graphicsLayer {
+                    alpha = surfaceAlpha()
+                    // Not an offscreen layer, whose bounds would slice off the shadow around the button.
+                    compositingStrategy = CompositingStrategy.ModulateAlpha
+                }.then(surface),
+            )
         }
         content(contentColor) { iconBounce.value }
     }
