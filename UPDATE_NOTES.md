@@ -2,6 +2,7 @@
 
 ## 2.2.4
 
+- Search remembers the words searched for (up to ten, newest first, kept across launches) and lists them under "Recent searches" while the field is empty. Tap one to search it again, or tap its cross to remove just that one. A word is saved once it finds something (`SearchHistory`, `SearchScreen`).
 - Pages sit lower, like One UI's, to be reached with one hand. On a phone held upright, Home, Library, Search and Settings open with empty space above their title (30% of the window's height, at most 280 dp), which scrolls away as the page is scrolled up (the content moves only once it has gone) and comes back at the top, settling to whichever end is nearer when let go. Pages opened from them (albums, artists, playlists, genres, shelves, collections) keep the normal layout. Landscape, tablets and desktop windows are unchanged (`rememberPageLowering`, `TitledPage`).
 - The lowered header now follows One UI more closely: the title sits in the middle of the empty space and slides to the left as the page scrolls up, and a fling that runs into the top stops with the title in its corner, so only a second drag opens the space again (`TitledPage`, `PageTitle`).
 - Pull to refresh on Home and Library now works only with the lowered header fully open: a pull from the collapsed page opens the header first, and a further pull refreshes (`LocalPageHeaderOpen`, `OneUiPullToRefresh`).
