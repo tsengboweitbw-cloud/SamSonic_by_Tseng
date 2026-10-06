@@ -44,6 +44,7 @@ import com.example.samsonic.ui.common.sharedArt
 import com.example.samsonic.ui.components.BackButtonClearance
 import com.example.samsonic.ui.components.backButtonHazeSource
 import com.example.samsonic.ui.components.GlassBackButton
+import com.example.samsonic.ui.components.lowerBackButtonClearance
 import com.example.samsonic.ui.components.ChromeButtonSize
 import com.example.samsonic.ui.components.FloatingListActions
 import com.example.samsonic.ui.components.floatingActionsSlot
@@ -78,7 +79,7 @@ fun AlbumDetailScreen(
     Box(modifier = modifier.fillMaxSize().statusBarsPadding()) {
         if (state is UiState.Loading && preview != null) {
             // Just where the loaded list puts its header, so the two swap unseen.
-            Column(Modifier.fillMaxSize().padding(top = BackButtonClearance)) {
+            Column(Modifier.fillMaxSize().padding(top = lowerBackButtonClearance())) {
                 AlbumHeader(preview, cornerRadius, actions = null)
                 Box(Modifier.fillMaxWidth().padding(top = 24.dp), contentAlignment = Alignment.Center) {
                     CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
@@ -103,7 +104,7 @@ fun AlbumDetailScreen(
                     modifier = Modifier.fillMaxSize().scrollTopFade(listState).backButtonHazeSource(backHaze),
                     state = listState,
                     overscrollEffect = overscroll,
-                    contentPadding = PaddingValues(top = BackButtonClearance, bottom = contentPaddingBottom),
+                    contentPadding = PaddingValues(top = lowerBackButtonClearance(), bottom = contentPaddingBottom),
                 ) {
                     item { AlbumHeader(album, cornerRadius, actions = null) }
                     // Play and shuffle float over the list ([FloatingListActions]); this keeps their place.

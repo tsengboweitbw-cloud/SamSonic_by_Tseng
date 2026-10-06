@@ -29,6 +29,7 @@ import com.example.samsonic.ui.common.StateContent
 import com.example.samsonic.ui.common.rememberScreenLoad
 import com.example.samsonic.ui.components.BackButtonClearance
 import com.example.samsonic.ui.components.GlassBackButton
+import com.example.samsonic.ui.components.lowerBackButtonClearance
 import com.example.samsonic.ui.components.FloatingListActions
 import com.example.samsonic.ui.components.floatingActionsSlot
 import com.example.samsonic.ui.components.floatingActionsEnd
@@ -78,7 +79,7 @@ fun GenreDetailScreen(
                     modifier = Modifier.fillMaxSize().scrollTopFade(listState).backButtonHazeSource(backHaze),
                     state = listState,
                     overscrollEffect = overscroll,
-                    contentPadding = PaddingValues(top = BackButtonClearance, bottom = contentPaddingBottom),
+                    contentPadding = PaddingValues(top = lowerBackButtonClearance(), bottom = contentPaddingBottom),
                 ) {
                     item(key = "header") {
                         DetailHeader(

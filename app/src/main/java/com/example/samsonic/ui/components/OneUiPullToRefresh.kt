@@ -20,7 +20,10 @@ import androidx.compose.material3.pulltorefresh.pullToRefresh
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import com.example.samsonic.ui.common.LocalPageHeaderOpen
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,26 +38,31 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.example.samsonic.ui.theme.AccentSheen
+import com.example.samsonic.ui.theme.LocalChromeBlurScale
 import com.example.samsonic.ui.theme.GlassAlpha
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.rememberHazeState
 import com.example.samsonic.ui.theme.glassSurface
 import com.example.samsonic.ui.theme.accentPalette
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
 
-private val IndicatorSize = 42.dp
+private val IndicatorSize = 36.dp
+private val RestGap = 4.dp
 private val Threshold = 64.dp
     //PullToRefreshDefaults.PositionalThreshold
 
 /**
- * One UI style pull-to-refresh: the [content] itself follows the finger down
- * (with the drag resistance of [pullToRefresh]), opening a gap above it where
- * a small glass circle fills its arc as you pull. Past the threshold a haptic
- * tick confirms; on release the content springs to rest under the spinning
- * indicator, then springs back up when [isRefreshing] ends.
+ * One UI style pull-to-refresh: the [content] stays put and a small glass circle
+ * slides down over it, just under the header, filling its arc as you pull. Past
+ * the threshold a haptic tick confirms; on release it spins until [isRefreshing]
+ * ends, then slides back up.
  *
  * [topInset] is empty space the content already leaves at its top, which the
- * indicator counts as part of the gap it centres in.
+ * indicator rests below.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,8 +74,12 @@ fun OneUiPullToRefresh(
     content: @Composable () -> Unit,
 ) {
     val state = rememberPullToRefreshState()
+    val haze = rememberHazeState()
     val haptics = LocalHapticFeedback.current
     val refreshing by rememberUpdatedState(isRefreshing)
+    // Under a lowered header a pull first opens it; only with it open does a pull refresh.
+    val headerOpen = LocalPageHeaderOpen.current
+    val enabled by remember(headerOpen) { derivedStateOf { headerOpen() } }
 
     // A tick each time the pull crosses the threshold on its way down.
     LaunchedEffect(state) {
@@ -81,23 +93,21 @@ fun OneUiPullToRefresh(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .pullToRefresh(isRefreshing = isRefreshing, state = state, threshold = Threshold, onRefresh = onRefresh),
+            .pullToRefresh(isRefreshing = isRefreshing, state = state, enabled = enabled, threshold = Threshold, onRefresh = onRefresh),
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .graphicsLayer { translationY = state.distanceFraction * Threshold.toPx() },
-        ) { content() }
+        Box(modifier = Modifier.fillMaxSize().hazeSource(haze)) { content() }
         RefreshIndicator(
             state = state,
+            haze = haze,
             isRefreshing = isRefreshing,
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .graphicsLayer {
-                    // Centred in the gap the content has pulled open (plus its own top inset).
-                    val gap = state.distanceFraction * Threshold.toPx() + topInset.toPx()
-                    translationY = ((gap - IndicatorSize.toPx()) / 2f).coerceAtLeast(0f)
+                    // Floats over the content, below the header: it slides down from the top
+                    // edge to its resting place just under the content's own top inset.
                     val shown = state.distanceFraction.coerceIn(0f, 1f)
+                    val rest = topInset.toPx() + RestGap.toPx()
+                    translationY = -IndicatorSize.toPx() + shown * (IndicatorSize.toPx() + rest)
                     alpha = shown
                     scaleX = 0.6f + 0.4f * shown
                     scaleY = scaleX
@@ -108,15 +118,17 @@ fun OneUiPullToRefresh(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun RefreshIndicator(state: PullToRefreshState, isRefreshing: Boolean, modifier: Modifier = Modifier) {
+private fun RefreshIndicator(state: PullToRefreshState, haze: HazeState, isRefreshing: Boolean, modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .size(IndicatorSize)
             .glassSurface(
                 shape = CircleShape,
-                hazeState = null,
+                hazeState = haze,
                 tint = MaterialTheme.colorScheme.surfaceContainerHigh,
                 alpha = GlassAlpha.Nav,
+                sheen = AccentSheen.Chrome,
+                inputScale = LocalChromeBlurScale.current,
             ),
     ) {
         val arcModifier = Modifier.fillMaxSize().padding(9.dp)

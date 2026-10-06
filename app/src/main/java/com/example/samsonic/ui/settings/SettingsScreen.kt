@@ -112,10 +112,12 @@ fun SettingsScreen(
             LazyColumn(
                 state = listState,
                 modifier = Modifier.fillMaxSize(),
-                contentPadding = PaddingValues(top = topPadding, bottom = 24.dp + contentPaddingBottom),
+                contentPadding = PaddingValues(top = (topPadding - 12.dp).coerceAtLeast(0.dp), bottom = 24.dp + contentPaddingBottom),
             ) {
-                groups.forEach { group ->
-                    item { GroupLabel(stringResource(group.label)) }
+                groups.forEachIndexed { index, group ->
+                    // The first label sits tighter, in the gap the list's top padding leaves, so
+                    // the first card is as near the top as it can be with its label showing.
+                    item { GroupLabel(stringResource(group.label), top = if (index == 0) 8.dp else 20.dp) }
                     item { group.content() }
                 }
                 item { Spacer(Modifier.height(8.dp)) }

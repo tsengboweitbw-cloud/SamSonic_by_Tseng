@@ -24,12 +24,12 @@ import androidx.compose.ui.unit.dp
 import com.example.samsonic.ui.theme.oneUiRowClickable
 
 @Composable
-internal fun GroupLabel(text: String) {
+internal fun GroupLabel(text: String, top: androidx.compose.ui.unit.Dp = 20.dp, modifier: Modifier = Modifier) {
     Text(
         text = text.uppercase(),
         style = MaterialTheme.typography.labelSmall,
         color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(start = 24.dp, top = 20.dp, bottom = 8.dp),
+        modifier = modifier.padding(start = 24.dp, top = top, bottom = 8.dp),
     )
 }
 

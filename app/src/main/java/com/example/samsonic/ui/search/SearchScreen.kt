@@ -28,6 +28,11 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -90,14 +95,19 @@ fun SearchScreen(
     }
     val results = session.results
 
+    // Tapping the field closes the lowered header: searching happens in the normal layout.
+    var fieldFocused by remember { mutableStateOf(false) }
+
     // Fixed title, with the search pill floating as glass right under it.
     TitledPage(
         modifier = modifier,
         title = { PageTitle(stringResource(R.string.search_title)) },
+        collapseHeader = fieldFocused,
         bar = { hazeState ->
             SearchField(
                 query = query,
                 onQueryChange = { session.query = it },
+                onFocusChange = { fieldFocused = it },
                 hazeState = hazeState,
                 // Same side margins as Library's tab bar and the floating nav bar.
                 modifier = Modifier.padding(horizontal = 16.dp),
@@ -183,6 +193,7 @@ fun SearchScreen(
 private fun SearchField(
     query: String,
     onQueryChange: (String) -> Unit,
+    onFocusChange: (Boolean) -> Unit,
     hazeState: HazeState,
     modifier: Modifier = Modifier,
 ) {
@@ -191,6 +202,7 @@ private fun SearchField(
         value = query,
         onValueChange = onQueryChange,
         modifier = modifier
+            .onFocusChanged { onFocusChange(it.isFocused) }
             .fillMaxWidth()
             // As tall as Library's tab bar and the nav bar.
             .height(OneUiChrome.BarHeight)
