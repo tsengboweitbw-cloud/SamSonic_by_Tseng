@@ -24,6 +24,8 @@
     <string name="search_no_results">找不到「%1$s」的結果</string>
     <string name="search_placeholder">歌手、專輯、歌曲</string>
     <string name="search_clear">清除搜尋</string>
+    <string name="search_recent">最近搜尋</string>
+    <string name="search_history_remove">從最近搜尋中移除「%1$s」</string>
 
     <!-- Sign in -->
     <string name="auth_add_a_server">新增伺服器</string>

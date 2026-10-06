@@ -82,6 +82,9 @@ class AppContainer(context: Context) {
     /** The songs kept on the phone for offline; the music cache leaves them alone. */
     val offlineStore = OfflineStore(File(appContext.filesDir, "offline.json"))
 
+    /** The words searched for, shown on the Search page. */
+    val searchHistory = com.example.samsonic.data.SearchHistory(appContext)
+
     /** Whether only the songs kept for offline are shown. */
     val offlineOnly = OfflineOnlySetting(appContext)
 

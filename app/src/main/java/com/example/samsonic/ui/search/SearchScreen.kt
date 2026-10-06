@@ -7,7 +7,12 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.material.icons.filled.History
+import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -78,6 +83,8 @@ fun SearchScreen(
     val query = session.query
     val player = LocalPlayerState.current
     val repository = LocalAppContainer.current.repository
+    val history = LocalAppContainer.current.searchHistory
+    val recent by history.entries.collectAsState()
 
     val listState = rememberLazyListState()
 
@@ -95,6 +102,9 @@ fun SearchScreen(
         // the old scroll position lands.
         if (listState.isScrolled()) listState.animateScrollToItem(0)
         session.show(query, next)
+        if (next != null && (next.artists.isNotEmpty() || next.albums.isNotEmpty() || next.songs.isNotEmpty())) {
+            history.add(query)
+        }
     }
     val results = session.results
 
@@ -132,6 +142,33 @@ fun SearchScreen(
             // Every row below is keyed and animated, so a new query's results
             // cross-fade in and surviving rows slide to their new spot.
             when {
+                query.isBlank() && recent.isNotEmpty() -> {
+                    item(key = "recentHeader") {
+                        SectionHeader(title = stringResource(R.string.search_recent), modifier = Modifier.animateItem(ListItemFade, ListItemMove, ListItemFade))
+                    }
+                    items(recent, key = { "recent:" + it }) { word ->
+                        Row(
+                            modifier = Modifier
+                                .animateItem(ListItemFade, ListItemMove, ListItemFade)
+                                .fillMaxWidth()
+                                .clickable { session.query = word }
+                                .padding(start = 20.dp, end = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(Icons.Filled.History, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(
+                                text = word,
+                                style = MaterialTheme.typography.bodyLarge,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.weight(1f).padding(horizontal = 16.dp),
+                            )
+                            PressIconButton(onClick = { history.remove(word) }) {
+                                Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.search_history_remove, word))
+                            }
+                        }
+                    }
+                }
                 query.isBlank() -> item(key = "hint") {
                     Box(modifier = Modifier.animateItem(ListItemFade, ListItemMove, ListItemFade).fillMaxWidth().padding(top = 64.dp), contentAlignment = Alignment.Center) {
                         Text(
