@@ -76,12 +76,12 @@
     <string name="settings_favourites_playlist_hint">Your liked songs, first in the Playlists tab</string>
     <string name="settings_list_actions">Play buttons</string>
     <string name="settings_list_actions_hint">Where play, shuffle and queue go as you scroll an album, playlist or list</string>
-    <string name="settings_list_actions_scroll">Scroll with the page</string>
-    <string name="settings_list_actions_top">Pin at the top</string>
-    <string name="settings_list_actions_bottom_left">Dock at the bottom left</string>
-    <string name="settings_list_actions_bottom_right">Dock at the bottom right</string>
-    <string name="settings_list_actions_side_left">Dock at the left side</string>
-    <string name="settings_list_actions_side_right">Dock at the right side</string>
+    <string name="settings_list_actions_scroll">Scroll with page</string>
+    <string name="settings_list_actions_top">Pinned to top</string>
+    <string name="settings_list_actions_bottom_left">Bottom left</string>
+    <string name="settings_list_actions_bottom_right">Bottom right</string>
+    <string name="settings_list_actions_side_left">Left side</string>
+    <string name="settings_list_actions_side_right">Right side</string>
     <string name="settings_list_actions_corner">Corner button</string>
 
     <!-- Player gestures -->

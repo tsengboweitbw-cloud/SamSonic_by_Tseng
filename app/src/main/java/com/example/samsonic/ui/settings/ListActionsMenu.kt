@@ -63,7 +63,12 @@ internal fun ListActionsMenu(panel: PanelState, haze: HazeState) {
     val manager = LocalAppContainer.current.libraryLayoutManager
     val current by manager.listActionsPin.collectAsStateWithLifecycle()
     SettingsMenu(panel, haze, title = stringResource(R.string.settings_list_actions)) {
-        ListActionsPin.entries.forEach { pin ->
+        // The default first, then from the least to the most set apart: with the page, one button, the docks.
+        listOf(
+            ListActionsPin.TOP, ListActionsPin.OFF, ListActionsPin.CORNER,
+            ListActionsPin.BOTTOM_LEFT, ListActionsPin.BOTTOM_RIGHT,
+            ListActionsPin.SIDE_LEFT, ListActionsPin.SIDE_RIGHT,
+        ).forEach { pin ->
             MenuOption(icon = pin.icon, label = stringResource(pin.label), selected = pin == current, onClick = {
                 panel.close()
                 manager.setListActionsPin(pin)

@@ -77,10 +77,10 @@
     <string name="settings_list_actions_hint">捲動專輯、播放清單或列表時，播放、隨機播放與加入佇列按鈕的位置</string>
     <string name="settings_list_actions_scroll">隨頁面捲動</string>
     <string name="settings_list_actions_top">固定在頂端</string>
-    <string name="settings_list_actions_bottom_left">停靠在左下角</string>
-    <string name="settings_list_actions_bottom_right">停靠在右下角</string>
-    <string name="settings_list_actions_side_left">停靠在左側</string>
-    <string name="settings_list_actions_side_right">停靠在右側</string>
+    <string name="settings_list_actions_bottom_left">左下角</string>
+    <string name="settings_list_actions_bottom_right">右下角</string>
+    <string name="settings_list_actions_side_left">左側</string>
+    <string name="settings_list_actions_side_right">右側</string>
     <string name="settings_list_actions_corner">角落按鈕</string>
 
     <!-- Player gestures -->

@@ -2,6 +2,8 @@
 
 ## 2.2.4
 
+- The Play buttons setting is easier to read: the choices are now Pinned to top (the default, so first), Scroll with page, Corner button, Bottom left, Bottom right, Left side and Right side (shorter, and in that order).
+
 - The Play buttons' "Dock at the bottom" is now two choices, Dock at the bottom left and Dock at the bottom right, each standing in its corner above the highest bar (the nav bar, or the mini player over it) and moving with it as before. A saved "Dock at the bottom" becomes the bottom right (`ListActionsPin.BOTTOM_LEFT` / `BOTTOM_RIGHT`, `Dock`).
 
 - Likewise "Dock at the side" is now Dock at the left side and Dock at the right side, the capsule standing upright at that edge and sliding in from it. A saved "Dock at the side" becomes the right side (`ListActionsPin.SIDE_LEFT` / `SIDE_RIGHT`).
