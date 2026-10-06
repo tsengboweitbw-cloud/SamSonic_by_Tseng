@@ -2,6 +2,8 @@
 
 ## 2.2.4
 
+- The Hi-Res badge setting is now the Quality badge: besides Hi-Res it marks DSD, Lossless and Lossy songs, worked out from the file type (an .m4a counts as lossy unless it is ALAC, and a lossy song is never Hi-Res). A song whose format isn't known gets no badge. The saved choice carries over (`SongQuality`, `songQuality`, `AudioFormatDisplay.HI_RES_BADGE`).
+
 - The Play buttons setting is easier to read: the choices are now Pinned to top (the default, so first), Scroll with page, Corner button, Bottom left, Bottom right, Left side and Right side (shorter, and in that order).
 
 - The Play buttons' "Dock at the bottom" is now two choices, Dock at the bottom left and Dock at the bottom right, each standing in its corner above the highest bar (the nav bar, or the mini player over it) and moving with it as before. A saved "Dock at the bottom" becomes the bottom right (`ListActionsPin.BOTTOM_LEFT` / `BOTTOM_RIGHT`, `Dock`).

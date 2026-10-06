@@ -33,6 +33,33 @@ fun formatCodecSampling(song: Song): String? {
 fun isHiRes(song: Song): Boolean =
     (song.samplingRate ?: 0) > 48_000 || (song.bitDepth ?: 0) > 16
 
+/** What a song's quality badge says. */
+enum class SongQuality(val label: String) {
+    DSD("DSD"),
+    HI_RES("Hi-Res"),
+    LOSSLESS("Lossless"),
+    LOSSY("Lossy"),
+}
+
+private val LOSSLESS_SUFFIXES = setOf("flac", "wav", "aif", "aiff", "alac", "ape", "wv", "tta")
+private val LOSSY_SUFFIXES = setOf("mp3", "aac", "ogg", "oga", "opus", "wma", "mp2", "m4a", "mp4")
+
+/**
+ * The badge a song earns, best first: DSD, Hi-Res, Lossless or Lossy. Null when the
+ * format isn't known to be any of them. An .m4a is lossy unless its type says ALAC,
+ * as it holds either; a lossy song is never Hi-Res, whatever rate it reports.
+ */
+fun songQuality(song: Song): SongQuality? {
+    val suffix = song.suffix?.lowercase()
+    if (song.bitDepth == 1 || suffix == "dsf" || suffix == "dff") return SongQuality.DSD
+    val alac = song.contentType?.contains("alac", ignoreCase = true) == true
+    return when {
+        suffix in LOSSLESS_SUFFIXES || alac -> if (isHiRes(song)) SongQuality.HI_RES else SongQuality.LOSSLESS
+        suffix in LOSSY_SUFFIXES -> SongQuality.LOSSY
+        else -> null
+    }
+}
+
 /** "DSD64", "DSD128"... for a DSD song (1-bit, or a .dsf/.dff file) whose rate is known; null otherwise. */
 private fun dsdRateName(song: Song): String? {
     val isDsd = song.bitDepth == 1 || song.suffix?.lowercase() in setOf("dsf", "dff")

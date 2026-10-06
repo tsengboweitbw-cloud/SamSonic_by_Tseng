@@ -47,7 +47,7 @@
     <string name="settings_audio_format_under_artist">Under the artist</string>
     <string name="settings_audio_format_by_duration">By the duration</string>
     <string name="settings_audio_format_codec_badge">Codec badge</string>
-    <string name="settings_audio_format_hi_res_badge">Hi-Res badge</string>
+    <string name="settings_audio_format_hi_res_badge">Quality badge</string>
     <string name="settings_audio_format_sample_title">Song title</string>
     <string name="settings_audio_format_sample_artist">Artist</string>
     <string name="settings_sleep_timer">Sleep timer</string>

@@ -21,7 +21,7 @@ enum class AudioFormatDisplay {
     QUIET_HEART,
     /** A small outlined codec badge ("FLAC") by the duration. */
     CODEC_BADGE,
-    /** A "Hi-Res" badge on hi-res songs only. */
+    /** A quality badge: DSD, Hi-Res, Lossless or Lossy (named HI_RES_BADGE still, for saved settings). */
     HI_RES_BADGE,
 }
 

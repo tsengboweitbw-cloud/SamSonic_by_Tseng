@@ -27,10 +27,10 @@ import com.example.samsonic.LocalAppContainer
 import com.example.samsonic.R
 import com.example.samsonic.data.AudioFormatDisplay
 import com.example.samsonic.model.Song
-import com.example.samsonic.ui.theme.accentPalette
 import com.example.samsonic.util.formatCodecSampling
 import com.example.samsonic.util.formatDuration
-import com.example.samsonic.util.isHiRes
+import com.example.samsonic.util.SongQuality
+import com.example.samsonic.util.songQuality
 
 /** How song rows show the audio format, as picked in Settings. */
 @Composable
@@ -49,9 +49,9 @@ fun songSubtitle(base: String, song: Song, display: AudioFormatDisplay): String 
 }
 
 /**
- * Everything a song row has after its title, laid out for [display]: a Hi-Res or
- * codec badge, the [heartButton] (null where the row has none), and the duration,
- * with the format stacked over it in [AudioFormatDisplay.QUIET_HEART]. That layout
+ * Everything a song row has after its title, laid out for [display]: a quality (DSD,
+ * Hi-Res, Lossless or Lossy) or codec badge, the [heartButton] (null where the row has none), and the duration,
+ * with the badge or format stacked over the duration. That layout
  * drops the heart button and marks a [liked] song with a small heart instead, so
  * only rows that have a heart ([likesEnabled]) show it.
  */
@@ -63,19 +63,31 @@ fun RowScope.SongRowEnd(
     likesEnabled: Boolean,
     heartButton: (@Composable () -> Unit)?,
 ) {
-    if (display == AudioFormatDisplay.HI_RES_BADGE && isHiRes(song)) {
-        FormatBadge("Hi-Res", color = MaterialTheme.accentPalette.tertiary)
-        Spacer(Modifier.width(if (heartButton != null) 4.dp else 8.dp))
-    }
+    val quality = if (display == AudioFormatDisplay.HI_RES_BADGE) songQuality(song) else null
     if (display != AudioFormatDisplay.QUIET_HEART) heartButton?.invoke()
-    if (display == AudioFormatDisplay.CODEC_BADGE) {
-        song.suffix?.uppercase()?.let {
-            FormatBadge(it, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(Modifier.width(8.dp))
-        }
-    }
     if (display != AudioFormatDisplay.QUIET_HEART) {
-        Duration(song)
+        val codec = if (display == AudioFormatDisplay.CODEC_BADGE) song.suffix?.uppercase() else null
+        if (quality == null && codec == null) {
+            Duration(song)
+            return
+        }
+        // The badge stacks over the duration, to save width.
+        Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            if (quality != null) {
+                FormatBadge(
+                    quality.label,
+                    color = when (quality) {
+                        SongQuality.DSD -> DsdBlue
+                        SongQuality.HI_RES -> HiResGold
+                        SongQuality.LOSSLESS -> LosslessRed
+                        SongQuality.LOSSY -> MaterialTheme.colorScheme.onSurfaceVariant
+                    },
+                )
+            } else if (codec != null) {
+                FormatBadge(codec, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+            Duration(song)
+        }
         return
     }
     Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -106,7 +118,12 @@ private fun Duration(song: Song) {
     )
 }
 
-/** A small outlined tag, such as "FLAC" or "Hi-Res". */
+// Fixed colours for the quality badges, so each reads the same whatever the accent.
+private val DsdBlue = Color(0xFF4A90E2)
+private val HiResGold = Color(0xFFD4AF37)
+private val LosslessRed = Color(0xFFE5484D)
+
+/** A small outlined tag, such as "FLAC" or "Lossless". */
 @Composable
 private fun FormatBadge(text: String, color: Color) {
     val shape = RoundedCornerShape(4.dp)

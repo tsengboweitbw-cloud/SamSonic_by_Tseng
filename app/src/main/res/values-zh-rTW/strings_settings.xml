@@ -46,7 +46,7 @@
     <string name="settings_audio_format_under_artist">顯示在歌手下方</string>
     <string name="settings_audio_format_by_duration">顯示在長度旁</string>
     <string name="settings_audio_format_codec_badge">編碼格式標籤</string>
-    <string name="settings_audio_format_hi_res_badge">Hi-Res 標籤</string>
+    <string name="settings_audio_format_hi_res_badge">音質標籤</string>
     <string name="settings_audio_format_sample_title">歌曲名稱</string>
     <string name="settings_audio_format_sample_artist">歌手</string>
     <string name="settings_sleep_timer">睡眠定時器</string>
