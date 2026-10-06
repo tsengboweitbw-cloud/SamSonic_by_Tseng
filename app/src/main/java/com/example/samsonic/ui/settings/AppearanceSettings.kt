@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.RoundedCorner
 import androidx.compose.material.icons.filled.Style
 //import androidx.compose.material3.IconButton
+import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -36,6 +37,9 @@ internal fun AppearanceSettings(panels: SettingsPanels) {
     val themeMenu = panels.themeMenu
     val accentMenu = panels.accentMenu
     val glassMenu = panels.glassMenu
+    // Two columns have room for the glass sliders in a card of their own, rather than behind a menu.
+    val twoPane = LocalWindowLayout.current.twoPane
+    Column {
     SettingsCard {
         LanguageRow(languageMenu)
         NavRow(
@@ -101,6 +105,11 @@ internal fun AppearanceSettings(panels: SettingsPanels) {
             valueRange = 0f..48f,
             onValueChange = { container.themeManager.setAlbumArtCornerRadius(it.dp) },
         )
-        GlassRow(glassMenu)
+        if (!twoPane) GlassRow(glassMenu)
+    }
+    if (twoPane) {
+        GroupLabel(stringResource(R.string.settings_glass))
+        SettingsCard { GlassSliderRows(container.themeManager) }
+    }
     }
 }

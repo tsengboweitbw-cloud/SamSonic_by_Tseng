@@ -44,12 +44,13 @@ private data class ListeningStats(val songs: List<Ranked>, val artists: List<Ran
 @Composable
 internal fun ListeningMenu(panel: PanelState, haze: HazeState) {
     SettingsMenu(panel, haze, title = stringResource(R.string.settings_group_listening)) {
-        ListeningRankings()
+        ListeningRankings(scrolls = true)
     }
 }
 
+/** The rankings; in a menu ([scrolls]) they scroll within it, else they sit in the page's own scroll. */
 @Composable
-private fun ListeningRankings() {
+internal fun ListeningRankings(scrolls: Boolean = false) {
     val container = LocalAppContainer.current
     val source by container.sources.active.collectAsStateWithLifecycle()
     // Null while loading; empty lists where nothing has been played (or the source keeps no counts).
@@ -72,7 +73,7 @@ private fun ListeningRankings() {
     val loaded = stats
     // Scrolls within the menu, as there are fifteen rows.
     val scrollState = rememberScrollState()
-    Column(Modifier.scrollEdgeFades(scrollState).verticalScroll(scrollState)) {
+    Column(if (scrolls) Modifier.scrollEdgeFades(scrollState).verticalScroll(scrollState) else Modifier) {
         if (loaded == null || loaded.songs.isEmpty()) {
             Text(
                 text = stringResource(if (loaded == null) R.string.settings_listening_loading else R.string.settings_listening_empty),

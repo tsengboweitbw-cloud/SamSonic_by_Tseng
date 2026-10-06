@@ -1,6 +1,8 @@
 package com.example.samsonic.ui.settings
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import com.example.samsonic.ui.common.LocalWindowLayout
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -49,6 +51,16 @@ private data class LibraryStats(
 /** The Statistics group: a row for each of two menus, what the library holds and what is played most. */
 @Composable
 internal fun StatisticsSettings(panels: SettingsPanels) {
+    // Two columns have room to show both in cards, rather than behind a menu each.
+    if (LocalWindowLayout.current.twoPane) {
+        Column {
+            GroupLabel(stringResource(R.string.settings_stats_library))
+            SettingsCard { StatisticsCounts() }
+            GroupLabel(stringResource(R.string.settings_group_listening))
+            SettingsCard { ListeningRankings() }
+        }
+        return
+    }
     SettingsCard {
         NavRow(
             icon = Icons.Filled.BarChart,
@@ -76,7 +88,7 @@ internal fun StatisticsMenu(panel: PanelState, haze: HazeState) {
 }
 
 @Composable
-private fun StatisticsCounts() {
+internal fun StatisticsCounts() {
     val container = LocalAppContainer.current
     val source by container.sources.active.collectAsStateWithLifecycle()
     val stats by produceState<LibraryStats?>(initialValue = null, source) {

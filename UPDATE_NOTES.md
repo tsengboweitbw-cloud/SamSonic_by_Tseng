@@ -2,6 +2,7 @@
 
 ## 2.2.4
 
+- In two columns, Settings shows the Glass sliders in a card of their own under Appearance, and Statistics and Listening as two cards (library counts, most played), instead of rows that open pop-ups; one column keeps the pop-ups (`AppearanceSettings`, `StatisticsSettings`, `ListeningRankings`).
 - With the Play buttons set to Scroll with page, they now really scroll with the page, instead of fading out early (`placeRow`). They fade through the page's top edge as the list's rows do, and come back apart, not stacked. The other choices still fade as they scroll away.
 - The Hi-Res badge setting is now the Quality badge: besides Hi-Res it marks DSD, Lossless and Lossy songs, worked out from the file type (an .m4a counts as lossy unless it is ALAC, and a lossy song is never Hi-Res). A song whose format isn't known gets no badge. The saved choice carries over (`SongQuality`, `songQuality`, `AudioFormatDisplay.HI_RES_BADGE`).
 
