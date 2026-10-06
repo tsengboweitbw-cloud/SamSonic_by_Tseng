@@ -5,6 +5,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -29,6 +31,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -97,17 +100,21 @@ fun SearchScreen(
 
     // Tapping the field closes the lowered header: searching happens in the normal layout.
     var fieldFocused by remember { mutableStateOf(false) }
+    // Tapping a field that already has focus (header opened again by scrolling) closes it too.
+    var fieldTaps by remember { mutableIntStateOf(0) }
 
     // Fixed title, with the search pill floating as glass right under it.
     TitledPage(
         modifier = modifier,
         title = { PageTitle(stringResource(R.string.search_title)) },
         collapseHeader = fieldFocused,
+        collapseRequest = fieldTaps,
         bar = { hazeState ->
             SearchField(
                 query = query,
                 onQueryChange = { session.query = it },
                 onFocusChange = { fieldFocused = it },
+                onTap = { fieldTaps++ },
                 hazeState = hazeState,
                 // Same side margins as Library's tab bar and the floating nav bar.
                 modifier = Modifier.padding(horizontal = 16.dp),
@@ -194,13 +201,19 @@ private fun SearchField(
     query: String,
     onQueryChange: (String) -> Unit,
     onFocusChange: (Boolean) -> Unit,
+    onTap: () -> Unit,
     hazeState: HazeState,
     modifier: Modifier = Modifier,
 ) {
+    val interactionSource = remember { MutableInteractionSource() }
+    LaunchedEffect(interactionSource) {
+        interactionSource.interactions.collect { if (it is PressInteraction.Press) onTap() }
+    }
     // Same frosted pill as the floating nav bar.
     OutlinedTextField(
         value = query,
         onValueChange = onQueryChange,
+        interactionSource = interactionSource,
         modifier = modifier
             .onFocusChanged { onFocusChange(it.isFocused) }
             .fillMaxWidth()

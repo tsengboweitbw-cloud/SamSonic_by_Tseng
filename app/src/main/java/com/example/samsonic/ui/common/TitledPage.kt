@@ -104,6 +104,8 @@ fun TitledPage(
     overlay: (@Composable (HazeState) -> Unit)? = null,
     // Becoming true closes the lowered header (the page's normal style), e.g. when its search field is tapped.
     collapseHeader: Boolean = false,
+    // Each change closes the header again, e.g. a tap on a search field that already has focus.
+    collapseRequest: Int = 0,
     content: @Composable (contentTopPadding: Dp) -> Unit,
 ) {
     val density = LocalDensity.current
@@ -122,7 +124,7 @@ fun TitledPage(
     // How much of the lowering has scrolled away; read only at layout, so a scroll doesn't recompose the page.
     var collapsed by remember { mutableFloatStateOf(0f) }
     val scope = rememberCoroutineScope()
-    LaunchedEffect(collapseHeader, loweringPx) {
+    LaunchedEffect(collapseHeader, collapseRequest, loweringPx) {
         if (collapseHeader && collapsed < loweringPx) animate(collapsed, loweringPx) { value, _ -> collapsed = value }
     }
     val connection = remember(loweringPx) {

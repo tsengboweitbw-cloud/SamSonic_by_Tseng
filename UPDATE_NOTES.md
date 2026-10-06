@@ -8,6 +8,7 @@
 - With the header open, the page title is 25% larger and sits 48 dp above its resting place, easing back to its normal size and place as the page collapses (`PageTitle`).
 - The open header on Home, Library, Search and Settings is now a fixed 34% of the window tall (One UI's own proportion), status bar and title included, instead of 30% of empty space above the title. The title is centred on the whole screen width, so Library's view button no longer pulls it off centre (`TitledPage`, `PageTitle`).
 - Tapping the Search field closes the lowered header, so searching happens in the normal layout (`TitledPage` `collapseHeader`, `SearchScreen`).
+- Tapping the Search field closes the lowered header even when the field already has focus, for example after scrolling the header open again (`TitledPage` `collapseRequest`, `SearchScreen`).
 - Settings' first card (Music source) now starts at the top of the content like the first row on the other tabs; its label sits tighter above it (`SettingsScreen`).
 - The refresh indicator is frosted glass like the nav bar and back buttons: it blurs the page under it, with the same tint, opacity, accent sheen and blur scale (`OneUiPullToRefresh`).
 - The refresh indicator is now a smaller circle that slides down over the content, just under the header, like Samsung's, instead of pushing the content down and taking the header's space (`OneUiPullToRefresh`).
