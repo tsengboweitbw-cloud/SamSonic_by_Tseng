@@ -22,6 +22,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -121,7 +122,7 @@ fun TitledPage(
         (windowHeightPx * OpenHeaderFraction - WindowInsets.statusBars.getTop(density) - titleHeight).coerceAtLeast(0f)
     } else 0f
     // How much of the lowering has scrolled away; read only at layout, so a scroll doesn't recompose the page.
-    var collapsed by remember { mutableFloatStateOf(0f) }
+    var collapsed by rememberSaveable { mutableFloatStateOf(0f) }
     val scope = rememberCoroutineScope()
     LaunchedEffect(collapseHeader, collapseRequest, loweringPx) {
         if (collapseHeader && collapsed < loweringPx) animate(collapsed, loweringPx) { value, _ -> collapsed = value }

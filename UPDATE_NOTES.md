@@ -8,6 +8,7 @@
 - Pull to refresh on Home and Library now works only with the lowered header fully open: a pull from the collapsed page opens the header first, and a further pull refreshes (`LocalPageHeaderOpen`, `OneUiPullToRefresh`).
 - With the header open, the page title is 25% larger and sits 48 dp above its resting place, easing back to its normal size and place as the page collapses (`PageTitle`).
 - The open header on Home, Library, Search and Settings is now a fixed 34% of the window tall (One UI's own proportion), status bar and title included, instead of 30% of empty space above the title. The title is centred on the whole screen width, so Library's view button no longer pulls it off centre (`TitledPage`, `PageTitle`).
+- Coming back from an album, artist, playlist or other page returns a tab to the header as it was left (open or collapsed), instead of sometimes reopening it (`TitledPage`).
 - Tapping the Search field closes the lowered header, so searching happens in the normal layout (`TitledPage` `collapseHeader`, `SearchScreen`).
 - Tapping the Search field closes the lowered header even when the field already has focus, for example after scrolling the header open again (`TitledPage` `collapseRequest`, `SearchScreen`).
 - Settings' first card (Music source) now starts at the top of the content like the first row on the other tabs; its label sits tighter above it (`SettingsScreen`).
