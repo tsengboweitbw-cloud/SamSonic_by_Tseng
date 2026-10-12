@@ -52,6 +52,7 @@ import com.example.samsonic.ui.theme.AccentSheen
 import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.LocalGlassSettings
 import com.example.samsonic.ui.theme.OneUiRadius
+import com.example.samsonic.ui.theme.chromeGlass
 import com.example.samsonic.ui.theme.glassSurface
 import dev.chrisbanes.haze.HazeState
 
@@ -77,6 +78,7 @@ internal fun BoxScope.CollectionViewMenu(section: LibrarySection, title: String,
         contentDescription = stringResource(R.string.library_view_options),
         haze = haze,
         panelTop = libraryTitleRowHeight(),
+        buttonHaze = haze,
     ) {
         ViewOptionsPanel(
             sectionName = title,
@@ -119,12 +121,8 @@ internal fun BoxScope.CornerMenu(
             .menuOrigin(panel)
             // The panel's glass is this button while it's out, so there's just the one.
             .graphicsLayer { alpha = if (showing) 0f else 1f }
-            .glassSurface(
-                shape = CircleShape,
-                hazeState = buttonHaze,
-                tint = MaterialTheme.colorScheme.surfaceContainerHigh,
-                alpha = GlassAlpha.Nav,
-            ),
+            // The back button's glass, so the pair match.
+            .chromeGlass(shape = CircleShape, hazeState = buttonHaze),
     ) {
         Icon(icon, contentDescription = contentDescription, modifier = Modifier.size(24.dp))
     }

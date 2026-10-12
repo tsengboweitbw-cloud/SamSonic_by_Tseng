@@ -59,6 +59,7 @@ import com.example.samsonic.ui.theme.glassRimBrush
 import com.example.samsonic.ui.theme.glassTintBottom
 import com.example.samsonic.ui.theme.glassTintMean
 import com.example.samsonic.ui.theme.glassTintTop
+import com.example.samsonic.ui.theme.chromeGlass
 import com.example.samsonic.ui.theme.glassSurface
 import dev.chrisbanes.haze.HazeState
 
@@ -81,12 +82,8 @@ internal fun LibraryViewButton(mode: LibraryViewMode, open: Boolean, onClick: ()
     PressIconButton(
         onClick = onClick,
         modifier = modifier
-            .glassSurface(
-                shape = CircleShape,
-                hazeState = null,
-                tint = MaterialTheme.colorScheme.surfaceContainerHigh,
-                alpha = GlassAlpha.Nav,
-            ),
+            // The back button's glass, so the pair match.
+            .chromeGlass(shape = CircleShape, hazeState = null),
     ) {
         Crossfade(targetState = open, label = "viewButtonIcon") { isOpen ->
             Icon(

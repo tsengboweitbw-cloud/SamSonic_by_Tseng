@@ -29,7 +29,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.PlaylistPlay
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableStateOf
@@ -48,8 +47,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.util.lerp
 import com.example.samsonic.R
-import com.example.samsonic.ui.theme.GlassAlpha
-import com.example.samsonic.ui.theme.glassSurface
+import com.example.samsonic.ui.theme.chromeGlass
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.derivedStateOf
@@ -437,12 +435,7 @@ private fun BoxScope.Corner(gather: RowGather, endOffset: Dp, haze: HazeState?, 
                 modifier = Modifier
                     .padding(end = (MergedCapsuleThickness - ChromeButtonSize) / 2)
                     .graphicsLayer { alpha = 1f - ramp(opened.value, 0f, 0.4f) }
-                    .glassSurface(
-                        shape = CircleShape,
-                        hazeState = haze,
-                        tint = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        alpha = GlassAlpha.Nav,
-                    ),
+                    .chromeGlass(shape = CircleShape, hazeState = haze),
             ) {
                 Icon(
                     Icons.AutoMirrored.Filled.PlaylistPlay,

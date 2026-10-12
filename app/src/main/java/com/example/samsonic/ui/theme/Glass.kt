@@ -256,6 +256,27 @@ const val ChromeBlurScale = 0.5f
 val LocalChromeBlurScale = compositionLocalOf<Float?> { ChromeBlurScale }
 
 /**
+ * The glass of the floating chrome (the back button's, and every button and capsule that
+ * floats beside it): the nav bar's opacity, accent sheen and scaled blur. Change it here
+ * and they all follow.
+ */
+@Composable
+fun Modifier.chromeGlass(
+    shape: Shape,
+    hazeState: HazeState?,
+    tint: Color = MaterialTheme.colorScheme.surfaceContainerHigh,
+    rim: Boolean = true,
+): Modifier = glassSurface(
+    shape = shape,
+    hazeState = hazeState,
+    tint = tint,
+    alpha = GlassAlpha.Nav,
+    rim = rim,
+    sheen = AccentSheen.Chrome,
+    inputScale = LocalChromeBlurScale.current,
+)
+
+/**
  * The thin rim [glassSurface] draws around its edge. A light rim reads as a
  * highlight on dark glass; a dark rim reads as one on light glass - pick by
  * the current theme's actual background, not a fixed assumption that the app
