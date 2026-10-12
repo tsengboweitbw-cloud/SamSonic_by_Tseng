@@ -28,12 +28,10 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.util.lerp
 import kotlin.math.roundToInt
-import com.example.samsonic.ui.theme.AccentSheen
-import com.example.samsonic.ui.theme.LocalChromeBlurScale
 import com.example.samsonic.ui.theme.GlassAlpha
 import com.example.samsonic.ui.theme.GlassRimWidth
 import com.example.samsonic.ui.theme.glassRimBrush
-import com.example.samsonic.ui.theme.glassSurface
+import com.example.samsonic.ui.theme.chromeGlass
 
 // Merged into the capsule, each button shrinks to this, this far from the next, and the
 // capsule wraps them with this much padding.
@@ -95,14 +93,11 @@ internal fun MergingRow(merge: () -> Float, modifier: Modifier, content: @Compos
                                 style = Stroke(GlassRimWidth.toPx()),
                             )
                         }
-                        .glassSurface(
+                        .chromeGlass(
                             shape = RoundedCornerShape(percent = 50),
                             hazeState = haze,
                             tint = tint,
-                            alpha = GlassAlpha.Nav,
                             rim = false,
-                            sheen = AccentSheen.Chrome,
-                            inputScale = LocalChromeBlurScale.current,
                         ),
                 )
             }
@@ -208,13 +203,10 @@ internal fun MergedCapsule(vertical: Boolean, tint: Color, content: @Composable 
         content = content,
         // The chrome's glass (the nav bar's and mini player's): its blur of the page, its
         // opacity and its accent sheen.
-        modifier = Modifier.glassSurface(
+        modifier = Modifier.chromeGlass(
             shape = RoundedCornerShape(percent = 50),
             hazeState = LocalListActionsHaze.current,
             tint = tint,
-            alpha = GlassAlpha.Nav,
-            sheen = AccentSheen.Chrome,
-            inputScale = LocalChromeBlurScale.current,
         ),
     ) { measurables, _ ->
         val size = ListActionButtonSize.roundToPx()

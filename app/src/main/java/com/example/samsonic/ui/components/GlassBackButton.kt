@@ -8,7 +8,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.takeOrElse
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.graphicsLayer
@@ -17,10 +16,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.samsonic.R
-import com.example.samsonic.ui.theme.AccentSheen
-import com.example.samsonic.ui.theme.GlassAlpha
-import com.example.samsonic.ui.theme.LocalChromeBlurScale
-import com.example.samsonic.ui.theme.glassSurface
+import com.example.samsonic.ui.theme.chromeGlass
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 
@@ -60,14 +56,7 @@ fun GlassIconButton(
         onClick = onClick,
         size = ChromeButtonSize,
         modifier = modifier
-            .glassSurface(
-                shape = CircleShape,
-                hazeState = hazeState,
-                tint = MaterialTheme.colorScheme.surfaceContainerHigh,
-                alpha = GlassAlpha.Nav,
-                sheen = AccentSheen.Chrome,
-                inputScale = LocalChromeBlurScale.current,
-            ),
+            .chromeGlass(shape = CircleShape, hazeState = hazeState),
     ) {
         Icon(icon, contentDescription = contentDescription, modifier = Modifier.size(iconSize), tint = tint.takeOrElse { LocalContentColor.current })
     }

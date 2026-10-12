@@ -38,13 +38,10 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.example.samsonic.ui.theme.AccentSheen
-import com.example.samsonic.ui.theme.LocalChromeBlurScale
-import com.example.samsonic.ui.theme.GlassAlpha
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.rememberHazeState
-import com.example.samsonic.ui.theme.glassSurface
+import com.example.samsonic.ui.theme.chromeGlass
 import com.example.samsonic.ui.theme.accentPalette
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
@@ -122,14 +119,7 @@ private fun RefreshIndicator(state: PullToRefreshState, haze: HazeState, isRefre
     Box(
         modifier = modifier
             .size(IndicatorSize)
-            .glassSurface(
-                shape = CircleShape,
-                hazeState = haze,
-                tint = MaterialTheme.colorScheme.surfaceContainerHigh,
-                alpha = GlassAlpha.Nav,
-                sheen = AccentSheen.Chrome,
-                inputScale = LocalChromeBlurScale.current,
-            ),
+            .chromeGlass(shape = CircleShape, hazeState = haze),
     ) {
         val arcModifier = Modifier.fillMaxSize().padding(9.dp)
         if (isRefreshing) SpinningArc(arcModifier) else PullArc({ state.distanceFraction }, arcModifier)
