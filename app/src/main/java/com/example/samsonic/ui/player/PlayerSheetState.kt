@@ -9,6 +9,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import com.example.samsonic.ui.library.AddToPlaylistState
 import kotlinx.coroutines.CoroutineScope
 
 /**
@@ -59,8 +60,14 @@ class PlayerSheetState internal constructor(scope: CoroutineScope) {
     /** The small window the audio info capsule opens, at the capsule's own place. */
     val format = PanelState(scope)
 
+    /** Now Playing's own Add to playlist card, a panel like the rest (the app's one is over the pages). */
+    val addToPlaylist = AddToPlaylistState(scope)
+
+    /** Every panel over Now Playing. */
+    internal val panels: List<PanelState> get() = listOf(lyrics, queue, info, autoDj, format, addToPlaylist.panel)
+
     /** Whether a panel covers Now Playing, or is heading there. */
-    val hasPanelOpen: Boolean get() = lyrics.isOpen || queue.isOpen || info.isOpen || autoDj.isOpen || format.isOpen
+    val hasPanelOpen: Boolean get() = panels.any { it.isOpen }
 
     /** Pixels the sheet's top travels between collapsed and expanded; set by the layout. */
     internal var travelPx: Float
@@ -146,7 +153,7 @@ class PlayerSheetState internal constructor(scope: CoroutineScope) {
     // Null [velocityPx]: carry on at the speed of any settle under way (see SpringTrack.animateTo).
     private fun settleTo(target: Float, velocityPx: Float? = null) {
         isExpanded = target == 1f
-        if (target == 0f) listOf(lyrics, queue, info, autoDj, format).forEach { it.reset() }
+        if (target == 0f) panels.forEach { it.reset() }
         track.animateTo(target, velocityPx)
     }
 
