@@ -23,7 +23,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.flow.first
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.samsonic.LocalAppContainer
 import androidx.compose.ui.Alignment
@@ -60,7 +63,17 @@ fun QueueScreen(modifier: Modifier = Modifier) {
         // Queue indices in play order (the shuffle order when shuffle is on). playOrder catches
         // up a moment after an insert, so until then fall back to the queue's own order.
         val order = player.playOrder.takeIf { it.size == player.queue.size } ?: player.queue.indices.toList()
-        val listState = rememberLazyListState()
+        // Opens on the playing song rather than the top, centred where the list can scroll that
+        // far. The card composes this afresh at each open, so it's where the list starts each
+        // time, not something it keeps following. It first lays out with the song at the top,
+        // which gives the row's and the viewport's heights to centre it with.
+        val current = order.indexOf(player.currentIndex).coerceAtLeast(0)
+        val listState = rememberLazyListState(initialFirstVisibleItemIndex = current)
+        LaunchedEffect(listState) {
+            val layout = snapshotFlow { listState.layoutInfo }.first { it.viewportSize.height > 0 }
+            val row = layout.visibleItemsInfo.firstOrNull { it.index == current } ?: return@LaunchedEffect
+            listState.scrollToItem(current, -(layout.viewportSize.height - row.size) / 2)
+        }
         val rowKeys = player.queue.occurrenceKeys()
         LazyColumn(
             modifier = Modifier.fillMaxWidth().weight(1f).scrollEdgeFades(listState),
