@@ -45,7 +45,7 @@ fun HomeScreen(
 
     TitledPage(
         modifier = modifier,
-        title = { PageTitle(stringResource(R.string.home_your_library)) },
+        title = { PageTitle(stringResource(R.string.nav_home)) },
     ) { topPadding ->
         StateContent(state = viewModel.state, modifier = Modifier.fillMaxSize(), onRetry = viewModel::retry) { sections ->
             // In the user's order, leaving out what they hid and cutting each to the length they set.
