@@ -66,7 +66,7 @@ internal fun dialogDimAmount(): Float {
  * A panel as a floating glass card over a dimmed Now Playing, styled like the
  * Settings menus: [title] on top, [content] below.
  * It grows out of its button ([MorphPanel]); tapping outside it or back folds it
- * back, as does pulling it down from the top of its content. Every card
+ * back, but a swipe down doesn't, so a pull past the top of its list can't close it. Every card
  * has the same fixed height, which [content] fills.
  * [haze] is Now Playing's haze source, which the card's glass blurs.
  */
@@ -130,6 +130,7 @@ internal fun PanelCard(
                 // Swallows taps so only the space around the card dismisses.
                 .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {},
             radius = OneUiRadius.Card,
+            dragToClose = false,
         ) {
             Column(Modifier.padding(vertical = 24.dp)) {
                 Text(

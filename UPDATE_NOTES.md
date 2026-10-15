@@ -38,6 +38,7 @@
 - Settings has a new Listening group ranking the five most played songs, artists and albums, each with its play count. They are drawn from the 100 most played songs the source reports (on a server, those of its 50 most played albums), so a song played only a little may be missed; an artist's or album's plays are those songs' added up (`ListeningSettings`).
 
 - Settings has a new Statistics group counting what the library in use holds: songs, albums, artists, genres, playlists and favourites, counted again when the music source changes. A count the source can't give shows a dash while it loads or if it fails. Songs are counted once each, by adding up every album's tracks (a server's `getSongCount`), not by adding up the genres, which counts a song under each genre it has (`StatisticsSettings`).
+- The pop-up cards over Now Playing (lyrics, Up next, Auto DJ and song info) no longer close when swiped down, including a pull past the top of their list. Tap outside the card or press back to close one (`PanelCard`).
 
 ## 2.2.3 
 - The song held for dragging while editing a playlist is now frosted glass, blurring the rows beneath it the same way the nav bar does, instead of a flat lifted card. The glass is drawn by `HeldSongGlass` over the list rather than by the row itself, because a blur nested inside the list's own blur source draws nothing; the row stays in the list, unseen, to keep the finger and its place (`EditSongRow`, `PlaylistDragState.heldTop`).
