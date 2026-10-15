@@ -17,9 +17,10 @@ import androidx.compose.ui.res.stringResource
 import com.example.samsonic.R
 import com.example.samsonic.ui.autodj.AutoDjIcon
 import com.example.samsonic.ui.autodj.AutoDjPanel
-import com.example.samsonic.ui.library.AddToPlaylistMenu
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.LibraryAdd
+import com.example.samsonic.ui.library.AddToPlaylistContent
 import com.example.samsonic.ui.library.LocalAddToPlaylist
-import com.example.samsonic.ui.library.rememberAddToPlaylistState
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.CancellationException
@@ -38,10 +39,10 @@ internal fun PlayerPages(sheet: PlayerSheetState) {
     // as a haze effect nested in its own source can draw recursively. graphicsLayer()
     // flattens it first, as for the NavHost's source, or text and edges stay sharp.
     val haze = remember { HazeState() }
-    // Its own Add to playlist card, over Now Playing and blurring it, like the panels'; the
-    // app's one blurs the page under the sheet. Only where there are playlists to add to.
+    // Its own Add to playlist card, a panel like the rest; the app's one blurs the page
+    // under the sheet. Only where there are playlists to add to.
     val canAddToPlaylist = LocalAddToPlaylist.current != null
-    val addToPlaylist = rememberAddToPlaylistState()
+    val addToPlaylist = sheet.addToPlaylist
     // Folded away, Now Playing is still laid out (the morph needs its anchors), but its
     // titles don't scroll: a marquee draws every frame, seen or not. (Its glass stays: a
     // blur not shown does no work, and switching it off and on at each open and close
@@ -76,8 +77,13 @@ internal fun PlayerPages(sheet: PlayerSheetState) {
         PanelCard(sheet.autoDj, AutoDjIcon, title = stringResource(R.string.auto_dj_title), haze = haze) {
             AutoDjPanel(Modifier.fillMaxSize())
         }
+        if (canAddToPlaylist) {
+            // As tall as its step, which changes, rather than the others' fixed height.
+            PanelCard(addToPlaylist.panel, Icons.Filled.LibraryAdd, title = stringResource(R.string.library_more_options), haze = haze, fitContent = true) {
+                AddToPlaylistContent(addToPlaylist, LocalPlayerLinks.current)
+            }
         }
-        if (canAddToPlaylist) AddToPlaylistMenu(addToPlaylist, haze, LocalPlayerLinks.current)
+        }
     }
 }
 
@@ -88,7 +94,7 @@ internal fun PlayerPages(sheet: PlayerSheetState) {
  */
 @Composable
 internal fun PlayerSheetBackHandling(sheet: PlayerSheetState) {
-    val panel = listOf(sheet.format, sheet.autoDj, sheet.info, sheet.queue, sheet.lyrics).firstOrNull { it.isOpen }
+    val panel = sheet.panels.firstOrNull { it.isOpen }
     // Each shrinks from wherever it is when the gesture starts (still opening, even),
     // not from fully open, so backing out of an opening sheet or panel doesn't jump.
     PredictiveBackHandler(enabled = sheet.isExpanded && panel != null) { events ->

@@ -10,8 +10,10 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.systemBarsPadding
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -66,8 +68,9 @@ internal fun dialogDimAmount(): Float {
  * A panel as a floating glass card over a dimmed Now Playing, styled like the
  * Settings menus: [title] on top, [content] below.
  * It grows out of its button ([MorphPanel]); tapping outside it or back folds it
- * back, as does pulling it down from the top of its content. Every card
- * has the same fixed height, which [content] fills.
+ * back, but a swipe down doesn't, so a pull past the top of its list can't close it. Every card
+ * has the same fixed height, which [content] fills; with [fitContent], the card is as tall
+ * as [content] instead, following it as it changes size.
  * [haze] is Now Playing's haze source, which the card's glass blurs.
  */
 @Composable
@@ -76,6 +79,7 @@ internal fun PanelCard(
     icon: ImageVector,
     title: String,
     haze: HazeState,
+    fitContent: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val showing by remember(panel) { derivedStateOf { panel.progress > 0f } }
@@ -97,6 +101,8 @@ internal fun PanelCard(
             // In two columns, over the controls' side only, leaving the cover in view.
             .padding(start = LocalPanelStart.current)
             .systemBarsPadding()
+            // Clear of the keyboard, for a card with a text field.
+            .imePadding()
             .padding(horizontal = 28.dp, vertical = 24.dp),
         contentAlignment = Alignment.Center,
     ) {
@@ -126,10 +132,12 @@ internal fun PanelCard(
             washAlpha = washToReach(MorphGlassBase, glass.playerAlpha),
             modifier = Modifier
                 .fillMaxWidth()
-                .fillMaxHeight(CardHeight)
+                .then(if (fitContent) Modifier.wrapContentHeight() else Modifier.fillMaxHeight(CardHeight))
                 // Swallows taps so only the space around the card dismisses.
                 .clickable(interactionSource = remember { MutableInteractionSource() }, indication = null) {},
             radius = OneUiRadius.Card,
+            dragToClose = false,
+            resizable = fitContent,
         ) {
             Column(Modifier.padding(vertical = 24.dp)) {
                 Text(
@@ -140,7 +148,7 @@ internal fun PanelCard(
                 Column(
                     modifier = Modifier
                         .padding(top = 16.dp)
-                        .weight(1f),
+                        .then(if (fitContent) Modifier else Modifier.weight(1f)),
                     content = content,
                 )
             }
