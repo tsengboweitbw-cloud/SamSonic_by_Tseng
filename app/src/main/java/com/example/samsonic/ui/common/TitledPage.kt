@@ -167,7 +167,7 @@ fun TitledPage(
     val aboveContent = WindowInsets.statusBars.getTop(density) + titleHeight + loweringPx.roundToInt()
 
     CompositionLocalProvider(LocalPageHeaderOpen provides headerOpen) {
-    Column(modifier = modifier.fillMaxSize().statusBarsPadding().nestedScroll(connection)) {
+    Column(modifier = modifier.fillMaxSize().statusBarsPadding()) {
         Box(
             modifier = Modifier.layout { measurable, constraints ->
                 val placeable = measurable.measure(constraints)
@@ -185,6 +185,8 @@ fun TitledPage(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    // Only the content's own scrolling moves the header, not an overlay's (a menu's list).
+                    .nestedScroll(connection)
                     // Outside hazeSource, so the bar still blurs the content unfaded.
                     .topFade(fade)
                     .then(if (contentHaze != null) Modifier.graphicsLayer().hazeSource(contentHaze) else Modifier),
