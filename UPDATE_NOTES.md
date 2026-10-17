@@ -2,6 +2,7 @@
 
 ## 2.2.4
 
+- Scrolling a list inside a Settings menu (Home sections, Listening and the like) no longer opens or closes the page's lowered header, which moved the settings behind the card. Only the page's own content moves the header now, not the menus over it (`TitledPage`).
 - The view button (grid or list) on a collection page now has the back button's glass: it blurs the list under it with the same sheen and blur scale, instead of sitting flat (`CornerMenu`, `CollectionViewMenu`). The sort button gets the same sheen.
 - The Library tab's view button now has the back button's accent sheen and blur scale too (`LibraryViewButton`). It has no list under it to blur, so its backdrop is unchanged.
 - The Play buttons' corner button now has the back button's accent sheen and blur scale (`FloatingListActions`).
